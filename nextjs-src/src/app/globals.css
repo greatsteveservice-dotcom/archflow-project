@@ -1,0 +1,102 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --font-body: 'Outfit', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+body {
+  font-family: var(--font-body);
+  background: #F7F6F3;
+  color: #1A1A1A;
+}
+
+@layer components {
+  .sidebar-item {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-white/55 cursor-pointer text-sm transition-all duration-150 mb-0.5;
+  }
+  .sidebar-item:hover {
+    @apply bg-white/[0.06] text-white/85;
+  }
+  .sidebar-item.active {
+    @apply text-white font-medium;
+    background: rgba(44, 95, 45, 0.35);
+  }
+
+  .btn {
+    @apply inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-medium border-none cursor-pointer transition-all duration-150 whitespace-nowrap;
+    font-family: var(--font-body);
+  }
+  .btn-primary {
+    @apply bg-[#2C5F2D] text-white;
+  }
+  .btn-primary:hover { @apply bg-[#1E4620]; }
+  .btn-secondary {
+    @apply bg-white text-[#1A1A1A] border border-[#E8E6E1];
+  }
+  .btn-secondary:hover { @apply bg-[#FAFAF8] border-[#D5D3CE]; }
+
+  .badge {
+    @apply inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-0.5 rounded-full;
+  }
+
+  .filter-tabs {
+    @apply flex gap-1 bg-[#F0EEE9] rounded-lg p-0.5 w-fit;
+  }
+  .filter-tab {
+    @apply px-3.5 py-1.5 text-[13px] font-medium bg-transparent text-[#9B9B9B] rounded-md cursor-pointer transition-all duration-150 border-none;
+    font-family: var(--font-body);
+  }
+  .filter-tab.active {
+    @apply bg-white text-[#1A1A1A] shadow-sm;
+  }
+
+  .modal-overlay {
+    @apply fixed inset-0 bg-black/40 flex items-center justify-center z-50;
+    backdrop-filter: blur(4px);
+    animation: fadeIn 0.2s ease;
+  }
+  .modal {
+    @apply bg-white rounded-2xl p-7 w-[440px] max-w-[90vw];
+    box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+    animation: slideUp 0.25s ease;
+  }
+  .modal-field label {
+    @apply block text-xs font-medium text-[#6B6B6B] mb-1.5;
+  }
+  .modal-field input,
+  .modal-field textarea,
+  .modal-field select {
+    @apply w-full px-3 py-2.5 border border-[#E8E6E1] rounded-lg text-sm outline-none transition-colors duration-150 bg-white text-[#1A1A1A];
+    font-family: var(--font-body);
+  }
+  .modal-field input:focus,
+  .modal-field textarea:focus {
+    @apply border-[#2C5F2D];
+  }
+
+  .notif-dot {
+    @apply relative;
+  }
+  .notif-dot::after {
+    content: '';
+    @apply absolute -top-0.5 -right-0.5 w-2 h-2 bg-[#E85D3A] rounded-full;
+    border: 2px solid #1A1F1A;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in { animation: fadeIn 0.3s ease; }
+.animate-slide-up { animation: slideUp 0.3s ease; }
+.font-mono-custom { font-family: var(--font-mono); }
