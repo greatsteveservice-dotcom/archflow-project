@@ -148,4 +148,13 @@ archflow-project/
 - [x] Новые RLS-политики v2 (003_rls_v2.sql): SECURITY DEFINER функция get_user_project_ids() для безрекурсивных политик
 - [x] Включён RLS на всех 10 таблицах с рабочими политиками
 - [x] Проверен полный цикл: логин → дашборд → проекты → выход
-- [ ] CRUD-операции (создание визитов, загрузка фото, выставление счетов)
+- [x] CRUD-операции (создание визитов, загрузка фото, выставление счетов)
+- [x] Input-типы: CreateProjectInput, CreateVisitInput, CreatePhotoRecordInput, CreateProjectMemberInput, CreateInvoiceInput
+- [x] 7 мутаций в queries.ts: createProject, createVisit, uploadPhoto, createPhotoRecord, updatePhotoStatus, inviteProjectMember, createInvoice
+- [x] Хуки с refetch(): refreshKey + useCallback в useQuery
+- [x] CreateProjectModal.tsx — модалка создания проекта
+- [x] ProjectPage.tsx — модалки: новый визит, пригласить участника, новый счёт
+- [x] VisitPage.tsx — загрузка фото (drag-drop + file input), inline-смена статуса фото
+- [x] SQL: Storage bucket 'photos' + RPC lookup_profile_by_email (004_storage_and_rpc.sql)
+- [x] RLS SELECT fix (005_rls_select_fix.sql): INSERT+SELECT (PostgREST return=representation) — добавлены прямые проверки owner_id/created_by
+- [x] Протестировано в браузере: создание проекта, визита, счёта — всё работает через Supabase

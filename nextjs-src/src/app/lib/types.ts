@@ -160,6 +160,44 @@ export interface VisitWithStats extends Visit {
   resolved_count: number;
 }
 
+// ======================== INPUT TYPES (for create/update operations) ========================
+
+export interface CreateProjectInput {
+  title: string;
+  address?: string;
+  scenario_type: ScenarioType;
+  start_date?: string;
+}
+
+export interface CreateVisitInput {
+  project_id: string;
+  title: string;
+  date: string;
+  note?: string;
+}
+
+export interface CreatePhotoRecordInput {
+  visit_id: string;
+  comment?: string;
+  status: PhotoStatus;
+  zone?: string;
+  photo_url?: string;
+}
+
+export interface CreateProjectMemberInput {
+  project_id: string;
+  email: string;
+  role: UserRole;
+  access_level?: AccessLevel;
+}
+
+export interface CreateInvoiceInput {
+  project_id: string;
+  title: string;
+  amount: number;
+  due_date?: string;
+}
+
 // ======================== STATUS CONFIG ========================
 
 export const PHOTO_STATUS_CONFIG: Record<PhotoStatus, { label: string; color: string; bg: string }> = {

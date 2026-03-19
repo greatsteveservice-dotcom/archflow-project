@@ -8,6 +8,7 @@ import ProjectPage from "./components/ProjectPage";
 import VisitPage from "./components/VisitPage";
 import { NotificationsPage, SettingsPage } from "./components/SettingsNotifications";
 import LoginPage from "./components/LoginPage";
+import CreateProjectModal from "./components/CreateProjectModal";
 import { Icons } from "./components/Icons";
 import { useProjects } from "./lib/hooks";
 import { useAuth } from "./lib/auth";
@@ -16,7 +17,8 @@ export default function Home() {
   const { session, loading: authLoading } = useAuth();
   const [page, setPage] = useState("dashboard");
   const [context, setContext] = useState<any>(null);
-  const { data: projects } = useProjects();
+  const [showCreateProject, setShowCreateProject] = useState(false);
+  const { data: projects, refetch: refetchProjects } = useProjects();
 
   // Auth loading state
   if (authLoading) {
@@ -151,8 +153,8 @@ export default function Home() {
             )}
           </div>
           <div className="flex gap-2 items-center">
-            {page === "dashboard" && (
-              <button className="btn btn-primary" onClick={() => navigate("projects")}>
+            {(page === "dashboard" || page === "projects") && (
+              <button className="btn btn-primary" onClick={() => setShowCreateProject(true)}>
                 <Icons.Plus /> Новый проект
               </button>
             )}
@@ -162,6 +164,16 @@ export default function Home() {
         {/* Content */}
         <div className="p-7 max-sm:p-4">{renderPage()}</div>
       </div>
+
+      {/* Create Project Modal */}
+      <CreateProjectModal
+        open={showCreateProject}
+        onClose={() => setShowCreateProject(false)}
+        onSuccess={() => {
+          refetchProjects();
+          navigate("projects");
+        }}
+      />
     </div>
   );
 }

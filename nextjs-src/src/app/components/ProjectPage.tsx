@@ -4,7 +4,8 @@ import { useState } from "react";
 import { Icons } from "./Icons";
 import Loading, { ErrorMessage } from "./Loading";
 import { useProject, useProjectVisits } from "../lib/hooks";
-import { formatDate } from "../lib/queries";
+import { formatDate, createVisit, inviteProjectMember, createInvoice } from "../lib/queries";
+import type { UserRole } from "../lib/types";
 
 interface ProjectPageProps {
   projectId: string;
@@ -12,15 +13,112 @@ interface ProjectPageProps {
 }
 
 export default function ProjectPage({ projectId, onNavigate }: ProjectPageProps) {
-  const { data: project, loading: loadingProject, error: errorProject } = useProject(projectId);
-  const { data: visits, loading: loadingVisits } = useProjectVisits(projectId);
+  const { data: project, loading: loadingProject, error: errorProject, refetch: refetchProject } = useProject(projectId);
+  const { data: visits, loading: loadingVisits, refetch: refetchVisits } = useProjectVisits(projectId);
+
+  // Invite modal state
   const [showInvite, setShowInvite] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState<UserRole>("client");
+  const [savingInvite, setSavingInvite] = useState(false);
+  const [inviteError, setInviteError] = useState("");
+  const [inviteSuccess, setInviteSuccess] = useState("");
+
+  // Create visit modal state
+  const [showCreateVisit, setShowCreateVisit] = useState(false);
+  const [visitTitle, setVisitTitle] = useState("");
+  const [visitDate, setVisitDate] = useState("");
+  const [visitNote, setVisitNote] = useState("");
+  const [savingVisit, setSavingVisit] = useState(false);
+  const [visitError, setVisitError] = useState("");
+
+  // Create invoice modal state
+  const [showCreateInvoice, setShowCreateInvoice] = useState(false);
+  const [invoiceTitle, setInvoiceTitle] = useState("");
+  const [invoiceAmount, setInvoiceAmount] = useState("");
+  const [invoiceDueDate, setInvoiceDueDate] = useState("");
+  const [savingInvoice, setSavingInvoice] = useState(false);
+  const [invoiceError, setInvoiceError] = useState("");
+  const [invoiceSuccess, setInvoiceSuccess] = useState("");
 
   if (loadingProject || loadingVisits) return <Loading />;
   if (errorProject) return <ErrorMessage message={errorProject} />;
   if (!project) return <ErrorMessage message="Проект не найден" />;
 
   const projectVisits = visits || [];
+
+  // --- Handlers ---
+
+  const handleCreateVisit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!visitTitle.trim()) { setVisitError("Введите название визита"); return; }
+    if (!visitDate) { setVisitError("Выберите дату"); return; }
+    setSavingVisit(true);
+    setVisitError("");
+    try {
+      await createVisit({
+        project_id: projectId,
+        title: visitTitle.trim(),
+        date: visitDate,
+        note: visitNote.trim() || undefined,
+      });
+      refetchVisits();
+      refetchProject();
+      setShowCreateVisit(false);
+      setVisitTitle(""); setVisitDate(""); setVisitNote("");
+    } catch (err: any) {
+      setVisitError(err.message || "Ошибка создания визита");
+    } finally {
+      setSavingVisit(false);
+    }
+  };
+
+  const handleInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inviteEmail.trim()) { setInviteError("Введите email"); return; }
+    setSavingInvite(true);
+    setInviteError("");
+    setInviteSuccess("");
+    try {
+      await inviteProjectMember({
+        project_id: projectId,
+        email: inviteEmail.trim(),
+        role: inviteRole,
+        access_level: inviteRole === "client" ? "view" : "view_comment",
+      });
+      setInviteSuccess("Участник добавлен!");
+      setInviteEmail("");
+      setTimeout(() => { setShowInvite(false); setInviteSuccess(""); }, 1500);
+    } catch (err: any) {
+      setInviteError(err.message || "Ошибка приглашения");
+    } finally {
+      setSavingInvite(false);
+    }
+  };
+
+  const handleCreateInvoice = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!invoiceTitle.trim()) { setInvoiceError("Введите название счёта"); return; }
+    if (!invoiceAmount || Number(invoiceAmount) <= 0) { setInvoiceError("Введите сумму"); return; }
+    setSavingInvoice(true);
+    setInvoiceError("");
+    setInvoiceSuccess("");
+    try {
+      await createInvoice({
+        project_id: projectId,
+        title: invoiceTitle.trim(),
+        amount: Number(invoiceAmount),
+        due_date: invoiceDueDate || undefined,
+      });
+      setInvoiceSuccess("Счёт создан!");
+      setInvoiceTitle(""); setInvoiceAmount(""); setInvoiceDueDate("");
+      setTimeout(() => { setShowCreateInvoice(false); setInvoiceSuccess(""); }, 1500);
+    } catch (err: any) {
+      setInvoiceError(err.message || "Ошибка создания счёта");
+    } finally {
+      setSavingInvoice(false);
+    }
+  };
 
   return (
     <div className="animate-fade-in">
@@ -40,8 +138,8 @@ export default function ProjectPage({ projectId, onNavigate }: ProjectPageProps)
             <button className="btn btn-secondary" onClick={() => setShowInvite(true)}>
               <Icons.Send /> Пригласить
             </button>
-            <button className="btn btn-secondary">
-              <Icons.Download /> PDF отчёт
+            <button className="btn btn-secondary" onClick={() => setShowCreateInvoice(true)}>
+              <Icons.Download /> Новый счёт
             </button>
           </div>
         </div>
@@ -76,25 +174,21 @@ export default function ProjectPage({ projectId, onNavigate }: ProjectPageProps)
       {/* Visits header */}
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-base font-semibold">Визиты</h2>
-        <button className="btn btn-primary">
+        <button className="btn btn-primary" onClick={() => setShowCreateVisit(true)}>
           <Icons.Plus /> Новый визит
         </button>
       </div>
 
       {/* Timeline */}
       <div className="relative">
-        {/* Timeline line */}
         <div className="absolute left-[19px] top-6 bottom-6 w-0.5 bg-[#F0EEE9]" />
-
         {projectVisits.map((visit) => (
           <div
             key={visit.id}
             className="relative ml-12 mb-4 bg-white border border-[#E8E6E1] rounded-xl px-5 py-[18px] cursor-pointer transition-all duration-200 hover:border-[#D5D3CE] hover:shadow-sm"
             onClick={() => onNavigate("visit", { projectId: project.id, visitId: visit.id })}
           >
-            {/* Dot */}
             <div className="absolute -left-9 top-5 w-2.5 h-2.5 rounded-full bg-[#2C5F2D] border-2 border-[#F7F6F3] shadow-[0_0_0_2px_#E8F0E8]" />
-
             <div className="flex justify-between items-center mb-2">
               <span className="text-[13px] font-semibold font-mono-custom">{formatDate(visit.date)}</span>
               <div className="flex gap-3">
@@ -115,7 +209,6 @@ export default function ProjectPage({ projectId, onNavigate }: ProjectPageProps)
             {visit.note && (
               <div className="text-[13px] text-[#9B9B9B] mt-1">{visit.note}</div>
             )}
-
             <div className="flex gap-1.5 mt-2.5">
               {visit.issue_count > 0 && visit.issue_count > visit.resolved_count && (
                 <span className="badge bg-[#FEF0EC] text-[#E85D3A]">
@@ -137,30 +230,161 @@ export default function ProjectPage({ projectId, onNavigate }: ProjectPageProps)
         ))}
       </div>
 
-      {/* Invite modal */}
+      {/* ===== Create Visit Modal ===== */}
+      {showCreateVisit && (
+        <div className="modal-overlay" onClick={() => setShowCreateVisit(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-lg font-semibold mb-5">Новый визит</h2>
+            {visitError && (
+              <div className="bg-[#FEF0EC] border border-[#E85D3A]/20 text-[#E85D3A] text-[13px] px-4 py-2.5 rounded-lg mb-4">
+                {visitError}
+              </div>
+            )}
+            <form onSubmit={handleCreateVisit}>
+              <div className="modal-field mb-4">
+                <label>Название визита *</label>
+                <input
+                  type="text"
+                  value={visitTitle}
+                  onChange={(e) => setVisitTitle(e.target.value)}
+                  placeholder="Проверка штукатурки..."
+                  autoFocus
+                />
+              </div>
+              <div className="modal-field mb-4">
+                <label>Дата *</label>
+                <input
+                  type="date"
+                  value={visitDate}
+                  onChange={(e) => setVisitDate(e.target.value)}
+                />
+              </div>
+              <div className="modal-field mb-4">
+                <label>Заметка</label>
+                <textarea
+                  value={visitNote}
+                  onChange={(e) => setVisitNote(e.target.value)}
+                  placeholder="Дополнительная информация..."
+                  className="resize-y min-h-[60px]"
+                />
+              </div>
+              <div className="flex gap-2 justify-end mt-6">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowCreateVisit(false)}>
+                  Отмена
+                </button>
+                <button type="submit" className="btn btn-primary" disabled={savingVisit}>
+                  {savingVisit ? "Создание..." : "Запланировать"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ===== Invite Modal ===== */}
       {showInvite && (
-        <div className="modal-overlay" onClick={() => setShowInvite(false)}>
+        <div className="modal-overlay" onClick={() => { setShowInvite(false); setInviteError(""); setInviteSuccess(""); }}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-lg font-semibold mb-5">Пригласить участника</h2>
-            <div className="modal-field mb-4">
-              <label>Email</label>
-              <input type="email" placeholder="client@email.com" />
-            </div>
-            <div className="modal-field mb-4">
-              <label>Роль</label>
-              <select>
-                <option>Заказчик (только просмотр)</option>
-                <option>Подрядчик</option>
-              </select>
-            </div>
-            <div className="flex gap-2 justify-end mt-6">
-              <button className="btn btn-secondary" onClick={() => setShowInvite(false)}>
-                Отмена
-              </button>
-              <button className="btn btn-primary">
-                <Icons.Send /> Отправить
-              </button>
-            </div>
+            {inviteError && (
+              <div className="bg-[#FEF0EC] border border-[#E85D3A]/20 text-[#E85D3A] text-[13px] px-4 py-2.5 rounded-lg mb-4">
+                {inviteError}
+              </div>
+            )}
+            {inviteSuccess && (
+              <div className="bg-[#EAFAF1] border border-[#2A9D5C]/20 text-[#2A9D5C] text-[13px] px-4 py-2.5 rounded-lg mb-4">
+                {inviteSuccess}
+              </div>
+            )}
+            <form onSubmit={handleInvite}>
+              <div className="modal-field mb-4">
+                <label>Email</label>
+                <input
+                  type="email"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  placeholder="client@email.com"
+                  autoFocus
+                />
+              </div>
+              <div className="modal-field mb-4">
+                <label>Роль</label>
+                <select value={inviteRole} onChange={(e) => setInviteRole(e.target.value as UserRole)}>
+                  <option value="client">Заказчик (только просмотр)</option>
+                  <option value="contractor">Подрядчик</option>
+                  <option value="supplier">Комплектатор</option>
+                  <option value="assistant">Ассистент</option>
+                </select>
+              </div>
+              <div className="flex gap-2 justify-end mt-6">
+                <button type="button" className="btn btn-secondary" onClick={() => { setShowInvite(false); setInviteError(""); setInviteSuccess(""); }}>
+                  Отмена
+                </button>
+                <button type="submit" className="btn btn-primary" disabled={savingInvite}>
+                  <Icons.Send /> {savingInvite ? "Отправка..." : "Отправить"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ===== Create Invoice Modal ===== */}
+      {showCreateInvoice && (
+        <div className="modal-overlay" onClick={() => { setShowCreateInvoice(false); setInvoiceError(""); setInvoiceSuccess(""); }}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-lg font-semibold mb-5">Новый счёт</h2>
+            {invoiceError && (
+              <div className="bg-[#FEF0EC] border border-[#E85D3A]/20 text-[#E85D3A] text-[13px] px-4 py-2.5 rounded-lg mb-4">
+                {invoiceError}
+              </div>
+            )}
+            {invoiceSuccess && (
+              <div className="bg-[#EAFAF1] border border-[#2A9D5C]/20 text-[#2A9D5C] text-[13px] px-4 py-2.5 rounded-lg mb-4">
+                {invoiceSuccess}
+              </div>
+            )}
+            <form onSubmit={handleCreateInvoice}>
+              <div className="modal-field mb-4">
+                <label>Название *</label>
+                <input
+                  type="text"
+                  value={invoiceTitle}
+                  onChange={(e) => setInvoiceTitle(e.target.value)}
+                  placeholder="Авторский надзор — март 2026"
+                  autoFocus
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <div className="modal-field">
+                  <label>Сумма *</label>
+                  <input
+                    type="number"
+                    value={invoiceAmount}
+                    onChange={(e) => setInvoiceAmount(e.target.value)}
+                    placeholder="45000"
+                    min="0"
+                    step="100"
+                  />
+                </div>
+                <div className="modal-field">
+                  <label>Дата оплаты</label>
+                  <input
+                    type="date"
+                    value={invoiceDueDate}
+                    onChange={(e) => setInvoiceDueDate(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2 justify-end mt-6">
+                <button type="button" className="btn btn-secondary" onClick={() => { setShowCreateInvoice(false); setInvoiceError(""); setInvoiceSuccess(""); }}>
+                  Отмена
+                </button>
+                <button type="submit" className="btn btn-primary" disabled={savingInvoice}>
+                  {savingInvoice ? "Создание..." : "Выставить счёт"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

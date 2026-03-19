@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Icons } from "./Icons";
 import Loading, { ErrorMessage } from "./Loading";
 import { useVisit, useVisitPhotos, useProject } from "../lib/hooks";
-import { formatDate } from "../lib/queries";
+import { formatDate, uploadPhoto, createPhotoRecord, updatePhotoStatus } from "../lib/queries";
 import { PHOTO_STATUS_CONFIG } from "../lib/types";
 import type { PhotoStatus } from "../lib/types";
 
@@ -14,12 +14,32 @@ interface VisitPageProps {
   onNavigate: (page: string, ctx?: any) => void;
 }
 
+const ZONES = ["Спальня", "Гостиная", "Кухня", "Ванная", "Детская", "Прихожая", "Коридор", "Балкон"];
+
+const STATUS_OPTIONS: { value: PhotoStatus; label: string }[] = [
+  { value: "approved", label: "Принято" },
+  { value: "issue", label: "Замечание" },
+  { value: "in_progress", label: "В работе" },
+  { value: "new", label: "Новое" },
+];
+
 export default function VisitPage({ projectId, visitId, onNavigate }: VisitPageProps) {
   const { data: project, loading: loadingProject } = useProject(projectId);
-  const { data: visit, loading: loadingVisit, error: errorVisit } = useVisit(visitId);
-  const { data: photos, loading: loadingPhotos } = useVisitPhotos(visitId);
+  const { data: visit, loading: loadingVisit, error: errorVisit, refetch: refetchVisit } = useVisit(visitId);
+  const { data: photos, loading: loadingPhotos, refetch: refetchPhotos } = useVisitPhotos(visitId);
   const [photoFilter, setPhotoFilter] = useState("all");
+
+  // Upload modal state
   const [showUpload, setShowUpload] = useState(false);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoZone, setPhotoZone] = useState("Спальня");
+  const [photoComment, setPhotoComment] = useState("");
+  const [photoStatus, setPhotoStatus] = useState<PhotoStatus>("approved");
+  const [savingPhoto, setSavingPhoto] = useState(false);
+  const [photoError, setPhotoError] = useState("");
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (loadingProject || loadingVisit || loadingPhotos) return <Loading />;
   if (errorVisit) return <ErrorMessage message={errorVisit} />;
@@ -27,6 +47,94 @@ export default function VisitPage({ projectId, visitId, onNavigate }: VisitPageP
 
   const allPhotos = photos || [];
   const filteredPhotos = photoFilter === "all" ? allPhotos : allPhotos.filter((p) => p.status === photoFilter);
+
+  // --- File handling ---
+
+  const handleFileSelect = (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      setPhotoError("Выберите изображение (JPG, PNG)");
+      return;
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      setPhotoError("Файл слишком большой (макс. 20 МБ)");
+      return;
+    }
+    setPhotoFile(file);
+    setPhotoPreview(URL.createObjectURL(file));
+    setPhotoError("");
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleFileSelect(file);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) handleFileSelect(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  // --- Submit photo ---
+
+  const handleSavePhoto = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!photoFile) { setPhotoError("Выберите фото"); return; }
+    setSavingPhoto(true);
+    setPhotoError("");
+    try {
+      // Upload file to Supabase Storage
+      const photoUrl = await uploadPhoto(photoFile, projectId, visitId);
+      // Create record in DB
+      await createPhotoRecord({
+        visit_id: visitId,
+        comment: photoComment.trim() || undefined,
+        status: photoStatus,
+        zone: photoZone,
+        photo_url: photoUrl,
+      });
+      refetchPhotos();
+      refetchVisit();
+      closeUploadModal();
+    } catch (err: any) {
+      setPhotoError(err.message || "Ошибка загрузки фото");
+    } finally {
+      setSavingPhoto(false);
+    }
+  };
+
+  const closeUploadModal = () => {
+    setShowUpload(false);
+    setPhotoFile(null);
+    if (photoPreview) URL.revokeObjectURL(photoPreview);
+    setPhotoPreview(null);
+    setPhotoComment("");
+    setPhotoZone("Спальня");
+    setPhotoStatus("approved");
+    setPhotoError("");
+  };
+
+  // --- Inline status change ---
+
+  const handleStatusChange = async (photoId: string, newStatus: PhotoStatus) => {
+    try {
+      await updatePhotoStatus(photoId, newStatus);
+      refetchPhotos();
+      refetchVisit();
+    } catch (err) {
+      // silently fail — user sees old status
+    }
+  };
 
   return (
     <div className="animate-fade-in">
@@ -99,8 +207,16 @@ export default function VisitPage({ projectId, visitId, onNavigate }: VisitPageP
               key={photo.id}
               className="bg-white border border-[#E8E6E1] rounded-xl overflow-hidden transition-all duration-200 hover:shadow-md"
             >
-              <div className="w-full h-[180px] flex items-center justify-center text-[#9B9B9B] relative bg-gradient-to-br from-[#E8E6E1] to-[#D5D3CE]">
-                <Icons.ImageIcon />
+              <div className="w-full h-[180px] flex items-center justify-center text-[#9B9B9B] relative bg-gradient-to-br from-[#E8E6E1] to-[#D5D3CE] overflow-hidden">
+                {photo.photo_url ? (
+                  <img
+                    src={photo.photo_url}
+                    alt={photo.comment || 'Фото'}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <Icons.ImageIcon />
+                )}
                 <div className="absolute top-2.5 left-2.5 text-[11px] font-medium px-2 py-0.5 rounded-md bg-white/90 text-[#6B6B6B] backdrop-blur-sm">
                   {photo.zone || 'Без зоны'}
                 </div>
@@ -109,65 +225,118 @@ export default function VisitPage({ projectId, visitId, onNavigate }: VisitPageP
                 <div className="text-[13px] text-[#1A1A1A] leading-relaxed mb-2.5">
                   {photo.comment || 'Без комментария'}
                 </div>
-                <span
-                  className={`inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-full ${status.bg} ${status.color}`}
+                <select
+                  value={photo.status}
+                  onChange={(e) => handleStatusChange(photo.id, e.target.value as PhotoStatus)}
+                  className={`inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-full border-none cursor-pointer appearance-none ${status.bg} ${status.color}`}
+                  style={{ paddingRight: '20px', backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27currentColor%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 4px center', backgroundSize: '12px' }}
                 >
-                  {photo.status === "approved" && <Icons.Check />}
-                  {photo.status === "issue" && <Icons.Alert />}
-                  {status.label}
-                </span>
+                  {Object.entries(PHOTO_STATUS_CONFIG).map(([key, cfg]) => (
+                    <option key={key} value={key}>{cfg.label}</option>
+                  ))}
+                </select>
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* Upload modal */}
+      {filteredPhotos.length === 0 && (
+        <div className="text-center py-12 text-[#9B9B9B] text-sm">
+          {photoFilter === "all" ? "Нет фото в этом визите" : "Нет фото с таким статусом"}
+        </div>
+      )}
+
+      {/* ===== Upload Photo Modal ===== */}
       {showUpload && (
-        <div className="modal-overlay" onClick={() => setShowUpload(false)}>
+        <div className="modal-overlay" onClick={closeUploadModal}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-lg font-semibold mb-5">Добавить фото</h2>
-            <div className="border-2 border-dashed border-[#E8E6E1] rounded-xl p-8 text-center cursor-pointer transition-all duration-200 bg-[#FAFAF8] hover:border-[#2C5F2D] hover:bg-[#E8F0E8]">
-              <div className="text-[#9B9B9B] mb-2">
-                <Icons.Camera className="w-6 h-6 mx-auto" />
+            {photoError && (
+              <div className="bg-[#FEF0EC] border border-[#E85D3A]/20 text-[#E85D3A] text-[13px] px-4 py-2.5 rounded-lg mb-4">
+                {photoError}
               </div>
-              <div className="text-[13px] text-[#6B6B6B]">
-                Перетащите фото или нажмите для выбора
+            )}
+            <form onSubmit={handleSavePhoto}>
+              {/* Drop zone */}
+              <div
+                className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-200 ${
+                  isDragging
+                    ? "border-[#2C5F2D] bg-[#E8F0E8]"
+                    : photoPreview
+                    ? "border-[#2C5F2D] bg-[#FAFAF8]"
+                    : "border-[#E8E6E1] bg-[#FAFAF8] hover:border-[#2C5F2D] hover:bg-[#E8F0E8]"
+                }`}
+                onClick={() => fileInputRef.current?.click()}
+                onDrop={handleDrop}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleInputChange}
+                />
+                {photoPreview ? (
+                  <div>
+                    <img
+                      src={photoPreview}
+                      alt="Preview"
+                      className="max-h-[200px] mx-auto rounded-lg mb-2"
+                    />
+                    <div className="text-[12px] text-[#6B6B6B]">
+                      {photoFile?.name} ({((photoFile?.size || 0) / 1024 / 1024).toFixed(1)} МБ)
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-[#9B9B9B] mb-2">
+                      <Icons.Camera className="w-6 h-6 mx-auto" />
+                    </div>
+                    <div className="text-[13px] text-[#6B6B6B]">
+                      Перетащите фото или нажмите для выбора
+                    </div>
+                    <div className="text-[11px] text-[#9B9B9B] mt-1">JPG, PNG до 20 МБ</div>
+                  </>
+                )}
               </div>
-              <div className="text-[11px] text-[#9B9B9B] mt-1">JPG, PNG до 20 МБ</div>
-            </div>
-            <div className="modal-field mt-4 mb-4">
-              <label>Зона</label>
-              <select>
-                <option>Спальня</option>
-                <option>Гостиная</option>
-                <option>Кухня</option>
-                <option>Ванная</option>
-                <option>Детская</option>
-                <option>Прихожая</option>
-              </select>
-            </div>
-            <div className="modal-field mb-4">
-              <label>Комментарий</label>
-              <textarea
-                placeholder="Опишите что на фото и какое решение принято..."
-                className="resize-y min-h-[80px]"
-              />
-            </div>
-            <div className="modal-field mb-4">
-              <label>Статус</label>
-              <select>
-                <option>Принято</option>
-                <option>Замечание</option>
-                <option>В работе</option>
-              </select>
-            </div>
-            <div className="flex gap-2 justify-end mt-6">
-              <button className="btn btn-secondary" onClick={() => setShowUpload(false)}>
-                Отмена
-              </button>
-              <button className="btn btn-primary">Сохранить</button>
-            </div>
+
+              <div className="modal-field mt-4 mb-4">
+                <label>Зона</label>
+                <select value={photoZone} onChange={(e) => setPhotoZone(e.target.value)}>
+                  {ZONES.map((z) => (
+                    <option key={z} value={z}>{z}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="modal-field mb-4">
+                <label>Комментарий</label>
+                <textarea
+                  value={photoComment}
+                  onChange={(e) => setPhotoComment(e.target.value)}
+                  placeholder="Опишите что на фото и какое решение принято..."
+                  className="resize-y min-h-[80px]"
+                />
+              </div>
+              <div className="modal-field mb-4">
+                <label>Статус</label>
+                <select value={photoStatus} onChange={(e) => setPhotoStatus(e.target.value as PhotoStatus)}>
+                  {STATUS_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex gap-2 justify-end mt-6">
+                <button type="button" className="btn btn-secondary" onClick={closeUploadModal}>
+                  Отмена
+                </button>
+                <button type="submit" className="btn btn-primary" disabled={savingPhoto}>
+                  {savingPhoto ? "Загрузка..." : "Сохранить"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
