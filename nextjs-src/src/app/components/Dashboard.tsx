@@ -2,7 +2,8 @@
 
 import { Icons } from "./Icons";
 import ProjectCard from "./ProjectCard";
-import { PROJECTS } from "./data";
+import Loading, { ErrorMessage } from "./Loading";
+import { useProjects } from "../lib/hooks";
 
 interface DashboardProps {
   onNavigate: (page: string, ctx?: any) => void;
@@ -17,15 +18,26 @@ const activityItems = [
 ];
 
 export default function Dashboard({ onNavigate }: DashboardProps) {
+  const { data: projects, loading, error } = useProjects();
+
+  if (loading) return <Loading />;
+  if (error) return <ErrorMessage message={error} />;
+  if (!projects) return null;
+
+  const activeProjects = projects.filter(p => p.status === "active");
+  const totalVisits = projects.reduce((sum, p) => sum + p.visit_count, 0);
+  const totalPhotos = projects.reduce((sum, p) => sum + p.photo_count, 0);
+  const openIssues = projects.reduce((sum, p) => sum + p.open_issues, 0);
+
   return (
     <div className="animate-fade-in">
       {/* Stats */}
       <div className="grid grid-cols-4 gap-3 mb-6 max-lg:grid-cols-2 max-sm:grid-cols-1">
         {[
-          { label: "Активных проектов", value: "3", change: "+1 за месяц", up: true },
-          { label: "Визитов за месяц", value: "14", change: "+23% к пред.", up: true },
-          { label: "Открытых замечаний", value: "5", change: "2 просрочены", up: false, danger: true },
-          { label: "Фото загружено", value: "189", change: "+34 за месяц", up: true },
+          { label: "Активных проектов", value: String(activeProjects.length), change: `из ${projects.length} всего`, up: true },
+          { label: "Всего визитов", value: String(totalVisits), change: "по всем проектам", up: true },
+          { label: "Открытых замечаний", value: String(openIssues), change: openIssues > 0 ? "требуют внимания" : "всё ОК", up: false, danger: openIssues > 0 },
+          { label: "Фото загружено", value: String(totalPhotos), change: "по всем проектам", up: true },
         ].map((stat, i) => (
           <div key={i} className="bg-white border border-[#E8E6E1] rounded-xl p-4">
             <div className="text-xs text-[#9B9B9B] mb-1.5">{stat.label}</div>
@@ -72,7 +84,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
         </button>
       </div>
       <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4 max-sm:grid-cols-1">
-        {PROJECTS.filter((p) => p.status === "active").map((project) => (
+        {activeProjects.map((project) => (
           <ProjectCard
             key={project.id}
             project={project}

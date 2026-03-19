@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import ProjectCard from "./ProjectCard";
-import { PROJECTS } from "./data";
+import Loading, { ErrorMessage } from "./Loading";
+import { useProjects } from "../lib/hooks";
 
 interface ProjectsPageProps {
   onNavigate: (page: string, ctx?: any) => void;
@@ -10,7 +11,13 @@ interface ProjectsPageProps {
 
 export default function ProjectsPage({ onNavigate }: ProjectsPageProps) {
   const [filter, setFilter] = useState("all");
-  const filtered = filter === "all" ? PROJECTS : PROJECTS.filter((p) => p.status === filter);
+  const { data: projects, loading, error } = useProjects();
+
+  if (loading) return <Loading />;
+  if (error) return <ErrorMessage message={error} />;
+  if (!projects) return null;
+
+  const filtered = filter === "all" ? projects : projects.filter((p) => p.status === filter);
 
   return (
     <div className="animate-fade-in">

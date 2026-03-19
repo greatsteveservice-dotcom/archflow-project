@@ -8,11 +8,12 @@ import ProjectPage from "./components/ProjectPage";
 import VisitPage from "./components/VisitPage";
 import { NotificationsPage, SettingsPage } from "./components/SettingsNotifications";
 import { Icons } from "./components/Icons";
-import { PROJECTS, VISITS } from "./components/data";
+import { useProjects } from "./lib/hooks";
 
 export default function Home() {
   const [page, setPage] = useState("dashboard");
   const [context, setContext] = useState<any>(null);
+  const { data: projects } = useProjects();
 
   const navigate = (newPage: string, ctx: any = null) => {
     setPage(newPage);
@@ -26,7 +27,7 @@ export default function Home() {
       case "projects":
         return "Проекты";
       case "project": {
-        const p = PROJECTS.find((pr) => pr.id === context);
+        const p = projects?.find((pr) => pr.id === context);
         return p ? p.title : "Проект";
       }
       case "visit":
@@ -56,8 +57,7 @@ export default function Home() {
       );
     }
     if (page === "visit") {
-      const project = PROJECTS.find((p) => p.id === context?.projectId);
-      const visit = VISITS.find((v) => v.id === context?.visitId);
+      const project = projects?.find((p) => p.id === context?.projectId);
       return (
         <div className="flex items-center gap-1.5 text-[13px] text-[#6B6B6B]">
           <span
@@ -74,9 +74,7 @@ export default function Home() {
             {project?.title}
           </span>
           <Icons.ChevronRight />
-          <span>
-            {visit?.date} — {visit?.note}
-          </span>
+          <span>Визит</span>
         </div>
       );
     }

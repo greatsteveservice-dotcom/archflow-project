@@ -2,17 +2,25 @@
 
 import { useState } from "react";
 import { Icons } from "./Icons";
-import { PROJECTS, VISITS } from "./data";
+import Loading, { ErrorMessage } from "./Loading";
+import { useProject, useProjectVisits } from "../lib/hooks";
+import { formatDate } from "../lib/queries";
 
 interface ProjectPageProps {
-  projectId: number;
+  projectId: string;
   onNavigate: (page: string, ctx?: any) => void;
 }
 
 export default function ProjectPage({ projectId, onNavigate }: ProjectPageProps) {
-  const project = PROJECTS.find((p) => p.id === projectId) || PROJECTS[0];
-  const projectVisits = VISITS.filter((v) => v.projectId === project.id);
+  const { data: project, loading: loadingProject, error: errorProject } = useProject(projectId);
+  const { data: visits, loading: loadingVisits } = useProjectVisits(projectId);
   const [showInvite, setShowInvite] = useState(false);
+
+  if (loadingProject || loadingVisits) return <Loading />;
+  if (errorProject) return <ErrorMessage message={errorProject} />;
+  if (!project) return <ErrorMessage message="Проект не найден" />;
+
+  const projectVisits = visits || [];
 
   return (
     <div className="animate-fade-in">
@@ -22,10 +30,10 @@ export default function ProjectPage({ projectId, onNavigate }: ProjectPageProps)
           <div>
             <h2 className="text-xl font-semibold mb-1.5">{project.title}</h2>
             <div className="flex items-center gap-1.5 text-[13px] text-[#9B9B9B]">
-              <Icons.Map /> {project.address}
+              <Icons.Map /> {project.address || '—'}
             </div>
             <div className="flex items-center gap-1.5 text-[13px] text-[#6B6B6B] mt-1.5">
-              <Icons.Users /> Заказчик: {project.client}
+              <Icons.Users /> Заказчик: {project.owner?.full_name || '—'}
             </div>
           </div>
           <div className="flex gap-2">
@@ -40,15 +48,15 @@ export default function ProjectPage({ projectId, onNavigate }: ProjectPageProps)
 
         <div className="flex gap-6 mt-5 pt-4 border-t border-[#F0EEE9] items-center">
           <div>
-            <div className="text-lg font-semibold font-mono-custom">{project.visits}</div>
+            <div className="text-lg font-semibold font-mono-custom">{project.visit_count}</div>
             <div className="text-[11px] text-[#9B9B9B]">визитов</div>
           </div>
           <div>
-            <div className="text-lg font-semibold font-mono-custom">{project.photos}</div>
+            <div className="text-lg font-semibold font-mono-custom">{project.photo_count}</div>
             <div className="text-[11px] text-[#9B9B9B]">фото</div>
           </div>
           <div>
-            <div className="text-lg font-semibold font-mono-custom text-[#E85D3A]">2</div>
+            <div className="text-lg font-semibold font-mono-custom text-[#E85D3A]">{project.open_issues}</div>
             <div className="text-[11px] text-[#9B9B9B]">замечаний</div>
           </div>
           <div className="flex-1" />
@@ -88,32 +96,40 @@ export default function ProjectPage({ projectId, onNavigate }: ProjectPageProps)
             <div className="absolute -left-9 top-5 w-2.5 h-2.5 rounded-full bg-[#2C5F2D] border-2 border-[#F7F6F3] shadow-[0_0_0_2px_#E8F0E8]" />
 
             <div className="flex justify-between items-center mb-2">
-              <span className="text-[13px] font-semibold font-mono-custom">{visit.date}</span>
+              <span className="text-[13px] font-semibold font-mono-custom">{formatDate(visit.date)}</span>
               <div className="flex gap-3">
                 <span className="flex items-center gap-1 text-xs text-[#6B6B6B]">
-                  <Icons.Camera className="w-4 h-4" /> {visit.photos} фото
+                  <Icons.Camera className="w-4 h-4" /> {visit.photo_count} фото
                 </span>
-                {visit.issues > 0 && (
+                {visit.issue_count > 0 && (
                   <span
                     className="flex items-center gap-1 text-xs"
-                    style={{ color: visit.issues > visit.resolved ? "#E85D3A" : "#2A9D5C" }}
+                    style={{ color: visit.issue_count > visit.resolved_count ? "#E85D3A" : "#2A9D5C" }}
                   >
-                    <Icons.Alert /> {visit.resolved}/{visit.issues} исправлено
+                    <Icons.Alert /> {visit.resolved_count}/{visit.issue_count} исправлено
                   </span>
                 )}
               </div>
             </div>
-            <div className="text-sm text-[#6B6B6B] leading-relaxed">{visit.note}</div>
+            <div className="text-sm text-[#6B6B6B] leading-relaxed">{visit.title}</div>
+            {visit.note && (
+              <div className="text-[13px] text-[#9B9B9B] mt-1">{visit.note}</div>
+            )}
 
             <div className="flex gap-1.5 mt-2.5">
-              {visit.issues > 0 && visit.issues > visit.resolved && (
+              {visit.issue_count > 0 && visit.issue_count > visit.resolved_count && (
                 <span className="badge bg-[#FEF0EC] text-[#E85D3A]">
-                  {visit.issues - visit.resolved} открытых замечаний
+                  {visit.issue_count - visit.resolved_count} открытых замечаний
                 </span>
               )}
-              {visit.issues > 0 && visit.resolved === visit.issues && (
+              {visit.issue_count > 0 && visit.resolved_count >= visit.issue_count && (
                 <span className="badge bg-[#EAFAF1] text-[#2A9D5C]">
                   <Icons.Check /> Все исправлено
+                </span>
+              )}
+              {visit.status === 'planned' && (
+                <span className="badge bg-[#F3F4F6] text-[#6B7280]">
+                  Запланирован
                 </span>
               )}
             </div>
