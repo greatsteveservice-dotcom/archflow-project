@@ -237,12 +237,15 @@ export async function fetchVisitPhotos(visitId: string): Promise<PhotoRecord[]> 
 
 // ======================== PROFILES ========================
 
-/** Fetch current user profile (hardcoded as Алиса Флоренс for now) */
+/** Fetch current user profile based on auth session */
 export async function fetchCurrentProfile(): Promise<Profile | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
   const { data, error } = await supabase
     .from('profiles')
     .select('*')
-    .eq('id', '00000000-0000-0000-0000-000000000001')
+    .eq('id', user.id)
     .single();
 
   if (error) return null;

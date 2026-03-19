@@ -7,13 +7,33 @@ import ProjectsPage from "./components/ProjectsPage";
 import ProjectPage from "./components/ProjectPage";
 import VisitPage from "./components/VisitPage";
 import { NotificationsPage, SettingsPage } from "./components/SettingsNotifications";
+import LoginPage from "./components/LoginPage";
 import { Icons } from "./components/Icons";
 import { useProjects } from "./lib/hooks";
+import { useAuth } from "./lib/auth";
 
 export default function Home() {
+  const { session, loading: authLoading } = useAuth();
   const [page, setPage] = useState("dashboard");
   const [context, setContext] = useState<any>(null);
   const { data: projects } = useProjects();
+
+  // Auth loading state
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-[#F7F6F3] flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-[28px] font-bold tracking-[4px] text-[#1A1F1A] mb-3">ЖАН</h1>
+          <div className="inline-block w-6 h-6 border-2 border-[#E8E6E1] border-t-[#2C5F2D] rounded-full animate-spin" />
+        </div>
+      </div>
+    );
+  }
+
+  // Not authenticated — show login
+  if (!session) {
+    return <LoginPage />;
+  }
 
   const navigate = (newPage: string, ctx: any = null) => {
     setPage(newPage);
