@@ -4,81 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Archflow — Architecture Workflow Platform</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>▲</text></svg>">
+<script src="https://cdn.tailwindcss.com"></script>
 <style>
-/* ===== Tailwind Utility Fallback ===== */
-.flex{display:flex}.grid{display:grid}.block{display:block}.inline-flex{display:inline-flex}.hidden{display:none}
-.flex-col{flex-direction:column}.flex-wrap{flex-wrap:wrap}.flex-1{flex:1 1 0%}.flex-shrink-0{flex-shrink:0}
-.items-center{align-items:center}.items-start{align-items:flex-start}.items-end{align-items:flex-end}
-.justify-center{justify-content:center}.justify-between{justify-content:space-between}.justify-end{justify-content:flex-end}
-.gap-0{gap:0}.gap-1{gap:4px}.gap-1\.5{gap:6px}.gap-2{gap:8px}.gap-2\.5{gap:10px}.gap-3{gap:12px}.gap-4{gap:16px}.gap-5{gap:20px}
-.self-center{align-self:center}
-.grid-cols-1{grid-template-columns:repeat(1,minmax(0,1fr))}.grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.grid-cols-4{grid-template-columns:repeat(4,minmax(0,1fr))}
-.grid-cols-\[repeat\(auto-fill\,minmax\(260px\,1fr\)\)\]{grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
-.grid-cols-\[repeat\(auto-fill\,minmax\(280px\,1fr\)\)\]{grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
-.relative{position:relative}.absolute{position:absolute}.fixed{position:fixed}.sticky{position:sticky}
-.top-0{top:0}.right-0{right:0}.bottom-0{bottom:0}.left-0{left:0}.inset-0{inset:0}
-.top-2{top:8px}.left-2{left:8px}.right-2{right:8px}.top-4{top:16px}.bottom-4{bottom:16px}.bottom-6{bottom:24px}.right-6{right:24px}
-.top-1\.5{top:6px}.right-1\.5{right:6px}.top-\[18px\]{top:18px}.-left-\[26px\]{left:-26px}
-.-translate-y-1\/2{transform:translateY(-50%)}
-.z-5{z-index:5}.z-10{z-index:10}.z-\[100\]{z-index:100}.z-\[101\]{z-index:101}.z-\[200\]{z-index:200}
-.w-full{width:100%}.w-fit{width:fit-content}
-.w-0\.5{width:2px}.w-1{width:4px}.w-2{width:8px}.w-2\.5{width:10px}.w-3{width:12px}.w-3\.5{width:14px}.w-4{width:16px}.w-5{width:20px}.w-6{width:24px}.w-7{width:28px}.w-8{width:32px}.w-9{width:36px}.w-10{width:40px}.w-12{width:48px}.w-16{width:64px}
-.w-\[180px\]{width:180px}.w-\[200px\]{width:200px}.w-\[240px\]{width:240px}
-.h-0\.5{height:2px}.h-1{height:4px}.h-2{height:8px}.h-2\.5{height:10px}.h-3{height:12px}.h-3\.5{height:14px}.h-4{height:16px}.h-5{height:20px}.h-6{height:24px}.h-7{height:28px}.h-8{height:32px}.h-9{height:36px}.h-10{height:40px}.h-12{height:48px}.h-16{height:64px}
-.h-\[160px\]{height:160px}.h-\[18px\]{height:18px}.h-\[20px\]{height:20px}
-.min-h-screen{min-height:100vh}.min-w-0{min-width:0}.min-w-\[120px\]{min-width:120px}.min-w-\[20px\]{min-width:20px}.min-w-\[22px\]{min-width:22px}
-.max-w-\[220px\]{max-width:220px}.max-w-\[240px\]{max-width:240px}.max-w-\[500px\]{max-width:500px}.max-w-\[95vw\]{max-width:95vw}
-.aspect-\[4\/3\]{aspect-ratio:4/3}
-.overflow-hidden{overflow:hidden}.overflow-x-auto{overflow-x:auto}.overflow-x-hidden{overflow-x:hidden}.overflow-y-auto{overflow-y:auto}
-.p-1{padding:4px}.p-2{padding:8px}.p-3{padding:12px}.p-3\.5{padding:14px}.p-4{padding:16px}.p-5{padding:20px}.p-6{padding:24px}.p-7{padding:28px}.p-8{padding:32px}.p-12{padding:48px}
-.px-1{padding-left:4px;padding-right:4px}.px-1\.5{padding-left:6px;padding-right:6px}.px-2{padding-left:8px;padding-right:8px}.px-2\.5{padding-left:10px;padding-right:10px}.px-3{padding-left:12px;padding-right:12px}.px-3\.5{padding-left:14px;padding-right:14px}.px-4{padding-left:16px;padding-right:16px}.px-5{padding-left:20px;padding-right:20px}.px-7{padding-left:28px;padding-right:28px}.px-9{padding-left:36px;padding-right:36px}
-.py-1{padding-top:4px;padding-bottom:4px}.py-1\.5{padding-top:6px;padding-bottom:6px}.py-2{padding-top:8px;padding-bottom:8px}.py-2\.5{padding-top:10px;padding-bottom:10px}.py-3{padding-top:12px;padding-bottom:12px}.py-4{padding-top:16px;padding-bottom:16px}
-.pt-3{padding-top:12px}.pt-5{padding-top:20px}.pb-4{padding-bottom:16px}.pl-9{padding-left:36px}
-.m-0{margin:0}.mb-1{margin-bottom:4px}.mb-1\.5{margin-bottom:6px}.mb-2{margin-bottom:8px}.mb-3{margin-bottom:12px}.mb-4{margin-bottom:16px}.mb-5{margin-bottom:20px}.mb-6{margin-bottom:24px}.mb-8{margin-bottom:32px}.ml-1{margin-left:4px}.ml-2{margin-left:8px}.ml-3{margin-left:12px}.ml-10{margin-left:40px}.mt-0\.5{margin-top:2px}.mt-1{margin-top:4px}.mt-3{margin-top:12px}.mt-4{margin-top:16px}.mt-5{margin-top:20px}
-.space-y-2>*+*{margin-top:8px}.space-y-3>*+*{margin-top:12px}.space-y-4>*+*{margin-top:16px}
-.rounded-sm{border-radius:2px}.rounded{border-radius:4px}.rounded-md{border-radius:6px}.rounded-lg{border-radius:8px}.rounded-xl{border-radius:12px}.rounded-2xl{border-radius:16px}.rounded-full{border-radius:9999px}.rounded-t-xl{border-radius:12px 12px 0 0}
-.border{border:1px solid #E5E7EB}.border-2{border-width:2px}.border-b{border-bottom:1px solid #E5E7EB}.border-t{border-top:1px solid #E5E7EB}.border-l{border-left:1px solid #E5E7EB}.border-r{border-right:1px solid #E5E7EB}.border-l-4{border-left:4px solid}.border-none{border:none}.border-dashed{border-style:dashed}
-.border-\[#E5E7EB\]{border-color:#E5E7EB}.border-\[#F3F4F6\]{border-color:#F3F4F6}.border-\[#F9FAFB\]{border-color:#F9FAFB}.border-\[#BFDBFE\]{border-color:#BFDBFE}.border-\[3px\]{border-width:3px}
-.border-l-\[#2563EB\]{border-left-color:#2563EB}.border-l-\[#DC2626\]{border-left-color:#DC2626}
-.border-white\/\[\.08\]{border-color:rgba(255,255,255,.08)}
-.bg-white{background:#fff}.bg-transparent{background:transparent}
-.bg-\[#111827\]{background:#111827}.bg-\[#DC4A2A\]{background:#DC4A2A}.bg-\[#E5E7EB\]{background:#E5E7EB}.bg-\[#ECFDF3\]{background:#ECFDF3}.bg-\[#EFF6FF\]{background:#EFF6FF}.bg-\[#F3F4F6\]{background:#F3F4F6}.bg-\[#F9FAFB\]{background:#F9FAFB}
-.bg-white\/10{background:rgba(255,255,255,.1)}.bg-white\/85{background:rgba(255,255,255,.85)}
-.bg-red-50{background:#FEF2F2}.bg-red-500{background:#EF4444}
-.bg-gradient-to-br{background:linear-gradient(to bottom right,var(--tw-gradient-from),var(--tw-gradient-to))}
-.from-\[#F3F4F6\]{--tw-gradient-from:#F3F4F6;--tw-gradient-to:#E5E7EB}
-.to-\[#E5E7EB\]{--tw-gradient-to:#E5E7EB}
-.text-white{color:#fff}.text-red-500{color:#EF4444}.text-red-600{color:#DC2626}.text-emerald-400{color:#34D399}.text-emerald-600{color:#059669}
-.text-\[#111827\]{color:#111827}.text-\[#16A34A\]{color:#16A34A}.text-\[#1F2937\]{color:#1F2937}.text-\[#2563EB\]{color:#2563EB}.text-\[#374151\]{color:#374151}.text-\[#6B7280\]{color:#6B7280}.text-\[#9CA3AF\]{color:#9CA3AF}.text-\[#D1D5DB\]{color:#D1D5DB}.text-\[#D97706\]{color:#D97706}.text-\[#DC2626\]{color:#DC2626}.text-\[#DC4A2A\]{color:#DC4A2A}.text-\[#EA580C\]{color:#EA580C}
-.text-white\/25{color:rgba(255,255,255,.25)}.text-white\/35{color:rgba(255,255,255,.35)}.text-white\/40{color:rgba(255,255,255,.4)}.text-white\/5{color:rgba(255,255,255,.5)}.text-white\/70{color:rgba(255,255,255,.7)}.text-white\/8{color:rgba(255,255,255,.8)}
-.text-\[10px\]{font-size:10px}.text-\[11px\]{font-size:11px}.text-\[12px\]{font-size:12px}.text-\[13px\]{font-size:13px}.text-\[14px\]{font-size:14px}.text-\[15px\]{font-size:15px}.text-\[16px\]{font-size:16px}.text-\[17px\]{font-size:17px}.text-\[18px\]{font-size:18px}
-.text-xs{font-size:12px}.text-sm{font-size:14px}.text-lg{font-size:18px}.text-xl{font-size:20px}.text-2xl{font-size:24px}
-.text-center{text-align:center}.text-left{text-align:left}.text-right{text-align:right}
-.font-medium{font-weight:500}.font-semibold{font-weight:600}.font-bold{font-weight:700}
-.leading-relaxed{line-height:1.625}
-.tracking-tight{letter-spacing:-.025em}.tracking-wide{letter-spacing:.025em}.tracking-wider{letter-spacing:.05em}
-.uppercase{text-transform:uppercase}.truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.whitespace-nowrap{white-space:nowrap}
-.select-none{user-select:none}.cursor-pointer{cursor:pointer}
-.opacity-0{opacity:0}.opacity-6{opacity:.6}.opacity-7{opacity:.7}
-.shadow-sm{box-shadow:0 1px 2px rgba(0,0,0,.05)}.shadow-2xl{box-shadow:0 25px 50px -12px rgba(0,0,0,.25)}
-.transition-all{transition:all .15s}.transition-colors{transition:color .15s,background .15s,border-color .15s}.transition-transform{transition:transform .15s}
-.hover\:bg-\[#F3F4F6\]:hover{background:#F3F4F6}.hover\:bg-\[#F9FAFB\]:hover{background:#F9FAFB}.hover\:bg-\[#FAFAFA\]:hover{background:#FAFAFA}
-.hover\:border-\[#111827\]:hover{border-color:#111827}.hover\:border-\[#D1D5DB\]:hover{border-color:#D1D5DB}
-.hover\:text-\[#111827\]:hover{color:#111827}.hover\:text-\[#374151\]:hover{color:#374151}
-.last\:border-none:last-child{border:none}
-@media(min-width:640px){.sm\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.sm\:inline{display:inline}}
-.backdrop-blur-sm{backdrop-filter:blur(4px)}
-
-.group:hover .group-hover\:text-\[\#111827\]{color:#111827}
-
 * { box-sizing: border-box; margin: 0; padding: 0; }
 #root { min-height: 100vh; }
+.loading-screen { display:flex;align-items:center;justify-content:center;min-height:100vh;background:#111827;color:white;font-family:system-ui; }
+.loading-screen .spinner { width:24px;height:24px;border:3px solid rgba(255,255,255,0.2);border-top-color:white;border-radius:50%;animation:spin 0.8s linear infinite;margin-right:12px; }
+@keyframes spin { to { transform: rotate(360deg); } }
 </style>
-<script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body>
-<div id="root"><div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#111827;color:white;font-family:system-ui"><div style="width:24px;height:24px;border:3px solid rgba(255,255,255,0.2);border-top-color:white;border-radius:50%;animation:spin 0.8s linear infinite;margin-right:12px"></div>Загрузка Archflow...</div></div>
-<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+<div id="root"><div class="loading-screen"><div class="spinner"></div>Загрузка Archflow...</div></div>
 
 <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
@@ -707,7 +644,8 @@ try {
   const root = ReactDOM.createRoot(document.getElementById('root'));
   root.render(React.createElement(App));
 } catch(e) {
-  document.getElementById('root').innerHTML = '<div style="padding:40px;color:red;font-family:monospace"><h2>Ошибка загрузки</h2><pre>' + e.message + '</pre></div>';
+  document.getElementById('root').innerHTML = '<div style="padding:40px;color:red;font-family:monospace"><h2>Error</h2><pre>' + e.message + '\n' + e.stack + '</pre></div>';
+  console.error(e);
 }
 </script>
 </body>
