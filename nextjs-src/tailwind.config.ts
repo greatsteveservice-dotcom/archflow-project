@@ -9,9 +9,9 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        accent: "#2C5F2D",
-        "accent-light": "#E8F0E8",
-        "accent-hover": "#1E4620",
+        accent: "#111827",
+        "accent-light": "#F3F4F6",
+        "accent-hover": "#1F2937",
         danger: "#E85D3A",
         "danger-bg": "#FEF0EC",
         warning: "#D4930D",
@@ -20,15 +20,15 @@ const config: Config = {
         "success-bg": "#EAFAF1",
         surface: "#FFFFFF",
         "surface-hover": "#FAFAF8",
-        "bg-main": "#F7F6F3",
-        "border-main": "#E8E6E1",
-        "border-light": "#F0EEE9",
-        "text-primary": "#1A1A1A",
-        "text-secondary": "#6B6B6B",
-        "text-muted": "#9B9B9B",
+        "bg-main": "#F9FAFB",
+        "border-main": "#E5E7EB",
+        "border-light": "#F3F4F6",
+        "text-primary": "#111827",
+        "text-secondary": "#6B7280",
+        "text-muted": "#9CA3AF",
       },
       fontFamily: {
-        body: ["Outfit", "sans-serif"],
+        body: ["DM Sans", "sans-serif"],
         mono: ["JetBrains Mono", "monospace"],
       },
       borderRadius: {

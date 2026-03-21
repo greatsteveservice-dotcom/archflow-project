@@ -2,81 +2,128 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 :root {
-  --font-body: 'Outfit', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 }
 
 body {
   font-family: var(--font-body);
-  background: #F7F6F3;
-  color: #1A1A1A;
+  background: #F9FAFB;
+  color: #111827;
+  -webkit-font-smoothing: antialiased;
 }
 
 @layer components {
   .sidebar-item {
-    @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-white/55 cursor-pointer text-sm transition-all duration-150 mb-0.5;
+    @apply flex items-center gap-2.5 px-3.5 py-2 rounded-lg cursor-pointer text-[13px] transition-all duration-150 mb-px;
+    color: rgba(255,255,255,.5);
   }
   .sidebar-item:hover {
-    @apply bg-white/[0.06] text-white/85;
+    background: rgba(255,255,255,.06);
+    color: rgba(255,255,255,.8);
   }
   .sidebar-item.active {
-    @apply text-white font-medium;
-    background: rgba(44, 95, 45, 0.35);
+    background: rgba(255,255,255,.1);
+    color: #fff;
+    font-weight: 500;
   }
 
   .btn {
-    @apply inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-medium border-none cursor-pointer transition-all duration-150 whitespace-nowrap;
+    @apply inline-flex items-center gap-1.5 px-4 py-2 rounded-[10px] text-[13px] font-medium border-none cursor-pointer transition-all duration-150 whitespace-nowrap;
     font-family: var(--font-body);
   }
   .btn-primary {
-    @apply bg-[#2C5F2D] text-white;
+    @apply bg-[#111827] text-white;
   }
-  .btn-primary:hover { @apply bg-[#1E4620]; }
+  .btn-primary:hover { @apply bg-[#1F2937]; }
   .btn-secondary {
-    @apply bg-white text-[#1A1A1A] border border-[#E8E6E1];
+    @apply bg-white text-[#374151] border border-[#E5E7EB];
   }
-  .btn-secondary:hover { @apply bg-[#FAFAF8] border-[#D5D3CE]; }
+  .btn-secondary:hover { @apply bg-[#F9FAFB]; }
 
   .badge {
-    @apply inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-0.5 rounded-full;
+    @apply inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-0.5 rounded-full whitespace-nowrap;
   }
 
-  .filter-tabs {
-    @apply flex gap-1 bg-[#F0EEE9] rounded-lg p-0.5 w-fit;
+  /* Underline tabs (project detail) */
+  .tn {
+    @apply flex border-b border-[#E5E7EB];
+    gap: 0;
   }
+  .ti {
+    @apply text-[13px] font-medium cursor-pointer transition-all duration-150 whitespace-nowrap flex items-center gap-1.5;
+    padding: 10px 18px;
+    color: #6B7280;
+    border-bottom: 2px solid transparent;
+  }
+  .ti:hover { color: #374151; }
+  .ti.active { color: #111827; border-bottom-color: #111827; }
+
+  /* Pill sub-tabs (supply, filters) */
+  .stab {
+    @apply flex rounded-[10px] p-[3px];
+    gap: 2px;
+    background: #F3F4F6;
+  }
+  .stb {
+    @apply text-[12px] font-medium cursor-pointer rounded-lg transition-all duration-150 border-none bg-transparent flex items-center gap-[5px] whitespace-nowrap;
+    padding: 7px 14px;
+    color: #6B7280;
+    font-family: var(--font-body);
+  }
+  .stb:hover { color: #374151; }
+  .stb.active {
+    background: #fff;
+    color: #111827;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+  }
+
+  /* Card */
+  .card {
+    @apply bg-white border border-[#E5E7EB] rounded-xl transition-all duration-150;
+  }
+  .card:hover { border-color: #D1D5DB; }
+
+  /* Keep old filter-tabs as aliases */
+  .filter-tabs { @apply flex gap-0.5 rounded-[10px] p-[3px]; background: #F3F4F6; }
   .filter-tab {
-    @apply px-3.5 py-1.5 text-[13px] font-medium bg-transparent text-[#9B9B9B] rounded-md cursor-pointer transition-all duration-150 border-none;
+    @apply px-3.5 py-1.5 text-[12px] font-medium bg-transparent rounded-lg cursor-pointer transition-all duration-150 border-none flex items-center gap-[5px] whitespace-nowrap;
+    color: #6B7280;
     font-family: var(--font-body);
   }
   .filter-tab.active {
-    @apply bg-white text-[#1A1A1A] shadow-sm;
+    @apply bg-white shadow-sm;
+    color: #111827;
   }
 
   .modal-overlay {
     @apply fixed inset-0 bg-black/40 flex items-center justify-center z-50;
-    backdrop-filter: blur(4px);
-    animation: fadeIn 0.2s ease;
+    backdrop-filter: blur(3px);
+    animation: fadeIn 0.15s ease;
   }
   .modal {
-    @apply bg-white rounded-2xl p-7 w-[440px] max-w-[90vw];
-    box-shadow: 0 8px 32px rgba(0,0,0,0.08);
-    animation: slideUp 0.25s ease;
+    @apply bg-white rounded-2xl p-7 w-[480px] max-w-[92vw];
+    box-shadow: 0 20px 60px rgba(0,0,0,.15);
+    animation: slideUp 0.2s ease;
   }
   .modal-field label {
-    @apply block text-xs font-medium text-[#6B6B6B] mb-1.5;
+    @apply block text-xs font-medium mb-1.5;
+    color: #6B7280;
   }
   .modal-field input,
   .modal-field textarea,
   .modal-field select {
-    @apply w-full px-3 py-2.5 border border-[#E8E6E1] rounded-lg text-sm outline-none transition-colors duration-150 bg-white text-[#1A1A1A];
+    @apply w-full px-3 py-2.5 border border-[#E5E7EB] rounded-[9px] text-[13px] outline-none transition-colors duration-150 bg-white;
     font-family: var(--font-body);
+    color: #111827;
   }
   .modal-field input:focus,
-  .modal-field textarea:focus {
-    @apply border-[#2C5F2D];
+  .modal-field textarea:focus,
+  .modal-field select:focus {
+    border-color: #111827;
   }
 
   .notif-dot {
@@ -84,8 +131,8 @@ body {
   }
   .notif-dot::after {
     content: '';
-    @apply absolute -top-0.5 -right-0.5 w-2 h-2 bg-[#E85D3A] rounded-full;
-    border: 2px solid #1A1F1A;
+    @apply absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full;
+    border: 2px solid #111827;
   }
 }
 
@@ -94,97 +141,91 @@ body {
   to { opacity: 1; }
 }
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(12px); }
+  from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
-.animate-fade-in { animation: fadeIn 0.3s ease; }
-.animate-slide-up { animation: slideUp 0.3s ease; }
+@keyframes slideRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .5; }
+}
+
+.animate-fade-in { animation: fadeIn 0.2s ease; }
+.animate-slide-up { animation: slideUp 0.25s ease; }
+.animate-slide-right { animation: slideRight 0.25s ease; }
+.animate-pulse-custom { animation: pulse 2s infinite; }
 .font-mono-custom { font-family: var(--font-mono); }
 
-/* ======================== Supply Drawer ======================== */
-.supply-drawer-overlay {
+/* ======================== Drawer ======================== */
+.drawer-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.35);
   z-index: 50;
-  animation: fadeIn 0.2s ease;
+  backdrop-filter: blur(3px);
+  animation: fadeIn 0.15s ease;
 }
-.supply-drawer {
+.drawer-box {
   position: fixed;
   top: 0;
   right: 0;
+  bottom: 0;
   width: 480px;
-  max-width: 90vw;
-  height: 100vh;
-  background: white;
-  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.08);
+  max-width: 95vw;
+  background: #fff;
   z-index: 51;
-  animation: slideRight 0.3s ease;
+  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.1);
   overflow-y: auto;
+  animation: slideRight 0.2s ease;
 }
 
-@keyframes slideRight {
-  from { opacity: 0; transform: translateX(100%); }
-  to { opacity: 1; transform: translateX(0); }
-}
+/* Keep old supply-drawer as aliases */
+.supply-drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.35); backdrop-filter: blur(3px); z-index: 50; animation: fadeIn 0.15s ease; }
+.supply-drawer { position: fixed; top: 0; right: 0; width: 480px; max-width: 95vw; height: 100vh; background: white; box-shadow: -10px 0 40px rgba(0,0,0,.1); z-index: 51; animation: slideRight 0.2s ease; overflow-y: auto; }
 
-/* ======================== Supply Timeline ======================== */
+/* ======================== Timeline ======================== */
 .timeline-bar {
-  height: 28px;
+  height: 24px;
   border-radius: 6px;
   position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  min-width: 4px;
-  transition: opacity 0.15s;
+  top: 8px;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  font-size: 10px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: all 0.2s;
   cursor: pointer;
 }
 .timeline-bar:hover {
-  opacity: 0.85;
+  filter: brightness(.95);
+  transform: scaleY(1.08);
 }
 .timeline-today {
   position: absolute;
   top: 0;
   bottom: 0;
   width: 2px;
-  background: #E85D3A;
+  background: #DC2626;
   z-index: 5;
 }
-.timeline-today::after {
+.timeline-today::before {
   content: 'Сегодня';
   position: absolute;
-  top: -20px;
-  left: 50%;
-  transform: translateX(-50%);
+  top: -18px;
+  left: -20px;
   font-size: 10px;
-  color: #E85D3A;
+  color: #DC2626;
+  font-weight: 600;
   white-space: nowrap;
-  font-weight: 500;
 }
 
-/* ======================== Supply Tabs ======================== */
-.supply-tabs {
-  display: flex;
-  gap: 2px;
-  background: #F0EEE9;
-  border-radius: 8px;
-  padding: 3px;
-}
-.supply-tab {
-  padding: 6px 14px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #9B9B9B;
-  border-radius: 6px;
-  cursor: pointer;
-  border: none;
-  background: transparent;
-  font-family: var(--font-body);
-  transition: all 0.15s;
-}
-.supply-tab.active {
-  background: white;
-  color: #1A1A1A;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-}
+/* ======================== Supply Tabs (legacy) ======================== */
+.supply-tabs { display: flex; gap: 2px; background: #F3F4F6; border-radius: 10px; padding: 3px; }
+.supply-tab { padding: 7px 14px; font-size: 12px; font-weight: 500; color: #6B7280; border-radius: 8px; cursor: pointer; border: none; background: transparent; font-family: var(--font-body); transition: all 0.15s; display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+.supply-tab.active { background: white; color: #111827; box-shadow: 0 1px 3px rgba(0,0,0,.06); }

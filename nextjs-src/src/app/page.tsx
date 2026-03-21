@@ -1,32 +1,35 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import Sidebar from "./components/Sidebar";
-import Dashboard from "./components/Dashboard";
 import ProjectsPage from "./components/ProjectsPage";
 import ProjectPage from "./components/ProjectPage";
 import VisitPage from "./components/VisitPage";
-import { NotificationsPage, SettingsPage } from "./components/SettingsNotifications";
 import LoginPage from "./components/LoginPage";
 import CreateProjectModal from "./components/CreateProjectModal";
+import Topbar from "./components/Topbar";
+import Toast from "./components/Toast";
 import { Icons } from "./components/Icons";
 import { useProjects } from "./lib/hooks";
 import { useAuth } from "./lib/auth";
 
 export default function Home() {
   const { session, loading: authLoading } = useAuth();
-  const [page, setPage] = useState("dashboard");
+  const [page, setPage] = useState("projects");
   const [context, setContext] = useState<any>(null);
   const [showCreateProject, setShowCreateProject] = useState(false);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
   const { data: projects, refetch: refetchProjects } = useProjects();
+
+  const toast = useCallback((msg: string) => setToastMsg(msg), []);
 
   // Auth loading state
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-[#F7F6F3] flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-[28px] font-bold tracking-[4px] text-[#1A1F1A] mb-3">ЖАН</h1>
-          <div className="inline-block w-6 h-6 border-2 border-[#E8E6E1] border-t-[#2C5F2D] rounded-full animate-spin" />
+      <div className="min-h-screen bg-[#111827] flex items-center justify-center">
+        <div className="flex items-center gap-3">
+          <div className="w-6 h-6 border-[3px] border-white/20 border-t-white rounded-full animate-spin" />
+          <span className="text-white text-sm">Загрузка Archflow...</span>
         </div>
       </div>
     );
@@ -42,127 +45,52 @@ export default function Home() {
     setContext(ctx);
   };
 
-  const getPageTitle = () => {
-    switch (page) {
-      case "dashboard":
-        return "Дашборд";
-      case "projects":
-        return "Проекты";
-      case "project": {
-        const p = projects?.find((pr) => pr.id === context);
-        return p ? p.title : "Проект";
-      }
-      case "visit":
-        return "Визит";
-      case "notifications":
-        return "Уведомления";
-      case "settings":
-        return "Настройки";
-      default:
-        return "";
-    }
-  };
-
-  const getBreadcrumb = () => {
-    if (page === "project") {
-      return (
-        <div className="flex items-center gap-1.5 text-[13px] text-[#6B6B6B]">
-          <span
-            className="text-[#9B9B9B] cursor-pointer hover:text-[#2C5F2D] transition-colors"
-            onClick={() => navigate("projects")}
-          >
-            Проекты
-          </span>
-          <Icons.ChevronRight />
-          <span>{getPageTitle()}</span>
-        </div>
-      );
-    }
-    if (page === "visit") {
-      const project = projects?.find((p) => p.id === context?.projectId);
-      return (
-        <div className="flex items-center gap-1.5 text-[13px] text-[#6B6B6B]">
-          <span
-            className="text-[#9B9B9B] cursor-pointer hover:text-[#2C5F2D] transition-colors"
-            onClick={() => navigate("projects")}
-          >
-            Проекты
-          </span>
-          <Icons.ChevronRight />
-          <span
-            className="text-[#9B9B9B] cursor-pointer hover:text-[#2C5F2D] transition-colors"
-            onClick={() => navigate("project", context?.projectId)}
-          >
-            {project?.title}
-          </span>
-          <Icons.ChevronRight />
-          <span>Визит</span>
-        </div>
-      );
-    }
-    return null;
-  };
-
   const renderPage = () => {
     switch (page) {
-      case "dashboard":
-        return <Dashboard onNavigate={navigate} />;
       case "projects":
-        return <ProjectsPage onNavigate={navigate} />;
+        return (
+          <>
+            <Topbar
+              title="Проекты"
+              actions={
+                <button className="btn btn-primary" onClick={() => setShowCreateProject(true)}>
+                  <Icons.Plus className="w-4 h-4" /> Новый проект
+                </button>
+              }
+            />
+            <div className="p-7">
+              <ProjectsPage onNavigate={navigate} />
+            </div>
+          </>
+        );
       case "project":
-        return <ProjectPage projectId={context} onNavigate={navigate} />;
+        return (
+          <ProjectPage
+            projectId={context}
+            onNavigate={navigate}
+            toast={toast}
+          />
+        );
       case "visit":
         return (
           <VisitPage
             projectId={context?.projectId}
             visitId={context?.visitId}
             onNavigate={navigate}
+            toast={toast}
           />
         );
-      case "notifications":
-        return <NotificationsPage />;
-      case "settings":
-        return <SettingsPage />;
       default:
-        return <Dashboard onNavigate={navigate} />;
+        return null;
     }
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#F7F6F3]">
+    <div className="flex min-h-screen bg-[#F9FAFB]">
       <Sidebar currentPage={page} onNavigate={navigate} />
 
-      <div className="flex-1 overflow-y-auto overflow-x-hidden">
-        {/* Top bar */}
-        <div className="px-8 py-5 flex items-center justify-between border-b border-[#E8E6E1] bg-white sticky top-0 z-10">
-          <div>
-            {(page === "project" || page === "visit") && (
-              <div
-                className="inline-flex items-center gap-1 text-[13px] text-[#9B9B9B] cursor-pointer hover:text-[#1A1A1A] transition-colors mb-1"
-                onClick={() =>
-                  page === "visit"
-                    ? navigate("project", context?.projectId)
-                    : navigate("projects")
-                }
-              >
-                <Icons.ChevronLeft /> Назад
-              </div>
-            )}
-            {getBreadcrumb() || (
-              <h1 className="text-xl font-semibold">{getPageTitle()}</h1>
-            )}
-          </div>
-          <div className="flex gap-2 items-center">
-            {(page === "dashboard" || page === "projects") && (
-              <button className="btn btn-primary" onClick={() => setShowCreateProject(true)}>
-                <Icons.Plus /> Новый проект
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="p-7 max-sm:p-4">{renderPage()}</div>
+      <div className="flex-1 overflow-x-hidden">
+        {renderPage()}
       </div>
 
       {/* Create Project Modal */}
@@ -172,8 +100,12 @@ export default function Home() {
         onSuccess={() => {
           refetchProjects();
           navigate("projects");
+          toast("Проект создан");
         }}
       />
+
+      {/* Toast */}
+      {toastMsg && <Toast msg={toastMsg} onClose={() => setToastMsg(null)} />}
     </div>
   );
 }

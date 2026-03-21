@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAuth } from "../lib/auth";
+import { Icons } from "./Icons";
 
 export default function LoginPage() {
   const { signIn, signUp } = useAuth();
@@ -42,35 +43,38 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F6F3] flex items-center justify-center p-4">
-      <div className="w-full max-w-[400px]">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg, #111827 0%, #1F2937 50%, #374151 100%)' }}>
+      <div className="w-full max-w-[400px] animate-slide-up">
         {/* Logo */}
         <div className="text-center mb-8">
-          <h1 className="text-[32px] font-bold tracking-[5px] text-[#1A1F1A]">ЖАН</h1>
-          <p className="text-[13px] text-[#9B9B9B] tracking-wide mt-1">
-            журнал авторского надзора
-          </p>
+          <div className="inline-flex items-center gap-2.5 mb-2">
+            <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center">
+              <Icons.Layers className="w-5 h-5 text-[#111827]" />
+            </div>
+            <span className="text-2xl font-bold text-white tracking-tight">Archflow</span>
+          </div>
+          <p className="text-sm text-white/40">Architecture Workflow Platform</p>
         </div>
 
         {/* Card */}
-        <div className="bg-white border border-[#E8E6E1] rounded-2xl p-7 shadow-lg">
+        <div className="bg-white rounded-2xl p-8 shadow-2xl">
           <h2 className="text-lg font-semibold mb-1">
-            {mode === "login" ? "Вход в систему" : "Регистрация"}
+            {mode === "login" ? "Войти" : "Регистрация"}
           </h2>
-          <p className="text-[13px] text-[#9B9B9B] mb-6">
+          <p className="text-[13px] text-[#9CA3AF] mb-6">
             {mode === "login"
               ? "Войдите чтобы управлять проектами"
               : "Создайте аккаунт для работы с проектами"}
           </p>
 
           {error && (
-            <div className="bg-[#FEF0EC] border border-[#E85D3A]/20 text-[#E85D3A] text-[13px] px-4 py-2.5 rounded-lg mb-4">
+            <div className="text-[13px] text-red-600 mb-4 p-3 bg-red-50 rounded-lg">
               {error}
             </div>
           )}
 
           {success && (
-            <div className="bg-[#EAFAF1] border border-[#2A9D5C]/20 text-[#2A9D5C] text-[13px] px-4 py-2.5 rounded-lg mb-4">
+            <div className="text-[13px] text-emerald-600 mb-4 p-3 bg-emerald-50 rounded-lg">
               {success}
             </div>
           )}
@@ -78,7 +82,7 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit}>
             {mode === "register" && (
               <div className="mb-4">
-                <label className="block text-xs font-medium text-[#6B6B6B] mb-1.5">
+                <label className="block text-xs font-medium text-[#6B7280] mb-1.5">
                   Полное имя
                 </label>
                 <input
@@ -86,14 +90,14 @@ export default function LoginPage() {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="Алиса Флоренс"
-                  className="w-full px-3 py-2.5 border border-[#E8E6E1] rounded-lg text-sm outline-none transition-colors focus:border-[#2C5F2D]"
+                  className="w-full px-3 py-2.5 border border-[#E5E7EB] rounded-[9px] text-[13px] outline-none transition-colors focus:border-[#111827]"
                   required
                 />
               </div>
             )}
 
             <div className="mb-4">
-              <label className="block text-xs font-medium text-[#6B6B6B] mb-1.5">
+              <label className="block text-xs font-medium text-[#6B7280] mb-1.5">
                 Email
               </label>
               <input
@@ -101,13 +105,13 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="alisa@florence-design.ru"
-                className="w-full px-3 py-2.5 border border-[#E8E6E1] rounded-lg text-sm outline-none transition-colors focus:border-[#2C5F2D]"
+                className="w-full px-3 py-2.5 border border-[#E5E7EB] rounded-[9px] text-[13px] outline-none transition-colors focus:border-[#111827]"
                 required
               />
             </div>
 
-            <div className="mb-6">
-              <label className="block text-xs font-medium text-[#6B6B6B] mb-1.5">
+            <div className="mb-4">
+              <label className="block text-xs font-medium text-[#6B7280] mb-1.5">
                 Пароль
               </label>
               <input
@@ -115,7 +119,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full px-3 py-2.5 border border-[#E8E6E1] rounded-lg text-sm outline-none transition-colors focus:border-[#2C5F2D]"
+                className="w-full px-3 py-2.5 border border-[#E5E7EB] rounded-[9px] text-[13px] outline-none transition-colors focus:border-[#111827]"
                 required
                 minLength={6}
               />
@@ -124,18 +128,18 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2.5 rounded-lg text-sm font-medium bg-[#2C5F2D] text-white hover:bg-[#1E4620] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn btn-primary w-full justify-center py-3 text-sm"
             >
               {loading
-                ? "Подождите..."
+                ? "Загрузка..."
                 : mode === "login"
                   ? "Войти"
                   : "Зарегистрироваться"}
             </button>
           </form>
 
-          <div className="mt-5 pt-4 border-t border-[#F0EEE9] text-center">
-            <span className="text-[13px] text-[#9B9B9B]">
+          <div className="mt-5 pt-4 border-t border-[#F3F4F6] text-center">
+            <span className="text-[13px] text-[#9CA3AF]">
               {mode === "login" ? "Нет аккаунта? " : "Уже есть аккаунт? "}
             </span>
             <button
@@ -144,7 +148,7 @@ export default function LoginPage() {
                 setError("");
                 setSuccess("");
               }}
-              className="text-[13px] text-[#2C5F2D] font-medium hover:underline"
+              className="text-[13px] text-[#111827] font-medium hover:underline"
             >
               {mode === "login" ? "Регистрация" : "Вход"}
             </button>
@@ -152,9 +156,9 @@ export default function LoginPage() {
 
           {/* Demo credentials hint */}
           {mode === "login" && (
-            <div className="mt-4 bg-[#F7F6F3] rounded-lg px-4 py-3">
-              <div className="text-[11px] text-[#9B9B9B] mb-1">Демо-доступ:</div>
-              <div className="text-[12px] text-[#6B6B6B] font-mono">
+            <div className="mt-4 bg-[#F9FAFB] rounded-lg px-4 py-3">
+              <div className="text-[11px] text-[#9CA3AF] mb-1">Демо-доступ:</div>
+              <div className="text-[12px] text-[#6B7280] font-mono-custom">
                 alisa@florence-design.ru / demo1234
               </div>
             </div>

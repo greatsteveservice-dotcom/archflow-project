@@ -174,6 +174,7 @@ export interface CreateVisitInput {
   title: string;
   date: string;
   note?: string;
+  status?: VisitStatus;
 }
 
 export interface CreatePhotoRecordInput {

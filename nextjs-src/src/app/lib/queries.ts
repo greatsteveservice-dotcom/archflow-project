@@ -660,3 +660,26 @@ export function formatShortDate(dateStr: string): string {
 export function formatPrice(n: number): string {
   return new Intl.NumberFormat('ru-RU').format(n) + ' \u20BD';
 }
+
+// ======================== DOCUMENTS ========================
+
+export async function fetchProjectDocuments(projectId: string): Promise<Document[]> {
+  const { data, error } = await supabase
+    .from('documents')
+    .select('*')
+    .eq('project_id', projectId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data || []) as Document[];
+}
+
+// ======================== PROJECT MEMBERS ========================
+
+export async function fetchProjectMembers(projectId: string): Promise<ProjectMember[]> {
+  const { data, error } = await supabase
+    .from('project_members')
+    .select('*')
+    .eq('project_id', projectId);
+  if (error) throw error;
+  return (data || []) as ProjectMember[];
+}

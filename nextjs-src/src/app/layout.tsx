@@ -3,8 +3,8 @@ import "./globals.css";
 import { AuthProvider } from "./lib/auth";
 
 export const metadata: Metadata = {
-  title: "ЖАН — Журнал авторского надзора",
-  description: "Электронный журнал авторского надзора для дизайнеров интерьера и строительных компаний",
+  title: "Archflow — Architecture Workflow Platform",
+  description: "Платформа управления дизайн-проектами интерьера",
 };
 
 export default function RootLayout({

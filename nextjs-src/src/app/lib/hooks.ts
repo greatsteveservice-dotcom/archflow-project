@@ -5,7 +5,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import type { ProjectWithStats, VisitWithStats, PhotoRecord, Profile, Stage, SupplyItem, Invoice, Notification } from './types';
+import type { ProjectWithStats, VisitWithStats, PhotoRecord, Profile, Stage, SupplyItem, Invoice, Notification, Document, ProjectMember } from './types';
 import {
   fetchProjects,
   fetchProject,
@@ -17,6 +17,8 @@ import {
   fetchProjectSupplyItems,
   fetchProjectInvoices,
   fetchNotifications,
+  fetchProjectDocuments,
+  fetchProjectMembers,
 } from './queries';
 
 // ======================== GENERIC HOOK ========================
@@ -133,4 +135,20 @@ export function useProjectInvoices(projectId: string | null) {
 /** Fetch computed notifications */
 export function useNotifications() {
   return useQuery<Notification[]>(() => fetchNotifications(), []);
+}
+
+/** Fetch documents for a project */
+export function useProjectDocuments(projectId: string | null) {
+  return useQuery<Document[]>(
+    () => projectId ? fetchProjectDocuments(projectId) : Promise.resolve([]),
+    [projectId]
+  );
+}
+
+/** Fetch members for a project */
+export function useProjectMembers(projectId: string | null) {
+  return useQuery<ProjectMember[]>(
+    () => projectId ? fetchProjectMembers(projectId) : Promise.resolve([]),
+    [projectId]
+  );
 }

@@ -8,13 +8,6 @@ interface SidebarProps {
   onNavigate: (page: string, ctx?: any) => void;
 }
 
-const navItems = [
-  { id: "dashboard", label: "Дашборд", icon: <Icons.Home /> },
-  { id: "projects", label: "Проекты", icon: <Icons.Folder /> },
-  { id: "notifications", label: "Уведомления", icon: <Icons.Bell />, notif: true },
-  { id: "settings", label: "Настройки", icon: <Icons.Settings /> },
-];
-
 export default function Sidebar({ currentPage, onNavigate }: SidebarProps) {
   const { profile, signOut } = useAuth();
 
@@ -23,7 +16,6 @@ export default function Sidebar({ currentPage, onNavigate }: SidebarProps) {
     (currentPage === "project" && id === "projects") ||
     (currentPage === "visit" && id === "projects");
 
-  // Get initials from full name
   const initials = profile?.full_name
     ? profile.full_name
         .split(" ")
@@ -33,7 +25,6 @@ export default function Sidebar({ currentPage, onNavigate }: SidebarProps) {
         .slice(0, 2)
     : "??";
 
-  // Map role to Russian label
   const roleLabel: Record<string, string> = {
     designer: "Дизайнер",
     client: "Заказчик",
@@ -43,52 +34,47 @@ export default function Sidebar({ currentPage, onNavigate }: SidebarProps) {
   };
 
   return (
-    <aside className="w-[260px] bg-[#1A1F1A] text-white flex flex-col flex-shrink-0 h-screen sticky top-0">
+    <aside className="w-[240px] bg-[#111827] text-white flex flex-col flex-shrink-0 h-screen sticky top-0">
       {/* Logo */}
-      <div className="px-6 pt-6 pb-5 border-b border-white/[0.08]">
-        <h1 className="text-[22px] font-bold tracking-[3px]">ЖАН</h1>
-        <span className="text-[11px] text-white/40 tracking-wide block mt-0.5">
-          журнал авторского надзора
-        </span>
+      <div className="px-5 pt-5 pb-4 border-b border-white/[0.08]">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-md bg-white/10 flex items-center justify-center">
+            <Icons.Layers className="w-4 h-4 text-white/70" />
+          </div>
+          <span className="text-[15px] font-bold tracking-tight">Archflow</span>
+        </div>
       </div>
 
       {/* Nav */}
       <nav className="p-3 flex-1">
-        {navItems.map((item) => (
-          <div
-            key={item.id}
-            className={`sidebar-item ${isActive(item.id) ? "active" : ""}`}
-            onClick={() => onNavigate(item.id)}
-          >
-            <span className={item.notif ? "notif-dot" : ""}>
-              {item.icon}
-            </span>
-            {item.label}
-          </div>
-        ))}
+        <div className="text-[10px] font-medium text-white/25 uppercase tracking-wider px-3 mb-2">
+          Навигация
+        </div>
+        <div
+          className={`sidebar-item ${isActive("projects") ? "active" : ""}`}
+          onClick={() => onNavigate("projects")}
+        >
+          <Icons.Folder className="w-4 h-4" />
+          Проекты
+        </div>
       </nav>
 
-      {/* User */}
-      <div className="px-5 py-4 border-t border-white/[0.08]">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-[#2C5F2D] flex items-center justify-center text-sm font-semibold flex-shrink-0">
+      {/* Bottom */}
+      <div className="p-3 border-t border-white/[0.08]">
+        <div className="sidebar-item" onClick={signOut}>
+          <Icons.LogOut className="w-4 h-4" />
+          Выйти
+        </div>
+        <div className="flex items-center gap-2.5 px-3 py-2 mt-1">
+          <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-semibold">
             {initials}
           </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-[13px] font-medium truncate">{profile?.full_name || "..."}</div>
-            <div className="text-[11px] text-white/40">{roleLabel[profile?.role || ""] || "..."}</div>
+          <div>
+            <div className="text-[12px] font-medium">{profile?.full_name || "..."}</div>
+            <div className="text-[10px] text-white/35">
+              {roleLabel[profile?.role || ""] || "..."}
+            </div>
           </div>
-          <button
-            onClick={signOut}
-            className="text-white/30 hover:text-white/70 transition-colors p-1"
-            title="Выйти"
-          >
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-              <polyline points="16 17 21 12 16 7" />
-              <line x1="21" y1="12" x2="9" y2="12" />
-            </svg>
-          </button>
         </div>
       </div>
     </aside>
