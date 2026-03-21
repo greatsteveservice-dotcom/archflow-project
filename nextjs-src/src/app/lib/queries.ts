@@ -7,8 +7,11 @@ import type {
   Project, Profile, Visit, PhotoRecord, Invoice,
   Document, SupplyItem, Stage, ContractPayment,
   ProjectMember, ProjectWithStats, VisitWithStats,
-  PhotoStatus, CreateProjectInput, CreateVisitInput,
+  PhotoStatus, SupplyStatus, RiskLevel,
+  SupplyItemWithCalc, Notification,
+  CreateProjectInput, CreateVisitInput,
   CreatePhotoRecordInput, CreateProjectMemberInput, CreateInvoiceInput,
+  CreateSupplyItemInput, UpdateProfileInput,
 } from './types';
 
 // ======================== PROJECTS ========================
@@ -432,4 +435,228 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<Invoice>
 
   if (error) throw error;
   return data as Invoice;
+}
+
+// ======================== STAGES ========================
+
+/** Fetch stages for a project */
+export async function fetchProjectStages(projectId: string): Promise<Stage[]> {
+  const { data, error } = await supabase
+    .from('stages')
+    .select('*')
+    .eq('project_id', projectId)
+    .order('sort_order', { ascending: true });
+
+  if (error) throw error;
+  return (data || []) as Stage[];
+}
+
+// ======================== SUPPLY ========================
+
+/** Calculate derived supply fields (deadline, risk) */
+export function calcSupplyItem(item: SupplyItem, stages: Stage[]): SupplyItemWithCalc {
+  const stage = stages.find(s => s.id === item.target_stage_id);
+  if (!stage || !stage.start_date) {
+    return {
+      ...item,
+      orderDeadline: null,
+      deliveryForecast: null,
+      daysUntilDeadline: null,
+      riskCalc: 'low' as RiskLevel,
+      stageName: '—',
+      stageStart: null,
+    };
+  }
+
+  const today = new Date();
+  const stageStart = new Date(stage.start_date);
+  const orderDeadline = new Date(stageStart);
+  orderDeadline.setDate(orderDeadline.getDate() - item.lead_time_days);
+  const deliveryForecast = new Date(today);
+  deliveryForecast.setDate(deliveryForecast.getDate() + item.lead_time_days);
+
+  const daysUntil = Math.round(
+    (orderDeadline.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+  );
+
+  let riskCalc: RiskLevel = 'low';
+  if (daysUntil < 0) riskCalc = 'critical';
+  else if (daysUntil <= 7) riskCalc = 'high';
+  else if (daysUntil <= 30) riskCalc = 'medium';
+
+  return {
+    ...item,
+    orderDeadline: orderDeadline.toISOString().split('T')[0],
+    deliveryForecast: deliveryForecast.toISOString().split('T')[0],
+    daysUntilDeadline: daysUntil,
+    riskCalc,
+    stageName: stage.name,
+    stageStart: stage.start_date,
+  };
+}
+
+/** Fetch supply items for a project */
+export async function fetchProjectSupplyItems(projectId: string): Promise<SupplyItem[]> {
+  const { data, error } = await supabase
+    .from('supply_items')
+    .select('*')
+    .eq('project_id', projectId)
+    .order('created_at', { ascending: true });
+
+  if (error) throw error;
+  return (data || []) as SupplyItem[];
+}
+
+/** Create a supply item */
+export async function createSupplyItem(input: CreateSupplyItemInput): Promise<SupplyItem> {
+  const { data, error } = await supabase
+    .from('supply_items')
+    .insert({
+      project_id: input.project_id,
+      name: input.name,
+      category: input.category || null,
+      target_stage_id: input.target_stage_id || null,
+      lead_time_days: input.lead_time_days || 0,
+      quantity: input.quantity || 1,
+      supplier: input.supplier || null,
+      budget: input.budget || 0,
+      notes: input.notes || null,
+      status: 'pending',
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as SupplyItem;
+}
+
+/** Update supply item status */
+export async function updateSupplyItemStatus(id: string, status: SupplyStatus): Promise<SupplyItem> {
+  const { data, error } = await supabase
+    .from('supply_items')
+    .update({ status })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as SupplyItem;
+}
+
+// ======================== INVOICES (list) ========================
+
+/** Fetch invoices for a project */
+export async function fetchProjectInvoices(projectId: string): Promise<Invoice[]> {
+  const { data, error } = await supabase
+    .from('invoices')
+    .select('*')
+    .eq('project_id', projectId)
+    .order('issued_at', { ascending: false });
+
+  if (error) throw error;
+  return (data || []) as Invoice[];
+}
+
+// ======================== PROFILE UPDATE ========================
+
+/** Update user profile */
+export async function updateProfile(input: UpdateProfileInput): Promise<Profile> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Не авторизован');
+
+  const updates: Record<string, unknown> = {};
+  if (input.full_name !== undefined) updates.full_name = input.full_name;
+  if (input.phone !== undefined) updates.phone = input.phone || null;
+  if (input.telegram_id !== undefined) updates.telegram_id = input.telegram_id || null;
+  if (input.company !== undefined) updates.company = input.company || null;
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .update(updates)
+    .eq('id', user.id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as Profile;
+}
+
+// ======================== NOTIFICATIONS (computed) ========================
+
+/** Compute notifications from existing data */
+export async function fetchNotifications(): Promise<Notification[]> {
+  const notifications: Notification[] = [];
+
+  // Recent photo issues/resolved
+  const { data: recentPhotos } = await supabase
+    .from('photo_records')
+    .select('id, comment, status, zone, created_at')
+    .in('status', ['issue', 'resolved'])
+    .order('created_at', { ascending: false })
+    .limit(15);
+
+  recentPhotos?.forEach(photo => {
+    notifications.push({
+      id: `photo-${photo.id}`,
+      type: photo.status === 'issue' ? 'issue' : 'resolved',
+      text: photo.status === 'issue'
+        ? `Замечание: ${photo.comment || photo.zone || 'Без описания'}`
+        : `Исправлено: ${photo.comment || photo.zone || 'Без описания'}`,
+      time: photo.created_at,
+      relativeTime: formatRelativeDate(photo.created_at),
+      read: false,
+    });
+  });
+
+  // Overdue invoices
+  const { data: overdueInvoices } = await supabase
+    .from('invoices')
+    .select('id, title, amount, due_date')
+    .eq('status', 'pending')
+    .lt('due_date', new Date().toISOString().split('T')[0])
+    .limit(10);
+
+  overdueInvoices?.forEach(inv => {
+    notifications.push({
+      id: `inv-${inv.id}`,
+      type: 'invoice_overdue',
+      text: `Просроченный счёт: ${inv.title}`,
+      time: inv.due_date || '',
+      relativeTime: 'просрочен',
+      read: false,
+    });
+  });
+
+  // Recent visits
+  const { data: recentVisits } = await supabase
+    .from('visits')
+    .select('id, title, date, status')
+    .order('date', { ascending: false })
+    .limit(10);
+
+  recentVisits?.forEach(visit => {
+    notifications.push({
+      id: `visit-${visit.id}`,
+      type: 'visit',
+      text: `Визит: ${visit.title}`,
+      time: visit.date,
+      relativeTime: formatRelativeDate(visit.date),
+      read: false,
+    });
+  });
+
+  return notifications
+    .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
+    .slice(0, 20);
+}
+
+/** Format short date (1 мар.) */
+export function formatShortDate(dateStr: string): string {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+}
+
+/** Format price in rubles */
+export function formatPrice(n: number): string {
+  return new Intl.NumberFormat('ru-RU').format(n) + ' \u20BD';
 }

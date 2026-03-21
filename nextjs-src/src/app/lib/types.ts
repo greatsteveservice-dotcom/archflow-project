@@ -198,6 +198,49 @@ export interface CreateInvoiceInput {
   due_date?: string;
 }
 
+// ======================== SUPPLY COMPUTED TYPES ========================
+
+export type RiskLevel = 'critical' | 'high' | 'medium' | 'low';
+
+/** Supply item enriched with computed deadline/risk fields */
+export interface SupplyItemWithCalc extends SupplyItem {
+  orderDeadline: string | null;
+  deliveryForecast: string | null;
+  daysUntilDeadline: number | null;
+  riskCalc: RiskLevel;
+  stageName: string;
+  stageStart: string | null;
+}
+
+export interface CreateSupplyItemInput {
+  project_id: string;
+  name: string;
+  category?: string;
+  target_stage_id?: string;
+  lead_time_days?: number;
+  quantity?: number;
+  supplier?: string;
+  budget?: number;
+  notes?: string;
+}
+
+export interface UpdateProfileInput {
+  full_name?: string;
+  phone?: string;
+  telegram_id?: string;
+  company?: string;
+}
+
+/** Computed notification (no separate DB table) */
+export interface Notification {
+  id: string;
+  type: 'issue' | 'resolved' | 'invoice_overdue' | 'invoice_new' | 'visit' | 'photo';
+  text: string;
+  time: string;
+  relativeTime: string;
+  read: boolean;
+}
+
 // ======================== STATUS CONFIG ========================
 
 export const PHOTO_STATUS_CONFIG: Record<PhotoStatus, { label: string; color: string; bg: string }> = {
@@ -206,4 +249,20 @@ export const PHOTO_STATUS_CONFIG: Record<PhotoStatus, { label: string; color: st
   in_progress: { label: 'В работе', color: 'text-[#D4930D]', bg: 'bg-[#FFF8E7]' },
   new: { label: 'Новое', color: 'text-[#6B7280]', bg: 'bg-gray-100' },
   resolved: { label: 'Исправлено', color: 'text-[#2A9D5C]', bg: 'bg-[#EAFAF1]' },
+};
+
+export const SUPPLY_STATUS_CONFIG: Record<SupplyStatus, { label: string; bg: string; text: string }> = {
+  approved: { label: 'Согласовано', bg: '#ECFDF3', text: '#16A34A' },
+  pending: { label: 'Ожидает', bg: '#FFF7ED', text: '#D97706' },
+  in_review: { label: 'На проверке', bg: '#EFF6FF', text: '#2563EB' },
+  ordered: { label: 'Заказано', bg: '#EFF6FF', text: '#2563EB' },
+  in_production: { label: 'В производстве', bg: '#FFF7ED', text: '#D97706' },
+  delivered: { label: 'Доставлено', bg: '#ECFDF3', text: '#16A34A' },
+};
+
+export const RISK_CONFIG: Record<RiskLevel, { label: string; bg: string; text: string }> = {
+  critical: { label: 'Критично', bg: '#FEE2E2', text: '#DC2626' },
+  high: { label: 'Высокий', bg: '#FEF0EC', text: '#EA580C' },
+  medium: { label: 'Средний', bg: '#FFF7ED', text: '#D97706' },
+  low: { label: 'Низкий', bg: '#ECFDF3', text: '#16A34A' },
 };

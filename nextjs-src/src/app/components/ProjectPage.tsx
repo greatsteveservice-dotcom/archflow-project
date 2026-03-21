@@ -3,18 +3,31 @@
 import { useState } from "react";
 import { Icons } from "./Icons";
 import Loading, { ErrorMessage } from "./Loading";
-import { useProject, useProjectVisits } from "../lib/hooks";
-import { formatDate, createVisit, inviteProjectMember, createInvoice } from "../lib/queries";
-import type { UserRole } from "../lib/types";
+import { useProject, useProjectVisits, useProjectInvoices } from "../lib/hooks";
+import { formatDate, formatPrice, formatShortDate, createVisit, inviteProjectMember, createInvoice } from "../lib/queries";
+import type { UserRole, Invoice, InvoiceStatus } from "../lib/types";
+import SupplyModule from "./supply/SupplyModule";
 
 interface ProjectPageProps {
   projectId: string;
   onNavigate: (page: string, ctx?: any) => void;
 }
 
+type ProjectTab = "visits" | "supply" | "invoices";
+
+const INVOICE_STATUS_STYLE: Record<InvoiceStatus, { label: string; bg: string; text: string }> = {
+  pending: { label: "Ожидает", bg: "#FFF7ED", text: "#D97706" },
+  paid: { label: "Оплачен", bg: "#ECFDF3", text: "#16A34A" },
+  overdue: { label: "Просрочен", bg: "#FEE2E2", text: "#DC2626" },
+};
+
 export default function ProjectPage({ projectId, onNavigate }: ProjectPageProps) {
   const { data: project, loading: loadingProject, error: errorProject, refetch: refetchProject } = useProject(projectId);
   const { data: visits, loading: loadingVisits, refetch: refetchVisits } = useProjectVisits(projectId);
+  const { data: invoices, loading: loadingInvoices, refetch: refetchInvoices } = useProjectInvoices(projectId);
+
+  // Active tab
+  const [activeTab, setActiveTab] = useState<ProjectTab>("visits");
 
   // Invite modal state
   const [showInvite, setShowInvite] = useState(false);
@@ -46,6 +59,7 @@ export default function ProjectPage({ projectId, onNavigate }: ProjectPageProps)
   if (!project) return <ErrorMessage message="Проект не найден" />;
 
   const projectVisits = visits || [];
+  const projectInvoices = invoices || [];
 
   // --- Handlers ---
 
@@ -112,6 +126,7 @@ export default function ProjectPage({ projectId, onNavigate }: ProjectPageProps)
       });
       setInvoiceSuccess("Счёт создан!");
       setInvoiceTitle(""); setInvoiceAmount(""); setInvoiceDueDate("");
+      refetchInvoices();
       setTimeout(() => { setShowCreateInvoice(false); setInvoiceSuccess(""); }, 1500);
     } catch (err: any) {
       setInvoiceError(err.message || "Ошибка создания счёта");
@@ -119,6 +134,10 @@ export default function ProjectPage({ projectId, onNavigate }: ProjectPageProps)
       setSavingInvoice(false);
     }
   };
+
+  // --- Invoice totals ---
+  const invoiceTotal = projectInvoices.reduce((s, i) => s + i.amount, 0);
+  const invoicePaid = projectInvoices.filter((i) => i.status === "paid").reduce((s, i) => s + i.amount, 0);
 
   return (
     <div className="animate-fade-in">
@@ -137,9 +156,6 @@ export default function ProjectPage({ projectId, onNavigate }: ProjectPageProps)
           <div className="flex gap-2">
             <button className="btn btn-secondary" onClick={() => setShowInvite(true)}>
               <Icons.Send /> Пригласить
-            </button>
-            <button className="btn btn-secondary" onClick={() => setShowCreateInvoice(true)}>
-              <Icons.Download /> Новый счёт
             </button>
           </div>
         </div>
@@ -171,64 +187,168 @@ export default function ProjectPage({ projectId, onNavigate }: ProjectPageProps)
         </div>
       </div>
 
-      {/* Visits header */}
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-base font-semibold">Визиты</h2>
-        <button className="btn btn-primary" onClick={() => setShowCreateVisit(true)}>
-          <Icons.Plus /> Новый визит
-        </button>
+      {/* Tabs */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="filter-tabs">
+          <button
+            className={`filter-tab ${activeTab === "visits" ? "active" : ""}`}
+            onClick={() => setActiveTab("visits")}
+          >
+            <span className="flex items-center gap-1.5">
+              <Icons.Camera className="w-3.5 h-3.5" /> Визиты
+            </span>
+          </button>
+          <button
+            className={`filter-tab ${activeTab === "supply" ? "active" : ""}`}
+            onClick={() => setActiveTab("supply")}
+          >
+            <span className="flex items-center gap-1.5">
+              <Icons.Box className="w-3.5 h-3.5" /> Комплектация
+            </span>
+          </button>
+          <button
+            className={`filter-tab ${activeTab === "invoices" ? "active" : ""}`}
+            onClick={() => setActiveTab("invoices")}
+          >
+            <span className="flex items-center gap-1.5">
+              <Icons.Receipt className="w-3.5 h-3.5" /> Счета
+            </span>
+          </button>
+        </div>
+
+        {/* Context action for active tab */}
+        {activeTab === "visits" && (
+          <button className="btn btn-primary" onClick={() => setShowCreateVisit(true)}>
+            <Icons.Plus /> Новый визит
+          </button>
+        )}
+        {activeTab === "invoices" && (
+          <button className="btn btn-primary" onClick={() => setShowCreateInvoice(true)}>
+            <Icons.Plus /> Новый счёт
+          </button>
+        )}
       </div>
 
-      {/* Timeline */}
-      <div className="relative">
-        <div className="absolute left-[19px] top-6 bottom-6 w-0.5 bg-[#F0EEE9]" />
-        {projectVisits.map((visit) => (
-          <div
-            key={visit.id}
-            className="relative ml-12 mb-4 bg-white border border-[#E8E6E1] rounded-xl px-5 py-[18px] cursor-pointer transition-all duration-200 hover:border-[#D5D3CE] hover:shadow-sm"
-            onClick={() => onNavigate("visit", { projectId: project.id, visitId: visit.id })}
-          >
-            <div className="absolute -left-9 top-5 w-2.5 h-2.5 rounded-full bg-[#2C5F2D] border-2 border-[#F7F6F3] shadow-[0_0_0_2px_#E8F0E8]" />
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-[13px] font-semibold font-mono-custom">{formatDate(visit.date)}</span>
-              <div className="flex gap-3">
-                <span className="flex items-center gap-1 text-xs text-[#6B6B6B]">
-                  <Icons.Camera className="w-4 h-4" /> {visit.photo_count} фото
-                </span>
-                {visit.issue_count > 0 && (
-                  <span
-                    className="flex items-center gap-1 text-xs"
-                    style={{ color: visit.issue_count > visit.resolved_count ? "#E85D3A" : "#2A9D5C" }}
-                  >
-                    <Icons.Alert /> {visit.resolved_count}/{visit.issue_count} исправлено
-                  </span>
+      {/* Tab content */}
+      {activeTab === "visits" && (
+        <div className="relative">
+          <div className="absolute left-[19px] top-6 bottom-6 w-0.5 bg-[#F0EEE9]" />
+          {projectVisits.length === 0 ? (
+            <div className="text-center py-12 text-[13px] text-[#9B9B9B]">Нет визитов</div>
+          ) : (
+            projectVisits.map((visit) => (
+              <div
+                key={visit.id}
+                className="relative ml-12 mb-4 bg-white border border-[#E8E6E1] rounded-xl px-5 py-[18px] cursor-pointer transition-all duration-200 hover:border-[#D5D3CE] hover:shadow-sm"
+                onClick={() => onNavigate("visit", { projectId: project.id, visitId: visit.id })}
+              >
+                <div className="absolute -left-9 top-5 w-2.5 h-2.5 rounded-full bg-[#2C5F2D] border-2 border-[#F7F6F3] shadow-[0_0_0_2px_#E8F0E8]" />
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-[13px] font-semibold font-mono-custom">{formatDate(visit.date)}</span>
+                  <div className="flex gap-3">
+                    <span className="flex items-center gap-1 text-xs text-[#6B6B6B]">
+                      <Icons.Camera className="w-4 h-4" /> {visit.photo_count} фото
+                    </span>
+                    {visit.issue_count > 0 && (
+                      <span
+                        className="flex items-center gap-1 text-xs"
+                        style={{ color: visit.issue_count > visit.resolved_count ? "#E85D3A" : "#2A9D5C" }}
+                      >
+                        <Icons.Alert /> {visit.resolved_count}/{visit.issue_count} исправлено
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="text-sm text-[#6B6B6B] leading-relaxed">{visit.title}</div>
+                {visit.note && (
+                  <div className="text-[13px] text-[#9B9B9B] mt-1">{visit.note}</div>
                 )}
+                <div className="flex gap-1.5 mt-2.5">
+                  {visit.issue_count > 0 && visit.issue_count > visit.resolved_count && (
+                    <span className="badge bg-[#FEF0EC] text-[#E85D3A]">
+                      {visit.issue_count - visit.resolved_count} открытых замечаний
+                    </span>
+                  )}
+                  {visit.issue_count > 0 && visit.resolved_count >= visit.issue_count && (
+                    <span className="badge bg-[#EAFAF1] text-[#2A9D5C]">
+                      <Icons.Check /> Все исправлено
+                    </span>
+                  )}
+                  {visit.status === 'planned' && (
+                    <span className="badge bg-[#F3F4F6] text-[#6B7280]">
+                      Запланирован
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {activeTab === "supply" && (
+        <SupplyModule projectId={projectId} />
+      )}
+
+      {activeTab === "invoices" && (
+        <div>
+          {/* Invoice summary */}
+          {projectInvoices.length > 0 && (
+            <div className="flex gap-4 mb-4">
+              <div className="bg-white border border-[#E8E6E1] rounded-xl px-4 py-3 flex-1">
+                <div className="text-[11px] text-[#9B9B9B] mb-1">Всего выставлено</div>
+                <div className="text-lg font-semibold font-mono-custom">{formatPrice(invoiceTotal)}</div>
+              </div>
+              <div className="bg-white border border-[#E8E6E1] rounded-xl px-4 py-3 flex-1">
+                <div className="text-[11px] text-[#9B9B9B] mb-1">Оплачено</div>
+                <div className="text-lg font-semibold font-mono-custom text-[#16A34A]">{formatPrice(invoicePaid)}</div>
+              </div>
+              <div className="bg-white border border-[#E8E6E1] rounded-xl px-4 py-3 flex-1">
+                <div className="text-[11px] text-[#9B9B9B] mb-1">К оплате</div>
+                <div className="text-lg font-semibold font-mono-custom text-[#D97706]">{formatPrice(invoiceTotal - invoicePaid)}</div>
               </div>
             </div>
-            <div className="text-sm text-[#6B6B6B] leading-relaxed">{visit.title}</div>
-            {visit.note && (
-              <div className="text-[13px] text-[#9B9B9B] mt-1">{visit.note}</div>
-            )}
-            <div className="flex gap-1.5 mt-2.5">
-              {visit.issue_count > 0 && visit.issue_count > visit.resolved_count && (
-                <span className="badge bg-[#FEF0EC] text-[#E85D3A]">
-                  {visit.issue_count - visit.resolved_count} открытых замечаний
-                </span>
-              )}
-              {visit.issue_count > 0 && visit.resolved_count >= visit.issue_count && (
-                <span className="badge bg-[#EAFAF1] text-[#2A9D5C]">
-                  <Icons.Check /> Все исправлено
-                </span>
-              )}
-              {visit.status === 'planned' && (
-                <span className="badge bg-[#F3F4F6] text-[#6B7280]">
-                  Запланирован
-                </span>
-              )}
+          )}
+
+          {/* Invoice list */}
+          {loadingInvoices ? (
+            <Loading />
+          ) : projectInvoices.length === 0 ? (
+            <div className="text-center py-12 text-[13px] text-[#9B9B9B]">Нет счетов</div>
+          ) : (
+            <div className="bg-white border border-[#E8E6E1] rounded-xl overflow-hidden">
+              {projectInvoices.map((inv: Invoice, i: number) => {
+                const statusStyle = INVOICE_STATUS_STYLE[inv.status];
+                return (
+                  <div
+                    key={inv.id}
+                    className={`flex items-center gap-4 px-5 py-4 ${
+                      i < projectInvoices.length - 1 ? "border-b border-[#F0EEE9]" : ""
+                    }`}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[14px] font-medium truncate">{inv.title}</div>
+                      <div className="text-[12px] text-[#9B9B9B] mt-0.5">
+                        {inv.due_date ? `До ${formatShortDate(inv.due_date)}` : "Без срока"}
+                        {inv.paid_at && ` · Оплачен ${formatShortDate(inv.paid_at)}`}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-[15px] font-semibold font-mono-custom">{formatPrice(inv.amount)}</div>
+                    </div>
+                    <span
+                      className="text-[11px] font-medium px-2.5 py-1 rounded-full whitespace-nowrap"
+                      style={{ background: statusStyle.bg, color: statusStyle.text }}
+                    >
+                      {statusStyle.label}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
-          </div>
-        ))}
-      </div>
+          )}
+        </div>
+      )}
 
       {/* ===== Create Visit Modal ===== */}
       {showCreateVisit && (

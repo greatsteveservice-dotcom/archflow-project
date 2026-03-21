@@ -5,7 +5,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import type { ProjectWithStats, VisitWithStats, PhotoRecord, Profile } from './types';
+import type { ProjectWithStats, VisitWithStats, PhotoRecord, Profile, Stage, SupplyItem, Invoice, Notification } from './types';
 import {
   fetchProjects,
   fetchProject,
@@ -13,6 +13,10 @@ import {
   fetchVisit,
   fetchVisitPhotos,
   fetchCurrentProfile,
+  fetchProjectStages,
+  fetchProjectSupplyItems,
+  fetchProjectInvoices,
+  fetchNotifications,
 } from './queries';
 
 // ======================== GENERIC HOOK ========================
@@ -100,4 +104,33 @@ export function useVisitPhotos(visitId: string | null) {
 /** Fetch current user profile */
 export function useCurrentProfile() {
   return useQuery<Profile | null>(() => fetchCurrentProfile(), []);
+}
+
+/** Fetch stages for a project */
+export function useProjectStages(projectId: string | null) {
+  return useQuery<Stage[]>(
+    () => projectId ? fetchProjectStages(projectId) : Promise.resolve([]),
+    [projectId]
+  );
+}
+
+/** Fetch supply items for a project */
+export function useProjectSupplyItems(projectId: string | null) {
+  return useQuery<SupplyItem[]>(
+    () => projectId ? fetchProjectSupplyItems(projectId) : Promise.resolve([]),
+    [projectId]
+  );
+}
+
+/** Fetch invoices for a project */
+export function useProjectInvoices(projectId: string | null) {
+  return useQuery<Invoice[]>(
+    () => projectId ? fetchProjectInvoices(projectId) : Promise.resolve([]),
+    [projectId]
+  );
+}
+
+/** Fetch computed notifications */
+export function useNotifications() {
+  return useQuery<Notification[]>(() => fetchNotifications(), []);
 }
