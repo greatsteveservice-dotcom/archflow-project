@@ -3,6 +3,7 @@
 // ============================================================
 
 import { supabase } from './supabase';
+import { sanitize, sanitizeUrl } from './sanitize';
 import type {
   Project, Profile, Visit, PhotoRecord, Invoice,
   Document, SupplyItem, Stage, ContractPayment,
@@ -295,8 +296,8 @@ export async function createProject(input: CreateProjectInput): Promise<Project>
   const { data, error } = await supabase
     .from('projects')
     .insert({
-      title: input.title,
-      address: input.address || null,
+      title: sanitize(input.title),
+      address: input.address ? sanitize(input.address) : null,
       scenario_type: input.scenario_type,
       start_date: input.start_date || null,
       owner_id: user.id,
@@ -313,9 +314,13 @@ export async function createProject(input: CreateProjectInput): Promise<Project>
 
 /** Update project title/address */
 export async function updateProject(projectId: string, updates: { title?: string; address?: string }): Promise<Project> {
+  const sanitized: Record<string, string> = {};
+  if (updates.title) sanitized.title = sanitize(updates.title);
+  if (updates.address) sanitized.address = sanitize(updates.address);
+
   const { data, error } = await supabase
     .from('projects')
-    .update(updates)
+    .update(sanitized)
     .eq('id', projectId)
     .select()
     .single();
@@ -333,9 +338,9 @@ export async function createVisit(input: CreateVisitInput): Promise<Visit> {
     .from('visits')
     .insert({
       project_id: input.project_id,
-      title: input.title,
+      title: sanitize(input.title),
       date: input.date,
-      note: input.note || null,
+      note: input.note ? sanitize(input.note) : null,
       created_by: user.id,
       status: 'planned',
     })
@@ -378,9 +383,9 @@ export async function createPhotoRecord(input: CreatePhotoRecordInput): Promise<
     .from('photo_records')
     .insert({
       visit_id: input.visit_id,
-      comment: input.comment || null,
+      comment: input.comment ? sanitize(input.comment) : null,
       status: input.status,
-      zone: input.zone || null,
+      zone: input.zone ? sanitize(input.zone) : null,
       photo_url: input.photo_url || null,
     })
     .select()
@@ -439,10 +444,10 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<Invoice>
     .from('invoices')
     .insert({
       project_id: input.project_id,
-      title: input.title,
+      title: sanitize(input.title),
       amount: input.amount,
       due_date: input.due_date || null,
-      payment_url: input.payment_url || null,
+      payment_url: input.payment_url ? sanitizeUrl(input.payment_url) : null,
       status: 'pending',
     })
     .select()
@@ -528,14 +533,14 @@ export async function createSupplyItem(input: CreateSupplyItemInput): Promise<Su
     .from('supply_items')
     .insert({
       project_id: input.project_id,
-      name: input.name,
-      category: input.category || null,
+      name: sanitize(input.name),
+      category: input.category ? sanitize(input.category) : null,
       target_stage_id: input.target_stage_id || null,
       lead_time_days: input.lead_time_days || 0,
       quantity: input.quantity || 1,
-      supplier: input.supplier || null,
+      supplier: input.supplier ? sanitize(input.supplier) : null,
       budget: input.budget || 0,
-      notes: input.notes || null,
+      notes: input.notes ? sanitize(input.notes) : null,
       status: 'pending',
     })
     .select()
@@ -549,14 +554,14 @@ export async function createSupplyItem(input: CreateSupplyItemInput): Promise<Su
 export async function createSupplyItems(items: CreateSupplyItemInput[]): Promise<SupplyItem[]> {
   const rows = items.map(input => ({
     project_id: input.project_id,
-    name: input.name,
-    category: input.category || null,
+    name: sanitize(input.name),
+    category: input.category ? sanitize(input.category) : null,
     target_stage_id: input.target_stage_id || null,
     lead_time_days: input.lead_time_days || 0,
     quantity: input.quantity || 1,
-    supplier: input.supplier || null,
+    supplier: input.supplier ? sanitize(input.supplier) : null,
     budget: input.budget || 0,
-    notes: input.notes || null,
+    notes: input.notes ? sanitize(input.notes) : null,
     status: 'pending' as const,
   }));
 
@@ -604,10 +609,10 @@ export async function updateProfile(input: UpdateProfileInput): Promise<Profile>
   if (!user) throw new Error('Не авторизован');
 
   const updates: Record<string, unknown> = {};
-  if (input.full_name !== undefined) updates.full_name = input.full_name;
-  if (input.phone !== undefined) updates.phone = input.phone || null;
-  if (input.telegram_id !== undefined) updates.telegram_id = input.telegram_id || null;
-  if (input.company !== undefined) updates.company = input.company || null;
+  if (input.full_name !== undefined) updates.full_name = sanitize(input.full_name);
+  if (input.phone !== undefined) updates.phone = input.phone ? sanitize(input.phone) : null;
+  if (input.telegram_id !== undefined) updates.telegram_id = input.telegram_id ? sanitize(input.telegram_id) : null;
+  if (input.company !== undefined) updates.company = input.company ? sanitize(input.company) : null;
 
   const { data, error } = await supabase
     .from('profiles')
@@ -826,7 +831,7 @@ export async function createDocument(input: CreateDocumentInput): Promise<Docume
     .from('documents')
     .insert({
       project_id: input.project_id,
-      title: input.title,
+      title: sanitize(input.title),
       version: input.version || '1.0',
       format: input.format,
       file_url: input.file_url,
@@ -969,9 +974,15 @@ export async function updateVisit(
   visitId: string,
   updates: { title?: string; date?: string; note?: string; status?: string }
 ): Promise<Visit> {
+  const sanitized: Record<string, unknown> = {};
+  if (updates.title !== undefined) sanitized.title = sanitize(updates.title);
+  if (updates.date !== undefined) sanitized.date = updates.date;
+  if (updates.note !== undefined) sanitized.note = updates.note ? sanitize(updates.note) : null;
+  if (updates.status !== undefined) sanitized.status = updates.status;
+
   const { data, error } = await supabase
     .from('visits')
-    .update(updates)
+    .update(sanitized)
     .eq('id', visitId)
     .select()
     .single();

@@ -83,7 +83,10 @@ export default function Sidebar({ currentPage, onNavigate, isOpen, onClose }: Si
           <Icons.LogOut className="w-4 h-4" />
           Выйти
         </div>
-        <div className="flex items-center gap-2.5 px-3 py-2 mt-1">
+        <div
+          className="flex items-center gap-2.5 px-3 py-2 mt-1 rounded-lg cursor-pointer hover:bg-white/[0.06] transition-colors"
+          onClick={() => handleNav("profile")}
+        >
           <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-semibold">
             {initials}
           </div>

@@ -15,6 +15,10 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<{ error: string | null }>;
+  updatePassword: (newPassword: string) => Promise<{ error: string | null }>;
+  refreshProfile: () => Promise<void>;
+  isRecovery: boolean;
 }
 
 // ======================== CONTEXT ========================
@@ -27,6 +31,10 @@ const AuthContext = createContext<AuthContextType>({
   signIn: async () => ({ error: null }),
   signUp: async () => ({ error: null }),
   signOut: async () => {},
+  resetPassword: async () => ({ error: null }),
+  updatePassword: async () => ({ error: null }),
+  refreshProfile: async () => {},
+  isRecovery: false,
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -38,6 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isRecovery, setIsRecovery] = useState(false);
 
   // Fetch profile from profiles table
   const fetchProfile = useCallback(async (userId: string) => {
@@ -81,6 +90,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
         setProfile(null);
       }
+      // Handle password recovery event
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsRecovery(true);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -117,10 +130,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     await supabase.auth.signOut();
     setProfile(null);
+    setIsRecovery(false);
+  };
+
+  // Request password reset
+  const resetPassword = async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}`,
+    });
+    if (error) {
+      return { error: translateAuthError(error.message) };
+    }
+    return { error: null };
+  };
+
+  // Refresh profile data from DB
+  const refreshProfile = useCallback(async () => {
+    if (user) {
+      await fetchProfile(user.id);
+    }
+  }, [user, fetchProfile]);
+
+  // Update password (after recovery or in profile)
+  const updatePassword = async (newPassword: string) => {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) {
+      return { error: translateAuthError(error.message) };
+    }
+    setIsRecovery(false);
+    return { error: null };
   };
 
   return (
-    <AuthContext.Provider value={{ session, user, profile, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ session, user, profile, loading, signIn, signUp, signOut, resetPassword, updatePassword, refreshProfile, isRecovery }}>
       {children}
     </AuthContext.Provider>
   );

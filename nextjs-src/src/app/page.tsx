@@ -7,6 +7,8 @@ import ProjectsPage from "./components/ProjectsPage";
 import ProjectPage from "./components/ProjectPage";
 import VisitPage from "./components/VisitPage";
 import LoginPage from "./components/LoginPage";
+import WelcomeScreen from "./components/WelcomeScreen";
+import ProfilePage from "./components/ProfilePage";
 import CreateProjectModal from "./components/CreateProjectModal";
 import Topbar from "./components/Topbar";
 import Toast from "./components/Toast";
@@ -23,7 +25,8 @@ export default function Home() {
   const [showCreateProject, setShowCreateProject] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { data: projects, refetch: refetchProjects } = useProjects();
+  const { data: projects, loading: projectsLoading, refetch: refetchProjects } = useProjects();
+  const [welcomeDismissed, setWelcomeDismissed] = useState(false);
 
   const toast = useCallback((msg: string) => setToastMsg(msg), []);
 
@@ -67,6 +70,9 @@ export default function Home() {
   if (!session) {
     return <LoginPage />;
   }
+
+  // New user — show welcome screen (0 projects, first visit)
+  const showWelcome = !welcomeDismissed && !projectsLoading && projects !== null && projects.length === 0 && page === "dashboard";
 
   const navigate = (newPage: string, ctx: any = null) => {
     setPage(newPage);
@@ -133,6 +139,14 @@ export default function Home() {
             toast={toast}
           />
         );
+      case "profile":
+        return (
+          <ProfilePage
+            onNavigate={navigate}
+            onMenuToggle={openSidebar}
+            toast={toast}
+          />
+        );
       default:
         return null;
     }
@@ -143,7 +157,14 @@ export default function Home() {
       <Sidebar currentPage={page} onNavigate={navigate} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <div className="flex-1 overflow-x-hidden">
-        {renderPage()}
+        {showWelcome ? (
+          <WelcomeScreen
+            onCreateProject={() => { setWelcomeDismissed(true); setShowCreateProject(true); }}
+            onNavigate={(p) => { setWelcomeDismissed(true); navigate(p); }}
+          />
+        ) : (
+          renderPage()
+        )}
       </div>
 
       {/* Create Project Modal */}
