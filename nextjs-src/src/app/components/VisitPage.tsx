@@ -3,11 +3,12 @@
 import { useState, useRef } from "react";
 import { Icons } from "./Icons";
 import Loading, { ErrorMessage } from "./Loading";
+import ConfirmDialog from "./ConfirmDialog";
 import { useVisit, useVisitPhotos, useProject } from "../lib/hooks";
 import { usePermissions } from "../lib/permissions";
-import { formatDate, uploadPhoto, createPhotoRecord, updatePhotoStatus } from "../lib/queries";
+import { formatDate, uploadPhoto, createPhotoRecord, updatePhotoStatus, deletePhotoRecord } from "../lib/queries";
 import { PHOTO_STATUS_CONFIG } from "../lib/types";
-import type { PhotoStatus } from "../lib/types";
+import type { PhotoStatus, PhotoRecord } from "../lib/types";
 
 interface VisitPageProps {
   projectId: string;
@@ -44,6 +45,10 @@ export default function VisitPage({ projectId, visitId, onNavigate, toast, onMen
   const [photoError, setPhotoError] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Delete photo confirm
+  const [photoToDelete, setPhotoToDelete] = useState<PhotoRecord | null>(null);
+  const [deletingPhoto, setDeletingPhoto] = useState(false);
 
   if (loadingProject || loadingVisit || loadingPhotos) return <Loading />;
   if (errorVisit) return <ErrorMessage message={errorVisit} />;
@@ -140,6 +145,24 @@ export default function VisitPage({ projectId, visitId, onNavigate, toast, onMen
     }
   };
 
+  // --- Delete photo ---
+
+  const handleDeletePhoto = async () => {
+    if (!photoToDelete) return;
+    setDeletingPhoto(true);
+    try {
+      await deletePhotoRecord(photoToDelete.id);
+      toast('Фото удалено');
+      refetchPhotos();
+      refetchVisit();
+      setPhotoToDelete(null);
+    } catch (err: any) {
+      toast(err.message || 'Ошибка удаления фото');
+    } finally {
+      setDeletingPhoto(false);
+    }
+  };
+
   return (
     <div className="animate-fade-in">
       {/* Visit header */}
@@ -211,7 +234,7 @@ export default function VisitPage({ projectId, visitId, onNavigate, toast, onMen
           return (
             <div
               key={photo.id}
-              className="card overflow-hidden hover:shadow-md"
+              className="card overflow-hidden hover:shadow-md group"
             >
               <div className="w-full h-[180px] flex items-center justify-center text-[#9CA3AF] relative bg-gradient-to-br from-[#F3F4F6] to-[#E5E7EB] overflow-hidden">
                 {photo.photo_url ? (
@@ -226,6 +249,16 @@ export default function VisitPage({ projectId, visitId, onNavigate, toast, onMen
                 <div className="absolute top-2.5 left-2.5 text-[11px] font-medium px-2 py-0.5 rounded-md bg-white/90 text-[#6B7280] backdrop-blur-sm">
                   {photo.zone || 'Без зоны'}
                 </div>
+                {/* Delete button overlay */}
+                {permissions.canChangePhotoStatus && (
+                  <button
+                    className="absolute top-2.5 right-2.5 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg bg-white/90 backdrop-blur-sm text-[#9CA3AF] hover:text-[#DC2626] hover:bg-[#FEF2F2]"
+                    onClick={() => setPhotoToDelete(photo)}
+                    title="Удалить фото"
+                  >
+                    <Icons.Trash className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
               <div className="p-3.5">
                 <div className="text-[13px] text-[#111827] leading-relaxed mb-2.5">
@@ -352,6 +385,17 @@ export default function VisitPage({ projectId, visitId, onNavigate, toast, onMen
           </div>
         </div>
       )}
+
+      {/* Confirm delete photo */}
+      <ConfirmDialog
+        open={!!photoToDelete}
+        title="Удалить фото?"
+        message={`Фото${photoToDelete?.zone ? ` из зоны «${photoToDelete.zone}»` : ''} будет безвозвратно удалено.`}
+        confirmLabel="Удалить"
+        loading={deletingPhoto}
+        onConfirm={handleDeletePhoto}
+        onCancel={() => setPhotoToDelete(null)}
+      />
     </div>
   );
 }

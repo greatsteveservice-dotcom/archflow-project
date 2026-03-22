@@ -905,3 +905,137 @@ export async function acceptProjectInvitation(token: string): Promise<{ project_
   if (data?.error) throw new Error(data.error);
   return data;
 }
+
+// ======================== DELETE OPERATIONS ========================
+
+/** Delete a project (cascading deletes handled by DB) */
+export async function deleteProject(projectId: string): Promise<void> {
+  const { error } = await supabase
+    .from('projects')
+    .delete()
+    .eq('id', projectId);
+  if (error) throw new Error(humanError(error));
+}
+
+/** Delete a visit */
+export async function deleteVisit(visitId: string): Promise<void> {
+  const { error } = await supabase
+    .from('visits')
+    .delete()
+    .eq('id', visitId);
+  if (error) throw new Error(humanError(error));
+}
+
+/** Delete a photo record */
+export async function deletePhotoRecord(photoId: string): Promise<void> {
+  const { error } = await supabase
+    .from('photo_records')
+    .delete()
+    .eq('id', photoId);
+  if (error) throw new Error(humanError(error));
+}
+
+/** Delete a document */
+export async function deleteDocument(documentId: string): Promise<void> {
+  const { error } = await supabase
+    .from('documents')
+    .delete()
+    .eq('id', documentId);
+  if (error) throw new Error(humanError(error));
+}
+
+/** Remove a project member */
+export async function removeProjectMember(memberId: string): Promise<void> {
+  const { error } = await supabase
+    .from('project_members')
+    .delete()
+    .eq('id', memberId);
+  if (error) throw new Error(humanError(error));
+}
+
+/** Delete an invoice */
+export async function deleteInvoice(invoiceId: string): Promise<void> {
+  const { error } = await supabase
+    .from('invoices')
+    .delete()
+    .eq('id', invoiceId);
+  if (error) throw new Error(humanError(error));
+}
+
+// ======================== UPDATE OPERATIONS ========================
+
+/** Update a visit (title, date, note) */
+export async function updateVisit(
+  visitId: string,
+  updates: { title?: string; date?: string; note?: string; status?: string }
+): Promise<Visit> {
+  const { data, error } = await supabase
+    .from('visits')
+    .update(updates)
+    .eq('id', visitId)
+    .select()
+    .single();
+  if (error) throw new Error(humanError(error));
+  return data as Visit;
+}
+
+/** Toggle invoice status between pending ↔ paid */
+export async function updateInvoiceStatus(
+  invoiceId: string,
+  status: 'pending' | 'paid'
+): Promise<Invoice> {
+  const updates: Record<string, unknown> = { status };
+  if (status === 'paid') {
+    updates.paid_at = new Date().toISOString();
+  } else {
+    updates.paid_at = null;
+  }
+
+  const { data, error } = await supabase
+    .from('invoices')
+    .update(updates)
+    .eq('id', invoiceId)
+    .select()
+    .single();
+  if (error) throw new Error(humanError(error));
+  return data as Invoice;
+}
+
+// ======================== HUMAN-READABLE ERRORS ========================
+
+/** Convert Supabase error to user-friendly Russian message */
+function humanError(err: { code?: string; message?: string; details?: string }): string {
+  const code = err.code || '';
+  const msg = err.message || '';
+
+  // RLS policy violations
+  if (code === '42501' || msg.includes('policy')) {
+    return 'Недостаточно прав для выполнения этого действия';
+  }
+  // Foreign key violations
+  if (code === '23503') {
+    return 'Невозможно удалить: есть связанные данные. Сначала удалите зависимые записи';
+  }
+  // Unique constraint
+  if (code === '23505') {
+    return 'Такая запись уже существует';
+  }
+  // Not null violation
+  if (code === '23502') {
+    return 'Обязательное поле не заполнено';
+  }
+  // Check constraint
+  if (code === '23514') {
+    return 'Некорректное значение поля';
+  }
+  // Network / timeout
+  if (msg.includes('fetch') || msg.includes('network') || msg.includes('timeout')) {
+    return 'Ошибка сети. Проверьте подключение к интернету';
+  }
+  // Auth
+  if (code === 'PGRST301' || msg.includes('JWT')) {
+    return 'Сессия истекла. Войдите заново';
+  }
+  // Fallback
+  return msg || 'Произошла ошибка. Попробуйте ещё раз';
+}

@@ -3,8 +3,9 @@ import { useState } from 'react';
 import { Icons } from '../Icons';
 import Bdg from '../Bdg';
 import Modal from '../Modal';
+import ConfirmDialog from '../ConfirmDialog';
 import type { ProjectWithStats, VisitWithStats, Invoice } from '../../lib/types';
-import { formatDate, formatPrice, createInvoice } from '../../lib/queries';
+import { formatDate, formatPrice, createInvoice, updateInvoiceStatus, deleteInvoice } from '../../lib/queries';
 
 interface JournalTabProps {
   project: ProjectWithStats;
@@ -31,6 +32,10 @@ export default function JournalTab({ project, projectId, visits, invoices, onSel
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Delete invoice confirm
+  const [invToDelete, setInvToDelete] = useState<Invoice | null>(null);
+  const [deletingInv, setDeletingInv] = useState(false);
+
   const handleCreateInvoice = async () => {
     const errs: Record<string, string> = {};
     if (!invTitle.trim()) errs.title = 'Введите название';
@@ -53,9 +58,56 @@ export default function JournalTab({ project, projectId, visits, invoices, onSel
     setSaving(false);
   };
 
+  const handleToggleStatus = async (inv: Invoice) => {
+    const newStatus = inv.status === 'paid' ? 'pending' : 'paid';
+    try {
+      await updateInvoiceStatus(inv.id, newStatus);
+      toast(newStatus === 'paid' ? 'Счёт отмечен как оплаченный' : 'Статус оплаты снят');
+      refetchInvoices();
+    } catch (e: any) {
+      toast(e.message || 'Ошибка обновления статуса');
+    }
+  };
+
+  const handleDeleteInv = async () => {
+    if (!invToDelete) return;
+    setDeletingInv(true);
+    try {
+      await deleteInvoice(invToDelete.id);
+      toast('Счёт удалён');
+      refetchInvoices();
+      setInvToDelete(null);
+    } catch (e: any) {
+      toast(e.message || 'Ошибка удаления счёта');
+    }
+    setDeletingInv(false);
+  };
+
+  // Totals
+  const totalPending = pendingInv.reduce((s, i) => s + i.amount, 0);
+  const totalPaid = paidInv.reduce((s, i) => s + i.amount, 0);
+
   return (
     <div className="animate-fade-in">
-      {/* Invoice summary */}
+      {/* Summary cards */}
+      {invoices.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5">
+          <div className="card p-4 text-center">
+            <div className="text-[20px] font-bold font-mono-custom">{formatPrice(totalPaid + totalPending)}</div>
+            <div className="text-[11px] text-[#9CA3AF] mt-0.5">Всего выставлено</div>
+          </div>
+          <div className="card p-4 text-center">
+            <div className="text-[20px] font-bold font-mono-custom text-[#16A34A]">{formatPrice(totalPaid)}</div>
+            <div className="text-[11px] text-[#9CA3AF] mt-0.5">Оплачено</div>
+          </div>
+          <div className="card p-4 text-center">
+            <div className={`text-[20px] font-bold font-mono-custom ${totalPending > 0 ? 'text-[#D97706]' : ''}`}>{formatPrice(totalPending)}</div>
+            <div className="text-[11px] text-[#9CA3AF] mt-0.5">Ожидает оплаты</div>
+          </div>
+        </div>
+      )}
+
+      {/* Invoice list */}
       <div className="card p-5 mb-6" style={{ borderLeft: `4px solid ${pendingInv.length > 0 ? '#D97706' : '#16A34A'}` }}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
@@ -75,9 +127,9 @@ export default function JournalTab({ project, projectId, visits, invoices, onSel
         </div>
         <div className="space-y-2">
           {invoices.map(inv => (
-            <div key={inv.id} className="flex items-center justify-between text-[13px] py-2 border-b border-[#F3F4F6] last:border-none">
+            <div key={inv.id} className="flex items-center justify-between text-[13px] py-2.5 border-b border-[#F3F4F6] last:border-none group">
               <span className="truncate min-w-0">{inv.title}</span>
-              <div className="flex items-center gap-3 flex-shrink-0 ml-2">
+              <div className="flex items-center gap-2 flex-shrink-0 ml-2">
                 <span className="font-mono-custom font-medium">{formatPrice(inv.amount)}</span>
                 {inv.payment_url && (
                   <a
@@ -92,7 +144,31 @@ export default function JournalTab({ project, projectId, visits, invoices, onSel
                     <span className="text-[11px]">Оплатить</span>
                   </a>
                 )}
-                <Bdg s={inv.status} />
+                {/* Status toggle button */}
+                {canCreateInvoice && (
+                  <button
+                    className={`text-[11px] font-medium px-2 py-0.5 rounded-full transition-all cursor-pointer ${
+                      inv.status === 'paid'
+                        ? 'bg-[#ECFDF3] text-[#16A34A] hover:bg-[#D1FAE5]'
+                        : 'bg-[#FFF7ED] text-[#D97706] hover:bg-[#FFEDD5]'
+                    }`}
+                    onClick={() => handleToggleStatus(inv)}
+                    title={inv.status === 'paid' ? 'Снять отметку об оплате' : 'Отметить как оплаченный'}
+                  >
+                    {inv.status === 'paid' ? '✓ Оплачен' : 'Ожидает'}
+                  </button>
+                )}
+                {!canCreateInvoice && <Bdg s={inv.status} />}
+                {/* Delete button */}
+                {canCreateInvoice && (
+                  <button
+                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-lg hover:bg-[#FEF2F2] text-[#9CA3AF] hover:text-[#DC2626]"
+                    onClick={() => setInvToDelete(inv)}
+                    title="Удалить счёт"
+                  >
+                    <Icons.Trash className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -160,6 +236,17 @@ export default function JournalTab({ project, projectId, visits, invoices, onSel
           </div>
         </div>
       </Modal>
+
+      {/* Confirm delete invoice */}
+      <ConfirmDialog
+        open={!!invToDelete}
+        title="Удалить счёт?"
+        message={`Счёт «${invToDelete?.title || ''}» на сумму ${invToDelete ? formatPrice(invToDelete.amount) : ''} будет удалён.`}
+        confirmLabel="Удалить"
+        loading={deletingInv}
+        onConfirm={handleDeleteInv}
+        onCancel={() => setInvToDelete(null)}
+      />
     </div>
   );
 }

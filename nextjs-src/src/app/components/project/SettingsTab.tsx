@@ -3,9 +3,10 @@ import { useState } from 'react';
 import { Icons } from '../Icons';
 import Bdg from '../Bdg';
 import Modal from '../Modal';
+import ConfirmDialog from '../ConfirmDialog';
 import type { ProjectWithStats, ProjectMemberWithProfile, UserRole, AccessLevel } from '../../lib/types';
 import { useProjectMembersWithProfiles } from '../../lib/hooks';
-import { inviteProjectMember, createProjectInvitation } from '../../lib/queries';
+import { inviteProjectMember, createProjectInvitation, removeProjectMember, deleteProject } from '../../lib/queries';
 
 const ROLE_LABEL: Record<string, string> = {
   client: 'Заказчик', contractor: 'Подрядчик', supplier: 'Комплектатор', assistant: 'Ассистент', designer: 'Дизайнер',
@@ -30,9 +31,11 @@ interface SettingsTabProps {
   project: ProjectWithStats;
   projectId: string;
   toast: (msg: string) => void;
+  canDeleteProject?: boolean;
+  onDeleteProject?: () => void;
 }
 
-export default function SettingsTab({ project, projectId, toast }: SettingsTabProps) {
+export default function SettingsTab({ project, projectId, toast, canDeleteProject = false, onDeleteProject }: SettingsTabProps) {
   const [sub, setSub] = useState<'roles' | 'details'>('roles');
   const { data: members, loading, refetch: refetchMembers } = useProjectMembersWithProfiles(projectId);
 
@@ -45,6 +48,14 @@ export default function SettingsTab({ project, projectId, toast }: SettingsTabPr
   const [saving, setSaving] = useState(false);
   const [invError, setInvError] = useState('');
   const [inviteLink, setInviteLink] = useState('');
+
+  // Delete member confirm
+  const [memberToDelete, setMemberToDelete] = useState<ProjectMemberWithProfile | null>(null);
+  const [deletingMember, setDeletingMember] = useState(false);
+
+  // Delete project confirm
+  const [showDeleteProject, setShowDeleteProject] = useState(false);
+  const [deletingProject, setDeletingProject] = useState(false);
 
   const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
@@ -99,6 +110,35 @@ export default function SettingsTab({ project, projectId, toast }: SettingsTabPr
     setInviteTab('email');
   };
 
+  const handleRemoveMember = async () => {
+    if (!memberToDelete) return;
+    setDeletingMember(true);
+    try {
+      await removeProjectMember(memberToDelete.id);
+      toast('Участник удалён');
+      refetchMembers();
+      setMemberToDelete(null);
+    } catch (err: any) {
+      toast(err.message || 'Ошибка удаления участника');
+    } finally {
+      setDeletingMember(false);
+    }
+  };
+
+  const handleDeleteProject = async () => {
+    setDeletingProject(true);
+    try {
+      await deleteProject(projectId);
+      toast('Проект удалён');
+      setShowDeleteProject(false);
+      onDeleteProject?.();
+    } catch (err: any) {
+      toast(err.message || 'Ошибка удаления проекта');
+    } finally {
+      setDeletingProject(false);
+    }
+  };
+
   const getInitials = (member: ProjectMemberWithProfile) => {
     if (member.profile?.full_name) {
       return member.profile.full_name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
@@ -135,7 +175,7 @@ export default function SettingsTab({ project, projectId, toast }: SettingsTabPr
           ) : (
             <div className="space-y-2 mb-6">
               {(members || []).map((m) => (
-                <div key={m.id} className="card p-4 flex items-center justify-between">
+                <div key={m.id} className="card p-4 flex items-center justify-between group">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-[#F3F4F6] flex items-center justify-center text-[11px] font-semibold text-[#6B7280]">
                       {getInitials(m)}
@@ -145,7 +185,18 @@ export default function SettingsTab({ project, projectId, toast }: SettingsTabPr
                       <div className="text-[11px] text-[#9CA3AF]">{ROLE_LABEL[m.role] || m.role}</div>
                     </div>
                   </div>
-                  <Bdg s={m.role === 'designer' ? 'active' : m.access_level === 'full' ? 'approved' : 'pending'} />
+                  <div className="flex items-center gap-2">
+                    <Bdg s={m.role === 'designer' ? 'active' : m.access_level === 'full' ? 'approved' : 'pending'} />
+                    {m.role !== 'designer' && (
+                      <button
+                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-[#FEF2F2] text-[#9CA3AF] hover:text-[#DC2626]"
+                        onClick={() => setMemberToDelete(m)}
+                        title="Удалить участника"
+                      >
+                        <Icons.Trash className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
               {(!members || members.length === 0) && (
@@ -168,63 +219,81 @@ export default function SettingsTab({ project, projectId, toast }: SettingsTabPr
       )}
 
       {sub === 'details' && (
-        <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}>
-          <div className="card p-5">
-            <div className="flex items-center gap-2 mb-4">
-              <Icons.Calendar className="w-4 h-4 text-[#6B7280]" />
-              <h4 className="text-[13px] font-semibold">Даты и визиты</h4>
+        <div>
+          <div className="grid gap-4 mb-8" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}>
+            <div className="card p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <Icons.Calendar className="w-4 h-4 text-[#6B7280]" />
+                <h4 className="text-[13px] font-semibold">Даты и визиты</h4>
+              </div>
+              <div className="space-y-3">
+                <div className="modal-field">
+                  <label>Дата старта</label>
+                  <input type="date" defaultValue={project.start_date || ''} />
+                </div>
+                <div className="modal-field">
+                  <label>Визитов по договору</label>
+                  <input type="number" defaultValue={project.visit_count || 0} />
+                </div>
+              </div>
             </div>
-            <div className="space-y-3">
-              <div className="modal-field">
-                <label>Дата старта</label>
-                <input type="date" defaultValue={project.start_date || ''} />
+
+            <div className="card p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <Icons.Receipt className="w-4 h-4 text-[#6B7280]" />
+                <h4 className="text-[13px] font-semibold">Платежи</h4>
               </div>
-              <div className="modal-field">
-                <label>Визитов по договору</label>
-                <input type="number" defaultValue={project.visit_count || 0} />
+              <div className="space-y-3">
+                <div className="modal-field">
+                  <label>Авторский надзор (₽/мес)</label>
+                  <input type="number" defaultValue={45000} />
+                </div>
+                <div className="modal-field">
+                  <label>Следующий платёж</label>
+                  <input type="date" />
+                </div>
               </div>
+            </div>
+
+            <div className="card p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <Icons.Box className="w-4 h-4 text-[#6B7280]" />
+                <h4 className="text-[13px] font-semibold">Комплектация</h4>
+              </div>
+              <div className="space-y-3">
+                <div className="modal-field">
+                  <label>Скидка поставщикам (%)</label>
+                  <input type="number" defaultValue={12} />
+                </div>
+                <div className="modal-field">
+                  <label>Комиссия (%)</label>
+                  <input type="number" defaultValue={12} />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-end">
+              <button className="btn btn-primary w-full justify-center py-3" onClick={() => toast('Сохранено')}>
+                Сохранить
+              </button>
             </div>
           </div>
 
-          <div className="card p-5">
-            <div className="flex items-center gap-2 mb-4">
-              <Icons.Receipt className="w-4 h-4 text-[#6B7280]" />
-              <h4 className="text-[13px] font-semibold">Платежи</h4>
+          {/* Danger zone */}
+          {canDeleteProject && (
+            <div className="border border-[#FCA5A5] rounded-xl p-5 bg-[#FEF2F2]/50">
+              <h4 className="text-[13px] font-semibold text-[#DC2626] mb-2">Опасная зона</h4>
+              <p className="text-[12px] text-[#6B7280] mb-4">
+                Удаление проекта невозможно отменить. Все визиты, фото, документы и счета будут удалены.
+              </p>
+              <button
+                className="text-[12px] py-2 px-4 rounded-lg font-medium bg-[#DC2626] text-white hover:bg-[#B91C1C] transition-all flex items-center gap-1.5"
+                onClick={() => setShowDeleteProject(true)}
+              >
+                <Icons.Trash className="w-3.5 h-3.5" /> Удалить проект
+              </button>
             </div>
-            <div className="space-y-3">
-              <div className="modal-field">
-                <label>Авторский надзор (₽/мес)</label>
-                <input type="number" defaultValue={45000} />
-              </div>
-              <div className="modal-field">
-                <label>Следующий платёж</label>
-                <input type="date" />
-              </div>
-            </div>
-          </div>
-
-          <div className="card p-5">
-            <div className="flex items-center gap-2 mb-4">
-              <Icons.Box className="w-4 h-4 text-[#6B7280]" />
-              <h4 className="text-[13px] font-semibold">Комплектация</h4>
-            </div>
-            <div className="space-y-3">
-              <div className="modal-field">
-                <label>Скидка поставщикам (%)</label>
-                <input type="number" defaultValue={12} />
-              </div>
-              <div className="modal-field">
-                <label>Комиссия (%)</label>
-                <input type="number" defaultValue={12} />
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-end">
-            <button className="btn btn-primary w-full justify-center py-3" onClick={() => toast('Сохранено')}>
-              Сохранить
-            </button>
-          </div>
+          )}
         </div>
       )}
 
@@ -309,6 +378,28 @@ export default function SettingsTab({ project, projectId, toast }: SettingsTabPr
           )}
         </div>
       </Modal>
+
+      {/* Confirm remove member */}
+      <ConfirmDialog
+        open={!!memberToDelete}
+        title="Удалить участника?"
+        message={`${memberToDelete ? getName(memberToDelete) : ''} будет удалён из проекта и потеряет доступ.`}
+        confirmLabel="Удалить"
+        loading={deletingMember}
+        onConfirm={handleRemoveMember}
+        onCancel={() => setMemberToDelete(null)}
+      />
+
+      {/* Confirm delete project */}
+      <ConfirmDialog
+        open={showDeleteProject}
+        title="Удалить проект?"
+        message={`Проект «${project.title}» и все связанные данные (визиты, фото, документы, счета) будут безвозвратно удалены.`}
+        confirmLabel="Удалить проект"
+        loading={deletingProject}
+        onConfirm={handleDeleteProject}
+        onCancel={() => setShowDeleteProject(false)}
+      />
     </div>
   );
 }

@@ -3,8 +3,9 @@ import { useState } from 'react';
 import { Icons } from '../Icons';
 import Bdg from '../Bdg';
 import Modal from '../Modal';
+import ConfirmDialog from '../ConfirmDialog';
 import type { ProjectWithStats, VisitWithStats } from '../../lib/types';
-import { formatDate, createVisit } from '../../lib/queries';
+import { formatDate, createVisit, updateVisit, deleteVisit } from '../../lib/queries';
 
 interface VisitsTabProps {
   project: ProjectWithStats;
@@ -16,18 +17,30 @@ interface VisitsTabProps {
 }
 
 export default function VisitsTab({ project, projectId, visits, toast, refetchVisits, canCreateVisit = true }: VisitsTabProps) {
+  // Create modal
   const [showModal, setShowModal] = useState(false);
   const [vTitle, setVTitle] = useState('');
   const [vDate, setVDate] = useState('');
   const [vNote, setVNote] = useState('');
   const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Edit modal
+  const [editVisit, setEditVisit] = useState<VisitWithStats | null>(null);
+  const [eTitle, setETitle] = useState('');
+  const [eDate, setEDate] = useState('');
+  const [eNote, setENote] = useState('');
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editErrors, setEditErrors] = useState<Record<string, string>>({});
+
+  // Delete confirm
+  const [visitToDelete, setVisitToDelete] = useState<VisitWithStats | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const planned = visits.filter(v => v.status === 'planned');
   const completed = visits.filter(v => v.status !== 'planned');
   const contractVisits = project.visit_count || completed.length;
   const remaining = Math.max(0, contractVisits - completed.length);
-
-  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleCreate = async () => {
     const errs: Record<string, string> = {};
@@ -48,6 +61,47 @@ export default function VisitsTab({ project, projectId, visits, toast, refetchVi
       toast(e.message || 'Ошибка создания визита');
     }
     setSaving(false);
+  };
+
+  const openEditModal = (v: VisitWithStats) => {
+    setEditVisit(v);
+    setETitle(v.title);
+    setEDate(v.date);
+    setENote(v.note || '');
+    setEditErrors({});
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editVisit) return;
+    const errs: Record<string, string> = {};
+    if (!eTitle.trim()) errs.title = 'Введите название визита';
+    if (!eDate) errs.date = 'Выберите дату';
+    if (Object.keys(errs).length > 0) { setEditErrors(errs); return; }
+    setEditErrors({});
+    setSavingEdit(true);
+    try {
+      await updateVisit(editVisit.id, { title: eTitle.trim(), date: eDate, note: eNote || undefined });
+      toast('Визит обновлён');
+      refetchVisits();
+      setEditVisit(null);
+    } catch (e: any) {
+      toast(e.message || 'Ошибка обновления визита');
+    }
+    setSavingEdit(false);
+  };
+
+  const handleDelete = async () => {
+    if (!visitToDelete) return;
+    setDeleting(true);
+    try {
+      await deleteVisit(visitToDelete.id);
+      toast('Визит удалён');
+      refetchVisits();
+      setVisitToDelete(null);
+    } catch (e: any) {
+      toast(e.message || 'Ошибка удаления визита');
+    }
+    setDeleting(false);
   };
 
   const kpis = [
@@ -92,13 +146,34 @@ export default function VisitsTab({ project, projectId, visits, toast, refetchVi
           </h3>
           <div className="space-y-2">
             {planned.map(v => (
-              <div key={v.id} className="card p-4" style={{ borderLeft: '4px solid #2563EB' }}>
+              <div key={v.id} className="card p-4 group" style={{ borderLeft: '4px solid #2563EB' }}>
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="text-[13px] font-medium">{v.title}</div>
                     <div className="text-[12px] text-[#9CA3AF] mt-0.5">{formatDate(v.date)}</div>
+                    {v.note && <div className="text-[12px] text-[#6B7280] mt-1">{v.note}</div>}
                   </div>
-                  <Bdg s="planned" />
+                  <div className="flex items-center gap-2">
+                    <Bdg s="planned" />
+                    {canCreateVisit && (
+                      <>
+                        <button
+                          className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-[#F3F4F6] text-[#9CA3AF] hover:text-[#111827]"
+                          onClick={() => openEditModal(v)}
+                          title="Редактировать"
+                        >
+                          <Icons.Edit className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-[#FEF2F2] text-[#9CA3AF] hover:text-[#DC2626]"
+                          onClick={() => setVisitToDelete(v)}
+                          title="Удалить"
+                        >
+                          <Icons.Trash className="w-3.5 h-3.5" />
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
@@ -112,7 +187,7 @@ export default function VisitsTab({ project, projectId, visits, toast, refetchVi
       </h3>
       <div className="space-y-2">
         {completed.map(v => (
-          <div key={v.id} className="card p-4">
+          <div key={v.id} className="card p-4 group">
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-[13px] font-medium">{v.title}</div>
@@ -121,7 +196,27 @@ export default function VisitsTab({ project, projectId, visits, toast, refetchVi
                   {v.photo_count > 0 && <span> · {v.photo_count} фото</span>}
                 </div>
               </div>
-              <Bdg s={v.status} />
+              <div className="flex items-center gap-2">
+                <Bdg s={v.status} />
+                {canCreateVisit && (
+                  <>
+                    <button
+                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-[#F3F4F6] text-[#9CA3AF] hover:text-[#111827]"
+                      onClick={() => openEditModal(v)}
+                      title="Редактировать"
+                    >
+                      <Icons.Edit className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-[#FEF2F2] text-[#9CA3AF] hover:text-[#DC2626]"
+                      onClick={() => setVisitToDelete(v)}
+                      title="Удалить"
+                    >
+                      <Icons.Trash className="w-3.5 h-3.5" />
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         ))}
@@ -153,6 +248,43 @@ export default function VisitsTab({ project, projectId, visits, toast, refetchVi
           </div>
         </div>
       </Modal>
+
+      {/* Edit Visit Modal */}
+      <Modal open={!!editVisit} onClose={() => setEditVisit(null)} title="Редактировать визит">
+        <div className="space-y-4">
+          <div className="modal-field">
+            <label>Название *</label>
+            <input value={eTitle} onChange={e => { setETitle(e.target.value); setEditErrors(p => ({ ...p, title: '' })); }} className={editErrors.title ? 'border-[#DC2626]' : ''} />
+            {editErrors.title && <span className="text-[11px] text-[#DC2626] mt-0.5">{editErrors.title}</span>}
+          </div>
+          <div className="modal-field">
+            <label>Дата *</label>
+            <input type="date" value={eDate} onChange={e => { setEDate(e.target.value); setEditErrors(p => ({ ...p, date: '' })); }} className={editErrors.date ? 'border-[#DC2626]' : ''} />
+            {editErrors.date && <span className="text-[11px] text-[#DC2626] mt-0.5">{editErrors.date}</span>}
+          </div>
+          <div className="modal-field">
+            <label>Заметка</label>
+            <textarea value={eNote} onChange={e => setENote(e.target.value)} placeholder="Необязательно" rows={2} />
+          </div>
+          <div className="flex gap-2 justify-end mt-4">
+            <button className="btn btn-secondary" onClick={() => setEditVisit(null)}>Отмена</button>
+            <button className="btn btn-primary" onClick={handleSaveEdit} disabled={savingEdit || !eTitle.trim() || !eDate}>
+              {savingEdit ? 'Сохранение...' : 'Сохранить'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Confirm delete visit */}
+      <ConfirmDialog
+        open={!!visitToDelete}
+        title="Удалить визит?"
+        message={`Визит «${visitToDelete?.title || ''}» и все его фото будут безвозвратно удалены.`}
+        confirmLabel="Удалить"
+        loading={deleting}
+        onConfirm={handleDelete}
+        onCancel={() => setVisitToDelete(null)}
+      />
     </div>
   );
 }

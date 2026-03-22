@@ -204,7 +204,13 @@ export default function ProjectPage({ projectId, onNavigate, toast, onMenuToggle
           <DocsTab projectId={projectId} toast={toast} canUploadDocument={permissions.canUploadDocument} />
         )}
         {activeTab === "settings" && permissions.canViewSettings && (
-          <SettingsTab project={project} projectId={projectId} toast={toast} />
+          <SettingsTab
+            project={project}
+            projectId={projectId}
+            toast={toast}
+            canDeleteProject={permissions.canDeleteProject}
+            onDeleteProject={() => onNavigate('projects')}
+          />
         )}
       </div>
     </div>

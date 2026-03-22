@@ -3,9 +3,10 @@ import { useState, useRef } from 'react';
 import { Icons } from '../Icons';
 import Bdg from '../Bdg';
 import Modal from '../Modal';
+import ConfirmDialog from '../ConfirmDialog';
 import type { Document, DocumentFormat } from '../../lib/types';
 import { useProjectDocuments } from '../../lib/hooks';
-import { formatDate, uploadDocument, createDocument } from '../../lib/queries';
+import { formatDate, uploadDocument, createDocument, deleteDocument } from '../../lib/queries';
 
 const FORMAT_COLORS: Record<string, { bg: string; text: string }> = {
   PDF: { bg: '#FEE2E2', text: '#DC2626' },
@@ -35,6 +36,10 @@ export default function DocsTab({ projectId, toast, canUploadDocument = true }: 
   const [error, setError] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Delete confirm
+  const [docToDelete, setDocToDelete] = useState<Document | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   if (loading) return <div className="text-[13px] text-[#9CA3AF]">Загрузка...</div>;
 
@@ -93,6 +98,21 @@ export default function DocsTab({ projectId, toast, canUploadDocument = true }: 
     setError('');
   };
 
+  const handleDeleteDoc = async () => {
+    if (!docToDelete) return;
+    setDeleting(true);
+    try {
+      await deleteDocument(docToDelete.id);
+      toast('Документ удалён');
+      refetch();
+      setDocToDelete(null);
+    } catch (err: any) {
+      toast(err.message || 'Ошибка удаления документа');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <div className="animate-fade-in">
       <div className="flex items-center justify-between mb-5">
@@ -111,7 +131,7 @@ export default function DocsTab({ projectId, toast, canUploadDocument = true }: 
           return (
             <div
               key={doc.id}
-              className={`card p-4 ${hasFile ? 'cursor-pointer hover:border-[#D1D5DB]' : 'opacity-60'}`}
+              className={`card p-4 group ${hasFile ? 'cursor-pointer hover:border-[#D1D5DB]' : 'opacity-60'}`}
               onClick={() => {
                 if (hasFile) {
                   window.open(doc.file_url!, '_blank');
@@ -132,6 +152,15 @@ export default function DocsTab({ projectId, toast, canUploadDocument = true }: 
                 </div>
                 {hasFile && (
                   <Icons.Download className="w-4 h-4 text-[#9CA3AF] flex-shrink-0" />
+                )}
+                {canUploadDocument && (
+                  <button
+                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-[#FEF2F2] text-[#9CA3AF] hover:text-[#DC2626] flex-shrink-0"
+                    onClick={(e) => { e.stopPropagation(); setDocToDelete(doc); }}
+                    title="Удалить документ"
+                  >
+                    <Icons.Trash className="w-3.5 h-3.5" />
+                  </button>
                 )}
               </div>
               <div className="flex items-center gap-2">
@@ -214,6 +243,17 @@ export default function DocsTab({ projectId, toast, canUploadDocument = true }: 
           </div>
         </div>
       </Modal>
+
+      {/* Confirm delete document */}
+      <ConfirmDialog
+        open={!!docToDelete}
+        title="Удалить документ?"
+        message={`Документ «${docToDelete?.title || ''}» будет безвозвратно удалён.`}
+        confirmLabel="Удалить"
+        loading={deleting}
+        onConfirm={handleDeleteDoc}
+        onCancel={() => setDocToDelete(null)}
+      />
     </div>
   );
 }
