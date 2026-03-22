@@ -107,13 +107,14 @@ export default function DocsTab({ projectId, toast, canUploadDocument = true }: 
       <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
         {(docs || []).map((doc: Document) => {
           const fmt = FORMAT_COLORS[doc.format?.toUpperCase() || ''] || { bg: '#F3F4F6', text: '#6B7280' };
+          const hasFile = !!doc.file_url;
           return (
             <div
               key={doc.id}
-              className="card p-4 cursor-pointer"
+              className={`card p-4 ${hasFile ? 'cursor-pointer hover:border-[#D1D5DB]' : 'opacity-60'}`}
               onClick={() => {
-                if (doc.file_url) {
-                  window.open(doc.file_url, '_blank');
+                if (hasFile) {
+                  window.open(doc.file_url!, '_blank');
                 } else {
                   toast('Файл недоступен');
                 }
@@ -129,8 +130,16 @@ export default function DocsTab({ projectId, toast, canUploadDocument = true }: 
                     {doc.version || ''} · {formatDate(doc.created_at)}
                   </div>
                 </div>
+                {hasFile && (
+                  <Icons.Download className="w-4 h-4 text-[#9CA3AF] flex-shrink-0" />
+                )}
               </div>
-              <Bdg s={doc.status} />
+              <div className="flex items-center gap-2">
+                <Bdg s={doc.status} />
+                {!hasFile && (
+                  <span className="text-[10px] text-[#9CA3AF]">нет файла</span>
+                )}
+              </div>
             </div>
           );
         })}
