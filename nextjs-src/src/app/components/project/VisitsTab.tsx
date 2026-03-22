@@ -12,9 +12,10 @@ interface VisitsTabProps {
   visits: VisitWithStats[];
   toast: (msg: string) => void;
   refetchVisits: () => void;
+  canCreateVisit?: boolean;
 }
 
-export default function VisitsTab({ project, projectId, visits, toast, refetchVisits }: VisitsTabProps) {
+export default function VisitsTab({ project, projectId, visits, toast, refetchVisits, canCreateVisit = true }: VisitsTabProps) {
   const [showModal, setShowModal] = useState(false);
   const [vTitle, setVTitle] = useState('');
   const [vDate, setVDate] = useState('');
@@ -55,7 +56,7 @@ export default function VisitsTab({ project, projectId, visits, toast, refetchVi
   return (
     <div className="animate-fade-in">
       {/* KPI */}
-      <div className="grid grid-cols-4 gap-4 mb-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-4">
         {kpis.map((k, i) => (
           <div key={i} className="card p-4 text-center">
             <div className={`text-[22px] font-bold font-mono-custom ${k.danger ? 'text-[#DC4A2A]' : ''}`}>{k.value}</div>
@@ -70,9 +71,11 @@ export default function VisitsTab({ project, projectId, visits, toast, refetchVi
           <div className="h-full bg-[#111827] rounded-full transition-all" style={{ width: `${pct}%` }} />
         </div>
         <span className="text-[13px] font-medium font-mono-custom">{pct}%</span>
-        <button className="btn btn-primary text-[12px] py-1.5 px-3 ml-2" onClick={() => setShowModal(true)}>
-          <Icons.Plus className="w-3.5 h-3.5" /> Запланировать
-        </button>
+        {canCreateVisit && (
+          <button className="btn btn-primary text-[12px] py-1.5 px-3 ml-2" onClick={() => setShowModal(true)}>
+            <Icons.Plus className="w-3.5 h-3.5" /> Запланировать
+          </button>
+        )}
       </div>
 
       {/* Planned */}

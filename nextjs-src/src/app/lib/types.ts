@@ -57,6 +57,23 @@ export interface ProjectMember {
   invited_at: string;
 }
 
+export interface ProjectMemberWithProfile extends ProjectMember {
+  profile?: Profile;
+}
+
+export interface ProjectInvitation {
+  id: string;
+  project_id: string;
+  token: string;
+  role: UserRole;
+  access_level: AccessLevel;
+  created_by: string | null;
+  expires_at: string;
+  used_by: string | null;
+  used_at: string | null;
+  created_at: string;
+}
+
 export interface Stage {
   id: string;
   project_id: string;
@@ -199,6 +216,15 @@ export interface CreateInvoiceInput {
   due_date?: string;
 }
 
+export interface CreateDocumentInput {
+  project_id: string;
+  title: string;
+  version?: string;
+  format: DocumentFormat;
+  file_url: string;
+  status?: DocumentStatus;
+}
+
 // ======================== SUPPLY COMPUTED TYPES ========================
 
 export type RiskLevel = 'critical' | 'high' | 'medium' | 'low';
@@ -223,6 +249,29 @@ export interface CreateSupplyItemInput {
   supplier?: string;
   budget?: number;
   notes?: string;
+}
+
+// ======================== PERMISSIONS ========================
+
+export interface ProjectPermissions {
+  // Tab visibility
+  canViewOverview: boolean;
+  canViewJournal: boolean;
+  canViewVisits: boolean;
+  canViewSupply: boolean;
+  canViewDocs: boolean;
+  canViewSettings: boolean;
+  // Actions
+  canCreateProject: boolean;
+  canCreateVisit: boolean;
+  canCreateInvoice: boolean;
+  canUploadPhoto: boolean;
+  canChangePhotoStatus: boolean;
+  canUploadDocument: boolean;
+  canInviteMembers: boolean;
+  canEditProjectSettings: boolean;
+  canDeleteProject: boolean;
+  canImportSupply: boolean;
 }
 
 export interface UpdateProfileInput {

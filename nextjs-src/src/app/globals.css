@@ -229,3 +229,43 @@ body {
 .supply-tabs { display: flex; gap: 2px; background: #F3F4F6; border-radius: 10px; padding: 3px; }
 .supply-tab { padding: 7px 14px; font-size: 12px; font-weight: 500; color: #6B7280; border-radius: 8px; cursor: pointer; border: none; background: transparent; font-family: var(--font-body); transition: all 0.15s; display: flex; align-items: center; gap: 5px; white-space: nowrap; }
 .supply-tab.active { background: white; color: #111827; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+
+/* ======================== Mobile ======================== */
+@keyframes slideInLeft {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+.animate-slide-in-left { animation: slideInLeft 0.2s ease; }
+
+/* Hide scrollbar utility */
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+
+@media (max-width: 640px) {
+  /* Tabs: horizontal scroll on mobile */
+  .tn, .stab, .filter-tabs, .supply-tabs {
+    overflow-x: auto;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .tn::-webkit-scrollbar, .stab::-webkit-scrollbar, .filter-tabs::-webkit-scrollbar, .supply-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Bigger tap targets on mobile */
+  .ti { padding: 12px 14px; min-height: 44px; }
+  .stb { padding: 9px 12px; min-height: 40px; }
+  .btn { min-height: 44px; }
+  .sidebar-item { min-height: 44px; }
+
+  /* Modal as bottom-sheet on mobile */
+  .modal-overlay, .fixed.inset-0.bg-black\/40 {
+    align-items: flex-end !important;
+  }
+  .modal, .bg-zhan-surface.rounded-2xl {
+    border-radius: 16px 16px 0 0 !important;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: slideUp 0.25s ease !important;
+  }
+}

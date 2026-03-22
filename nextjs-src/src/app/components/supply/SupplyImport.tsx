@@ -1,26 +1,220 @@
 'use client';
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
+import * as XLSX from 'xlsx';
 import { Icons } from '../Icons';
+import { createSupplyItems } from '../../lib/queries';
+import type { Stage, CreateSupplyItemInput } from '../../lib/types';
+
+// Fields available for mapping
+const SUPPLY_FIELDS = [
+  { key: 'name', label: 'Название *', required: true },
+  { key: 'category', label: 'Категория', required: false },
+  { key: 'lead_time_days', label: 'Срок поставки (дни)', required: false },
+  { key: 'quantity', label: 'Количество', required: false },
+  { key: 'supplier', label: 'Поставщик', required: false },
+  { key: 'budget', label: 'Бюджет', required: false },
+  { key: 'notes', label: 'Заметки', required: false },
+  { key: 'stage', label: 'Этап', required: false },
+] as const;
+
+type FieldKey = typeof SUPPLY_FIELDS[number]['key'];
+
+// Auto-detect column mapping by header names
+const AUTO_MAP: Record<string, FieldKey> = {
+  'название': 'name', 'наименование': 'name', 'name': 'name', 'позиция': 'name', 'товар': 'name', 'item': 'name',
+  'категория': 'category', 'category': 'category', 'группа': 'category', 'тип': 'category',
+  'срок': 'lead_time_days', 'lead_time': 'lead_time_days', 'дни': 'lead_time_days', 'срок поставки': 'lead_time_days',
+  'количество': 'quantity', 'кол-во': 'quantity', 'qty': 'quantity', 'quantity': 'quantity', 'шт': 'quantity',
+  'поставщик': 'supplier', 'supplier': 'supplier', 'vendor': 'supplier',
+  'бюджет': 'budget', 'цена': 'budget', 'стоимость': 'budget', 'price': 'budget', 'budget': 'budget', 'сумма': 'budget',
+  'заметки': 'notes', 'примечание': 'notes', 'notes': 'notes', 'комментарий': 'notes',
+  'этап': 'stage', 'stage': 'stage',
+};
 
 interface SupplyImportProps {
+  projectId: string;
+  stages: Stage[];
   toast: (msg: string) => void;
+  onImportComplete: () => void;
 }
 
-export default function SupplyImport({ toast }: SupplyImportProps) {
+export default function SupplyImport({ projectId, stages, toast, onImportComplete }: SupplyImportProps) {
   const [step, setStep] = useState(1);
+  const [fileName, setFileName] = useState('');
+  const [headers, setHeaders] = useState<string[]>([]);
+  const [rows, setRows] = useState<string[][]>([]);
+  const [mapping, setMapping] = useState<Record<number, FieldKey | ''>>({});
+  const [importing, setImporting] = useState(false);
+  const [importedCount, setImportedCount] = useState(0);
+  const [error, setError] = useState('');
+  const [dragOver, setDragOver] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
-  const steps = [
+  const stepsConfig = [
     { n: 1, label: 'Загрузка' },
     { n: 2, label: 'Маппинг' },
     { n: 3, label: 'Предпросмотр' },
     { n: 4, label: 'Готово' },
   ];
 
+  const parseFile = useCallback((file: File) => {
+    setError('');
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    if (ext !== 'xlsx' && ext !== 'xls') {
+      setError('Поддерживаются только файлы .xlsx и .xls');
+      return;
+    }
+
+    setFileName(file.name);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const json: string[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+
+        if (json.length < 2) {
+          setError('Файл пуст или содержит только заголовки');
+          return;
+        }
+
+        const hdrs = json[0].map(h => String(h).trim());
+        const dataRows = json.slice(1).filter(row => row.some(cell => String(cell).trim() !== ''));
+
+        if (dataRows.length === 0) {
+          setError('Файл не содержит данных');
+          return;
+        }
+
+        setHeaders(hdrs);
+        setRows(dataRows.map(row => row.map(cell => String(cell))));
+
+        // Auto-map columns
+        const autoMapping: Record<number, FieldKey | ''> = {};
+        const usedFields = new Set<FieldKey>();
+        hdrs.forEach((h, i) => {
+          const normalized = h.toLowerCase().trim();
+          const match = AUTO_MAP[normalized];
+          if (match && !usedFields.has(match)) {
+            autoMapping[i] = match;
+            usedFields.add(match);
+          }
+        });
+        setMapping(autoMapping);
+        setStep(2);
+      } catch {
+        setError('Не удалось прочитать файл. Убедитесь что это корректный Excel.');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files[0];
+    if (file) parseFile(file);
+  }, [parseFile]);
+
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) parseFile(file);
+    e.target.value = '';
+  }, [parseFile]);
+
+  const updateMapping = (colIndex: number, field: FieldKey | '') => {
+    setMapping(prev => ({ ...prev, [colIndex]: field }));
+  };
+
+  const hasNameMapping = Object.values(mapping).includes('name');
+
+  // Find stage by name (fuzzy)
+  const findStage = (val: string): string | null => {
+    if (!val) return null;
+    const lower = val.toLowerCase().trim();
+    const exact = stages.find(s => s.name.toLowerCase() === lower);
+    if (exact) return exact.id;
+    const partial = stages.find(s => s.name.toLowerCase().includes(lower) || lower.includes(s.name.toLowerCase()));
+    return partial ? partial.id : null;
+  };
+
+  const handleImport = async () => {
+    setImporting(true);
+    setError('');
+
+    try {
+      // Build items from rows using mapping
+      const items: CreateSupplyItemInput[] = [];
+
+      for (const row of rows) {
+        const item: CreateSupplyItemInput = { project_id: projectId, name: '' };
+
+        for (const [colIdx, field] of Object.entries(mapping)) {
+          if (!field) continue;
+          const val = row[Number(colIdx)]?.trim() || '';
+          if (!val) continue;
+
+          switch (field) {
+            case 'name': item.name = val; break;
+            case 'category': item.category = val; break;
+            case 'lead_time_days': item.lead_time_days = parseInt(val) || 0; break;
+            case 'quantity': item.quantity = parseInt(val) || 1; break;
+            case 'supplier': item.supplier = val; break;
+            case 'budget': item.budget = parseFloat(val.replace(/[^\d.,]/g, '').replace(',', '.')) || 0; break;
+            case 'notes': item.notes = val; break;
+            case 'stage': item.target_stage_id = findStage(val) || undefined; break;
+          }
+        }
+
+        // Skip rows without name
+        if (item.name) items.push(item);
+      }
+
+      if (items.length === 0) {
+        setError('Нет позиций для импорта. Проверьте маппинг колонки "Название".');
+        setImporting(false);
+        return;
+      }
+
+      await createSupplyItems(items);
+      setImportedCount(items.length);
+      onImportComplete();
+      setStep(4);
+    } catch (err: any) {
+      setError(err.message || 'Ошибка импорта');
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const resetWizard = () => {
+    setStep(1);
+    setFileName('');
+    setHeaders([]);
+    setRows([]);
+    setMapping({});
+    setImportedCount(0);
+    setError('');
+  };
+
+  // Preview: mapped rows for step 3
+  const previewRows = rows.slice(0, 5).map(row => {
+    const mapped: Record<string, string> = {};
+    for (const [colIdx, field] of Object.entries(mapping)) {
+      if (field) mapped[field] = row[Number(colIdx)] || '';
+    }
+    return mapped;
+  });
+
+  const mappedFields = SUPPLY_FIELDS.filter(f => Object.values(mapping).includes(f.key));
+
   return (
     <div className="animate-fade-in">
       {/* Steps indicator */}
       <div className="flex items-center gap-2 mb-6">
-        {steps.map((s, i) => (
+        {stepsConfig.map((s, i) => (
           <div key={s.n} className="flex items-center gap-2">
             <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-semibold ${
               step > s.n ? 'bg-[#111827] text-white' : step === s.n ? 'bg-[#111827] text-white' : 'bg-[#F3F4F6] text-[#9CA3AF]'
@@ -30,56 +224,126 @@ export default function SupplyImport({ toast }: SupplyImportProps) {
             <span className={`text-[12px] ${step >= s.n ? 'text-[#111827] font-medium' : 'text-[#9CA3AF]'}`}>
               {s.label}
             </span>
-            {i < steps.length - 1 && <div className="w-8 h-px bg-[#E5E7EB]" />}
+            {i < stepsConfig.length - 1 && <div className="w-8 h-px bg-[#E5E7EB]" />}
           </div>
         ))}
       </div>
 
+      {error && (
+        <div className="bg-[#FEF2F2] border border-[#DC2626]/20 text-[#DC2626] text-[13px] px-4 py-2.5 rounded-lg mb-4">
+          {error}
+        </div>
+      )}
+
+      {/* Step 1: Upload */}
       {step === 1 && (
         <div className="card p-8 text-center">
-          <div className="border-2 border-dashed border-[#E5E7EB] rounded-xl p-12 hover:border-[#D1D5DB] transition-colors cursor-pointer">
+          <div
+            className={`border-2 border-dashed rounded-xl p-12 transition-colors cursor-pointer ${
+              dragOver ? 'border-[#111827] bg-[#F9FAFB]' : 'border-[#E5E7EB] hover:border-[#D1D5DB]'
+            }`}
+            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={handleDrop}
+            onClick={() => fileRef.current?.click()}
+          >
             <Icons.Upload className="w-10 h-10 text-[#D1D5DB] mx-auto mb-3" />
             <div className="text-[14px] font-medium mb-1">Перетащите файл Excel сюда</div>
             <div className="text-[12px] text-[#9CA3AF]">или нажмите для выбора (.xlsx, .xls)</div>
           </div>
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".xlsx,.xls"
+            className="hidden"
+            onChange={handleFileSelect}
+          />
         </div>
       )}
 
+      {/* Step 2: Column Mapping */}
       {step === 2 && (
         <div className="card p-5">
-          <h3 className="text-[14px] font-semibold mb-4">Сопоставление колонок</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-[14px] font-semibold">Сопоставление колонок</h3>
+            <span className="text-[12px] text-[#9CA3AF]">{fileName}</span>
+          </div>
           <div className="space-y-3">
-            {['Название', 'Статус', 'Срок поставки', 'Этап', 'Количество', 'Поставщик'].map(field => (
-              <div key={field} className="flex items-center gap-4">
-                <span className="text-[13px] text-[#6B7280] w-[140px]">{field}</span>
-                <select className="flex-1 px-3 py-2 border border-[#E5E7EB] rounded-lg text-[13px]">
-                  <option>Колонка A</option>
-                  <option>Колонка B</option>
-                  <option>Колонка C</option>
+            {headers.map((header, i) => (
+              <div key={i} className="flex items-center gap-4">
+                <span className="text-[13px] text-[#6B7280] w-[180px] truncate" title={header}>
+                  {header || `Колонка ${i + 1}`}
+                </span>
+                <select
+                  className="flex-1 px-3 py-2 border border-[#E5E7EB] rounded-lg text-[13px]"
+                  value={mapping[i] || ''}
+                  onChange={(e) => updateMapping(i, e.target.value as FieldKey | '')}
+                >
+                  <option value="">— Пропустить —</option>
+                  {SUPPLY_FIELDS.map(f => {
+                    const usedElsewhere = Object.entries(mapping).some(
+                      ([idx, val]) => val === f.key && Number(idx) !== i
+                    );
+                    return (
+                      <option key={f.key} value={f.key} disabled={usedElsewhere}>
+                        {f.label}{usedElsewhere ? ' (уже выбрано)' : ''}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
             ))}
           </div>
+          {!hasNameMapping && (
+            <div className="mt-3 text-[12px] text-[#D97706]">
+              Укажите колонку для поля "Название" — это обязательное поле
+            </div>
+          )}
         </div>
       )}
 
+      {/* Step 3: Preview */}
       {step === 3 && (
         <div className="card p-5">
           <h3 className="text-[14px] font-semibold mb-2">Предпросмотр</h3>
-          <p className="text-[13px] text-[#9CA3AF] mb-4">5 строк из 124 будут импортированы</p>
-          <div className="bg-[#F9FAFB] rounded-lg p-4 text-[12px] text-[#6B7280]">
-            Данные из файла будут показаны здесь...
+          <p className="text-[13px] text-[#9CA3AF] mb-4">
+            {rows.length <= 5
+              ? `${rows.length} строк будут импортированы`
+              : `Показаны 5 из ${rows.length} строк`}
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-[12px]">
+              <thead>
+                <tr className="border-b border-[#E5E7EB]">
+                  {mappedFields.map(f => (
+                    <th key={f.key} className="text-left py-2 px-3 text-[#6B7280] font-medium">{f.label.replace(' *', '')}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {previewRows.map((row, i) => (
+                  <tr key={i} className="border-b border-[#F3F4F6]">
+                    {mappedFields.map(f => (
+                      <td key={f.key} className="py-2 px-3 text-[#374151] max-w-[200px] truncate">
+                        {row[f.key] || '—'}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
 
+      {/* Step 4: Done */}
       {step === 4 && (
         <div className="card p-8 text-center">
           <div className="w-12 h-12 rounded-full bg-[#ECFDF3] flex items-center justify-center mx-auto mb-3">
             <Icons.Check className="w-6 h-6 text-[#16A34A]" />
           </div>
           <div className="text-[16px] font-semibold mb-1">Импорт завершён</div>
-          <div className="text-[13px] text-[#9CA3AF]">124 позиции успешно импортированы</div>
+          <div className="text-[13px] text-[#9CA3AF]">{importedCount} позиций успешно импортированы</div>
         </div>
       )}
 
@@ -87,23 +351,23 @@ export default function SupplyImport({ toast }: SupplyImportProps) {
       <div className="flex justify-between mt-5">
         <button
           className="btn btn-secondary"
-          onClick={() => setStep(Math.max(1, step - 1))}
+          onClick={() => step === 1 ? undefined : setStep(step - 1)}
           style={{ visibility: step > 1 && step < 4 ? 'visible' : 'hidden' }}
         >
           Назад
         </button>
-        {step < 3 && (
-          <button className="btn btn-primary" onClick={() => setStep(step + 1)}>
+        {step === 2 && (
+          <button className="btn btn-primary" onClick={() => setStep(3)} disabled={!hasNameMapping}>
             Далее
           </button>
         )}
         {step === 3 && (
-          <button className="btn btn-primary" onClick={() => { setStep(4); toast('Позиции импортированы'); }}>
-            Импортировать
+          <button className="btn btn-primary" onClick={handleImport} disabled={importing}>
+            {importing ? 'Импорт...' : `Импортировать (${rows.length})`}
           </button>
         )}
         {step === 4 && (
-          <button className="btn btn-primary" onClick={() => setStep(1)}>
+          <button className="btn btn-primary" onClick={resetWizard}>
             Новый импорт
           </button>
         )}

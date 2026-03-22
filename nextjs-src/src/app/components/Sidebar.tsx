@@ -6,9 +6,11 @@ import { useAuth } from "../lib/auth";
 interface SidebarProps {
   currentPage: string;
   onNavigate: (page: string, ctx?: any) => void;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
-export default function Sidebar({ currentPage, onNavigate }: SidebarProps) {
+export default function Sidebar({ currentPage, onNavigate, isOpen, onClose }: SidebarProps) {
   const { profile, signOut } = useAuth();
 
   const isActive = (id: string) =>
@@ -33,16 +35,25 @@ export default function Sidebar({ currentPage, onNavigate }: SidebarProps) {
     assistant: "Ассистент",
   };
 
-  return (
-    <aside className="w-[240px] bg-[#111827] text-white flex flex-col flex-shrink-0 h-screen sticky top-0">
+  const handleNav = (page: string) => {
+    onNavigate(page);
+    onClose?.();
+  };
+
+  const sidebarContent = (
+    <aside className="w-[240px] bg-[#111827] text-white flex flex-col flex-shrink-0 h-screen">
       {/* Logo */}
-      <div className="px-5 pt-5 pb-4 border-b border-white/[0.08]">
+      <div className="px-5 pt-5 pb-4 border-b border-white/[0.08] flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-md bg-white/10 flex items-center justify-center">
             <Icons.Layers className="w-4 h-4 text-white/70" />
           </div>
           <span className="text-[15px] font-bold tracking-tight">Archflow</span>
         </div>
+        {/* Close button on mobile */}
+        <button className="md:hidden p-1 text-white/50 hover:text-white" onClick={onClose}>
+          <Icons.X className="w-5 h-5" />
+        </button>
       </div>
 
       {/* Nav */}
@@ -52,7 +63,7 @@ export default function Sidebar({ currentPage, onNavigate }: SidebarProps) {
         </div>
         <div
           className={`sidebar-item ${isActive("projects") ? "active" : ""}`}
-          onClick={() => onNavigate("projects")}
+          onClick={() => handleNav("projects")}
         >
           <Icons.Folder className="w-4 h-4" />
           Проекты
@@ -78,5 +89,24 @@ export default function Sidebar({ currentPage, onNavigate }: SidebarProps) {
         </div>
       </div>
     </aside>
+  );
+
+  return (
+    <>
+      {/* Desktop: static sidebar */}
+      <div className="hidden md:block sticky top-0 h-screen">
+        {sidebarContent}
+      </div>
+
+      {/* Mobile: overlay sidebar */}
+      {isOpen && (
+        <div className="md:hidden fixed inset-0 z-40">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+          <div className="relative z-10 animate-slide-in-left">
+            {sidebarContent}
+          </div>
+        </div>
+      )}
+    </>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Sidebar from "./components/Sidebar";
 import ProjectsPage from "./components/ProjectsPage";
 import ProjectPage from "./components/ProjectPage";
@@ -12,16 +12,43 @@ import Toast from "./components/Toast";
 import { Icons } from "./components/Icons";
 import { useProjects } from "./lib/hooks";
 import { useAuth } from "./lib/auth";
+import { acceptProjectInvitation } from "./lib/queries";
 
 export default function Home() {
-  const { session, loading: authLoading } = useAuth();
+  const { session, profile, loading: authLoading } = useAuth();
+  const canCreateProject = profile?.role === 'designer' || profile?.role === 'assistant';
   const [page, setPage] = useState("projects");
   const [context, setContext] = useState<any>(null);
   const [showCreateProject, setShowCreateProject] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const { data: projects, refetch: refetchProjects } = useProjects();
 
   const toast = useCallback((msg: string) => setToastMsg(msg), []);
+
+  // Handle invite token from URL
+  useEffect(() => {
+    if (!session) return;
+    const params = new URLSearchParams(window.location.search);
+    const inviteToken = params.get('invite');
+    if (!inviteToken) return;
+
+    // Clear the URL parameter
+    window.history.replaceState({}, '', window.location.pathname);
+
+    acceptProjectInvitation(inviteToken)
+      .then((result) => {
+        if (result?.project_id) {
+          refetchProjects();
+          setPage('project');
+          setContext(result.project_id);
+          setToastMsg('Вы добавлены в проект');
+        }
+      })
+      .catch((err) => {
+        setToastMsg(err.message || 'Ошибка принятия приглашения');
+      });
+  }, [session, refetchProjects]);
 
   // Auth loading state
   if (authLoading) {
@@ -45,6 +72,8 @@ export default function Home() {
     setContext(ctx);
   };
 
+  const openSidebar = () => setSidebarOpen(true);
+
   const renderPage = () => {
     switch (page) {
       case "projects":
@@ -52,13 +81,16 @@ export default function Home() {
           <>
             <Topbar
               title="Проекты"
+              onMenuToggle={openSidebar}
               actions={
-                <button className="btn btn-primary" onClick={() => setShowCreateProject(true)}>
-                  <Icons.Plus className="w-4 h-4" /> Новый проект
-                </button>
+                canCreateProject ? (
+                  <button className="btn btn-primary" onClick={() => setShowCreateProject(true)}>
+                    <Icons.Plus className="w-4 h-4" /> <span className="hidden sm:inline">Новый проект</span>
+                  </button>
+                ) : undefined
               }
             />
-            <div className="p-7">
+            <div className="p-4 sm:p-7">
               <ProjectsPage onNavigate={navigate} />
             </div>
           </>
@@ -69,6 +101,7 @@ export default function Home() {
             projectId={context}
             onNavigate={navigate}
             toast={toast}
+            onMenuToggle={openSidebar}
           />
         );
       case "visit":
@@ -87,7 +120,7 @@ export default function Home() {
 
   return (
     <div className="flex min-h-screen bg-[#F9FAFB]">
-      <Sidebar currentPage={page} onNavigate={navigate} />
+      <Sidebar currentPage={page} onNavigate={navigate} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <div className="flex-1 overflow-x-hidden">
         {renderPage()}

@@ -90,7 +90,7 @@ export default function SupplyModule({ projectId, toast }: SupplyModuleProps) {
           <SupplyStages stages={stages} items={calcItems} />
         )}
         {activeTab === "import" && (
-          <SupplyImport toast={doToast} />
+          <SupplyImport projectId={projectId} stages={stages} toast={doToast} onImportComplete={refetchItems} />
         )}
         {activeTab === "settings" && (
           <SupplySettings toast={doToast} />

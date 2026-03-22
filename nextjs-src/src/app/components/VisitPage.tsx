@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { Icons } from "./Icons";
 import Loading, { ErrorMessage } from "./Loading";
 import { useVisit, useVisitPhotos, useProject } from "../lib/hooks";
+import { usePermissions } from "../lib/permissions";
 import { formatDate, uploadPhoto, createPhotoRecord, updatePhotoStatus } from "../lib/queries";
 import { PHOTO_STATUS_CONFIG } from "../lib/types";
 import type { PhotoStatus } from "../lib/types";
@@ -13,6 +14,7 @@ interface VisitPageProps {
   visitId: string;
   onNavigate: (page: string, ctx?: any) => void;
   toast: (msg: string) => void;
+  onMenuToggle?: () => void;
 }
 
 const ZONES = ["Спальня", "Гостиная", "Кухня", "Ванная", "Детская", "Прихожая", "Коридор", "Балкон"];
@@ -24,10 +26,11 @@ const STATUS_OPTIONS: { value: PhotoStatus; label: string }[] = [
   { value: "new", label: "Новое" },
 ];
 
-export default function VisitPage({ projectId, visitId, onNavigate, toast }: VisitPageProps) {
+export default function VisitPage({ projectId, visitId, onNavigate, toast, onMenuToggle }: VisitPageProps) {
   const { data: project, loading: loadingProject } = useProject(projectId);
   const { data: visit, loading: loadingVisit, error: errorVisit, refetch: refetchVisit } = useVisit(visitId);
   const { data: photos, loading: loadingPhotos, refetch: refetchPhotos } = useVisitPhotos(visitId);
+  const { permissions } = usePermissions(projectId);
   const [photoFilter, setPhotoFilter] = useState("all");
 
   // Upload modal state
@@ -194,9 +197,11 @@ export default function VisitPage({ projectId, visitId, onNavigate, toast }: Vis
             </button>
           ))}
         </div>
-        <button className="btn btn-primary" onClick={() => setShowUpload(true)}>
-          <Icons.Camera className="w-4 h-4" /> Добавить фото
-        </button>
+        {permissions.canUploadPhoto && (
+          <button className="btn btn-primary" onClick={() => setShowUpload(true)}>
+            <Icons.Camera className="w-4 h-4" /> Добавить фото
+          </button>
+        )}
       </div>
 
       {/* Photo grid */}
@@ -226,16 +231,22 @@ export default function VisitPage({ projectId, visitId, onNavigate, toast }: Vis
                 <div className="text-[13px] text-[#111827] leading-relaxed mb-2.5">
                   {photo.comment || 'Без комментария'}
                 </div>
-                <select
-                  value={photo.status}
-                  onChange={(e) => handleStatusChange(photo.id, e.target.value as PhotoStatus)}
-                  className={`inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-full border-none cursor-pointer appearance-none ${status.bg} ${status.color}`}
-                  style={{ paddingRight: '20px', backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27currentColor%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 4px center', backgroundSize: '12px' }}
-                >
-                  {Object.entries(PHOTO_STATUS_CONFIG).map(([key, cfg]) => (
-                    <option key={key} value={key}>{cfg.label}</option>
-                  ))}
-                </select>
+                {permissions.canChangePhotoStatus ? (
+                  <select
+                    value={photo.status}
+                    onChange={(e) => handleStatusChange(photo.id, e.target.value as PhotoStatus)}
+                    className={`inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-full border-none cursor-pointer appearance-none ${status.bg} ${status.color}`}
+                    style={{ paddingRight: '20px', backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27currentColor%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 4px center', backgroundSize: '12px' }}
+                  >
+                    {Object.entries(PHOTO_STATUS_CONFIG).map(([key, cfg]) => (
+                      <option key={key} value={key}>{cfg.label}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <span className={`inline-flex items-center text-[11px] font-medium px-2.5 py-1 rounded-full ${status.bg} ${status.color}`}>
+                    {status.label}
+                  </span>
+                )}
               </div>
             </div>
           );

@@ -5,6 +5,8 @@ import { Icons } from "./Icons";
 import Topbar from "./Topbar";
 import Loading, { ErrorMessage } from "./Loading";
 import { useProject, useProjectVisits, useProjectInvoices } from "../lib/hooks";
+import { usePermissions } from "../lib/permissions";
+import type { ProjectPermissions } from "../lib/types";
 import SupplyModule from "./supply/SupplyModule";
 import OverviewTab from "./project/OverviewTab";
 import JournalTab from "./project/JournalTab";
@@ -18,22 +20,25 @@ interface ProjectPageProps {
   projectId: string;
   onNavigate: (page: string, ctx?: any) => void;
   toast: (msg: string) => void;
+  onMenuToggle?: () => void;
 }
 
-const TABS: { id: ProjectTab; label: string; icon: React.FC<{ className?: string }> }[] = [
-  { id: "overview", label: "Обзор", icon: Icons.Grid },
-  { id: "journal", label: "Journal", icon: Icons.Camera },
-  { id: "visits", label: "Визиты", icon: Icons.Calendar },
-  { id: "supply", label: "Supply", icon: Icons.Box },
-  { id: "docs", label: "Документы", icon: Icons.File },
-  { id: "settings", label: "Настройки", icon: Icons.Settings },
+const ALL_TABS: { id: ProjectTab; label: string; icon: React.FC<{ className?: string }>; permKey: keyof ProjectPermissions }[] = [
+  { id: "overview", label: "Обзор", icon: Icons.Grid, permKey: "canViewOverview" },
+  { id: "journal", label: "Journal", icon: Icons.Camera, permKey: "canViewJournal" },
+  { id: "visits", label: "Визиты", icon: Icons.Calendar, permKey: "canViewVisits" },
+  { id: "supply", label: "Supply", icon: Icons.Box, permKey: "canViewSupply" },
+  { id: "docs", label: "Документы", icon: Icons.File, permKey: "canViewDocs" },
+  { id: "settings", label: "Настройки", icon: Icons.Settings, permKey: "canViewSettings" },
 ];
 
-export default function ProjectPage({ projectId, onNavigate, toast }: ProjectPageProps) {
+export default function ProjectPage({ projectId, onNavigate, toast, onMenuToggle }: ProjectPageProps) {
   const { data: project, loading: loadingProject, error: errorProject, refetch: refetchProject } = useProject(projectId);
   const { data: visits, loading: loadingVisits, refetch: refetchVisits } = useProjectVisits(projectId);
   const { data: invoices, refetch: refetchInvoices } = useProjectInvoices(projectId);
+  const { permissions } = usePermissions(projectId);
 
+  const visibleTabs = ALL_TABS.filter(t => permissions[t.permKey]);
   const [activeTab, setActiveTab] = useState<ProjectTab>("overview");
 
   if (loadingProject || loadingVisits) return <Loading />;
@@ -51,6 +56,7 @@ export default function ProjectPage({ projectId, onNavigate, toast }: ProjectPag
     <div className="animate-fade-in">
       <Topbar
         title={project.title}
+        onMenuToggle={onMenuToggle}
         breadcrumbs={[
           { label: "Проекты", onClick: () => onNavigate("projects") },
           { label: project.title },
@@ -63,8 +69,8 @@ export default function ProjectPage({ projectId, onNavigate, toast }: ProjectPag
       />
 
       {/* Tabs */}
-      <div className="tn px-7">
-        {TABS.map(t => (
+      <div className="tn px-4 sm:px-7 overflow-x-auto scrollbar-hide">
+        {visibleTabs.map(t => (
           <div
             key={t.id}
             className={`ti ${activeTab === t.id ? "active" : ""}`}
@@ -77,8 +83,8 @@ export default function ProjectPage({ projectId, onNavigate, toast }: ProjectPag
       </div>
 
       {/* Tab content */}
-      <div className="p-7">
-        {activeTab === "overview" && (
+      <div className="p-4 sm:p-7">
+        {activeTab === "overview" && permissions.canViewOverview && (
           <OverviewTab
             project={project}
             visits={projectVisits}
@@ -86,7 +92,7 @@ export default function ProjectPage({ projectId, onNavigate, toast }: ProjectPag
             onTabChange={(tab) => setActiveTab(tab as ProjectTab)}
           />
         )}
-        {activeTab === "journal" && (
+        {activeTab === "journal" && permissions.canViewJournal && (
           <JournalTab
             project={project}
             projectId={projectId}
@@ -95,24 +101,26 @@ export default function ProjectPage({ projectId, onNavigate, toast }: ProjectPag
             onSelectVisit={handleSelectVisit}
             toast={toast}
             refetchInvoices={refetchInvoices}
+            canCreateInvoice={permissions.canCreateInvoice}
           />
         )}
-        {activeTab === "visits" && (
+        {activeTab === "visits" && permissions.canViewVisits && (
           <VisitsTab
             project={project}
             projectId={projectId}
             visits={projectVisits}
             toast={toast}
             refetchVisits={() => { refetchVisits(); refetchProject(); }}
+            canCreateVisit={permissions.canCreateVisit}
           />
         )}
-        {activeTab === "supply" && (
+        {activeTab === "supply" && permissions.canViewSupply && (
           <SupplyModule projectId={projectId} toast={toast} />
         )}
-        {activeTab === "docs" && (
-          <DocsTab projectId={projectId} toast={toast} />
+        {activeTab === "docs" && permissions.canViewDocs && (
+          <DocsTab projectId={projectId} toast={toast} canUploadDocument={permissions.canUploadDocument} />
         )}
-        {activeTab === "settings" && (
+        {activeTab === "settings" && permissions.canViewSettings && (
           <SettingsTab project={project} projectId={projectId} toast={toast} />
         )}
       </div>

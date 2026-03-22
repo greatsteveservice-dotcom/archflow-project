@@ -6,12 +6,13 @@ import { supabase } from './supabase';
 import type {
   Project, Profile, Visit, PhotoRecord, Invoice,
   Document, SupplyItem, Stage, ContractPayment,
-  ProjectMember, ProjectWithStats, VisitWithStats,
-  PhotoStatus, SupplyStatus, RiskLevel,
+  ProjectMember, ProjectMemberWithProfile, ProjectInvitation,
+  ProjectWithStats, VisitWithStats,
+  PhotoStatus, SupplyStatus, RiskLevel, UserRole, AccessLevel,
   SupplyItemWithCalc, Notification,
   CreateProjectInput, CreateVisitInput,
   CreatePhotoRecordInput, CreateProjectMemberInput, CreateInvoiceInput,
-  CreateSupplyItemInput, UpdateProfileInput,
+  CreateSupplyItemInput, CreateDocumentInput, UpdateProfileInput,
 } from './types';
 
 // ======================== PROJECTS ========================
@@ -530,6 +531,30 @@ export async function createSupplyItem(input: CreateSupplyItemInput): Promise<Su
   return data as SupplyItem;
 }
 
+/** Batch create supply items */
+export async function createSupplyItems(items: CreateSupplyItemInput[]): Promise<SupplyItem[]> {
+  const rows = items.map(input => ({
+    project_id: input.project_id,
+    name: input.name,
+    category: input.category || null,
+    target_stage_id: input.target_stage_id || null,
+    lead_time_days: input.lead_time_days || 0,
+    quantity: input.quantity || 1,
+    supplier: input.supplier || null,
+    budget: input.budget || 0,
+    notes: input.notes || null,
+    status: 'pending' as const,
+  }));
+
+  const { data, error } = await supabase
+    .from('supply_items')
+    .insert(rows)
+    .select();
+
+  if (error) throw error;
+  return (data || []) as SupplyItem[];
+}
+
 /** Update supply item status */
 export async function updateSupplyItemStatus(id: string, status: SupplyStatus): Promise<SupplyItem> {
   const { data, error } = await supabase
@@ -673,6 +698,51 @@ export async function fetchProjectDocuments(projectId: string): Promise<Document
   return (data || []) as Document[];
 }
 
+/** Upload a document file to Supabase Storage */
+export async function uploadDocument(file: File, projectId: string): Promise<string> {
+  const ext = file.name.split('.').pop() || 'pdf';
+  const fileName = `${crypto.randomUUID()}.${ext}`;
+  const filePath = `${projectId}/${fileName}`;
+
+  const { error } = await supabase.storage
+    .from('documents')
+    .upload(filePath, file, {
+      cacheControl: '3600',
+      contentType: file.type,
+    });
+
+  if (error) throw error;
+
+  const { data: urlData } = supabase.storage
+    .from('documents')
+    .getPublicUrl(filePath);
+
+  return urlData.publicUrl;
+}
+
+/** Create a document record */
+export async function createDocument(input: CreateDocumentInput): Promise<Document> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Не авторизован');
+
+  const { data, error } = await supabase
+    .from('documents')
+    .insert({
+      project_id: input.project_id,
+      title: input.title,
+      version: input.version || '1.0',
+      format: input.format,
+      file_url: input.file_url,
+      uploaded_by: user.id,
+      status: input.status || 'draft',
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as Document;
+}
+
 // ======================== PROJECT MEMBERS ========================
 
 export async function fetchProjectMembers(projectId: string): Promise<ProjectMember[]> {
@@ -682,4 +752,59 @@ export async function fetchProjectMembers(projectId: string): Promise<ProjectMem
     .eq('project_id', projectId);
   if (error) throw error;
   return (data || []) as ProjectMember[];
+}
+
+/** Fetch members with joined profile data */
+export async function fetchProjectMembersWithProfiles(projectId: string): Promise<ProjectMemberWithProfile[]> {
+  const members = await fetchProjectMembers(projectId);
+  if (members.length === 0) return [];
+
+  const userIds = [...new Set(members.map(m => m.user_id))];
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('*')
+    .in('id', userIds);
+
+  const profileMap = new Map<string, Profile>();
+  profiles?.forEach(p => profileMap.set(p.id, p as Profile));
+
+  return members.map(m => ({
+    ...m,
+    profile: profileMap.get(m.user_id),
+  }));
+}
+
+// ======================== INVITATIONS ========================
+
+/** Create an invitation link for a project */
+export async function createProjectInvitation(
+  projectId: string,
+  role: UserRole,
+  accessLevel: AccessLevel
+): Promise<ProjectInvitation> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Не авторизован');
+
+  const { data, error } = await supabase
+    .from('project_invitations')
+    .insert({
+      project_id: projectId,
+      role,
+      access_level: accessLevel,
+      created_by: user.id,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as ProjectInvitation;
+}
+
+/** Accept an invitation by token (RPC) */
+export async function acceptProjectInvitation(token: string): Promise<{ project_id: string; role: string } | null> {
+  const { data, error } = await supabase.rpc('accept_project_invitation', { invite_token: token });
+
+  if (error) throw error;
+  if (data?.error) throw new Error(data.error);
+  return data;
 }

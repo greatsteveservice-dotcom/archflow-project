@@ -25,7 +25,7 @@ export default function OverviewTab({ project, visits, invoices, onTabChange }: 
   return (
     <div className="animate-fade-in">
       {/* KPI */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
         {kpis.map((k, i) => (
           <div key={i} className="card p-5">
             <div className="text-[12px] text-[#6B7280] mb-1">{k.label}</div>
@@ -35,7 +35,7 @@ export default function OverviewTab({ project, visits, invoices, onTabChange }: 
         ))}
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Info */}
         <div className="card p-5">
           <h3 className="text-[14px] font-semibold mb-4">Информация</h3>

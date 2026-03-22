@@ -14,9 +14,10 @@ interface JournalTabProps {
   onSelectVisit: (visitId: string) => void;
   toast: (msg: string) => void;
   refetchInvoices: () => void;
+  canCreateInvoice?: boolean;
 }
 
-export default function JournalTab({ project, projectId, visits, invoices, onSelectVisit, toast, refetchInvoices }: JournalTabProps) {
+export default function JournalTab({ project, projectId, visits, invoices, onSelectVisit, toast, refetchInvoices, canCreateInvoice = true }: JournalTabProps) {
   const [showModal, setShowModal] = useState(false);
   const [invTitle, setInvTitle] = useState('');
   const [invAmount, setInvAmount] = useState('');
@@ -58,9 +59,11 @@ export default function JournalTab({ project, projectId, visits, invoices, onSel
               </span>
             )}
           </div>
-          <button className="btn btn-primary text-[12px] py-1.5 px-3" onClick={() => setShowModal(true)}>
-            <Icons.Plus className="w-3.5 h-3.5" /> Выставить счёт
-          </button>
+          {canCreateInvoice && (
+            <button className="btn btn-primary text-[12px] py-1.5 px-3" onClick={() => setShowModal(true)}>
+              <Icons.Plus className="w-3.5 h-3.5" /> Выставить счёт
+            </button>
+          )}
         </div>
         <div className="space-y-2">
           {invoices.map(inv => (

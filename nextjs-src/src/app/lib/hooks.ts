@@ -5,7 +5,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import type { ProjectWithStats, VisitWithStats, PhotoRecord, Profile, Stage, SupplyItem, Invoice, Notification, Document, ProjectMember } from './types';
+import type { ProjectWithStats, VisitWithStats, PhotoRecord, Profile, Stage, SupplyItem, Invoice, Notification, Document, ProjectMember, ProjectMemberWithProfile } from './types';
 import {
   fetchProjects,
   fetchProject,
@@ -19,6 +19,7 @@ import {
   fetchNotifications,
   fetchProjectDocuments,
   fetchProjectMembers,
+  fetchProjectMembersWithProfiles,
 } from './queries';
 
 // ======================== GENERIC HOOK ========================
@@ -149,6 +150,14 @@ export function useProjectDocuments(projectId: string | null) {
 export function useProjectMembers(projectId: string | null) {
   return useQuery<ProjectMember[]>(
     () => projectId ? fetchProjectMembers(projectId) : Promise.resolve([]),
+    [projectId]
+  );
+}
+
+/** Fetch members with profile info */
+export function useProjectMembersWithProfiles(projectId: string | null) {
+  return useQuery<ProjectMemberWithProfile[]>(
+    () => projectId ? fetchProjectMembersWithProfiles(projectId) : Promise.resolve([]),
     [projectId]
   );
 }
