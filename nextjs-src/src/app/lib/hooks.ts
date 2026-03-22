@@ -5,7 +5,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import type { ProjectWithStats, VisitWithStats, PhotoRecord, Profile, Stage, SupplyItem, Invoice, Notification, Document, ProjectMember, ProjectMemberWithProfile } from './types';
+import type { ProjectWithStats, VisitWithStats, PhotoRecord, Profile, Stage, SupplyItem, Invoice, Notification, ActivityItem, Document, ProjectMember, ProjectMemberWithProfile } from './types';
 import {
   fetchProjects,
   fetchProject,
@@ -20,6 +20,7 @@ import {
   fetchProjectDocuments,
   fetchProjectMembers,
   fetchProjectMembersWithProfiles,
+  fetchActivityFeed,
 } from './queries';
 
 // ======================== GENERIC HOOK ========================
@@ -136,6 +137,11 @@ export function useProjectInvoices(projectId: string | null) {
 /** Fetch computed notifications */
 export function useNotifications() {
   return useQuery<Notification[]>(() => fetchNotifications(), []);
+}
+
+/** Fetch activity feed for dashboard */
+export function useActivityFeed() {
+  return useQuery<ActivityItem[]>(() => fetchActivityFeed(), []);
 }
 
 /** Fetch documents for a project */

@@ -291,6 +291,14 @@ export interface Notification {
   read: boolean;
 }
 
+export interface ActivityItem {
+  id: string;
+  color: string;
+  text: string;
+  time: string;
+  relativeTime: string;
+}
+
 // ======================== STATUS CONFIG ========================
 
 export const PHOTO_STATUS_CONFIG: Record<PhotoStatus, { label: string; color: string; bg: string }> = {

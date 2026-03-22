@@ -9,7 +9,7 @@ import type {
   ProjectMember, ProjectMemberWithProfile, ProjectInvitation,
   ProjectWithStats, VisitWithStats,
   PhotoStatus, SupplyStatus, RiskLevel, UserRole, AccessLevel,
-  SupplyItemWithCalc, Notification,
+  SupplyItemWithCalc, Notification, ActivityItem,
   CreateProjectInput, CreateVisitInput,
   CreatePhotoRecordInput, CreateProjectMemberInput, CreateInvoiceInput,
   CreateSupplyItemInput, CreateDocumentInput, UpdateProfileInput,
@@ -673,6 +673,89 @@ export async function fetchNotifications(): Promise<Notification[]> {
   return notifications
     .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
     .slice(0, 20);
+}
+
+// ======================== ACTIVITY FEED ========================
+
+/** Fetch recent activity from photos, visits, invoices, supply items, members */
+export async function fetchActivityFeed(): Promise<ActivityItem[]> {
+  const items: ActivityItem[] = [];
+
+  // Recent photos (last 10)
+  const { data: photos } = await supabase
+    .from('photo_records')
+    .select('id, comment, status, zone, created_at, visit_id')
+    .order('created_at', { ascending: false })
+    .limit(10);
+
+  photos?.forEach(p => {
+    const zone = p.zone || 'Без зоны';
+    const desc = p.comment ? `«${p.comment.slice(0, 50)}»` : zone;
+    if (p.status === 'issue') {
+      items.push({ id: `ph-${p.id}`, color: '#E85D3A', text: `Замечание: ${desc}`, time: p.created_at, relativeTime: '' });
+    } else if (p.status === 'approved') {
+      items.push({ id: `ph-${p.id}`, color: '#2A9D5C', text: `Фото принято: ${desc}`, time: p.created_at, relativeTime: '' });
+    } else if (p.status === 'in_progress') {
+      items.push({ id: `ph-${p.id}`, color: '#D4930D', text: `В работе: ${desc}`, time: p.created_at, relativeTime: '' });
+    } else {
+      items.push({ id: `ph-${p.id}`, color: '#2C5F2D', text: `Новое фото: ${desc}`, time: p.created_at, relativeTime: '' });
+    }
+  });
+
+  // Recent visits (last 8)
+  const { data: visits } = await supabase
+    .from('visits')
+    .select('id, title, date, status, created_at')
+    .order('created_at', { ascending: false })
+    .limit(8);
+
+  visits?.forEach(v => {
+    if (v.status === 'planned') {
+      items.push({ id: `vi-${v.id}`, color: '#2563EB', text: `Запланирован визит: ${v.title}`, time: v.created_at, relativeTime: '' });
+    } else if (v.status === 'approved') {
+      items.push({ id: `vi-${v.id}`, color: '#2A9D5C', text: `Визит завершён: ${v.title}`, time: v.created_at, relativeTime: '' });
+    } else {
+      items.push({ id: `vi-${v.id}`, color: '#E85D3A', text: `Визит с замечаниями: ${v.title}`, time: v.created_at, relativeTime: '' });
+    }
+  });
+
+  // Recent invoices (last 5)
+  const { data: invoices } = await supabase
+    .from('invoices')
+    .select('id, title, amount, status, created_at')
+    .order('created_at', { ascending: false })
+    .limit(5);
+
+  invoices?.forEach(inv => {
+    const amountStr = new Intl.NumberFormat('ru-RU').format(inv.amount) + ' \u20BD';
+    if (inv.status === 'paid') {
+      items.push({ id: `inv-${inv.id}`, color: '#2A9D5C', text: `Оплачен счёт: ${inv.title} (${amountStr})`, time: inv.created_at, relativeTime: '' });
+    } else {
+      items.push({ id: `inv-${inv.id}`, color: '#D4930D', text: `Выставлен счёт: ${inv.title} (${amountStr})`, time: inv.created_at, relativeTime: '' });
+    }
+  });
+
+  // Recent supply changes (last 5)
+  const { data: supplyItems } = await supabase
+    .from('supply_items')
+    .select('id, name, status, created_at')
+    .order('created_at', { ascending: false })
+    .limit(5);
+
+  supplyItems?.forEach(si => {
+    const statusText: Record<string, string> = {
+      ordered: 'заказана', delivered: 'доставлена', in_production: 'в производстве',
+      approved: 'согласована', in_review: 'на проверке',
+    };
+    const action = statusText[si.status] || 'добавлена';
+    items.push({ id: `si-${si.id}`, color: '#6B7280', text: `Позиция ${action}: ${si.name}`, time: si.created_at, relativeTime: '' });
+  });
+
+  // Sort by time and add relative dates
+  return items
+    .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
+    .slice(0, 15)
+    .map(item => ({ ...item, relativeTime: formatRelativeDate(item.time) }));
 }
 
 /** Format short date (1 мар.) */

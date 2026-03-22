@@ -62,6 +62,13 @@ export default function Sidebar({ currentPage, onNavigate, isOpen, onClose }: Si
           Навигация
         </div>
         <div
+          className={`sidebar-item ${isActive("dashboard") ? "active" : ""}`}
+          onClick={() => handleNav("dashboard")}
+        >
+          <Icons.Grid className="w-4 h-4" />
+          Дашборд
+        </div>
+        <div
           className={`sidebar-item ${isActive("projects") ? "active" : ""}`}
           onClick={() => handleNav("projects")}
         >

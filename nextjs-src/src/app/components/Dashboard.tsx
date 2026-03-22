@@ -3,22 +3,15 @@
 import { Icons } from "./Icons";
 import ProjectCard from "./ProjectCard";
 import Loading, { ErrorMessage } from "./Loading";
-import { useProjects } from "../lib/hooks";
+import { useProjects, useActivityFeed } from "../lib/hooks";
 
 interface DashboardProps {
   onNavigate: (page: string, ctx?: any) => void;
 }
 
-const activityItems = [
-  { color: "#2C5F2D", text: "Вы добавили 6 фото в визит «Проверка монтажа перегородок»", time: "2 ч. назад" },
-  { color: "#E85D3A", text: "Замечание «Перегородка в спальне» — срок истекает завтра", time: "5 ч. назад" },
-  { color: "#D4930D", text: "Анна Козлова просмотрела отчёт по визиту 28.02", time: "вчера" },
-  { color: "#2A9D5C", text: "Замечание «Разводка сантехники» — исправлено подрядчиком", time: "2 дня назад" },
-  { color: "#2C5F2D", text: "Сергей Петров принял приглашение в проект", time: "3 дня назад" },
-];
-
 export default function Dashboard({ onNavigate }: DashboardProps) {
   const { data: projects, loading, error } = useProjects();
+  const { data: activity, loading: activityLoading } = useActivityFeed();
 
   if (loading) return <Loading />;
   if (error) return <ErrorMessage message={error} />;
@@ -59,21 +52,27 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
         <h2 className="text-base font-semibold">Последняя активность</h2>
       </div>
       <div className="bg-white border border-[#E8E6E1] rounded-xl px-5 py-1 mb-6">
-        {activityItems.map((item, i) => (
-          <div
-            key={i}
-            className="flex items-start gap-3 py-3 border-b border-[#F0EEE9] last:border-none"
-          >
+        {activityLoading ? (
+          <div className="py-6 text-center text-[13px] text-[#9CA3AF]">Загрузка...</div>
+        ) : activity && activity.length > 0 ? (
+          activity.map((item) => (
             <div
-              className="w-2 h-2 rounded-full mt-[5px] flex-shrink-0"
-              style={{ background: item.color }}
-            />
-            <div>
-              <div className="text-[13px] text-[#6B6B6B] leading-relaxed">{item.text}</div>
-              <div className="text-[11px] text-[#9B9B9B] mt-0.5">{item.time}</div>
+              key={item.id}
+              className="flex items-start gap-3 py-3 border-b border-[#F0EEE9] last:border-none"
+            >
+              <div
+                className="w-2 h-2 rounded-full mt-[5px] flex-shrink-0"
+                style={{ background: item.color }}
+              />
+              <div className="min-w-0 flex-1">
+                <div className="text-[13px] text-[#6B6B6B] leading-relaxed">{item.text}</div>
+                <div className="text-[11px] text-[#9B9B9B] mt-0.5">{item.relativeTime}</div>
+              </div>
             </div>
-          </div>
-        ))}
+          ))
+        ) : (
+          <div className="py-6 text-center text-[13px] text-[#9CA3AF]">Нет активности</div>
+        )}
       </div>
 
       {/* Projects */}

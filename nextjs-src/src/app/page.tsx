@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import Sidebar from "./components/Sidebar";
+import Dashboard from "./components/Dashboard";
 import ProjectsPage from "./components/ProjectsPage";
 import ProjectPage from "./components/ProjectPage";
 import VisitPage from "./components/VisitPage";
@@ -17,7 +18,7 @@ import { acceptProjectInvitation } from "./lib/queries";
 export default function Home() {
   const { session, profile, loading: authLoading } = useAuth();
   const canCreateProject = profile?.role === 'designer' || profile?.role === 'assistant';
-  const [page, setPage] = useState("projects");
+  const [page, setPage] = useState("dashboard");
   const [context, setContext] = useState<any>(null);
   const [showCreateProject, setShowCreateProject] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
@@ -76,6 +77,25 @@ export default function Home() {
 
   const renderPage = () => {
     switch (page) {
+      case "dashboard":
+        return (
+          <>
+            <Topbar
+              title="Дашборд"
+              onMenuToggle={openSidebar}
+              actions={
+                canCreateProject ? (
+                  <button className="btn btn-primary" onClick={() => setShowCreateProject(true)}>
+                    <Icons.Plus className="w-4 h-4" /> <span className="hidden sm:inline">Новый проект</span>
+                  </button>
+                ) : undefined
+              }
+            />
+            <div className="p-4 sm:p-7">
+              <Dashboard onNavigate={navigate} />
+            </div>
+          </>
+        );
       case "projects":
         return (
           <>
