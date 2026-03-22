@@ -311,6 +311,19 @@ export async function createProject(input: CreateProjectInput): Promise<Project>
   return data as Project;
 }
 
+/** Update project title/address */
+export async function updateProject(projectId: string, updates: { title?: string; address?: string }): Promise<Project> {
+  const { data, error } = await supabase
+    .from('projects')
+    .update(updates)
+    .eq('id', projectId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as Project;
+}
+
 /** Create a new visit */
 export async function createVisit(input: CreateVisitInput): Promise<Visit> {
   const { data: { user } } = await supabase.auth.getUser();
@@ -429,6 +442,7 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<Invoice>
       title: input.title,
       amount: input.amount,
       due_date: input.due_date || null,
+      payment_url: input.payment_url || null,
       status: 'pending',
     })
     .select()

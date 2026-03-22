@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Icons } from "./Icons";
 import Topbar from "./Topbar";
 import Loading, { ErrorMessage } from "./Loading";
 import { useProject, useProjectVisits, useProjectInvoices } from "../lib/hooks";
 import { usePermissions } from "../lib/permissions";
+import { updateProject } from "../lib/queries";
 import type { ProjectPermissions } from "../lib/types";
 import SupplyModule from "./supply/SupplyModule";
 import OverviewTab from "./project/OverviewTab";
@@ -41,6 +42,19 @@ export default function ProjectPage({ projectId, onNavigate, toast, onMenuToggle
   const visibleTabs = ALL_TABS.filter(t => permissions[t.permKey]);
   const [activeTab, setActiveTab] = useState<ProjectTab>("overview");
 
+  // Title editing state
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [savingTitle, setSavingTitle] = useState(false);
+  const titleInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isEditingTitle && titleInputRef.current) {
+      titleInputRef.current.focus();
+      titleInputRef.current.select();
+    }
+  }, [isEditingTitle]);
+
   if (loadingProject || loadingVisits) return <Loading />;
   if (errorProject) return <ErrorMessage message={errorProject} />;
   if (!project) return <ErrorMessage message="Проект не найден" />;
@@ -52,21 +66,90 @@ export default function ProjectPage({ projectId, onNavigate, toast, onMenuToggle
     onNavigate("visit", { projectId: project.id, visitId });
   };
 
+  const handleStartEditTitle = () => {
+    setEditTitle(project.title);
+    setIsEditingTitle(true);
+  };
+
+  const handleSaveTitle = async () => {
+    const trimmed = editTitle.trim();
+    if (!trimmed || trimmed === project.title) {
+      setIsEditingTitle(false);
+      return;
+    }
+    setSavingTitle(true);
+    try {
+      await updateProject(project.id, { title: trimmed });
+      toast('Название обновлено');
+      refetchProject();
+      setIsEditingTitle(false);
+    } catch (e: any) {
+      toast(e.message || 'Ошибка обновления названия');
+    }
+    setSavingTitle(false);
+  };
+
+  const handleTitleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') handleSaveTitle();
+    if (e.key === 'Escape') setIsEditingTitle(false);
+  };
+
   return (
     <div className="animate-fade-in">
       <Topbar
-        title={project.title}
+        title={isEditingTitle ? editTitle : project.title}
         onMenuToggle={onMenuToggle}
         breadcrumbs={[
           { label: "Проекты", onClick: () => onNavigate("projects") },
           { label: project.title },
         ]}
         actions={
-          <button className="btn btn-secondary">
-            <Icons.Download className="w-4 h-4" /> Экспорт
-          </button>
+          <div className="flex items-center gap-2">
+            {permissions.canEditProjectSettings && !isEditingTitle && (
+              <button
+                className="btn btn-secondary p-2"
+                onClick={handleStartEditTitle}
+                title="Редактировать название"
+              >
+                <Icons.Edit className="w-4 h-4" />
+              </button>
+            )}
+            <button className="btn btn-secondary">
+              <Icons.Download className="w-4 h-4" /> Экспорт
+            </button>
+          </div>
         }
       />
+
+      {/* Inline title editing */}
+      {isEditingTitle && (
+        <div className="px-4 sm:px-7 py-3 bg-[#F9FAFB] border-b border-[#E5E7EB] flex items-center gap-3">
+          <input
+            ref={titleInputRef}
+            type="text"
+            value={editTitle}
+            onChange={e => setEditTitle(e.target.value)}
+            onKeyDown={handleTitleKeyDown}
+            className="flex-1 text-[15px] font-medium px-3 py-2 border border-[#D1D5DB] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#111827] focus:border-transparent"
+            placeholder="Название проекта"
+            disabled={savingTitle}
+          />
+          <button
+            className="btn btn-primary text-[12px] py-2 px-4"
+            onClick={handleSaveTitle}
+            disabled={savingTitle || !editTitle.trim()}
+          >
+            {savingTitle ? 'Сохранение...' : 'Сохранить'}
+          </button>
+          <button
+            className="btn btn-secondary text-[12px] py-2 px-4"
+            onClick={() => setIsEditingTitle(false)}
+            disabled={savingTitle}
+          >
+            Отмена
+          </button>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="tn px-4 sm:px-7 overflow-x-auto scrollbar-hide">

@@ -22,6 +22,7 @@ export default function JournalTab({ project, projectId, visits, invoices, onSel
   const [invTitle, setInvTitle] = useState('');
   const [invAmount, setInvAmount] = useState('');
   const [invDue, setInvDue] = useState('');
+  const [invPaymentUrl, setInvPaymentUrl] = useState('');
   const [saving, setSaving] = useState(false);
 
   const pendingInv = invoices.filter(i => i.status === 'pending');
@@ -38,13 +39,14 @@ export default function JournalTab({ project, projectId, visits, invoices, onSel
     setErrors({});
     setSaving(true);
     try {
-      await createInvoice({ project_id: projectId, title: invTitle, amount: Number(invAmount), due_date: invDue || undefined });
+      await createInvoice({ project_id: projectId, title: invTitle, amount: Number(invAmount), due_date: invDue || undefined, payment_url: invPaymentUrl || undefined });
       toast('Счёт выставлен');
       refetchInvoices();
       setShowModal(false);
       setInvTitle('');
       setInvAmount('');
       setInvDue('');
+      setInvPaymentUrl('');
     } catch (e: any) {
       toast(e.message || 'Ошибка создания счёта');
     }
@@ -74,9 +76,22 @@ export default function JournalTab({ project, projectId, visits, invoices, onSel
         <div className="space-y-2">
           {invoices.map(inv => (
             <div key={inv.id} className="flex items-center justify-between text-[13px] py-2 border-b border-[#F3F4F6] last:border-none">
-              <span>{inv.title}</span>
-              <div className="flex items-center gap-3">
+              <span className="truncate min-w-0">{inv.title}</span>
+              <div className="flex items-center gap-3 flex-shrink-0 ml-2">
                 <span className="font-mono-custom font-medium">{formatPrice(inv.amount)}</span>
+                {inv.payment_url && (
+                  <a
+                    href={inv.payment_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#2563EB] hover:text-[#1D4ED8] transition-colors flex items-center gap-1"
+                    title="Ссылка на оплату"
+                    onClick={e => e.stopPropagation()}
+                  >
+                    <Icons.Link className="w-3.5 h-3.5" />
+                    <span className="text-[11px]">Оплатить</span>
+                  </a>
+                )}
                 <Bdg s={inv.status} />
               </div>
             </div>
@@ -132,6 +147,10 @@ export default function JournalTab({ project, projectId, visits, invoices, onSel
           <div className="modal-field">
             <label>Срок оплаты</label>
             <input type="date" value={invDue} onChange={e => setInvDue(e.target.value)} />
+          </div>
+          <div className="modal-field">
+            <label>Ссылка на оплату</label>
+            <input type="url" value={invPaymentUrl} onChange={e => setInvPaymentUrl(e.target.value)} placeholder="https://bank.ru/pay/..." />
           </div>
           <div className="flex gap-2 justify-end mt-4">
             <button className="btn btn-secondary" onClick={() => setShowModal(false)}>Отмена</button>

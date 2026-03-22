@@ -113,6 +113,7 @@ export interface Invoice {
   title: string;
   amount: number;
   due_date: string | null;
+  payment_url: string | null;
   status: InvoiceStatus;
   issued_at: string;
   paid_at: string | null;
@@ -214,6 +215,7 @@ export interface CreateInvoiceInput {
   title: string;
   amount: number;
   due_date?: string;
+  payment_url?: string;
 }
 
 export interface CreateDocumentInput {
