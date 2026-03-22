@@ -20,34 +20,69 @@
 ```
 archflow-project/
 ├── CLAUDE.md                    ← этот файл
+├── .gitignore                   ← корневой .gitignore
 ├── README.md                    ← описание проекта
 ├── index.html                   ← полное HTML-демо (standalone)
 ├── 01-designer-full.jsx         ← React-артефакт: интерфейс дизайнера
 ├── 02-client-portal.jsx         ← React-артефакт: портал заказчика
 ├── 03-supply-module.jsx         ← React-артефакт: модуль комплектации
+├── n8n/                         ← n8n workflow (Signal-агент)
+│   ├── archflow-signal-agent-v2.json ← основной workflow
+│   ├── GUIDE.md                 ← руководство по настройке
+│   ├── code-filter-dedup.js     ← фильтр дедупликации
+│   ├── prompt-1-signal-analysis.md ← промпт анализа сигналов
+│   └── prompt-2-report.md       ← промпт генерации отчёта
 └── nextjs-src/                  ← Next.js исходники
     ├── tailwind.config.ts
     └── src/app/
         ├── layout.tsx           ← корневой layout (lang=ru)
-        ├── page.tsx             ← SPA-шелл (Dashboard по умолчанию)
+        ├── page.tsx             ← SPA-шелл (Dashboard → Projects → Project → Visit)
+        ├── error.tsx            ← Error Boundary для перехвата ошибок
         ├── globals.css          ← глобальные стили + Tailwind @layer
-        ├── lib/data.ts          ← типизированные моковые данные (TypeScript interfaces)
+        ├── lib/
+        │   ├── supabase.ts      ← Supabase клиент
+        │   ├── auth.tsx         ← AuthProvider (session, profile, signIn/Out)
+        │   ├── types.ts         ← TypeScript типы для всех таблиц БД
+        │   ├── queries.ts       ← Supabase запросы и мутации
+        │   ├── hooks.ts         ← React-хуки для данных
+        │   └── permissions.ts   ← RBAC-логика по ролям
         ├── components/
-        │   ├── data.ts          ← моковые данные (дубль, без типов)
-        │   ├── Dashboard.tsx    ← дашборд: KPI-карточки, активность, проекты
-        │   ├── Icons.tsx        ← 17 SVG-иконок
+        │   ├── Dashboard.tsx    ← дашборд: KPI, живая лента активности, проекты
+        │   ├── EmptyState.tsx   ← переиспользуемый компонент пустого состояния
+        │   ├── Icons.tsx        ← SVG-иконки
         │   ├── Modal.tsx        ← переиспользуемая модалка
+        │   ├── Toast.tsx        ← toast-уведомления
+        │   ├── Topbar.tsx       ← верхняя панель с заголовком и действиями
+        │   ├── Bdg.tsx          ← бейдж статуса
+        │   ├── LoginPage.tsx    ← страница входа/регистрации
+        │   ├── CreateProjectModal.tsx ← модалка создания проекта
         │   ├── ProjectCard.tsx  ← карточка проекта
-        │   ├── ProjectPage.tsx  ← страница проекта: визиты, инвайты
-        │   ├── ProjectsPage.tsx ← список проектов с фильтрами
-        │   ├── SettingsNotifications.tsx ← настройки + уведомления
-        │   ├── Sidebar.tsx      ← боковая навигация
-        │   └── VisitPage.tsx    ← страница визита: фото, замечания, загрузка
-        ├── projects/page.tsx    ← App Router: список проектов
-        ├── project/[id]/page.tsx ← App Router: страница проекта
-        ├── visit/[projectId]/[visitId]/page.tsx ← App Router: визит
-        ├── notifications/page.tsx ← App Router: уведомления
-        └── settings/page.tsx    ← App Router: настройки
+        │   ├── ProjectPage.tsx  ← страница проекта: 6 табов
+        │   ├── ProjectsPage.tsx ← список проектов
+        │   ├── Sidebar.tsx      ← боковая навигация (Дашборд, Проекты)
+        │   ├── VisitPage.tsx    ← страница визита: фото, замечания, загрузка
+        │   ├── project/         ← табы страницы проекта
+        │   │   ├── OverviewTab.tsx
+        │   │   ├── VisitsTab.tsx
+        │   │   ├── JournalTab.tsx
+        │   │   ├── DocsTab.tsx
+        │   │   └── SettingsTab.tsx
+        │   └── supply/          ← модуль комплектации
+        │       ├── SupplyModule.tsx
+        │       ├── SupplyDashboard.tsx
+        │       ├── SupplySpec.tsx
+        │       ├── SupplyStages.tsx
+        │       ├── SupplyTimeline.tsx
+        │       ├── SupplyImport.tsx
+        │       └── SupplySettings.tsx
+        └── supabase/migrations/ ← SQL-миграции
+            ├── 001_initial_schema.sql
+            ├── 002_seed_data.sql
+            ├── 003_rls_v2.sql
+            ├── 004_storage_and_rpc.sql
+            ├── 005_rls_select_fix.sql
+            ├── 006_documents_bucket.sql
+            └── 007_project_invitations.sql
 ```
 
 ## Текущие сущности (из моковых данных)
@@ -99,16 +134,16 @@ archflow-project/
 
 - **Frontend**: Next.js 14+ (App Router), React, TypeScript, Tailwind CSS
 - **Шрифты**: DM Sans (основной в артефактах), Outfit (в Next.js), JetBrains Mono (моноширинный)
-- **Backend**: будет Supabase (PostgreSQL + Auth + Storage)
+- **Backend**: Supabase на Beget Cloud (oyklaglogmaniet.beget.app) — PostgreSQL + Auth + Storage
 - **Язык интерфейса**: русский
 
 ## Известные проблемы
 
-1. Два дубля моковых данных: `lib/data.ts` (типизированный) и `components/data.ts` (без типов)
-2. Две системы навигации: SPA (через useState) и App Router (файловая маршрутизация)
-3. Sidebar имеет несовместимые интерфейсы для SPA и App Router версий
-4. Нет бэкенда — все данные захардкожены
-5. Нет аутентификации — пользователь "Алиса Флоренс" вшит в код
+1. ~~Два дубля моковых данных~~ — ✅ удалены (2026-03-22)
+2. ~~Две системы навигации~~ — ✅ консолидировано: SPA-only, App Router роуты удалены (2026-03-22)
+3. ~~Sidebar несовместимые интерфейсы~~ — ✅ исправлено (2026-03-22)
+4. ~~Нет бэкенда~~ — ✅ Supabase (2026-03-18)
+5. ~~Нет аутентификации~~ — ✅ Supabase Auth (2026-03-19)
 
 ## Лог работы
 
@@ -158,3 +193,17 @@ archflow-project/
 - [x] SQL: Storage bucket 'photos' + RPC lookup_profile_by_email (004_storage_and_rpc.sql)
 - [x] RLS SELECT fix (005_rls_select_fix.sql): INSERT+SELECT (PostgREST return=representation) — добавлены прямые проверки owner_id/created_by
 - [x] Протестировано в браузере: создание проекта, визита, счёта — всё работает через Supabase
+
+### 2026-03-22
+- [x] Toast-ошибки: все мутации показывают ошибку пользователю (VisitPage, JournalTab, VisitsTab, SupplySpec)
+- [x] Error Boundary (error.tsx): перехват непредвиденных ошибок с кнопкой повтора
+- [x] Auth: обработка TOKEN_REFRESHED для корректного re-login при истечении токена
+- [x] Валидация форм: inline-ошибки в визитах, счетах, email-валидация при приглашении
+- [x] Пустые состояния: компонент EmptyState, улучшены Dashboard и ProjectsPage
+- [x] Удалены дубли моковых данных: `lib/data.ts` и `components/data.ts` (никем не использовались)
+- [x] Живая активность на Dashboard: fetchActivityFeed() из photo_records, visits, invoices, supply_items
+- [x] Dashboard — стартовая страница, добавлен пункт «Дашборд» в Sidebar
+- [x] Консолидация навигации: удалены пустые App Router роуты (projects, project/[id], visit, notifications, settings) — всё через SPA
+- [x] Добавлен корневой .gitignore
+- [x] Закоммичен n8n/ workflow (Signal-агент)
+- [x] Обновлена структура файлов и известные проблемы в CLAUDE.md

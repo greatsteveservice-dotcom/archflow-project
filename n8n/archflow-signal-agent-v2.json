@@ -1,0 +1,384 @@
+{
+  "name": "Archflow Signal Agent v2",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 400],
+      "id": "f99804c2-7faa-40a0-91f5-0d1c9174be9a",
+      "name": "When clicking 'Execute workflow'"
+    },
+    {
+      "parameters": {
+        "url": "https://www.constructiondive.com/feeds/news/",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [280, 120],
+      "id": "b4651e20-f8ac-4f4a-aae6-dc4f394d703a",
+      "name": "RSS: Construction Dive",
+      "settings": {
+        "continueOnFail": true
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://www.enr.com/rss/topic/293-news",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [280, 300],
+      "id": "16d34296-3513-4a55-8833-1642349b5bd7",
+      "name": "RSS: ENR",
+      "settings": {
+        "continueOnFail": true
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://www.dezeen.com/feed/",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [280, 480],
+      "id": "c1000001-aaaa-4000-8000-000000000001",
+      "name": "RSS: Dezeen",
+      "settings": {
+        "continueOnFail": true
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://www.futuretools.io/news/rss.xml",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [280, 660],
+      "id": "c1000002-aaaa-4000-8000-000000000002",
+      "name": "RSS: Future Tools",
+      "settings": {
+        "continueOnFail": true
+      }
+    },
+    {
+      "parameters": {
+        "mode": "append"
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [560, 210],
+      "id": "c1000003-aaaa-4000-8000-000000000003",
+      "name": "Merge 1"
+    },
+    {
+      "parameters": {
+        "mode": "append"
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [760, 350],
+      "id": "c1000004-aaaa-4000-8000-000000000004",
+      "name": "Merge 2"
+    },
+    {
+      "parameters": {
+        "mode": "append"
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [960, 510],
+      "id": "c1000005-aaaa-4000-8000-000000000005",
+      "name": "Merge 3"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst seen = new Set();\nconst result = [];\nconst maxAge = 3 * 24 * 60 * 60 * 1000;\nconst now = Date.now();\n\nfor (const item of items) {\n  const d = item.json;\n  const title = (d.title || '').trim();\n  const content = (d.contentSnippet || d.content || '').replace(/<[^>]*>/g, '').trim();\n\n  if (!title || content.length < 50) continue;\n\n  if (d.isoDate || d.pubDate) {\n    try {\n      const pub = new Date(d.isoDate || d.pubDate).getTime();\n      if (now - pub > maxAge) continue;\n    } catch(e) {}\n  }\n\n  const key = title.toLowerCase().replace(/[^a-z\\u0430-\\u044f\\u04510-9]/gi, '').substring(0, 60);\n  if (seen.has(key)) continue;\n  seen.add(key);\n\n  const link = d.link || '';\n  let source = 'Other';\n  if (link.includes('constructiondive')) source = 'Construction Dive';\n  else if (link.includes('enr.com')) source = 'ENR';\n  else if (link.includes('dezeen')) source = 'Dezeen';\n  else if (link.includes('futuretools')) source = 'Future Tools';\n  else if (link.includes('archdaily')) source = 'ArchDaily';\n\n  result.push({\n    json: {\n      source: source,\n      title: title,\n      link: link,\n      content: content.substring(0, 500),\n      pubDate: d.isoDate || d.pubDate || ''\n    }\n  });\n}\n\nreturn result.length > 0 ? result : [];",
+        "mode": "runOnceForAllItems"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1180, 510],
+      "id": "c1000006-aaaa-4000-8000-000000000006",
+      "name": "Filter & Dedup"
+    },
+    {
+      "parameters": {
+        "maxItems": 8
+      },
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [1380, 510],
+      "id": "d2dc604b-b105-4976-8397-dad10fcdcaf7",
+      "name": "Limit"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "=Ты — product-аналитик платформы Archflow (управление дизайн-проектами интерьера: авторский надзор, комплектация/supply, счета, координация дизайнер-заказчик-подрядчик).\n\nПроанализируй статью. Определи: есть ли СИГНАЛ для развития Archflow.\n\nСигнал — это:\n- Конкретная проблема в дизайне/стройке/координации\n- Новая механика автоматизации (AI, workflow)\n- Паттерн из SaaS/B2B для наших процессов\n- Способ сократить ручную работу дизайнера\n\nНЕ сигнал:\n- Общие новости без практики\n- Банальщина: канбан, чат, Trello, базовые уведомления\n- Маркетинг без механики\n- Архитектурные проекты без процессной информации\n\nЕсли нашёл сигнал:\nRELEVANT: yes\nSIGNAL: [что обнаружено, 1-2 предложения]\nPROBLEM: [какую проблему решает]\nMECHANIC: [механика/паттерн]\nARCHFLOW_IDEA: [как применить в Archflow, 2-3 предложения]\nPRIORITY: [high/medium/low]\n\nЕсли нет:\nRELEVANT: no\nREASON: [почему отброшено]\n\nСтатья:\nИсточник: {{$json[\"source\"]}}\nЗаголовок: {{$json[\"title\"]}}\nТекст: {{$json[\"content\"]}}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [1580, 510],
+      "id": "5e440052-554e-4fce-9a96-2e0cc9464f84",
+      "name": "Signal Analysis",
+      "credentials": {
+        "openAiApi": {
+          "id": "0XvPWGbwJpfi9vUQ",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst analyses = [];\n\nfor (const item of items) {\n  let text = '';\n  try {\n    if (item.json.output && Array.isArray(item.json.output)) {\n      text = item.json.output[0].content[0].text || '';\n    } else if (item.json.content && Array.isArray(item.json.content)) {\n      text = item.json.content[0].text || '';\n    } else if (item.json.message && item.json.message.content) {\n      text = item.json.message.content;\n    } else if (item.json.text) {\n      text = item.json.text;\n    }\n  } catch(e) {\n    text = JSON.stringify(item.json);\n  }\n\n  const lower = (text || '').toLowerCase();\n  if (text && !lower.includes('relevant: no') && !lower.includes('no signal') && text.trim().length > 10) {\n    analyses.push(text);\n  }\n}\n\nif (analyses.length === 0) {\n  return [];\n}\n\nreturn [{ json: { aggregated: analyses.join('\\n\\n---\\n\\n'), count: analyses.length } }];",
+        "mode": "runOnceForAllItems"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1820, 510],
+      "id": "c1000007-aaaa-4000-8000-000000000007",
+      "name": "Aggregate Results"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "=Ты — product lead платформы Archflow. Сформируй Telegram-отчёт на русском.\n\nПравила:\n- Формат: Telegram HTML (<b>, <i>, <code>). БЕЗ markdown (# * -- ```)\n- Только RELEVANT: yes сигналы\n- Макс 4 сигнала, лучше 2-3 сильных\n- Убери дубли и банальности\n- Идеи КОНКРЕТНЫЕ: не \"улучшить UX\", а \"добавить auto-alert подрядчику за 48ч до визита с чеклистом\"\n- Запрещено упоминать: Trello, Asana, Slack, Notion, Jira, канбан, чат\n\nСТРУКТУРА ОТЧЁТА:\n\n<b>🚀 Archflow Signal Report</b>\n\n<b>📡 Сигналы</b>\n• <b>Название</b> — описание сигнала\n  💡 <i>Идея: конкретная фича для Archflow</i>\n\n<b>🧠 Куда движется рынок</b>\n2-3 тренда коротко\n\n<b>⚡ Что проработать первым</b>\n1-2 самых приоритетных идеи с обоснованием\n\nЕсли релевантных сигналов нет — напиши: Сегодня без сильных сигналов. Рынок тихий.\n\nДанные для анализа:\n{{$json[\"aggregated\"]}}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [2040, 510],
+      "id": "1ed34e29-673b-47a7-994a-d68728b28880",
+      "name": "Generate Report",
+      "credentials": {
+        "openAiApi": {
+          "id": "0XvPWGbwJpfi9vUQ",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "7979282520",
+        "text": "={{$json[\"output\"][0][\"content\"][0][\"text\"].replace(/\\\\n/g, \"\\n\")}}",
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [2300, 510],
+      "id": "ce389e6a-9014-4b23-9302-2e6b3b59e8ec",
+      "name": "Send to Telegram",
+      "webhookId": "dbfec5e3-492d-4ccf-8405-df10a2c0270d",
+      "credentials": {
+        "telegramApi": {
+          "id": "MwaGabYlmZsw1L3i",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking 'Execute workflow'": {
+      "main": [
+        [
+          {
+            "node": "RSS: Construction Dive",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "RSS: ENR",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "RSS: Dezeen",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "RSS: Future Tools",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS: Construction Dive": {
+      "main": [
+        [
+          {
+            "node": "Merge 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS: ENR": {
+      "main": [
+        [
+          {
+            "node": "Merge 1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge 1": {
+      "main": [
+        [
+          {
+            "node": "Merge 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS: Dezeen": {
+      "main": [
+        [
+          {
+            "node": "Merge 2",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge 2": {
+      "main": [
+        [
+          {
+            "node": "Merge 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS: Future Tools": {
+      "main": [
+        [
+          {
+            "node": "Merge 3",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge 3": {
+      "main": [
+        [
+          {
+            "node": "Filter & Dedup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter & Dedup": {
+      "main": [
+        [
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit": {
+      "main": [
+        [
+          {
+            "node": "Signal Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Signal Analysis": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Results": {
+      "main": [
+        [
+          {
+            "node": "Generate Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Report": {
+      "main": [
+        [
+          {
+            "node": "Send to Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "v2-signal-agent-2026-03-20",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "9e63ffc850d804021bb98e66a5b336719b838dda4a0f181423b90fd19ecf3055"
+  },
+  "id": "archflow-signal-v2",
+  "tags": []
+}
