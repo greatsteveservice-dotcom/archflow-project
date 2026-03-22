@@ -46,8 +46,11 @@ export default function SettingsTab({ project, projectId, toast }: SettingsTabPr
   const [invError, setInvError] = useState('');
   const [inviteLink, setInviteLink] = useState('');
 
+  const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
   const handleInviteByEmail = async () => {
-    if (!invEmail.trim()) return;
+    if (!invEmail.trim()) { setInvError('Введите email'); return; }
+    if (!isValidEmail(invEmail.trim())) { setInvError('Некорректный формат email'); return; }
     setSaving(true);
     setInvError('');
     try {

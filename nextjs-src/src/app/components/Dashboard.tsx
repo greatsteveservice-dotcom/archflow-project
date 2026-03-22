@@ -84,13 +84,20 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
         </button>
       </div>
       <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4 max-sm:grid-cols-1">
-        {activeProjects.map((project) => (
+        {activeProjects.length > 0 ? activeProjects.map((project) => (
           <ProjectCard
             key={project.id}
             project={project}
             onClick={() => onNavigate("project", project.id)}
           />
-        ))}
+        )) : (
+          <div className="col-span-full text-center py-12">
+            <div className="w-12 h-12 rounded-2xl bg-[#F3F4F6] flex items-center justify-center mx-auto mb-3 text-[#9CA3AF]">
+              <Icons.Folder className="w-6 h-6" />
+            </div>
+            <p className="text-[13px] text-[#9CA3AF]">Нет активных проектов</p>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -135,8 +135,8 @@ export default function VisitPage({ projectId, visitId, onNavigate, toast, onMen
       await updatePhotoStatus(photoId, newStatus);
       refetchPhotos();
       refetchVisit();
-    } catch (err) {
-      // silently fail — user sees old status
+    } catch (err: any) {
+      toast(err.message || 'Ошибка смены статуса');
     }
   };
 

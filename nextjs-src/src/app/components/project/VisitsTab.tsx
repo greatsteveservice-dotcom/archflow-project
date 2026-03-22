@@ -27,8 +27,14 @@ export default function VisitsTab({ project, projectId, visits, toast, refetchVi
   const contractVisits = project.visit_count || completed.length;
   const remaining = Math.max(0, contractVisits - completed.length);
 
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
   const handleCreate = async () => {
-    if (!vTitle.trim() || !vDate) return;
+    const errs: Record<string, string> = {};
+    if (!vTitle.trim()) errs.title = 'Введите название визита';
+    if (!vDate) errs.date = 'Выберите дату';
+    if (Object.keys(errs).length > 0) { setErrors(errs); return; }
+    setErrors({});
     setSaving(true);
     try {
       await createVisit({ project_id: projectId, title: vTitle, date: vDate, note: vNote || undefined, status: 'planned' });
@@ -38,8 +44,8 @@ export default function VisitsTab({ project, projectId, visits, toast, refetchVi
       setVTitle('');
       setVDate('');
       setVNote('');
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      toast(e.message || 'Ошибка создания визита');
     }
     setSaving(false);
   };
@@ -126,12 +132,14 @@ export default function VisitsTab({ project, projectId, visits, toast, refetchVi
       <Modal open={showModal} onClose={() => setShowModal(false)} title="Запланировать визит">
         <div className="space-y-4">
           <div className="modal-field">
-            <label>Название</label>
-            <input value={vTitle} onChange={e => setVTitle(e.target.value)} placeholder="Проверка штукатурки" />
+            <label>Название *</label>
+            <input value={vTitle} onChange={e => { setVTitle(e.target.value); setErrors(p => ({ ...p, title: '' })); }} placeholder="Проверка штукатурки" className={errors.title ? 'border-[#DC2626]' : ''} />
+            {errors.title && <span className="text-[11px] text-[#DC2626] mt-0.5">{errors.title}</span>}
           </div>
           <div className="modal-field">
-            <label>Дата</label>
-            <input type="date" value={vDate} onChange={e => setVDate(e.target.value)} />
+            <label>Дата *</label>
+            <input type="date" value={vDate} onChange={e => { setVDate(e.target.value); setErrors(p => ({ ...p, date: '' })); }} className={errors.date ? 'border-[#DC2626]' : ''} />
+            {errors.date && <span className="text-[11px] text-[#DC2626] mt-0.5">{errors.date}</span>}
           </div>
           <div className="modal-field">
             <label>Заметка</label>

@@ -11,9 +11,10 @@ interface SupplySpecProps {
   stages: Stage[];
   projectId: string;
   refetchItems: () => void;
+  toast?: (msg: string) => void;
 }
 
-export function SupplySpec({ items, stages, projectId, refetchItems }: SupplySpecProps) {
+export function SupplySpec({ items, stages, projectId, refetchItems, toast }: SupplySpecProps) {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [selectedItem, setSelectedItem] = useState<SupplyItemWithCalc | null>(null);
@@ -44,8 +45,8 @@ export function SupplySpec({ items, stages, projectId, refetchItems }: SupplySpe
       if (selectedItem && selectedItem.id === itemId) {
         setSelectedItem({ ...selectedItem, status: newStatus });
       }
-    } catch {
-      // silent fail
+    } catch (err: any) {
+      toast?.(err.message || 'Ошибка обновления статуса');
     } finally {
       setUpdatingStatus(false);
     }

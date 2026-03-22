@@ -67,12 +67,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
         fetchProfile(session.user.id);
       } else {
+        setProfile(null);
+      }
+      // Handle token refresh failure — force re-login
+      if (event === 'TOKEN_REFRESHED' && !session) {
+        setSession(null);
+        setUser(null);
         setProfile(null);
       }
     });

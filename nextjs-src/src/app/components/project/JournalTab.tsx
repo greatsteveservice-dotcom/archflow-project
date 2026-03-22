@@ -28,8 +28,14 @@ export default function JournalTab({ project, projectId, visits, invoices, onSel
   const paidInv = invoices.filter(i => i.status === 'paid');
   const completed = visits.filter(v => v.status !== 'planned').sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
   const handleCreateInvoice = async () => {
-    if (!invTitle.trim() || !invAmount) return;
+    const errs: Record<string, string> = {};
+    if (!invTitle.trim()) errs.title = 'Введите название';
+    if (!invAmount || Number(invAmount) <= 0) errs.amount = 'Введите сумму больше 0';
+    if (Object.keys(errs).length > 0) { setErrors(errs); return; }
+    setErrors({});
     setSaving(true);
     try {
       await createInvoice({ project_id: projectId, title: invTitle, amount: Number(invAmount), due_date: invDue || undefined });
@@ -39,8 +45,8 @@ export default function JournalTab({ project, projectId, visits, invoices, onSel
       setInvTitle('');
       setInvAmount('');
       setInvDue('');
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      toast(e.message || 'Ошибка создания счёта');
     }
     setSaving(false);
   };
@@ -114,12 +120,14 @@ export default function JournalTab({ project, projectId, visits, invoices, onSel
       <Modal open={showModal} onClose={() => setShowModal(false)} title="Выставить счёт">
         <div className="space-y-4">
           <div className="modal-field">
-            <label>Название</label>
-            <input value={invTitle} onChange={e => setInvTitle(e.target.value)} placeholder="Авторский надзор — март" />
+            <label>Название *</label>
+            <input value={invTitle} onChange={e => { setInvTitle(e.target.value); setErrors(p => ({ ...p, title: '' })); }} placeholder="Авторский надзор — март" className={errors.title ? 'border-[#DC2626]' : ''} />
+            {errors.title && <span className="text-[11px] text-[#DC2626] mt-0.5">{errors.title}</span>}
           </div>
           <div className="modal-field">
-            <label>Сумма (₽)</label>
-            <input type="number" value={invAmount} onChange={e => setInvAmount(e.target.value)} placeholder="45000" />
+            <label>Сумма (₽) *</label>
+            <input type="number" value={invAmount} onChange={e => { setInvAmount(e.target.value); setErrors(p => ({ ...p, amount: '' })); }} placeholder="45000" className={errors.amount ? 'border-[#DC2626]' : ''} />
+            {errors.amount && <span className="text-[11px] text-[#DC2626] mt-0.5">{errors.amount}</span>}
           </div>
           <div className="modal-field">
             <label>Срок оплаты</label>
