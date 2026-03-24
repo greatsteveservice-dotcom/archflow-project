@@ -1,5 +1,6 @@
 'use client';
 import { Icons } from './Icons';
+import NotificationDropdown from './NotificationDropdown';
 
 interface BreadcrumbItem {
   label: string;
@@ -43,10 +44,7 @@ export default function Topbar({ title, breadcrumbs, actions, onMenuToggle }: To
       </div>
       <div className="flex items-center gap-2 flex-shrink-0">
         {actions}
-        <button className="btn-secondary rounded-lg p-2 relative border border-[#E5E7EB] bg-white cursor-pointer">
-          <Icons.Bell className="w-[18px] h-[18px]" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
-        </button>
+        <NotificationDropdown />
       </div>
     </div>
   );

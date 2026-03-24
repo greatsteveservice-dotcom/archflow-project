@@ -137,6 +137,7 @@ export default function Home() {
             visitId={context?.visitId}
             onNavigate={navigate}
             toast={toast}
+            onMenuToggle={openSidebar}
           />
         );
       case "profile":

@@ -55,8 +55,8 @@ export function SupplySpec({ items, stages, projectId, refetchItems, toast }: Su
   return (
     <div>
       {/* Toolbar */}
-      <div className="flex items-center gap-3 mb-4">
-        <div className="relative flex-1 max-w-[300px]">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-4">
+        <div className="relative flex-1 max-w-[300px] w-full">
           <Icons.Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#9B9B9B]" />
           <input
             type="text"
@@ -96,7 +96,7 @@ export function SupplySpec({ items, stages, projectId, refetchItems, toast }: Su
       </div>
 
       {/* Table */}
-      <div className="bg-white border border-[#E8E6E1] rounded-xl overflow-hidden">
+      <div className="bg-white border border-[#E8E6E1] rounded-xl overflow-x-auto">
         <table className="w-full text-left">
           <thead>
             <tr className="border-b border-[#F0EEE9]">

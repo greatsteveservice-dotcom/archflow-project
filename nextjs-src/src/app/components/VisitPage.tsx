@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import { Icons } from "./Icons";
+import Topbar from "./Topbar";
 import { ErrorMessage } from "./Loading";
 import { VisitPageSkeleton } from "./Skeleton";
 import ConfirmDialog from "./ConfirmDialog";
@@ -170,7 +171,17 @@ export default function VisitPage({ projectId, visitId, onNavigate, toast, onMen
   };
 
   return (
-    <div className="animate-fade-in">
+    <>
+    <Topbar
+      title={visit.title}
+      onMenuToggle={onMenuToggle}
+      breadcrumbs={[
+        { label: 'Проекты', onClick: () => onNavigate('projects') },
+        { label: project.title, onClick: () => onNavigate('project', projectId) },
+        { label: 'Визит' },
+      ]}
+    />
+    <div className="p-4 sm:p-7 animate-fade-in">
       {/* Visit header */}
       <div className="card p-6 mb-5">
         <div className="flex justify-between items-start">
@@ -417,5 +428,6 @@ export default function VisitPage({ projectId, visitId, onNavigate, toast, onMen
         onCancel={() => setPhotoToDelete(null)}
       />
     </div>
+    </>
   );
 }
