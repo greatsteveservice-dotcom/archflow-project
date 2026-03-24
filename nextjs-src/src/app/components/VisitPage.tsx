@@ -2,7 +2,8 @@
 
 import { useState, useRef } from "react";
 import { Icons } from "./Icons";
-import Loading, { ErrorMessage } from "./Loading";
+import { ErrorMessage } from "./Loading";
+import { VisitPageSkeleton } from "./Skeleton";
 import ConfirmDialog from "./ConfirmDialog";
 import { useVisit, useVisitPhotos, useProject } from "../lib/hooks";
 import { usePermissions } from "../lib/permissions";
@@ -42,6 +43,7 @@ export default function VisitPage({ projectId, visitId, onNavigate, toast, onMen
   const [photoComment, setPhotoComment] = useState("");
   const [photoStatus, setPhotoStatus] = useState<PhotoStatus>("approved");
   const [savingPhoto, setSavingPhoto] = useState(false);
+  const [uploadStep, setUploadStep] = useState<'idle' | 'uploading' | 'saving'>('idle');
   const [photoError, setPhotoError] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -50,7 +52,7 @@ export default function VisitPage({ projectId, visitId, onNavigate, toast, onMen
   const [photoToDelete, setPhotoToDelete] = useState<PhotoRecord | null>(null);
   const [deletingPhoto, setDeletingPhoto] = useState(false);
 
-  if (loadingProject || loadingVisit || loadingPhotos) return <Loading />;
+  if (loadingProject || loadingVisit || loadingPhotos) return <VisitPageSkeleton />;
   if (errorVisit) return <ErrorMessage message={errorVisit} />;
   if (!visit || !project) return <ErrorMessage message="Визит не найден" />;
 
@@ -100,11 +102,13 @@ export default function VisitPage({ projectId, visitId, onNavigate, toast, onMen
     e.preventDefault();
     if (!photoFile) { setPhotoError("Выберите фото"); return; }
     setSavingPhoto(true);
+    setUploadStep('uploading');
     setPhotoError("");
     try {
       // Upload file to Supabase Storage
       const photoUrl = await uploadPhoto(photoFile, projectId, visitId);
       // Create record in DB
+      setUploadStep('saving');
       await createPhotoRecord({
         visit_id: visitId,
         comment: photoComment.trim() || undefined,
@@ -119,6 +123,7 @@ export default function VisitPage({ projectId, visitId, onNavigate, toast, onMen
       setPhotoError(err.message || "Ошибка загрузки фото");
     } finally {
       setSavingPhoto(false);
+      setUploadStep('idle');
     }
   };
 
@@ -131,6 +136,7 @@ export default function VisitPage({ projectId, visitId, onNavigate, toast, onMen
     setPhotoZone("Спальня");
     setPhotoStatus("approved");
     setPhotoError("");
+    setUploadStep('idle');
   };
 
   // --- Inline status change ---
@@ -373,12 +379,26 @@ export default function VisitPage({ projectId, visitId, onNavigate, toast, onMen
                   ))}
                 </select>
               </div>
+              {/* Upload progress */}
+              {savingPhoto && (
+                <div className="mt-4">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <div className="inline-block w-3.5 h-3.5 border-2 border-[#E5E7EB] border-t-[#111827] rounded-full animate-spin" />
+                    <span className="text-[12px] text-[#6B7280]">
+                      {uploadStep === 'uploading' ? `Загрузка файла (${((photoFile?.size || 0) / 1024 / 1024).toFixed(1)} МБ)...` : 'Сохранение записи...'}
+                    </span>
+                  </div>
+                  <div className="w-full h-1.5 bg-[#F3F4F6] rounded-full overflow-hidden">
+                    <div className="h-full bg-[#111827] rounded-full animate-progress-indeterminate" />
+                  </div>
+                </div>
+              )}
               <div className="flex gap-2 justify-end mt-6">
-                <button type="button" className="btn btn-secondary" onClick={closeUploadModal}>
+                <button type="button" className="btn btn-secondary" onClick={closeUploadModal} disabled={savingPhoto}>
                   Отмена
                 </button>
                 <button type="submit" className="btn btn-primary" disabled={savingPhoto}>
-                  {savingPhoto ? "Загрузка..." : "Сохранить"}
+                  {savingPhoto ? (uploadStep === 'uploading' ? 'Загрузка...' : 'Сохранение...') : 'Сохранить'}
                 </button>
               </div>
             </form>

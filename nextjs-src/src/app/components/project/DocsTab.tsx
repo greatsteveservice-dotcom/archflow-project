@@ -33,6 +33,7 @@ export default function DocsTab({ projectId, toast, canUploadDocument = true }: 
   const [docTitle, setDocTitle] = useState('');
   const [docVersion, setDocVersion] = useState('1.0');
   const [saving, setSaving] = useState(false);
+  const [uploadStep, setUploadStep] = useState<'idle' | 'uploading' | 'saving'>('idle');
   const [error, setError] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -70,9 +71,11 @@ export default function DocsTab({ projectId, toast, canUploadDocument = true }: 
   const handleUpload = async () => {
     if (!docFile || !docTitle.trim()) return;
     setSaving(true);
+    setUploadStep('uploading');
     setError('');
     try {
       const fileUrl = await uploadDocument(docFile, projectId);
+      setUploadStep('saving');
       await createDocument({
         project_id: projectId,
         title: docTitle.trim(),
@@ -87,6 +90,7 @@ export default function DocsTab({ projectId, toast, canUploadDocument = true }: 
       setError(err.message || 'Ошибка загрузки');
     } finally {
       setSaving(false);
+      setUploadStep('idle');
     }
   };
 
@@ -96,6 +100,7 @@ export default function DocsTab({ projectId, toast, canUploadDocument = true }: 
     setDocTitle('');
     setDocVersion('1.0');
     setError('');
+    setUploadStep('idle');
   };
 
   const handleDeleteDoc = async () => {
@@ -235,10 +240,24 @@ export default function DocsTab({ projectId, toast, canUploadDocument = true }: 
             <label>Версия</label>
             <input value={docVersion} onChange={e => setDocVersion(e.target.value)} placeholder="1.0" />
           </div>
+          {/* Upload progress */}
+          {saving && (
+            <div className="mt-2">
+              <div className="flex items-center gap-2 mb-1.5">
+                <div className="inline-block w-3.5 h-3.5 border-2 border-[#E5E7EB] border-t-[#111827] rounded-full animate-spin" />
+                <span className="text-[12px] text-[#6B7280]">
+                  {uploadStep === 'uploading' ? `Загрузка файла (${((docFile?.size || 0) / 1024 / 1024).toFixed(1)} МБ)...` : 'Сохранение записи...'}
+                </span>
+              </div>
+              <div className="w-full h-1.5 bg-[#F3F4F6] rounded-full overflow-hidden">
+                <div className="h-full bg-[#111827] rounded-full animate-progress-indeterminate" />
+              </div>
+            </div>
+          )}
           <div className="flex gap-2 justify-end mt-4">
-            <button className="btn btn-secondary" onClick={closeModal}>Отмена</button>
+            <button className="btn btn-secondary" onClick={closeModal} disabled={saving}>Отмена</button>
             <button className="btn btn-primary" onClick={handleUpload} disabled={saving || !docFile || !docTitle.trim()}>
-              {saving ? 'Загрузка...' : 'Загрузить'}
+              {saving ? (uploadStep === 'uploading' ? 'Загрузка...' : 'Сохранение...') : 'Загрузить'}
             </button>
           </div>
         </div>

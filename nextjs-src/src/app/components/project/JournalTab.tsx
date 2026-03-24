@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Icons } from '../Icons';
 import Bdg from '../Bdg';
 import Modal from '../Modal';
@@ -26,6 +26,10 @@ export default function JournalTab({ project, projectId, visits, invoices, onSel
   const [invPaymentUrl, setInvPaymentUrl] = useState('');
   const [saving, setSaving] = useState(false);
 
+  // Filters
+  const [invSearch, setInvSearch] = useState('');
+  const [invStatusFilter, setInvStatusFilter] = useState<string>('all');
+
   const pendingInv = invoices.filter(i => i.status === 'pending');
   const paidInv = invoices.filter(i => i.status === 'paid');
   const completed = visits.filter(v => v.status !== 'planned').sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -35,6 +39,16 @@ export default function JournalTab({ project, projectId, visits, invoices, onSel
   // Delete invoice confirm
   const [invToDelete, setInvToDelete] = useState<Invoice | null>(null);
   const [deletingInv, setDeletingInv] = useState(false);
+
+  // Filtered invoices
+  const filteredInvoices = useMemo(() => {
+    return invoices.filter(inv => {
+      const matchSearch = !invSearch ||
+        inv.title.toLowerCase().includes(invSearch.toLowerCase());
+      const matchStatus = invStatusFilter === 'all' || inv.status === invStatusFilter;
+      return matchSearch && matchStatus;
+    });
+  }, [invoices, invSearch, invStatusFilter]);
 
   const handleCreateInvoice = async () => {
     const errs: Record<string, string> = {};
@@ -125,8 +139,40 @@ export default function JournalTab({ project, projectId, visits, invoices, onSel
             </button>
           )}
         </div>
+
+        {/* Search + filter for invoices */}
+        {invoices.length > 3 && (
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-4">
+            <div className="relative flex-1 max-w-[260px] w-full">
+              <Icons.Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-[#9CA3AF]" />
+              <input
+                type="text"
+                value={invSearch}
+                onChange={(e) => setInvSearch(e.target.value)}
+                placeholder="Поиск по названию..."
+                className="w-full pl-8 pr-3 py-1.5 border border-[#E5E7EB] rounded-lg text-[12px] outline-none focus:border-[#111827] transition-colors bg-white"
+              />
+            </div>
+            <div className="flex gap-1">
+              {(['all', 'pending', 'paid'] as const).map(s => (
+                <button
+                  key={s}
+                  className={`text-[11px] px-2.5 py-1 rounded-lg transition-all ${
+                    invStatusFilter === s
+                      ? 'bg-[#111827] text-white'
+                      : 'bg-[#F3F4F6] text-[#6B7280] hover:bg-[#E5E7EB]'
+                  }`}
+                  onClick={() => setInvStatusFilter(s)}
+                >
+                  {s === 'all' ? 'Все' : s === 'pending' ? 'Ожидает' : 'Оплачен'}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="space-y-2">
-          {invoices.map(inv => (
+          {filteredInvoices.map(inv => (
             <div key={inv.id} className="flex items-center justify-between text-[13px] py-2.5 border-b border-[#F3F4F6] last:border-none group">
               <span className="truncate min-w-0">{inv.title}</span>
               <div className="flex items-center gap-2 flex-shrink-0 ml-2">
@@ -172,6 +218,14 @@ export default function JournalTab({ project, projectId, visits, invoices, onSel
               </div>
             </div>
           ))}
+          {invoices.length > 0 && filteredInvoices.length === 0 && (
+            <div className="text-[13px] text-[#9CA3AF] text-center py-3">
+              Ничего не найдено
+              <button className="text-[#2563EB] hover:underline ml-1 text-[12px]" onClick={() => { setInvSearch(''); setInvStatusFilter('all'); }}>
+                Сбросить
+              </button>
+            </div>
+          )}
           {invoices.length === 0 && <div className="text-[13px] text-[#9CA3AF]">Счетов пока нет</div>}
         </div>
       </div>

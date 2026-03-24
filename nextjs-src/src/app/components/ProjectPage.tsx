@@ -3,7 +3,8 @@
 import { useState, useRef, useEffect } from "react";
 import { Icons } from "./Icons";
 import Topbar from "./Topbar";
-import Loading, { ErrorMessage } from "./Loading";
+import { ErrorMessage } from "./Loading";
+import { ProjectPageSkeleton } from "./Skeleton";
 import { useProject, useProjectVisits, useProjectInvoices } from "../lib/hooks";
 import { usePermissions } from "../lib/permissions";
 import { updateProject } from "../lib/queries";
@@ -55,7 +56,7 @@ export default function ProjectPage({ projectId, onNavigate, toast, onMenuToggle
     }
   }, [isEditingTitle]);
 
-  if (loadingProject || loadingVisits) return <Loading />;
+  if (loadingProject || loadingVisits) return <ProjectPageSkeleton />;
   if (errorProject) return <ErrorMessage message={errorProject} />;
   if (!project) return <ErrorMessage message="Проект не найден" />;
 
