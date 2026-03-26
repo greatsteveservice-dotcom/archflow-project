@@ -9,10 +9,10 @@ import { useProjectDocuments } from '../../lib/hooks';
 import { formatDate, uploadDocument, createDocument, deleteDocument } from '../../lib/queries';
 
 const FORMAT_COLORS: Record<string, { bg: string; text: string }> = {
-  PDF: { bg: '#FEE2E2', text: '#DC2626' },
-  DWG: { bg: '#DBEAFE', text: '#2563EB' },
-  XLSX: { bg: '#D1FAE5', text: '#059669' },
-  PNG: { bg: '#FEF3C7', text: '#D97706' },
+  PDF:  { bg: '#111827', text: '#FFFFFF' },
+  DWG:  { bg: '#374151', text: '#FFFFFF' },
+  XLSX: { bg: '#F3F4F6', text: '#374151' },
+  PNG:  { bg: '#F3F4F6', text: '#374151' },
 };
 
 const EXT_TO_FORMAT: Record<string, DocumentFormat> = {
@@ -42,7 +42,7 @@ export default function DocsTab({ projectId, toast, canUploadDocument = true }: 
   const [docToDelete, setDocToDelete] = useState<Document | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  if (loading) return <div className="text-[13px] text-[#9CA3AF]">Загрузка...</div>;
+  if (loading) return <div className="text-[13px] text-ink-faint">Загрузка...</div>;
 
   const handleFileSelect = (file: File) => {
     if (file.size > 50 * 1024 * 1024) {
@@ -136,7 +136,7 @@ export default function DocsTab({ projectId, toast, canUploadDocument = true }: 
           return (
             <div
               key={doc.id}
-              className={`card p-4 group ${hasFile ? 'cursor-pointer hover:border-[#D1D5DB]' : 'opacity-60'}`}
+              className={`card p-4 group ${hasFile ? 'cursor-pointer hover:border-ink-ghost' : 'opacity-60'}`}
               onClick={() => {
                 if (hasFile) {
                   window.open(doc.file_url!, '_blank');
@@ -151,16 +151,16 @@ export default function DocsTab({ projectId, toast, canUploadDocument = true }: 
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-[13px] font-medium truncate">{doc.title}</div>
-                  <div className="text-[11px] text-[#9CA3AF] mt-0.5">
+                  <div className="text-[11px] text-ink-faint mt-0.5">
                     {doc.version || ''} · {formatDate(doc.created_at)}
                   </div>
                 </div>
                 {hasFile && (
-                  <Icons.Download className="w-4 h-4 text-[#9CA3AF] flex-shrink-0" />
+                  <Icons.Download className="w-4 h-4 text-ink-faint flex-shrink-0" />
                 )}
                 {canUploadDocument && (
                   <button
-                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-[#FEF2F2] text-[#9CA3AF] hover:text-[#DC2626] flex-shrink-0"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-err-bg text-ink-faint hover:text-err flex-shrink-0"
                     onClick={(e) => { e.stopPropagation(); setDocToDelete(doc); }}
                     title="Удалить документ"
                   >
@@ -171,14 +171,14 @@ export default function DocsTab({ projectId, toast, canUploadDocument = true }: 
               <div className="flex items-center gap-2">
                 <Bdg s={doc.status} />
                 {!hasFile && (
-                  <span className="text-[10px] text-[#9CA3AF]">нет файла</span>
+                  <span className="text-[10px] text-ink-faint">нет файла</span>
                 )}
               </div>
             </div>
           );
         })}
         {(!docs || docs.length === 0) && (
-          <div className="text-[13px] text-[#9CA3AF] col-span-full">Документов пока нет</div>
+          <div className="text-[13px] text-ink-faint col-span-full">Документов пока нет</div>
         )}
       </div>
 
@@ -186,7 +186,7 @@ export default function DocsTab({ projectId, toast, canUploadDocument = true }: 
       <Modal open={showModal} onClose={closeModal} title="Загрузить документ">
         <div className="space-y-4">
           {error && (
-            <div className="bg-[#FEF2F2] border border-[#DC2626]/20 text-[#DC2626] text-[13px] px-4 py-2.5 rounded-lg">
+            <div className="bg-err-bg border border-err/20 text-err text-[13px] px-4 py-2.5 rounded-lg">
               {error}
             </div>
           )}
@@ -195,10 +195,10 @@ export default function DocsTab({ projectId, toast, canUploadDocument = true }: 
           <div
             className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-200 ${
               isDragging
-                ? 'border-[#111827] bg-[#F3F4F6]'
+                ? 'border-ink bg-srf-secondary'
                 : docFile
-                ? 'border-[#111827] bg-[#F9FAFB]'
-                : 'border-[#E5E7EB] bg-[#F9FAFB] hover:border-[#D1D5DB] hover:bg-[#F3F4F6]'
+                ? 'border-ink bg-srf-raised'
+                : 'border-line bg-srf-raised hover:border-ink-ghost hover:bg-srf-secondary'
             }`}
             onClick={() => fileRef.current?.click()}
             onDrop={handleDrop}
@@ -215,19 +215,19 @@ export default function DocsTab({ projectId, toast, canUploadDocument = true }: 
             {docFile ? (
               <div>
                 <div className="text-[13px] font-medium">{docFile.name}</div>
-                <div className="text-[12px] text-[#6B7280] mt-1">
+                <div className="text-[12px] text-ink-muted mt-1">
                   {(docFile.size / 1024 / 1024).toFixed(1)} МБ · {detectFormat(docFile.name)}
                 </div>
               </div>
             ) : (
               <>
-                <div className="text-[#9CA3AF] mb-2">
+                <div className="text-ink-faint mb-2">
                   <Icons.File className="w-6 h-6 mx-auto" />
                 </div>
-                <div className="text-[13px] text-[#6B7280]">
+                <div className="text-[13px] text-ink-muted">
                   Перетащите файл или нажмите для выбора
                 </div>
-                <div className="text-[11px] text-[#9CA3AF] mt-1">PDF, DWG, XLSX, PNG до 50 МБ</div>
+                <div className="text-[11px] text-ink-faint mt-1">PDF, DWG, XLSX, PNG до 50 МБ</div>
               </>
             )}
           </div>
@@ -244,13 +244,13 @@ export default function DocsTab({ projectId, toast, canUploadDocument = true }: 
           {saving && (
             <div className="mt-2">
               <div className="flex items-center gap-2 mb-1.5">
-                <div className="inline-block w-3.5 h-3.5 border-2 border-[#E5E7EB] border-t-[#111827] rounded-full animate-spin" />
-                <span className="text-[12px] text-[#6B7280]">
+                <div className="inline-block w-3.5 h-3.5 border-2 border-line border-t-ink rounded-full animate-spin" />
+                <span className="text-[12px] text-ink-muted">
                   {uploadStep === 'uploading' ? `Загрузка файла (${((docFile?.size || 0) / 1024 / 1024).toFixed(1)} МБ)...` : 'Сохранение записи...'}
                 </span>
               </div>
-              <div className="w-full h-1.5 bg-[#F3F4F6] rounded-full overflow-hidden">
-                <div className="h-full bg-[#111827] rounded-full animate-progress-indeterminate" />
+              <div className="w-full h-1.5 bg-srf-secondary rounded-full overflow-hidden">
+                <div className="h-full bg-ink rounded-full animate-progress-indeterminate" />
               </div>
             </div>
           )}

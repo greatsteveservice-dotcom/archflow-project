@@ -96,18 +96,18 @@ export default function ProfilePage({ onNavigate, onMenuToggle, toast }: Profile
         ]}
       />
 
-      <div className="p-4 sm:p-7 max-w-2xl">
+      <div className="p-4 sm:p-8 max-w-2xl">
         {/* Avatar + Name header */}
         <div className="card p-6 mb-6">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-[#111827] text-white flex items-center justify-center text-xl font-bold flex-shrink-0">
+            <div className="w-16 h-16 rounded-full bg-ink text-white flex items-center justify-center text-xl font-bold flex-shrink-0">
               {initials}
             </div>
             <div>
               <div className="text-[17px] font-semibold">{profile.full_name}</div>
-              <div className="text-[13px] text-[#6B7280] mt-0.5">{profile.email}</div>
+              <div className="text-[13px] text-ink-muted mt-0.5">{profile.email}</div>
               <div className="mt-1">
-                <span className="text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-[#F3F4F6] text-[#374151]">
+                <span className="text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-srf-secondary text-ink-secondary">
                   {ROLE_LABELS[profile.role] || profile.role}
                 </span>
               </div>
@@ -166,7 +166,7 @@ export default function ProfilePage({ onNavigate, onMenuToggle, toast }: Profile
                 disabled
                 className="opacity-50 cursor-not-allowed"
               />
-              <span className="text-[11px] text-[#9CA3AF] mt-1">Email нельзя изменить</span>
+              <span className="text-[11px] text-ink-faint mt-1">Email нельзя изменить</span>
             </div>
 
             <div className="modal-field">
@@ -176,11 +176,11 @@ export default function ProfilePage({ onNavigate, onMenuToggle, toast }: Profile
                 disabled
                 className="opacity-50 cursor-not-allowed"
               />
-              <span className="text-[11px] text-[#9CA3AF] mt-1">Роль устанавливается администратором</span>
+              <span className="text-[11px] text-ink-faint mt-1">Роль устанавливается администратором</span>
             </div>
           </div>
 
-          <div className="flex gap-2 justify-end mt-6 pt-4 border-t border-[#F3F4F6]">
+          <div className="flex gap-2 justify-end mt-6 pt-4 border-t border-line-light">
             <button
               className="btn btn-secondary"
               onClick={() => {

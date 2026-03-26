@@ -57,13 +57,13 @@ export function SupplySpec({ items, stages, projectId, refetchItems, toast }: Su
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-4">
         <div className="relative flex-1 max-w-[300px] w-full">
-          <Icons.Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#9B9B9B]" />
+          <Icons.Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Поиск по названию, поставщику..."
-            className="w-full pl-9 pr-3 py-2 border border-[#E8E6E1] rounded-lg text-sm outline-none focus:border-[#2C5F2D] transition-colors bg-white"
+            className="w-full pl-9 pr-3 py-2 border border-line rounded-lg text-sm outline-none focus:border-ink transition-colors bg-white"
             style={{ fontFamily: "var(--font-body)" }}
           />
         </div>
@@ -95,23 +95,72 @@ export function SupplySpec({ items, stages, projectId, refetchItems, toast }: Su
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white border border-[#E8E6E1] rounded-xl overflow-x-auto">
+      {/* Mobile card view */}
+      <div className="sm:hidden space-y-3">
+        {filteredItems.length === 0 ? (
+          <div className="text-center py-8 text-[13px] text-ink-faint">
+            Позиции не найдены
+          </div>
+        ) : (
+          filteredItems.map((item) => {
+            const risk = RISK_CONFIG[item.riskCalc];
+            const status = SUPPLY_STATUS_CONFIG[item.status];
+            return (
+              <div
+                key={item.id}
+                className="bg-white border border-line rounded-xl p-4 cursor-pointer active:bg-srf-hover transition-colors"
+                onClick={() => setSelectedItem(item)}
+              >
+                <div className="flex items-baseline justify-between gap-2 mb-1">
+                  <span className="text-[13px] font-medium leading-tight">{item.name}</span>
+                  <span className="text-[11px] text-ink-faint whitespace-nowrap">{item.category || "—"}</span>
+                </div>
+                <div className="text-[12px] text-ink-muted mb-2">{item.stageName}</div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span
+                    className="text-[11px] font-medium px-2 py-0.5 rounded-full"
+                    style={{ background: risk.bg, color: risk.text }}
+                  >
+                    {risk.label}
+                  </span>
+                  <span
+                    className="text-[11px] font-medium px-2 py-0.5 rounded-full"
+                    style={{ background: status.bg, color: status.text }}
+                  >
+                    {status.label}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[12px] font-mono-custom text-ink-muted">
+                    {item.orderDeadline ? formatShortDate(item.orderDeadline) : "—"}
+                  </span>
+                  <span className="text-[13px] font-mono-custom font-medium">
+                    {formatPrice(item.budget)}
+                  </span>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden sm:block bg-white border border-line rounded-xl overflow-x-auto">
         <table className="w-full text-left">
           <thead>
-            <tr className="border-b border-[#F0EEE9]">
-              <th className="text-[11px] text-[#9B9B9B] font-medium uppercase tracking-wider px-4 py-3">Позиция</th>
-              <th className="text-[11px] text-[#9B9B9B] font-medium uppercase tracking-wider px-4 py-3">Этап</th>
-              <th className="text-[11px] text-[#9B9B9B] font-medium uppercase tracking-wider px-4 py-3">Дедлайн</th>
-              <th className="text-[11px] text-[#9B9B9B] font-medium uppercase tracking-wider px-4 py-3">Риск</th>
-              <th className="text-[11px] text-[#9B9B9B] font-medium uppercase tracking-wider px-4 py-3">Статус</th>
-              <th className="text-[11px] text-[#9B9B9B] font-medium uppercase tracking-wider px-4 py-3 text-right">Бюджет</th>
+            <tr className="border-b border-line-light">
+              <th className="text-[11px] text-ink-faint font-medium uppercase tracking-wider px-4 py-3">Позиция</th>
+              <th className="text-[11px] text-ink-faint font-medium uppercase tracking-wider px-4 py-3">Этап</th>
+              <th className="text-[11px] text-ink-faint font-medium uppercase tracking-wider px-4 py-3">Дедлайн</th>
+              <th className="text-[11px] text-ink-faint font-medium uppercase tracking-wider px-4 py-3">Риск</th>
+              <th className="text-[11px] text-ink-faint font-medium uppercase tracking-wider px-4 py-3">Статус</th>
+              <th className="text-[11px] text-ink-faint font-medium uppercase tracking-wider px-4 py-3 text-right">Бюджет</th>
             </tr>
           </thead>
           <tbody>
             {filteredItems.length === 0 ? (
               <tr>
-                <td colSpan={6} className="text-center py-8 text-[13px] text-[#9B9B9B]">
+                <td colSpan={6} className="text-center py-8 text-[13px] text-ink-faint">
                   Позиции не найдены
                 </td>
               </tr>
@@ -122,16 +171,16 @@ export function SupplySpec({ items, stages, projectId, refetchItems, toast }: Su
                 return (
                   <tr
                     key={item.id}
-                    className="border-b border-[#F0EEE9] last:border-none hover:bg-[#FAFAF8] cursor-pointer transition-colors"
+                    className="border-b border-line-light last:border-none hover:bg-srf-hover cursor-pointer transition-colors"
                     onClick={() => setSelectedItem(item)}
                   >
                     <td className="px-4 py-3">
                       <div className="text-[13px] font-medium">{item.name}</div>
-                      <div className="text-[11px] text-[#9B9B9B]">{item.category || "—"}</div>
+                      <div className="text-[11px] text-ink-faint">{item.category || "—"}</div>
                     </td>
-                    <td className="px-4 py-3 text-[13px] text-[#6B6B6B]">{item.stageName}</td>
+                    <td className="px-4 py-3 text-[13px] text-ink-muted">{item.stageName}</td>
                     <td className="px-4 py-3">
-                      <span className="text-[12px] font-mono-custom text-[#6B6B6B]">
+                      <span className="text-[12px] font-mono-custom text-ink-muted">
                         {item.orderDeadline ? formatShortDate(item.orderDeadline) : "—"}
                       </span>
                     </td>
@@ -175,9 +224,9 @@ export function SupplySpec({ items, stages, projectId, refetchItems, toast }: Su
                 <h3 className="text-lg font-semibold">{selectedItem.name}</h3>
                 <button
                   onClick={() => setSelectedItem(null)}
-                  className="p-1 rounded-lg hover:bg-[#F0EEE9] transition-colors"
+                  className="p-1 rounded-lg hover:bg-srf-secondary transition-colors"
                 >
-                  <Icons.X className="w-5 h-5 text-[#9B9B9B]" />
+                  <Icons.X className="w-5 h-5 text-ink-faint" />
                 </button>
               </div>
 
@@ -203,8 +252,8 @@ export function SupplySpec({ items, stages, projectId, refetchItems, toast }: Su
                 />
 
                 {/* Risk badge */}
-                <div className="flex items-center justify-between py-2 border-t border-[#F0EEE9]">
-                  <span className="text-[12px] text-[#9B9B9B]">Уровень риска</span>
+                <div className="flex items-center justify-between py-2 border-t border-line-light">
+                  <span className="text-[12px] text-ink-faint">Уровень риска</span>
                   <span
                     className="text-[12px] font-medium px-2.5 py-1 rounded-full"
                     style={{
@@ -224,15 +273,15 @@ export function SupplySpec({ items, stages, projectId, refetchItems, toast }: Su
 
                 {/* Notes */}
                 {selectedItem.notes && (
-                  <div className="pt-2 border-t border-[#F0EEE9]">
-                    <span className="text-[12px] text-[#9B9B9B] block mb-1">Заметки</span>
-                    <div className="text-[13px] text-[#6B6B6B] leading-relaxed">{selectedItem.notes}</div>
+                  <div className="pt-2 border-t border-line-light">
+                    <span className="text-[12px] text-ink-faint block mb-1">Заметки</span>
+                    <div className="text-[13px] text-ink-muted leading-relaxed">{selectedItem.notes}</div>
                   </div>
                 )}
 
                 {/* Status change */}
-                <div className="pt-4 border-t border-[#F0EEE9]">
-                  <span className="text-[12px] text-[#9B9B9B] block mb-2">Изменить статус</span>
+                <div className="pt-4 border-t border-line-light">
+                  <span className="text-[12px] text-ink-faint block mb-2">Изменить статус</span>
                   <div className="flex flex-wrap gap-2">
                     {(Object.keys(SUPPLY_STATUS_CONFIG) as SupplyStatus[]).map((s) => {
                       const cfg = SUPPLY_STATUS_CONFIG[s];
@@ -268,8 +317,8 @@ export function SupplySpec({ items, stages, projectId, refetchItems, toast }: Su
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-[12px] text-[#9B9B9B]">{label}</span>
-      <span className="text-[13px] font-medium text-[#1A1A1A]">{value}</span>
+      <span className="text-[12px] text-ink-faint">{label}</span>
+      <span className="text-[13px] font-medium text-ink">{value}</span>
     </div>
   );
 }

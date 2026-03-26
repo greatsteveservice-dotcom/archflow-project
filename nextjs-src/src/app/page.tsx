@@ -12,6 +12,7 @@ import ProfilePage from "./components/ProfilePage";
 import CreateProjectModal from "./components/CreateProjectModal";
 import Topbar from "./components/Topbar";
 import Toast from "./components/Toast";
+import OfflineBanner from "./components/OfflineBanner";
 import { Icons } from "./components/Icons";
 import { useProjects } from "./lib/hooks";
 import { useAuth } from "./lib/auth";
@@ -57,7 +58,7 @@ export default function Home() {
   // Auth loading state
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-[#111827] flex items-center justify-center">
+      <div className="min-h-screen bg-ink flex items-center justify-center">
         <div className="flex items-center gap-3">
           <div className="w-6 h-6 border-[3px] border-white/20 border-t-white rounded-full animate-spin" />
           <span className="text-white text-sm">Загрузка Archflow...</span>
@@ -154,7 +155,7 @@ export default function Home() {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#F9FAFB]">
+    <div className="flex min-h-screen bg-srf-raised">
       <Sidebar currentPage={page} onNavigate={navigate} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <div className="flex-1 overflow-x-hidden">
@@ -178,6 +179,8 @@ export default function Home() {
           toast("Проект создан");
         }}
       />
+
+      <OfflineBanner />
 
       {/* Toast */}
       {toastMsg && <Toast msg={toastMsg} onClose={() => setToastMsg(null)} />}

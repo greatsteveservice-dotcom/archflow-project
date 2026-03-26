@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import plugin from "tailwindcss/plugin";
 
 const config: Config = {
   content: [
@@ -9,23 +10,31 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        accent: "#111827",
-        "accent-light": "#F3F4F6",
-        "accent-hover": "#1F2937",
-        danger: "#E85D3A",
-        "danger-bg": "#FEF0EC",
-        warning: "#D4930D",
-        "warning-bg": "#FFF8E7",
-        success: "#2A9D5C",
-        "success-bg": "#EAFAF1",
-        surface: "#FFFFFF",
-        "surface-hover": "#FAFAF8",
-        "bg-main": "#F9FAFB",
-        "border-main": "#E5E7EB",
-        "border-light": "#F3F4F6",
-        "text-primary": "#111827",
-        "text-secondary": "#6B7280",
-        "text-muted": "#9CA3AF",
+        // ─── Core Palette (90% of the UI) ───
+        ink: "#111827",           // primary text, buttons, accents
+        "ink-hover": "#1F2937",   // hover on ink backgrounds
+        "ink-secondary": "#374151", // secondary text (darker muted)
+        "ink-muted": "#6B7280",   // muted text, labels
+        "ink-faint": "#9CA3AF",   // faint text, placeholders
+        "ink-ghost": "#D1D5DB",   // disabled text, subtle icons
+
+        "srf": "#FFFFFF",         // surface (cards, modals)
+        "srf-hover": "#FAFAF8",   // surface hover
+        "srf-raised": "#F9FAFB",  // raised background (page bg)
+        "srf-secondary": "#F3F4F6", // secondary surface (empty states)
+
+        "line": "#E5E7EB",        // borders
+        "line-light": "#F3F4F6",  // subtle borders/dividers
+
+        // ─── Semantic (10% — only when meaning matters) ───
+        "ok": "#16A34A",          // success, approved, paid
+        "ok-bg": "#ECFDF3",       // success background
+        "err": "#DC2626",         // error, issue, critical
+        "err-bg": "#FEF2F2",      // error background
+        "warn": "#D97706",        // warning, pending, in progress
+        "warn-bg": "#FFF7ED",     // warning background
+        "info": "#2563EB",        // info, new, links
+        "info-bg": "#EFF6FF",     // info background
       },
       fontFamily: {
         body: ["DM Sans", "sans-serif"],

@@ -1,0 +1,12 @@
+{
+  "name": "Archflow",
+  "short_name": "Archflow",
+  "description": "Управление дизайн-проектами интерьера",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F9FAFB",
+  "theme_color": "#111827",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

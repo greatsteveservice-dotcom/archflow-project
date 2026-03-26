@@ -28,9 +28,9 @@ export default function OverviewTab({ project, visits, invoices, onTabChange }: 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
         {kpis.map((k, i) => (
           <div key={i} className="card p-5">
-            <div className="text-[12px] text-[#6B7280] mb-1">{k.label}</div>
-            <div className={`text-[24px] font-bold font-mono-custom ${k.danger ? 'text-[#DC4A2A]' : ''}`}>{k.value}</div>
-            <div className={`text-[11px] mt-0.5 ${k.danger ? 'text-[#DC4A2A]' : 'text-[#9CA3AF]'}`}>{k.sub}</div>
+            <div className="text-[12px] text-ink-muted mb-1">{k.label}</div>
+            <div className={`text-[24px] font-bold font-mono-custom ${k.danger ? 'text-err' : ''}`}>{k.value}</div>
+            <div className={`text-[11px] mt-0.5 ${k.danger ? 'text-err' : 'text-ink-faint'}`}>{k.sub}</div>
           </div>
         ))}
       </div>
@@ -41,19 +41,19 @@ export default function OverviewTab({ project, visits, invoices, onTabChange }: 
           <h3 className="text-[14px] font-semibold mb-4">Информация</h3>
           <div className="space-y-3 text-[13px]">
             <div className="flex justify-between">
-              <span className="text-[#6B7280]">Адрес</span>
+              <span className="text-ink-muted">Адрес</span>
               <span className="text-right">{project.address || '—'}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[#6B7280]">Заказчик</span>
+              <span className="text-ink-muted">Заказчик</span>
               <span>{project.owner?.full_name || '—'}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[#6B7280]">Старт</span>
+              <span className="text-ink-muted">Старт</span>
               <span>{project.start_date ? formatDate(project.start_date) : '—'}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[#6B7280]">Прогресс</span>
+              <span className="text-ink-muted">Прогресс</span>
               <span className="font-mono-custom">{project.progress}%</span>
             </div>
           </div>
@@ -63,7 +63,7 @@ export default function OverviewTab({ project, visits, invoices, onTabChange }: 
         <div className="card p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-[14px] font-semibold">Последние визиты</h3>
-            <button className="text-[12px] text-[#6B7280] hover:text-[#111827] cursor-pointer" onClick={() => onTabChange('journal')}>
+            <button className="text-[12px] text-ink-muted hover:text-ink cursor-pointer" onClick={() => onTabChange('journal')}>
               Все →
             </button>
           </div>
@@ -71,17 +71,17 @@ export default function OverviewTab({ project, visits, invoices, onTabChange }: 
             {completed.slice(0, 4).map(v => (
               <div key={v.id} className="flex items-center justify-between text-[13px]">
                 <div className="flex items-center gap-2 min-w-0">
-                  <Icons.Camera className="w-3.5 h-3.5 text-[#9CA3AF] flex-shrink-0" />
+                  <Icons.Camera className="w-3.5 h-3.5 text-ink-faint flex-shrink-0" />
                   <span className="truncate">{v.title}</span>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                  <span className="text-[12px] text-[#9CA3AF]">{formatDate(v.date)}</span>
+                  <span className="text-[12px] text-ink-faint">{formatDate(v.date)}</span>
                   <Bdg s={v.status} />
                 </div>
               </div>
             ))}
             {completed.length === 0 && (
-              <div className="text-[13px] text-[#9CA3AF]">Визитов пока нет</div>
+              <div className="text-[13px] text-ink-faint">Визитов пока нет</div>
             )}
           </div>
         </div>

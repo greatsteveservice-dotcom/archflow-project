@@ -55,7 +55,7 @@ export default function ConfirmDialog({
         onClick={(e) => e.stopPropagation()}
       >
         <h3 className="text-[15px] font-semibold mb-2">{title}</h3>
-        <p className="text-[13px] text-[#6B7280] leading-relaxed mb-6">{message}</p>
+        <p className="text-[13px] text-ink-muted leading-relaxed mb-6">{message}</p>
         <div className="flex gap-2 justify-end">
           <button
             className="btn btn-secondary text-[13px] py-2 px-4"
@@ -67,8 +67,8 @@ export default function ConfirmDialog({
           <button
             className={`text-[13px] py-2 px-4 rounded-lg font-medium transition-all ${
               danger
-                ? "bg-[#DC2626] text-white hover:bg-[#B91C1C]"
-                : "bg-[#111827] text-white hover:bg-[#1F2937]"
+                ? "bg-err text-white hover:bg-red-800"
+                : "bg-ink text-white hover:bg-ink-hover"
             } ${loading ? "opacity-60 cursor-not-allowed" : ""}`}
             onClick={onConfirm}
             disabled={loading}

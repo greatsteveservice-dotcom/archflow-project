@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useAuth } from "../lib/auth";
-import { Icons } from "./Icons";
+import { Icons, ArchflowLogo } from "./Icons";
 
 type Mode = "login" | "register" | "forgot" | "reset";
 
@@ -105,10 +105,8 @@ export default function LoginPage() {
       <div className="w-full max-w-[400px] animate-slide-up">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2.5 mb-2">
-            <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center">
-              <Icons.Layers className="w-5 h-5 text-[#111827]" />
-            </div>
+          <div className="inline-flex items-center gap-3 mb-2">
+            <ArchflowLogo className="w-9 h-9" />
             <span className="text-2xl font-bold text-white tracking-tight">Archflow</span>
           </div>
           <p className="text-sm text-white/40">Architecture Workflow Platform</p>
@@ -117,7 +115,7 @@ export default function LoginPage() {
         {/* Card */}
         <div className="bg-white rounded-2xl p-8 shadow-2xl">
           <h2 className="text-lg font-semibold mb-1">{titles[mode].heading}</h2>
-          <p className="text-[13px] text-[#9CA3AF] mb-6">{titles[mode].sub}</p>
+          <p className="text-[13px] text-ink-faint mb-6">{titles[mode].sub}</p>
 
           {error && (
             <div className="text-[13px] text-red-600 mb-4 p-3 bg-red-50 rounded-lg">
@@ -135,13 +133,13 @@ export default function LoginPage() {
             {/* Full name (register only) */}
             {mode === "register" && (
               <div className="mb-4">
-                <label className="block text-xs font-medium text-[#6B7280] mb-1.5">Полное имя</label>
+                <label className="block text-xs font-medium text-ink-muted mb-1.5">Полное имя</label>
                 <input
                   type="text"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="Алиса Флоренс"
-                  className="w-full px-3 py-2.5 border border-[#E5E7EB] rounded-[9px] text-[13px] outline-none transition-colors focus:border-[#111827]"
+                  className="w-full px-3 py-2.5 border border-line rounded-[9px] text-[13px] outline-none transition-colors focus:border-ink"
                   required
                 />
               </div>
@@ -150,13 +148,13 @@ export default function LoginPage() {
             {/* Email (login, register, forgot) */}
             {(mode === "login" || mode === "register" || mode === "forgot") && (
               <div className="mb-4">
-                <label className="block text-xs font-medium text-[#6B7280] mb-1.5">Email</label>
+                <label className="block text-xs font-medium text-ink-muted mb-1.5">Email</label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="alisa@florence-design.ru"
-                  className="w-full px-3 py-2.5 border border-[#E5E7EB] rounded-[9px] text-[13px] outline-none transition-colors focus:border-[#111827]"
+                  placeholder="email@example.com"
+                  className="w-full px-3 py-2.5 border border-line rounded-[9px] text-[13px] outline-none transition-colors focus:border-ink"
                   required
                 />
               </div>
@@ -166,12 +164,12 @@ export default function LoginPage() {
             {(mode === "login" || mode === "register") && (
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs font-medium text-[#6B7280]">Пароль</label>
+                  <label className="block text-xs font-medium text-ink-muted">Пароль</label>
                   {mode === "login" && (
                     <button
                       type="button"
                       onClick={() => switchMode("forgot")}
-                      className="text-[11px] text-[#9CA3AF] hover:text-[#111827] transition-colors"
+                      className="text-[11px] text-ink-faint hover:text-ink transition-colors"
                     >
                       Забыли пароль?
                     </button>
@@ -182,7 +180,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full px-3 py-2.5 border border-[#E5E7EB] rounded-[9px] text-[13px] outline-none transition-colors focus:border-[#111827]"
+                  className="w-full px-3 py-2.5 border border-line rounded-[9px] text-[13px] outline-none transition-colors focus:border-ink"
                   required
                   minLength={6}
                 />
@@ -193,25 +191,25 @@ export default function LoginPage() {
             {mode === "reset" && (
               <>
                 <div className="mb-4">
-                  <label className="block text-xs font-medium text-[#6B7280] mb-1.5">Новый пароль</label>
+                  <label className="block text-xs font-medium text-ink-muted mb-1.5">Новый пароль</label>
                   <input
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full px-3 py-2.5 border border-[#E5E7EB] rounded-[9px] text-[13px] outline-none transition-colors focus:border-[#111827]"
+                    className="w-full px-3 py-2.5 border border-line rounded-[9px] text-[13px] outline-none transition-colors focus:border-ink"
                     required
                     minLength={6}
                   />
                 </div>
                 <div className="mb-4">
-                  <label className="block text-xs font-medium text-[#6B7280] mb-1.5">Подтвердите пароль</label>
+                  <label className="block text-xs font-medium text-ink-muted mb-1.5">Подтвердите пароль</label>
                   <input
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full px-3 py-2.5 border border-[#E5E7EB] rounded-[9px] text-[13px] outline-none transition-colors focus:border-[#111827]"
+                    className="w-full px-3 py-2.5 border border-line rounded-[9px] text-[13px] outline-none transition-colors focus:border-ink"
                     required
                     minLength={6}
                   />
@@ -229,44 +227,35 @@ export default function LoginPage() {
           </form>
 
           {/* Mode switches */}
-          <div className="mt-5 pt-4 border-t border-[#F3F4F6] text-center">
+          <div className="mt-5 pt-4 border-t border-line-light text-center">
             {mode === "login" && (
               <>
-                <span className="text-[13px] text-[#9CA3AF]">Нет аккаунта? </span>
-                <button onClick={() => switchMode("register")} className="text-[13px] text-[#111827] font-medium hover:underline">
+                <span className="text-[13px] text-ink-faint">Нет аккаунта? </span>
+                <button onClick={() => switchMode("register")} className="text-[13px] text-ink font-medium hover:underline">
                   Регистрация
                 </button>
               </>
             )}
             {mode === "register" && (
               <>
-                <span className="text-[13px] text-[#9CA3AF]">Уже есть аккаунт? </span>
-                <button onClick={() => switchMode("login")} className="text-[13px] text-[#111827] font-medium hover:underline">
+                <span className="text-[13px] text-ink-faint">Уже есть аккаунт? </span>
+                <button onClick={() => switchMode("login")} className="text-[13px] text-ink font-medium hover:underline">
                   Вход
                 </button>
               </>
             )}
             {mode === "forgot" && (
-              <button onClick={() => switchMode("login")} className="text-[13px] text-[#111827] font-medium hover:underline">
+              <button onClick={() => switchMode("login")} className="text-[13px] text-ink font-medium hover:underline">
                 ← Вернуться ко входу
               </button>
             )}
             {mode === "reset" && !success && (
-              <button onClick={() => switchMode("login")} className="text-[13px] text-[#111827] font-medium hover:underline">
+              <button onClick={() => switchMode("login")} className="text-[13px] text-ink font-medium hover:underline">
                 ← Вернуться ко входу
               </button>
             )}
           </div>
 
-          {/* Demo credentials hint */}
-          {mode === "login" && (
-            <div className="mt-4 bg-[#F9FAFB] rounded-lg px-4 py-3">
-              <div className="text-[11px] text-[#9CA3AF] mb-1">Демо-доступ:</div>
-              <div className="text-[12px] text-[#6B7280] font-mono-custom">
-                alisa@florence-design.ru / demo1234
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>

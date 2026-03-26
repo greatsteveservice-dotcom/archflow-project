@@ -49,9 +49,9 @@ export default function SupplyModule({ projectId, toast }: SupplyModuleProps) {
   if (!stages || stages.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <Icons.Layers className="w-10 h-10 text-[#D1D5DB] mb-3" />
-        <div className="text-[15px] font-medium text-[#6B7280] mb-1">Нет этапов стройки</div>
-        <div className="text-[13px] text-[#9CA3AF]">Добавьте этапы в Supabase для работы с комплектацией</div>
+        <Icons.Layers className="w-10 h-10 text-ink-ghost mb-3" />
+        <div className="text-[15px] font-medium text-ink-muted mb-1">Нет этапов стройки</div>
+        <div className="text-[13px] text-ink-faint">Добавьте этапы в Supabase для работы с комплектацией</div>
       </div>
     );
   }

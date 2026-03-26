@@ -1,3 +1,45 @@
+// ── Logo — 3D лента буква A с металлическими градиентами ──
+export function ArchflowLogo({ className = "w-8 h-8", mono = false }: { className?: string; mono?: boolean }) {
+  const id = mono ? "af-m" : "af";
+  return (
+    <svg className={className} viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        {/* Левая лента — светлый серебристый */}
+        <linearGradient id={`${id}-gl`} x1="0.2" y1="0" x2="0.8" y2="1">
+          <stop offset="0%" stopColor={mono ? "rgba(255,255,255,0.95)" : "#E0E0E8"} />
+          <stop offset="40%" stopColor={mono ? "rgba(255,255,255,0.8)" : "#C0C0CC"} />
+          <stop offset="100%" stopColor={mono ? "rgba(255,255,255,0.5)" : "#8888998"} />
+        </linearGradient>
+        {/* Правая лента — тёмная */}
+        <linearGradient id={`${id}-gr`} x1="0.8" y1="0" x2="0.2" y2="1">
+          <stop offset="0%" stopColor={mono ? "rgba(255,255,255,0.65)" : "#A0A0B0"} />
+          <stop offset="40%" stopColor={mono ? "rgba(255,255,255,0.4)" : "#606070"} />
+          <stop offset="100%" stopColor={mono ? "rgba(255,255,255,0.15)" : "#303040"} />
+        </linearGradient>
+        {/* Верхняя вершина — блик */}
+        <linearGradient id={`${id}-gt`} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor={mono ? "rgba(255,255,255,0.92)" : "#D8D8E4"} />
+          <stop offset="100%" stopColor={mono ? "rgba(255,255,255,0.65)" : "#9898A8"} />
+        </linearGradient>
+        {/* Нижняя волна — средний тон */}
+        <linearGradient id={`${id}-gw`} x1="0" y1="0.5" x2="1" y2="0.5">
+          <stop offset="0%" stopColor={mono ? "rgba(255,255,255,0.7)" : "#B0B0BC"} />
+          <stop offset="50%" stopColor={mono ? "rgba(255,255,255,0.45)" : "#787888"} />
+          <stop offset="100%" stopColor={mono ? "rgba(255,255,255,0.2)" : "#404050"} />
+        </linearGradient>
+      </defs>
+      {/* Левая ножка ленты — светлая, плавная кривая */}
+      <path d="M32 5 C28 14, 16 36, 10 52 L19 52 C22 44, 26 34, 32 19 Z" fill={`url(#${id}-gl)`} />
+      {/* Правая ножка ленты — тёмная */}
+      <path d="M32 5 C36 14, 48 36, 54 52 L45 52 C42 44, 38 34, 32 19 Z" fill={`url(#${id}-gr)`} />
+      {/* Верхний блик — перекрытие лент на вершине */}
+      <path d="M32 5 C30 10, 29 12, 28 16 L32 12 L36 16 C35 12, 34 10, 32 5 Z" fill={`url(#${id}-gt)`} />
+      {/* Волна/лента внизу — плавная дуга соединяющая ноги */}
+      <path d="M18 46 C24 38, 28 36, 32 37 C36 36, 40 38, 46 46 L42 50 C38 43, 36 41, 32 41 C28 41, 26 43, 22 50 Z" fill={`url(#${id}-gw)`} />
+    </svg>
+  );
+}
+
 export const Icons = {
   Plus: ({ className = "w-[18px] h-[18px]" }: { className?: string }) => (
     <svg className={className} viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -174,6 +216,11 @@ export const Icons = {
   Trash: ({ className = "w-4 h-4" }: { className?: string }) => (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>
+    </svg>
+  ),
+  Undo: ({ className = "w-4 h-4" }: { className?: string }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
     </svg>
   ),
 };

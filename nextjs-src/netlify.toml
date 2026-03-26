@@ -4,3 +4,23 @@
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
+
+# Redirect archflow.art → archflow.ru (301 permanent)
+[[redirects]]
+  from = "https://archflow.art/*"
+  to = "https://archflow.ru/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.archflow.art/*"
+  to = "https://archflow.ru/:splat"
+  status = 301
+  force = true
+
+# Redirect www → apex
+[[redirects]]
+  from = "https://www.archflow.ru/*"
+  to = "https://archflow.ru/:splat"
+  status = 301
+  force = true

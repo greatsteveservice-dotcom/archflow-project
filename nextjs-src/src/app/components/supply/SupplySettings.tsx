@@ -19,7 +19,7 @@ export default function SupplySettings({ toast }: SupplySettingsProps) {
 
         <div className="space-y-5">
           <div>
-            <label className="block text-[12px] font-medium text-[#6B7280] mb-2">Тип перегородок</label>
+            <label className="block text-[12px] font-medium text-ink-muted mb-2">Тип перегородок</label>
             <div className="stab w-fit">
               <button className={`stb ${scenario === 'block' ? 'active' : ''}`} onClick={() => setScenario('block')}>
                 Блок

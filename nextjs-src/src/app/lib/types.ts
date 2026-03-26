@@ -18,6 +18,8 @@ export type AccessLevel = 'view' | 'view_comment' | 'view_comment_photo' | 'view
 export type PaymentType = 'supervision' | 'design' | 'supply_commission';
 export type PaymentPeriod = 'one_time' | 'monthly';
 export type PaymentStatus = 'pending' | 'paid' | 'partial';
+export type DocumentCategory = 'design_project' | 'visualizations' | 'engineering' | 'contract' | 'schedule' | 'payments' | 'acts' | 'invoices';
+export type TaskStatus = 'open' | 'in_progress' | 'done';
 
 // ======================== DATABASE ROW TYPES ========================
 
@@ -44,6 +46,7 @@ export interface Project {
   start_date: string | null;
   supply_discount: number;
   progress: number;
+  webcam_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -129,6 +132,7 @@ export interface Document {
   format: DocumentFormat;
   file_url: string | null;
   status: DocumentStatus;
+  category: DocumentCategory | null;
   created_at: string;
 }
 
@@ -225,6 +229,36 @@ export interface CreateDocumentInput {
   format: DocumentFormat;
   file_url: string;
   status?: DocumentStatus;
+  category?: DocumentCategory;
+}
+
+export interface Task {
+  id: string;
+  project_id: string;
+  photo_record_id: string | null;
+  title: string;
+  description: string | null;
+  status: TaskStatus;
+  assigned_to: string | null;
+  created_by: string | null;
+  due_date: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateTaskInput {
+  project_id: string;
+  title: string;
+  description?: string;
+  photo_record_id?: string;
+  assigned_to?: string;
+  due_date?: string;
+}
+
+/** Photo record with visit info for gallery */
+export interface PhotoRecordWithVisit extends PhotoRecord {
+  visit_title?: string;
+  visit_date?: string;
 }
 
 // ======================== SUPPLY COMPUTED TYPES ========================
@@ -256,13 +290,16 @@ export interface CreateSupplyItemInput {
 // ======================== PERMISSIONS ========================
 
 export interface ProjectPermissions {
-  // Tab visibility
+  // Tab visibility (new 4-tab structure)
+  canViewDesign: boolean;
+  canViewSupervision: boolean;
+  canViewSupply: boolean;
+  canViewSettings: boolean;
+  // Legacy tab visibility (kept for backward compat)
   canViewOverview: boolean;
   canViewJournal: boolean;
   canViewVisits: boolean;
-  canViewSupply: boolean;
   canViewDocs: boolean;
-  canViewSettings: boolean;
   // Actions
   canCreateProject: boolean;
   canCreateVisit: boolean;
@@ -274,6 +311,7 @@ export interface ProjectPermissions {
   canEditProjectSettings: boolean;
   canDeleteProject: boolean;
   canImportSupply: boolean;
+  canManageTasks: boolean;
 }
 
 export interface UpdateProfileInput {
@@ -286,7 +324,7 @@ export interface UpdateProfileInput {
 /** Computed notification (no separate DB table) */
 export interface Notification {
   id: string;
-  type: 'issue' | 'resolved' | 'invoice_overdue' | 'invoice_new' | 'visit' | 'photo';
+  type: 'issue' | 'resolved' | 'invoice_overdue' | 'invoice_new' | 'visit' | 'photo' | 'supply_risk';
   text: string;
   time: string;
   relativeTime: string;
@@ -303,26 +341,29 @@ export interface ActivityItem {
 
 // ======================== STATUS CONFIG ========================
 
+// Monochrome photo status: filled (needs action) / outlined (in progress) / ghost (done)
 export const PHOTO_STATUS_CONFIG: Record<PhotoStatus, { label: string; color: string; bg: string }> = {
-  issue: { label: 'Замечание', color: 'text-[#E85D3A]', bg: 'bg-[#FEF0EC]' },
-  approved: { label: 'Принято', color: 'text-[#2A9D5C]', bg: 'bg-[#EAFAF1]' },
-  in_progress: { label: 'В работе', color: 'text-[#D4930D]', bg: 'bg-[#FFF8E7]' },
-  new: { label: 'Новое', color: 'text-[#6B7280]', bg: 'bg-gray-100' },
-  resolved: { label: 'Исправлено', color: 'text-[#2A9D5C]', bg: 'bg-[#EAFAF1]' },
+  issue:       { label: 'Замечание',   color: 'text-white',          bg: 'bg-ink' },
+  approved:    { label: 'Принято',     color: 'text-ink-muted',      bg: 'bg-srf-secondary' },
+  in_progress: { label: 'В работе',    color: 'text-ink-secondary',  bg: 'bg-srf-secondary' },
+  new:         { label: 'Новое',       color: 'text-ink-secondary',  bg: 'bg-srf-secondary' },
+  resolved:    { label: 'Исправлено',  color: 'text-ink-muted',      bg: 'bg-srf-secondary' },
 };
 
+// Monochrome supply status
 export const SUPPLY_STATUS_CONFIG: Record<SupplyStatus, { label: string; bg: string; text: string }> = {
-  approved: { label: 'Согласовано', bg: '#ECFDF3', text: '#16A34A' },
-  pending: { label: 'Ожидает', bg: '#FFF7ED', text: '#D97706' },
-  in_review: { label: 'На проверке', bg: '#EFF6FF', text: '#2563EB' },
-  ordered: { label: 'Заказано', bg: '#EFF6FF', text: '#2563EB' },
-  in_production: { label: 'В производстве', bg: '#FFF7ED', text: '#D97706' },
-  delivered: { label: 'Доставлено', bg: '#ECFDF3', text: '#16A34A' },
+  approved:      { label: 'Согласовано',     bg: '#F3F4F6', text: '#6B7280' },
+  pending:       { label: 'Ожидает',         bg: '#F3F4F6', text: '#374151' },
+  in_review:     { label: 'На проверке',     bg: '#F3F4F6', text: '#374151' },
+  ordered:       { label: 'Заказано',        bg: '#F3F4F6', text: '#374151' },
+  in_production: { label: 'В производстве',  bg: '#F3F4F6', text: '#374151' },
+  delivered:     { label: 'Доставлено',      bg: '#F3F4F6', text: '#6B7280' },
 };
 
+// Risk keeps subtle semantic hint: dark=critical, medium gray=medium, light=low
 export const RISK_CONFIG: Record<RiskLevel, { label: string; bg: string; text: string }> = {
-  critical: { label: 'Критично', bg: '#FEE2E2', text: '#DC2626' },
-  high: { label: 'Высокий', bg: '#FEF0EC', text: '#EA580C' },
-  medium: { label: 'Средний', bg: '#FFF7ED', text: '#D97706' },
-  low: { label: 'Низкий', bg: '#ECFDF3', text: '#16A34A' },
+  critical: { label: 'Критично',  bg: '#111827', text: '#FFFFFF' },
+  high:     { label: 'Высокий',   bg: '#374151', text: '#FFFFFF' },
+  medium:   { label: 'Средний',   bg: '#F3F4F6', text: '#374151' },
+  low:      { label: 'Низкий',    bg: '#F3F4F6', text: '#6B7280' },
 };

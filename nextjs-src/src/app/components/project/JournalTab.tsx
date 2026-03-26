@@ -108,27 +108,27 @@ export default function JournalTab({ project, projectId, visits, invoices, onSel
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5">
           <div className="card p-4 text-center">
             <div className="text-[20px] font-bold font-mono-custom">{formatPrice(totalPaid + totalPending)}</div>
-            <div className="text-[11px] text-[#9CA3AF] mt-0.5">Всего выставлено</div>
+            <div className="text-[11px] text-ink-faint mt-0.5">Всего выставлено</div>
           </div>
           <div className="card p-4 text-center">
-            <div className="text-[20px] font-bold font-mono-custom text-[#16A34A]">{formatPrice(totalPaid)}</div>
-            <div className="text-[11px] text-[#9CA3AF] mt-0.5">Оплачено</div>
+            <div className="text-[20px] font-bold font-mono-custom text-ok">{formatPrice(totalPaid)}</div>
+            <div className="text-[11px] text-ink-faint mt-0.5">Оплачено</div>
           </div>
           <div className="card p-4 text-center">
-            <div className={`text-[20px] font-bold font-mono-custom ${totalPending > 0 ? 'text-[#D97706]' : ''}`}>{formatPrice(totalPending)}</div>
-            <div className="text-[11px] text-[#9CA3AF] mt-0.5">Ожидает оплаты</div>
+            <div className={`text-[20px] font-bold font-mono-custom ${totalPending > 0 ? 'text-warn' : ''}`}>{formatPrice(totalPending)}</div>
+            <div className="text-[11px] text-ink-faint mt-0.5">Ожидает оплаты</div>
           </div>
         </div>
       )}
 
       {/* Invoice list */}
-      <div className="card p-5 mb-6" style={{ borderLeft: `4px solid ${pendingInv.length > 0 ? '#D97706' : '#16A34A'}` }}>
+      <div className={`card p-5 mb-6 border-l-4 ${pendingInv.length > 0 ? 'border-warn' : 'border-ok'}`}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <Icons.Receipt className="w-4 h-4 text-[#6B7280]" />
+            <Icons.Receipt className="w-4 h-4 text-ink-muted" />
             <h3 className="text-[14px] font-semibold">Счета</h3>
             {pendingInv.length > 0 && (
-              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-[#FFF7ED] text-[#D97706] animate-pulse-custom">
+              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-warn-bg text-warn animate-pulse-custom">
                 {pendingInv.length} ожидает
               </span>
             )}
@@ -144,13 +144,13 @@ export default function JournalTab({ project, projectId, visits, invoices, onSel
         {invoices.length > 3 && (
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-4">
             <div className="relative flex-1 max-w-[260px] w-full">
-              <Icons.Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-[#9CA3AF]" />
+              <Icons.Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-faint" />
               <input
                 type="text"
                 value={invSearch}
                 onChange={(e) => setInvSearch(e.target.value)}
                 placeholder="Поиск по названию..."
-                className="w-full pl-8 pr-3 py-1.5 border border-[#E5E7EB] rounded-lg text-[12px] outline-none focus:border-[#111827] transition-colors bg-white"
+                className="w-full pl-8 pr-3 py-1.5 border border-line rounded-lg text-[12px] outline-none focus:border-ink transition-colors bg-white"
               />
             </div>
             <div className="flex gap-1">
@@ -159,8 +159,8 @@ export default function JournalTab({ project, projectId, visits, invoices, onSel
                   key={s}
                   className={`text-[11px] px-2.5 py-1 rounded-lg transition-all ${
                     invStatusFilter === s
-                      ? 'bg-[#111827] text-white'
-                      : 'bg-[#F3F4F6] text-[#6B7280] hover:bg-[#E5E7EB]'
+                      ? 'bg-ink text-white'
+                      : 'bg-srf-secondary text-ink-muted hover:bg-line'
                   }`}
                   onClick={() => setInvStatusFilter(s)}
                 >
@@ -173,7 +173,7 @@ export default function JournalTab({ project, projectId, visits, invoices, onSel
 
         <div className="space-y-2">
           {filteredInvoices.map(inv => (
-            <div key={inv.id} className="flex items-center justify-between text-[13px] py-2.5 border-b border-[#F3F4F6] last:border-none group">
+            <div key={inv.id} className="flex items-center justify-between text-[13px] py-2.5 border-b border-srf-secondary last:border-none group">
               <span className="truncate min-w-0">{inv.title}</span>
               <div className="flex items-center gap-2 flex-shrink-0 ml-2">
                 <span className="font-mono-custom font-medium">{formatPrice(inv.amount)}</span>
@@ -182,7 +182,7 @@ export default function JournalTab({ project, projectId, visits, invoices, onSel
                     href={inv.payment_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[#2563EB] hover:text-[#1D4ED8] transition-colors flex items-center gap-1"
+                    className="text-info hover:text-blue-700 transition-colors flex items-center gap-1"
                     title="Ссылка на оплату"
                     onClick={e => e.stopPropagation()}
                   >
@@ -195,8 +195,8 @@ export default function JournalTab({ project, projectId, visits, invoices, onSel
                   <button
                     className={`text-[11px] font-medium px-2 py-0.5 rounded-full transition-all cursor-pointer ${
                       inv.status === 'paid'
-                        ? 'bg-[#ECFDF3] text-[#16A34A] hover:bg-[#D1FAE5]'
-                        : 'bg-[#FFF7ED] text-[#D97706] hover:bg-[#FFEDD5]'
+                        ? 'bg-ok-bg text-ok hover:bg-green-100'
+                        : 'bg-warn-bg text-warn hover:bg-orange-100'
                     }`}
                     onClick={() => handleToggleStatus(inv)}
                     title={inv.status === 'paid' ? 'Снять отметку об оплате' : 'Отметить как оплаченный'}
@@ -208,7 +208,7 @@ export default function JournalTab({ project, projectId, visits, invoices, onSel
                 {/* Delete button */}
                 {canCreateInvoice && (
                   <button
-                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-lg hover:bg-[#FEF2F2] text-[#9CA3AF] hover:text-[#DC2626]"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-lg hover:bg-err-bg text-ink-faint hover:text-err"
                     onClick={() => setInvToDelete(inv)}
                     title="Удалить счёт"
                   >
@@ -219,14 +219,14 @@ export default function JournalTab({ project, projectId, visits, invoices, onSel
             </div>
           ))}
           {invoices.length > 0 && filteredInvoices.length === 0 && (
-            <div className="text-[13px] text-[#9CA3AF] text-center py-3">
+            <div className="text-[13px] text-ink-faint text-center py-3">
               Ничего не найдено
-              <button className="text-[#2563EB] hover:underline ml-1 text-[12px]" onClick={() => { setInvSearch(''); setInvStatusFilter('all'); }}>
+              <button className="text-info hover:underline ml-1 text-[12px]" onClick={() => { setInvSearch(''); setInvStatusFilter('all'); }}>
                 Сбросить
               </button>
             </div>
           )}
-          {invoices.length === 0 && <div className="text-[13px] text-[#9CA3AF]">Счетов пока нет</div>}
+          {invoices.length === 0 && <div className="text-[13px] text-ink-faint">Счетов пока нет</div>}
         </div>
       </div>
 
@@ -234,31 +234,31 @@ export default function JournalTab({ project, projectId, visits, invoices, onSel
       <h3 className="text-[14px] font-semibold mb-4">Визиты</h3>
       <div className="space-y-3">
         {completed.map(v => (
-          <div key={v.id} className="card p-4 cursor-pointer hover:bg-[#FAFAFA]" onClick={() => onSelectVisit(v.id)}>
+          <div key={v.id} className="card p-4 cursor-pointer hover:bg-srf-raised" onClick={() => onSelectVisit(v.id)}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-2 h-2 rounded-full bg-[#111827] flex-shrink-0 mt-0.5" />
+                <div className="w-2 h-2 rounded-full bg-ink flex-shrink-0 mt-0.5" />
                 <div className="min-w-0">
                   <div className="text-[13px] font-medium truncate">{v.title}</div>
-                  <div className="text-[12px] text-[#9CA3AF] mt-0.5">
+                  <div className="text-[12px] text-ink-faint mt-0.5">
                     {formatDate(v.date)} · {v.author?.full_name || 'Автор'}
                   </div>
-                  {v.note && <div className="text-[12px] text-[#6B7280] mt-1 truncate">{v.note}</div>}
+                  {v.note && <div className="text-[12px] text-ink-muted mt-1 truncate">{v.note}</div>}
                 </div>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0 ml-3">
                 {v.photo_count > 0 && (
-                  <span className="text-[11px] text-[#6B7280] flex items-center gap-1">
+                  <span className="text-[11px] text-ink-muted flex items-center gap-1">
                     <Icons.Camera className="w-3 h-3" /> {v.photo_count}
                   </span>
                 )}
                 <Bdg s={v.status} />
-                <Icons.ChevronRight className="w-4 h-4 text-[#D1D5DB]" />
+                <Icons.ChevronRight className="w-4 h-4 text-ink-ghost" />
               </div>
             </div>
           </div>
         ))}
-        {completed.length === 0 && <div className="text-[13px] text-[#9CA3AF]">Визитов пока нет</div>}
+        {completed.length === 0 && <div className="text-[13px] text-ink-faint">Визитов пока нет</div>}
       </div>
 
       {/* Create Invoice Modal */}
@@ -266,13 +266,13 @@ export default function JournalTab({ project, projectId, visits, invoices, onSel
         <div className="space-y-4">
           <div className="modal-field">
             <label>Название *</label>
-            <input value={invTitle} onChange={e => { setInvTitle(e.target.value); setErrors(p => ({ ...p, title: '' })); }} placeholder="Авторский надзор — март" className={errors.title ? 'border-[#DC2626]' : ''} />
-            {errors.title && <span className="text-[11px] text-[#DC2626] mt-0.5">{errors.title}</span>}
+            <input value={invTitle} onChange={e => { setInvTitle(e.target.value); setErrors(p => ({ ...p, title: '' })); }} placeholder="Авторский надзор — март" className={errors.title ? 'border-err' : ''} />
+            {errors.title && <span className="text-[11px] text-err mt-0.5">{errors.title}</span>}
           </div>
           <div className="modal-field">
             <label>Сумма (₽) *</label>
-            <input type="number" value={invAmount} onChange={e => { setInvAmount(e.target.value); setErrors(p => ({ ...p, amount: '' })); }} placeholder="45000" className={errors.amount ? 'border-[#DC2626]' : ''} />
-            {errors.amount && <span className="text-[11px] text-[#DC2626] mt-0.5">{errors.amount}</span>}
+            <input type="number" value={invAmount} onChange={e => { setInvAmount(e.target.value); setErrors(p => ({ ...p, amount: '' })); }} placeholder="45000" className={errors.amount ? 'border-err' : ''} />
+            {errors.amount && <span className="text-[11px] text-err mt-0.5">{errors.amount}</span>}
           </div>
           <div className="modal-field">
             <label>Срок оплаты</label>

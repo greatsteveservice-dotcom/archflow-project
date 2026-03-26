@@ -23,6 +23,8 @@ export function usePermissions(projectId: string | null): {
   const permissions = useMemo(() => {
     // Default: deny everything
     const deny: ProjectPermissions = {
+      canViewDesign: false,
+      canViewSupervision: false,
       canViewOverview: false,
       canViewJournal: false,
       canViewVisits: false,
@@ -39,6 +41,7 @@ export function usePermissions(projectId: string | null): {
       canEditProjectSettings: false,
       canDeleteProject: false,
       canImportSupply: false,
+      canManageTasks: false,
     };
 
     if (!profile) return deny;
@@ -80,6 +83,8 @@ function resolvePermissions(role: UserRole, accessLevel: AccessLevel | null): Pr
   switch (role) {
     case 'client':
       return {
+        canViewDesign: true,
+        canViewSupervision: true,
         canViewOverview: true,
         canViewJournal: true,
         canViewVisits: true,
@@ -96,10 +101,13 @@ function resolvePermissions(role: UserRole, accessLevel: AccessLevel | null): Pr
         canEditProjectSettings: false,
         canDeleteProject: false,
         canImportSupply: false,
+        canManageTasks: false,
       };
 
     case 'contractor':
       return {
+        canViewDesign: true,
+        canViewSupervision: true,
         canViewOverview: true,
         canViewJournal: false,
         canViewVisits: true,
@@ -116,10 +124,13 @@ function resolvePermissions(role: UserRole, accessLevel: AccessLevel | null): Pr
         canEditProjectSettings: false,
         canDeleteProject: false,
         canImportSupply: false,
+        canManageTasks: false,
       };
 
     case 'supplier':
       return {
+        canViewDesign: false,
+        canViewSupervision: false,
         canViewOverview: false,
         canViewJournal: false,
         canViewVisits: false,
@@ -136,11 +147,14 @@ function resolvePermissions(role: UserRole, accessLevel: AccessLevel | null): Pr
         canEditProjectSettings: false,
         canDeleteProject: false,
         canImportSupply: accessLevel === 'view_supply',
+        canManageTasks: false,
       };
 
     default:
       // Unknown role → view only
       return {
+        canViewDesign: true,
+        canViewSupervision: false,
         canViewOverview: true,
         canViewJournal: false,
         canViewVisits: false,
@@ -157,12 +171,15 @@ function resolvePermissions(role: UserRole, accessLevel: AccessLevel | null): Pr
         canEditProjectSettings: false,
         canDeleteProject: false,
         canImportSupply: false,
+        canManageTasks: false,
       };
   }
 }
 
 function fullAccess(): ProjectPermissions {
   return {
+    canViewDesign: true,
+    canViewSupervision: true,
     canViewOverview: true,
     canViewJournal: true,
     canViewVisits: true,
@@ -179,5 +196,6 @@ function fullAccess(): ProjectPermissions {
     canEditProjectSettings: true,
     canDeleteProject: true,
     canImportSupply: true,
+    canManageTasks: true,
   };
 }

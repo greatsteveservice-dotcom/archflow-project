@@ -171,25 +171,25 @@ export default function SettingsTab({ project, projectId, toast, canDeleteProjec
           </div>
 
           {loading ? (
-            <div className="text-[13px] text-[#9CA3AF]">Загрузка...</div>
+            <div className="text-[13px] text-ink-faint">Загрузка...</div>
           ) : (
             <div className="space-y-2 mb-6">
               {(members || []).map((m) => (
                 <div key={m.id} className="card p-4 flex items-center justify-between group">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-[#F3F4F6] flex items-center justify-center text-[11px] font-semibold text-[#6B7280]">
+                    <div className="w-8 h-8 rounded-full bg-srf-secondary flex items-center justify-center text-[11px] font-semibold text-ink-muted">
                       {getInitials(m)}
                     </div>
                     <div>
                       <div className="text-[13px] font-medium">{getName(m)}</div>
-                      <div className="text-[11px] text-[#9CA3AF]">{ROLE_LABEL[m.role] || m.role}</div>
+                      <div className="text-[11px] text-ink-faint">{ROLE_LABEL[m.role] || m.role}</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <Bdg s={m.role === 'designer' ? 'active' : m.access_level === 'full' ? 'approved' : 'pending'} />
                     {m.role !== 'designer' && (
                       <button
-                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-[#FEF2F2] text-[#9CA3AF] hover:text-[#DC2626]"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-err-bg text-ink-faint hover:text-err"
                         onClick={() => setMemberToDelete(m)}
                         title="Удалить участника"
                       >
@@ -200,7 +200,7 @@ export default function SettingsTab({ project, projectId, toast, canDeleteProjec
                 </div>
               ))}
               {(!members || members.length === 0) && (
-                <div className="text-[13px] text-[#9CA3AF]">Участников пока нет</div>
+                <div className="text-[13px] text-ink-faint">Участников пока нет</div>
               )}
             </div>
           )}
@@ -209,10 +209,10 @@ export default function SettingsTab({ project, projectId, toast, canDeleteProjec
           <div className="card p-5">
             <h4 className="text-[13px] font-semibold mb-3">Шаблоны ролей</h4>
             <div className="space-y-2 text-[12px]">
-              <div className="flex items-center gap-2"><Bdg s="active" /><span className="text-[#6B7280]">Заказчик — только просмотр</span></div>
-              <div className="flex items-center gap-2"><Bdg s="pending" /><span className="text-[#6B7280]">Подрядчик — просмотр + фото + комментарии</span></div>
-              <div className="flex items-center gap-2"><Bdg s="in_review" /><span className="text-[#6B7280]">Комплектатор — Supply + обновление статусов</span></div>
-              <div className="flex items-center gap-2"><Bdg s="approved" /><span className="text-[#6B7280]">Ассистент — на усмотрение дизайнера</span></div>
+              <div className="flex items-center gap-2"><Bdg s="active" /><span className="text-ink-muted">Заказчик — только просмотр</span></div>
+              <div className="flex items-center gap-2"><Bdg s="pending" /><span className="text-ink-muted">Подрядчик — просмотр + фото + комментарии</span></div>
+              <div className="flex items-center gap-2"><Bdg s="in_review" /><span className="text-ink-muted">Комплектатор — Supply + обновление статусов</span></div>
+              <div className="flex items-center gap-2"><Bdg s="approved" /><span className="text-ink-muted">Ассистент — на усмотрение дизайнера</span></div>
             </div>
           </div>
         </div>
@@ -223,7 +223,7 @@ export default function SettingsTab({ project, projectId, toast, canDeleteProjec
           <div className="grid gap-4 mb-8" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}>
             <div className="card p-5">
               <div className="flex items-center gap-2 mb-4">
-                <Icons.Calendar className="w-4 h-4 text-[#6B7280]" />
+                <Icons.Calendar className="w-4 h-4 text-ink-muted" />
                 <h4 className="text-[13px] font-semibold">Даты и визиты</h4>
               </div>
               <div className="space-y-3">
@@ -240,7 +240,7 @@ export default function SettingsTab({ project, projectId, toast, canDeleteProjec
 
             <div className="card p-5">
               <div className="flex items-center gap-2 mb-4">
-                <Icons.Receipt className="w-4 h-4 text-[#6B7280]" />
+                <Icons.Receipt className="w-4 h-4 text-ink-muted" />
                 <h4 className="text-[13px] font-semibold">Платежи</h4>
               </div>
               <div className="space-y-3">
@@ -257,7 +257,7 @@ export default function SettingsTab({ project, projectId, toast, canDeleteProjec
 
             <div className="card p-5">
               <div className="flex items-center gap-2 mb-4">
-                <Icons.Box className="w-4 h-4 text-[#6B7280]" />
+                <Icons.Box className="w-4 h-4 text-ink-muted" />
                 <h4 className="text-[13px] font-semibold">Комплектация</h4>
               </div>
               <div className="space-y-3">
@@ -281,13 +281,13 @@ export default function SettingsTab({ project, projectId, toast, canDeleteProjec
 
           {/* Danger zone */}
           {canDeleteProject && (
-            <div className="border border-[#FCA5A5] rounded-xl p-5 bg-[#FEF2F2]/50">
-              <h4 className="text-[13px] font-semibold text-[#DC2626] mb-2">Опасная зона</h4>
-              <p className="text-[12px] text-[#6B7280] mb-4">
+            <div className="border border-err/40 rounded-xl p-5 bg-err-bg/50">
+              <h4 className="text-[13px] font-semibold text-err mb-2">Опасная зона</h4>
+              <p className="text-[12px] text-ink-muted mb-4">
                 Удаление проекта невозможно отменить. Все визиты, фото, документы и счета будут удалены.
               </p>
               <button
-                className="text-[12px] py-2 px-4 rounded-lg font-medium bg-[#DC2626] text-white hover:bg-[#B91C1C] transition-all flex items-center gap-1.5"
+                className="btn btn-danger text-[12px] py-2 px-4"
                 onClick={() => setShowDeleteProject(true)}
               >
                 <Icons.Trash className="w-3.5 h-3.5" /> Удалить проект
@@ -311,7 +311,7 @@ export default function SettingsTab({ project, projectId, toast, canDeleteProjec
           </div>
 
           {invError && (
-            <div className="bg-[#FEF2F2] border border-[#DC2626]/20 text-[#DC2626] text-[13px] px-4 py-2.5 rounded-lg mb-4">
+            <div className="bg-err-bg border border-err/20 text-err text-[13px] px-4 py-2.5 rounded-lg mb-4">
               {invError}
             </div>
           )}
@@ -356,7 +356,7 @@ export default function SettingsTab({ project, projectId, toast, canDeleteProjec
             <>
               {inviteLink ? (
                 <div className="space-y-3">
-                  <div className="bg-[#F3F4F6] rounded-lg p-3 text-[12px] font-mono-custom break-all">
+                  <div className="bg-srf-secondary rounded-lg p-3 text-[12px] font-mono-custom break-all">
                     {inviteLink}
                   </div>
                   <div className="flex gap-2 justify-end">

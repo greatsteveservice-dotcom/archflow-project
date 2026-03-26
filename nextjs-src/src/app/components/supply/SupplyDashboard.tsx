@@ -73,10 +73,10 @@ export function SupplyDashboard({ items, stages }: SupplyDashboardProps) {
           return (
             <div
               key={card.label}
-              className="bg-white border border-[#E8E6E1] rounded-xl p-4"
+              className="bg-white border border-line rounded-xl p-4"
             >
               <div className="flex items-center justify-between mb-3">
-                <span className="text-[12px] text-[#9B9B9B] font-medium">{card.label}</span>
+                <span className="text-[12px] text-ink-faint font-medium">{card.label}</span>
                 <span style={{ color: card.color }}><Icon className="w-4 h-4" /></span>
               </div>
               <div className="text-xl font-semibold font-mono-custom" style={{ color: card.color }}>
@@ -89,13 +89,13 @@ export function SupplyDashboard({ items, stages }: SupplyDashboardProps) {
 
       <div className="grid grid-cols-2 gap-5">
         {/* Critical warnings */}
-        <div className="bg-white border border-[#E8E6E1] rounded-xl p-5">
+        <div className="bg-white border border-line rounded-xl p-5">
           <h3 className="text-[14px] font-semibold mb-4 flex items-center gap-2">
-            <Icons.Alert className="w-4 h-4 text-[#E85D3A]" />
+            <Icons.Alert className="w-4 h-4 text-err" />
             Критические позиции
           </h3>
           {criticalItems.length === 0 ? (
-            <div className="text-[13px] text-[#9B9B9B] py-4 text-center">
+            <div className="text-[13px] text-ink-faint py-4 text-center">
               Нет критических позиций
             </div>
           ) : (
@@ -105,11 +105,11 @@ export function SupplyDashboard({ items, stages }: SupplyDashboardProps) {
                 return (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between py-2 border-b border-[#F0EEE9] last:border-none"
+                    className="flex items-center justify-between py-2 border-b border-line-light last:border-none"
                   >
                     <div className="flex-1 min-w-0">
                       <div className="text-[13px] font-medium truncate">{item.name}</div>
-                      <div className="text-[11px] text-[#9B9B9B]">
+                      <div className="text-[11px] text-ink-faint">
                         Дедлайн заказа: {item.orderDeadline ? formatShortDate(item.orderDeadline) : "—"}
                       </div>
                     </div>
@@ -131,13 +131,13 @@ export function SupplyDashboard({ items, stages }: SupplyDashboardProps) {
         </div>
 
         {/* Upcoming stages */}
-        <div className="bg-white border border-[#E8E6E1] rounded-xl p-5">
+        <div className="bg-white border border-line rounded-xl p-5">
           <h3 className="text-[14px] font-semibold mb-4 flex items-center gap-2">
-            <Icons.Clock className="w-4 h-4 text-[#D4930D]" />
+            <Icons.Clock className="w-4 h-4 text-warn" />
             Ближайшие этапы
           </h3>
           {upcomingStages.length === 0 ? (
-            <div className="text-[13px] text-[#9B9B9B] py-4 text-center">
+            <div className="text-[13px] text-ink-faint py-4 text-center">
               Нет предстоящих этапов
             </div>
           ) : (
@@ -148,19 +148,19 @@ export function SupplyDashboard({ items, stages }: SupplyDashboardProps) {
                 return (
                   <div
                     key={stage.id}
-                    className="py-2 border-b border-[#F0EEE9] last:border-none"
+                    className="py-2 border-b border-line-light last:border-none"
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-[13px] font-medium">{stage.name}</span>
-                      <span className="text-[12px] text-[#9B9B9B] font-mono-custom">
+                      <span className="text-[12px] text-ink-faint font-mono-custom">
                         {stage.start_date ? formatShortDate(stage.start_date) : "—"}
                       </span>
                     </div>
-                    <div className="text-[11px] text-[#9B9B9B]">
+                    <div className="text-[11px] text-ink-faint">
                       {stageItems.length} позиций · {pending > 0 ? (
-                        <span className="text-[#D97706]">{pending} не заказано</span>
+                        <span className="text-warn">{pending} не заказано</span>
                       ) : (
-                        <span className="text-[#16A34A]">всё заказано</span>
+                        <span className="text-ok">всё заказано</span>
                       )}
                     </div>
                   </div>

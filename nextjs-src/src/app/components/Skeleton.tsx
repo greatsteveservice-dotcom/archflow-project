@@ -12,7 +12,7 @@ export function DashboardSkeleton() {
       {/* Stat cards */}
       <div className="grid grid-cols-4 gap-3 mb-6 max-lg:grid-cols-2 max-sm:grid-cols-1">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="bg-white border border-[#E8E6E1] rounded-xl p-4">
+          <div key={i} className="bg-white border border-line rounded-xl p-4">
             <Sk className="h-3 w-20 mb-3" />
             <Sk className="h-7 w-14 mb-2" />
             <Sk className="h-2.5 w-24" />
@@ -22,9 +22,9 @@ export function DashboardSkeleton() {
 
       {/* Activity header */}
       <Sk className="h-5 w-44 mb-4" />
-      <div className="bg-white border border-[#E8E6E1] rounded-xl px-5 py-1 mb-6">
+      <div className="bg-white border border-line rounded-xl px-5 py-1 mb-6">
         {[...Array(5)].map((_, i) => (
-          <div key={i} className="flex items-start gap-3 py-3 border-b border-[#F0EEE9] last:border-none">
+          <div key={i} className="flex items-start gap-3 py-3 border-b border-line-light last:border-none">
             <Sk className="w-2 h-2 rounded-full mt-[5px] flex-shrink-0" />
             <div className="flex-1">
               <Sk className="h-3.5 w-3/4 mb-1.5" />
@@ -51,7 +51,7 @@ export function DashboardSkeleton() {
 /** Single project card skeleton */
 export function ProjectCardSkeleton() {
   return (
-    <div className="bg-white border border-[#E8E6E1] rounded-xl p-5">
+    <div className="bg-white border border-line rounded-xl p-5">
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1">
           <Sk className="h-4 w-48 mb-2" />
@@ -86,10 +86,10 @@ export function ProjectPageSkeleton() {
   return (
     <div className="animate-fade-in">
       {/* Header card */}
-      <div className="bg-white border border-[#E8E6E1] rounded-xl p-6 mb-5">
+      <div className="bg-white border border-line rounded-xl p-6 mb-5">
         <Sk className="h-5 w-56 mb-2" />
         <Sk className="h-3.5 w-36 mb-4" />
-        <div className="flex gap-4 pt-3 border-t border-[#F3F4F6]">
+        <div className="flex gap-4 pt-3 border-t border-line-light">
           <Sk className="h-3 w-24" />
           <Sk className="h-3 w-24" />
           <Sk className="h-3 w-24" />
@@ -106,7 +106,7 @@ export function ProjectPageSkeleton() {
       {/* Content */}
       <div className="space-y-3">
         {[...Array(3)].map((_, i) => (
-          <div key={i} className="bg-white border border-[#E8E6E1] rounded-xl p-4">
+          <div key={i} className="bg-white border border-line rounded-xl p-4">
             <Sk className="h-4 w-64 mb-2" />
             <Sk className="h-3 w-40" />
           </div>
@@ -121,11 +121,11 @@ export function VisitPageSkeleton() {
   return (
     <div className="animate-fade-in">
       {/* Header */}
-      <div className="bg-white border border-[#E8E6E1] rounded-xl p-6 mb-5">
+      <div className="bg-white border border-line rounded-xl p-6 mb-5">
         <Sk className="h-4 w-32 mb-2" />
         <Sk className="h-5 w-56 mb-1" />
         <Sk className="h-3 w-40 mb-4" />
-        <div className="flex gap-6 pt-3 border-t border-[#F3F4F6]">
+        <div className="flex gap-6 pt-3 border-t border-line-light">
           <Sk className="h-3 w-20" />
           <Sk className="h-3 w-20" />
           <Sk className="h-3 w-20" />
@@ -145,7 +145,7 @@ export function VisitPageSkeleton() {
       {/* Photo grid */}
       <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-3.5 max-sm:grid-cols-1">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="bg-white border border-[#E8E6E1] rounded-xl overflow-hidden">
+          <div key={i} className="bg-white border border-line rounded-xl overflow-hidden">
             <Sk className="w-full h-[180px] rounded-none" />
             <div className="p-3.5">
               <Sk className="h-3.5 w-3/4 mb-2" />

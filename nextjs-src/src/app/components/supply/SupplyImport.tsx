@@ -217,20 +217,20 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
         {stepsConfig.map((s, i) => (
           <div key={s.n} className="flex items-center gap-2">
             <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-semibold ${
-              step > s.n ? 'bg-[#111827] text-white' : step === s.n ? 'bg-[#111827] text-white' : 'bg-[#F3F4F6] text-[#9CA3AF]'
+              step > s.n ? 'bg-ink text-white' : step === s.n ? 'bg-ink text-white' : 'bg-srf-secondary text-ink-faint'
             }`}>
               {step > s.n ? <Icons.Check className="w-3.5 h-3.5" /> : s.n}
             </div>
-            <span className={`text-[12px] ${step >= s.n ? 'text-[#111827] font-medium' : 'text-[#9CA3AF]'}`}>
+            <span className={`text-[12px] ${step >= s.n ? 'text-ink font-medium' : 'text-ink-faint'}`}>
               {s.label}
             </span>
-            {i < stepsConfig.length - 1 && <div className="w-8 h-px bg-[#E5E7EB]" />}
+            {i < stepsConfig.length - 1 && <div className="w-8 h-px bg-line" />}
           </div>
         ))}
       </div>
 
       {error && (
-        <div className="bg-[#FEF2F2] border border-[#DC2626]/20 text-[#DC2626] text-[13px] px-4 py-2.5 rounded-lg mb-4">
+        <div className="bg-err-bg border border-err/20 text-err text-[13px] px-4 py-2.5 rounded-lg mb-4">
           {error}
         </div>
       )}
@@ -240,16 +240,16 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
         <div className="card p-8 text-center">
           <div
             className={`border-2 border-dashed rounded-xl p-12 transition-colors cursor-pointer ${
-              dragOver ? 'border-[#111827] bg-[#F9FAFB]' : 'border-[#E5E7EB] hover:border-[#D1D5DB]'
+              dragOver ? 'border-ink bg-srf-raised' : 'border-line hover:border-ink-ghost'
             }`}
             onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
             onDragLeave={() => setDragOver(false)}
             onDrop={handleDrop}
             onClick={() => fileRef.current?.click()}
           >
-            <Icons.Upload className="w-10 h-10 text-[#D1D5DB] mx-auto mb-3" />
+            <Icons.Upload className="w-10 h-10 text-ink-ghost mx-auto mb-3" />
             <div className="text-[14px] font-medium mb-1">Перетащите файл Excel сюда</div>
-            <div className="text-[12px] text-[#9CA3AF]">или нажмите для выбора (.xlsx, .xls)</div>
+            <div className="text-[12px] text-ink-faint">или нажмите для выбора (.xlsx, .xls)</div>
           </div>
           <input
             ref={fileRef}
@@ -266,16 +266,16 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
         <div className="card p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-[14px] font-semibold">Сопоставление колонок</h3>
-            <span className="text-[12px] text-[#9CA3AF]">{fileName}</span>
+            <span className="text-[12px] text-ink-faint">{fileName}</span>
           </div>
           <div className="space-y-3">
             {headers.map((header, i) => (
               <div key={i} className="flex items-center gap-4">
-                <span className="text-[13px] text-[#6B7280] w-[180px] truncate" title={header}>
+                <span className="text-[13px] text-ink-muted w-[180px] truncate" title={header}>
                   {header || `Колонка ${i + 1}`}
                 </span>
                 <select
-                  className="flex-1 px-3 py-2 border border-[#E5E7EB] rounded-lg text-[13px]"
+                  className="flex-1 px-3 py-2 border border-line rounded-lg text-[13px]"
                   value={mapping[i] || ''}
                   onChange={(e) => updateMapping(i, e.target.value as FieldKey | '')}
                 >
@@ -295,7 +295,7 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
             ))}
           </div>
           {!hasNameMapping && (
-            <div className="mt-3 text-[12px] text-[#D97706]">
+            <div className="mt-3 text-[12px] text-warn">
               Укажите колонку для поля "Название" — это обязательное поле
             </div>
           )}
@@ -306,7 +306,7 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
       {step === 3 && (
         <div className="card p-5">
           <h3 className="text-[14px] font-semibold mb-2">Предпросмотр</h3>
-          <p className="text-[13px] text-[#9CA3AF] mb-4">
+          <p className="text-[13px] text-ink-faint mb-4">
             {rows.length <= 5
               ? `${rows.length} строк будут импортированы`
               : `Показаны 5 из ${rows.length} строк`}
@@ -314,17 +314,17 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
           <div className="overflow-x-auto">
             <table className="w-full text-[12px]">
               <thead>
-                <tr className="border-b border-[#E5E7EB]">
+                <tr className="border-b border-line">
                   {mappedFields.map(f => (
-                    <th key={f.key} className="text-left py-2 px-3 text-[#6B7280] font-medium">{f.label.replace(' *', '')}</th>
+                    <th key={f.key} className="text-left py-2 px-3 text-ink-muted font-medium">{f.label.replace(' *', '')}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {previewRows.map((row, i) => (
-                  <tr key={i} className="border-b border-[#F3F4F6]">
+                  <tr key={i} className="border-b border-line-light">
                     {mappedFields.map(f => (
-                      <td key={f.key} className="py-2 px-3 text-[#374151] max-w-[200px] truncate">
+                      <td key={f.key} className="py-2 px-3 text-ink-secondary max-w-[200px] truncate">
                         {row[f.key] || '—'}
                       </td>
                     ))}
@@ -339,11 +339,11 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
       {/* Step 4: Done */}
       {step === 4 && (
         <div className="card p-8 text-center">
-          <div className="w-12 h-12 rounded-full bg-[#ECFDF3] flex items-center justify-center mx-auto mb-3">
-            <Icons.Check className="w-6 h-6 text-[#16A34A]" />
+          <div className="w-12 h-12 rounded-full bg-ok-bg flex items-center justify-center mx-auto mb-3">
+            <Icons.Check className="w-6 h-6 text-ok" />
           </div>
           <div className="text-[16px] font-semibold mb-1">Импорт завершён</div>
-          <div className="text-[13px] text-[#9CA3AF]">{importedCount} позиций успешно импортированы</div>
+          <div className="text-[13px] text-ink-faint">{importedCount} позиций успешно импортированы</div>
         </div>
       )}
 

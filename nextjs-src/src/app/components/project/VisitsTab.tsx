@@ -119,16 +119,16 @@ export default function VisitsTab({ project, projectId, visits, toast, refetchVi
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-4">
         {kpis.map((k, i) => (
           <div key={i} className="card p-4 text-center">
-            <div className={`text-[22px] font-bold font-mono-custom ${k.danger ? 'text-[#DC4A2A]' : ''}`}>{k.value}</div>
-            <div className="text-[11px] text-[#9CA3AF] mt-0.5">{k.label}</div>
+            <div className={`text-[22px] font-bold font-mono-custom ${k.danger ? 'text-err' : ''}`}>{k.value}</div>
+            <div className="text-[11px] text-ink-faint mt-0.5">{k.label}</div>
           </div>
         ))}
       </div>
 
       {/* Progress bar */}
       <div className="flex items-center gap-3 mb-6">
-        <div className="flex-1 h-2 bg-[#E5E7EB] rounded-full overflow-hidden">
-          <div className="h-full bg-[#111827] rounded-full transition-all" style={{ width: `${pct}%` }} />
+        <div className="flex-1 h-2 bg-line rounded-full overflow-hidden">
+          <div className="h-full bg-ink rounded-full transition-all" style={{ width: `${pct}%` }} />
         </div>
         <span className="text-[13px] font-medium font-mono-custom">{pct}%</span>
         {canCreateVisit && (
@@ -141,31 +141,31 @@ export default function VisitsTab({ project, projectId, visits, toast, refetchVi
       {/* Planned */}
       {planned.length > 0 && (
         <div className="mb-6">
-          <h3 className="text-[13px] font-semibold text-[#6B7280] mb-3 flex items-center gap-1.5">
+          <h3 className="text-[13px] font-semibold text-ink-muted mb-3 flex items-center gap-1.5">
             <Icons.Calendar className="w-3.5 h-3.5" /> Запланированные
           </h3>
           <div className="space-y-2">
             {planned.map(v => (
-              <div key={v.id} className="card p-4 group" style={{ borderLeft: '4px solid #2563EB' }}>
+              <div key={v.id} className="card p-4 group border-l-4 border-info">
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="text-[13px] font-medium">{v.title}</div>
-                    <div className="text-[12px] text-[#9CA3AF] mt-0.5">{formatDate(v.date)}</div>
-                    {v.note && <div className="text-[12px] text-[#6B7280] mt-1">{v.note}</div>}
+                    <div className="text-[12px] text-ink-faint mt-0.5">{formatDate(v.date)}</div>
+                    {v.note && <div className="text-[12px] text-ink-muted mt-1">{v.note}</div>}
                   </div>
                   <div className="flex items-center gap-2">
                     <Bdg s="planned" />
                     {canCreateVisit && (
                       <>
                         <button
-                          className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-[#F3F4F6] text-[#9CA3AF] hover:text-[#111827]"
+                          className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-srf-secondary text-ink-faint hover:text-ink"
                           onClick={() => openEditModal(v)}
                           title="Редактировать"
                         >
                           <Icons.Edit className="w-3.5 h-3.5" />
                         </button>
                         <button
-                          className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-[#FEF2F2] text-[#9CA3AF] hover:text-[#DC2626]"
+                          className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-err-bg text-ink-faint hover:text-err"
                           onClick={() => setVisitToDelete(v)}
                           title="Удалить"
                         >
@@ -182,7 +182,7 @@ export default function VisitsTab({ project, projectId, visits, toast, refetchVi
       )}
 
       {/* Completed */}
-      <h3 className="text-[13px] font-semibold text-[#6B7280] mb-3 flex items-center gap-1.5">
+      <h3 className="text-[13px] font-semibold text-ink-muted mb-3 flex items-center gap-1.5">
         <Icons.Camera className="w-3.5 h-3.5" /> Выполненные
       </h3>
       <div className="space-y-2">
@@ -191,7 +191,7 @@ export default function VisitsTab({ project, projectId, visits, toast, refetchVi
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-[13px] font-medium">{v.title}</div>
-                <div className="text-[12px] text-[#9CA3AF] mt-0.5">
+                <div className="text-[12px] text-ink-faint mt-0.5">
                   {formatDate(v.date)} · {v.author?.full_name || ''}
                   {v.photo_count > 0 && <span> · {v.photo_count} фото</span>}
                 </div>
@@ -201,14 +201,14 @@ export default function VisitsTab({ project, projectId, visits, toast, refetchVi
                 {canCreateVisit && (
                   <>
                     <button
-                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-[#F3F4F6] text-[#9CA3AF] hover:text-[#111827]"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-srf-secondary text-ink-faint hover:text-ink"
                       onClick={() => openEditModal(v)}
                       title="Редактировать"
                     >
                       <Icons.Edit className="w-3.5 h-3.5" />
                     </button>
                     <button
-                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-[#FEF2F2] text-[#9CA3AF] hover:text-[#DC2626]"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-err-bg text-ink-faint hover:text-err"
                       onClick={() => setVisitToDelete(v)}
                       title="Удалить"
                     >
@@ -220,7 +220,7 @@ export default function VisitsTab({ project, projectId, visits, toast, refetchVi
             </div>
           </div>
         ))}
-        {completed.length === 0 && <div className="text-[13px] text-[#9CA3AF]">Визитов пока нет</div>}
+        {completed.length === 0 && <div className="text-[13px] text-ink-faint">Визитов пока нет</div>}
       </div>
 
       {/* Create Visit Modal */}
@@ -228,13 +228,13 @@ export default function VisitsTab({ project, projectId, visits, toast, refetchVi
         <div className="space-y-4">
           <div className="modal-field">
             <label>Название *</label>
-            <input value={vTitle} onChange={e => { setVTitle(e.target.value); setErrors(p => ({ ...p, title: '' })); }} placeholder="Проверка штукатурки" className={errors.title ? 'border-[#DC2626]' : ''} />
-            {errors.title && <span className="text-[11px] text-[#DC2626] mt-0.5">{errors.title}</span>}
+            <input value={vTitle} onChange={e => { setVTitle(e.target.value); setErrors(p => ({ ...p, title: '' })); }} placeholder="Проверка штукатурки" className={errors.title ? 'border-err' : ''} />
+            {errors.title && <span className="text-[11px] text-err mt-0.5">{errors.title}</span>}
           </div>
           <div className="modal-field">
             <label>Дата *</label>
-            <input type="date" value={vDate} onChange={e => { setVDate(e.target.value); setErrors(p => ({ ...p, date: '' })); }} className={errors.date ? 'border-[#DC2626]' : ''} />
-            {errors.date && <span className="text-[11px] text-[#DC2626] mt-0.5">{errors.date}</span>}
+            <input type="date" value={vDate} onChange={e => { setVDate(e.target.value); setErrors(p => ({ ...p, date: '' })); }} className={errors.date ? 'border-err' : ''} />
+            {errors.date && <span className="text-[11px] text-err mt-0.5">{errors.date}</span>}
           </div>
           <div className="modal-field">
             <label>Заметка</label>
@@ -254,13 +254,13 @@ export default function VisitsTab({ project, projectId, visits, toast, refetchVi
         <div className="space-y-4">
           <div className="modal-field">
             <label>Название *</label>
-            <input value={eTitle} onChange={e => { setETitle(e.target.value); setEditErrors(p => ({ ...p, title: '' })); }} className={editErrors.title ? 'border-[#DC2626]' : ''} />
-            {editErrors.title && <span className="text-[11px] text-[#DC2626] mt-0.5">{editErrors.title}</span>}
+            <input value={eTitle} onChange={e => { setETitle(e.target.value); setEditErrors(p => ({ ...p, title: '' })); }} className={editErrors.title ? 'border-err' : ''} />
+            {editErrors.title && <span className="text-[11px] text-err mt-0.5">{editErrors.title}</span>}
           </div>
           <div className="modal-field">
             <label>Дата *</label>
-            <input type="date" value={eDate} onChange={e => { setEDate(e.target.value); setEditErrors(p => ({ ...p, date: '' })); }} className={editErrors.date ? 'border-[#DC2626]' : ''} />
-            {editErrors.date && <span className="text-[11px] text-[#DC2626] mt-0.5">{editErrors.date}</span>}
+            <input type="date" value={eDate} onChange={e => { setEDate(e.target.value); setEditErrors(p => ({ ...p, date: '' })); }} className={editErrors.date ? 'border-err' : ''} />
+            {editErrors.date && <span className="text-[11px] text-err mt-0.5">{editErrors.date}</span>}
           </div>
           <div className="modal-field">
             <label>Заметка</label>

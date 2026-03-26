@@ -108,22 +108,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: null };
   };
 
-  // Sign up with email/password
+  // Sign up via server-side API route (auto-confirms email, no SMTP needed)
   const signUp = async (email: string, password: string, fullName: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: fullName,
-          role: "designer",
-        },
-      },
-    });
-    if (error) {
-      return { error: translateAuthError(error.message) };
+    try {
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, full_name: fullName, role: "designer" }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        return { error: data.error || "Ошибка регистрации" };
+      }
+      // Auto sign-in after successful registration
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      if (signInError) {
+        return { error: "Аккаунт создан, но не удалось войти. Попробуйте войти вручную." };
+      }
+      return { error: null };
+    } catch {
+      return { error: "Ошибка сети. Проверьте подключение." };
     }
-    return { error: null };
   };
 
   // Sign out

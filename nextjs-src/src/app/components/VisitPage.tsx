@@ -11,6 +11,7 @@ import { usePermissions } from "../lib/permissions";
 import { formatDate, uploadPhoto, createPhotoRecord, updatePhotoStatus, deletePhotoRecord } from "../lib/queries";
 import { PHOTO_STATUS_CONFIG } from "../lib/types";
 import type { PhotoStatus, PhotoRecord } from "../lib/types";
+import OnboardingTip from "./OnboardingTip";
 
 interface VisitPageProps {
   projectId: string;
@@ -181,18 +182,24 @@ export default function VisitPage({ projectId, visitId, onNavigate, toast, onMen
         { label: 'Визит' },
       ]}
     />
-    <div className="p-4 sm:p-7 animate-fade-in">
+    <div className="p-4 sm:p-8 animate-fade-in">
+      <OnboardingTip
+        id="visit-photos"
+        title="Фотоотчёт визита"
+        text="Загружайте фото с объекта, добавляйте комментарии и отмечайте замечания. Используйте drag-and-drop или кнопку загрузки."
+        className="mb-5"
+      />
       {/* Visit header */}
       <div className="card p-6 mb-5">
         <div className="flex justify-between items-start">
           <div>
             <div className="flex items-center gap-2 mb-2">
               <span className="text-[15px] font-semibold font-mono-custom">{formatDate(visit.date)}</span>
-              <span className="text-[13px] text-[#9CA3AF]">·</span>
-              <span className="text-[13px] text-[#6B7280]">{visit.author?.full_name || '—'}</span>
+              <span className="text-[13px] text-ink-faint">·</span>
+              <span className="text-[13px] text-ink-muted">{visit.author?.full_name || '—'}</span>
             </div>
             <h2 className="text-lg font-semibold mb-1">{visit.title}</h2>
-            <div className="text-[13px] text-[#9CA3AF]">
+            <div className="text-[13px] text-ink-faint">
               {project.title} · {project.address || ''}
             </div>
           </div>
@@ -201,18 +208,18 @@ export default function VisitPage({ projectId, visitId, onNavigate, toast, onMen
           </button>
         </div>
 
-        <div className="flex gap-6 mt-4 pt-3.5 border-t border-[#F3F4F6]">
+        <div className="flex gap-6 mt-4 pt-3.5 border-t border-line-light">
           <div className="flex items-center gap-1.5 text-[13px]">
             <Icons.Camera className="w-4 h-4" />
             <strong>{allPhotos.length}</strong>
-            <span className="text-[#9CA3AF]">фото</span>
+            <span className="text-ink-faint">фото</span>
           </div>
-          <div className="flex items-center gap-1.5 text-[13px] text-[#16A34A]">
+          <div className="flex items-center gap-1.5 text-[13px] text-ok">
             <Icons.Check />
             <strong>{allPhotos.filter((p) => p.status === "approved").length}</strong>
             <span>принято</span>
           </div>
-          <div className="flex items-center gap-1.5 text-[13px] text-[#DC2626]">
+          <div className="flex items-center gap-1.5 text-[13px] text-err">
             <Icons.Alert />
             <strong>{allPhotos.filter((p) => p.status === "issue").length}</strong>
             <span>замечаний</span>
@@ -253,23 +260,24 @@ export default function VisitPage({ projectId, visitId, onNavigate, toast, onMen
               key={photo.id}
               className="card overflow-hidden hover:shadow-md group"
             >
-              <div className="w-full h-[180px] flex items-center justify-center text-[#9CA3AF] relative bg-gradient-to-br from-[#F3F4F6] to-[#E5E7EB] overflow-hidden">
+              <div className="w-full h-[180px] flex items-center justify-center text-ink-faint relative bg-gradient-to-br from-srf-secondary to-line overflow-hidden">
                 {photo.photo_url ? (
                   <img
                     src={photo.photo_url}
                     alt={photo.comment || 'Фото'}
                     className="w-full h-full object-cover"
+                    loading="lazy"
                   />
                 ) : (
                   <Icons.ImageIcon />
                 )}
-                <div className="absolute top-2.5 left-2.5 text-[11px] font-medium px-2 py-0.5 rounded-md bg-white/90 text-[#6B7280] backdrop-blur-sm">
+                <div className="absolute top-2.5 left-2.5 text-[11px] font-medium px-2 py-0.5 rounded-md bg-white/90 text-ink-muted backdrop-blur-sm">
                   {photo.zone || 'Без зоны'}
                 </div>
                 {/* Delete button overlay */}
                 {permissions.canChangePhotoStatus && (
                   <button
-                    className="absolute top-2.5 right-2.5 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg bg-white/90 backdrop-blur-sm text-[#9CA3AF] hover:text-[#DC2626] hover:bg-[#FEF2F2]"
+                    className="absolute top-2.5 right-2.5 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg bg-white/90 backdrop-blur-sm text-ink-faint hover:text-err hover:bg-err-bg"
                     onClick={() => setPhotoToDelete(photo)}
                     title="Удалить фото"
                   >
@@ -278,7 +286,7 @@ export default function VisitPage({ projectId, visitId, onNavigate, toast, onMen
                 )}
               </div>
               <div className="p-3.5">
-                <div className="text-[13px] text-[#111827] leading-relaxed mb-2.5">
+                <div className="text-[13px] text-ink leading-relaxed mb-2.5">
                   {photo.comment || 'Без комментария'}
                 </div>
                 {permissions.canChangePhotoStatus ? (
@@ -304,7 +312,7 @@ export default function VisitPage({ projectId, visitId, onNavigate, toast, onMen
       </div>
 
       {filteredPhotos.length === 0 && (
-        <div className="text-center py-12 text-[#9CA3AF] text-sm">
+        <div className="text-center py-12 text-ink-faint text-sm">
           {photoFilter === "all" ? "Нет фото в этом визите" : "Нет фото с таким статусом"}
         </div>
       )}
@@ -315,7 +323,7 @@ export default function VisitPage({ projectId, visitId, onNavigate, toast, onMen
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-lg font-semibold mb-5">Добавить фото</h2>
             {photoError && (
-              <div className="bg-[#FEF2F2] border border-[#DC2626]/20 text-[#DC2626] text-[13px] px-4 py-2.5 rounded-lg mb-4">
+              <div className="bg-err-bg border border-err/20 text-err text-[13px] px-4 py-2.5 rounded-lg mb-4">
                 {photoError}
               </div>
             )}
@@ -324,10 +332,10 @@ export default function VisitPage({ projectId, visitId, onNavigate, toast, onMen
               <div
                 className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-200 ${
                   isDragging
-                    ? "border-[#111827] bg-[#F3F4F6]"
+                    ? "border-ink bg-srf-secondary"
                     : photoPreview
-                    ? "border-[#111827] bg-[#F9FAFB]"
-                    : "border-[#E5E7EB] bg-[#F9FAFB] hover:border-[#D1D5DB] hover:bg-[#F3F4F6]"
+                    ? "border-ink bg-srf-raised"
+                    : "border-line bg-srf-raised hover:border-ink-ghost hover:bg-srf-secondary"
                 }`}
                 onClick={() => fileInputRef.current?.click()}
                 onDrop={handleDrop}
@@ -338,6 +346,7 @@ export default function VisitPage({ projectId, visitId, onNavigate, toast, onMen
                   ref={fileInputRef}
                   type="file"
                   accept="image/*"
+                  capture="environment"
                   className="hidden"
                   onChange={handleInputChange}
                 />
@@ -348,19 +357,19 @@ export default function VisitPage({ projectId, visitId, onNavigate, toast, onMen
                       alt="Preview"
                       className="max-h-[200px] mx-auto rounded-lg mb-2"
                     />
-                    <div className="text-[12px] text-[#6B7280]">
+                    <div className="text-[12px] text-ink-muted">
                       {photoFile?.name} ({((photoFile?.size || 0) / 1024 / 1024).toFixed(1)} МБ)
                     </div>
                   </div>
                 ) : (
                   <>
-                    <div className="text-[#9CA3AF] mb-2">
+                    <div className="text-ink-faint mb-2">
                       <Icons.Camera className="w-6 h-6 mx-auto" />
                     </div>
-                    <div className="text-[13px] text-[#6B7280]">
+                    <div className="text-[13px] text-ink-muted">
                       Перетащите фото или нажмите для выбора
                     </div>
-                    <div className="text-[11px] text-[#9CA3AF] mt-1">JPG, PNG до 20 МБ</div>
+                    <div className="text-[11px] text-ink-faint mt-1">JPG, PNG до 20 МБ</div>
                   </>
                 )}
               </div>
@@ -394,13 +403,13 @@ export default function VisitPage({ projectId, visitId, onNavigate, toast, onMen
               {savingPhoto && (
                 <div className="mt-4">
                   <div className="flex items-center gap-2 mb-1.5">
-                    <div className="inline-block w-3.5 h-3.5 border-2 border-[#E5E7EB] border-t-[#111827] rounded-full animate-spin" />
-                    <span className="text-[12px] text-[#6B7280]">
+                    <div className="inline-block w-3.5 h-3.5 border-2 border-line border-t-ink rounded-full animate-spin" />
+                    <span className="text-[12px] text-ink-muted">
                       {uploadStep === 'uploading' ? `Загрузка файла (${((photoFile?.size || 0) / 1024 / 1024).toFixed(1)} МБ)...` : 'Сохранение записи...'}
                     </span>
                   </div>
-                  <div className="w-full h-1.5 bg-[#F3F4F6] rounded-full overflow-hidden">
-                    <div className="h-full bg-[#111827] rounded-full animate-progress-indeterminate" />
+                  <div className="w-full h-1.5 bg-srf-secondary rounded-full overflow-hidden">
+                    <div className="h-full bg-ink rounded-full animate-progress-indeterminate" />
                   </div>
                 </div>
               )}

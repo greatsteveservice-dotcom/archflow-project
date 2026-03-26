@@ -14,7 +14,12 @@ import type {
   CreateProjectInput, CreateVisitInput,
   CreatePhotoRecordInput, CreateProjectMemberInput, CreateInvoiceInput,
   CreateSupplyItemInput, CreateDocumentInput, UpdateProfileInput,
+  DocumentCategory, Task, TaskStatus, CreateTaskInput, PhotoRecordWithVisit,
 } from './types';
+
+// ======================== CONSTANTS ========================
+
+export const PROJECTS_PAGE_SIZE = 20;
 
 // ======================== PROJECTS ========================
 
@@ -95,6 +100,119 @@ export async function fetchProjects(): Promise<ProjectWithStats[]> {
         : 'нет активности',
     };
   });
+}
+
+/** Result type for paginated projects */
+export interface PaginatedProjects {
+  data: ProjectWithStats[];
+  total: number;
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
+}
+
+/** Fetch projects with server-side pagination */
+export async function fetchProjectsPaginated(
+  page: number = 0,
+  pageSize: number = PROJECTS_PAGE_SIZE
+): Promise<PaginatedProjects> {
+  // Get total count
+  const { count, error: countErr } = await supabase
+    .from('projects')
+    .select('*', { count: 'exact', head: true });
+
+  if (countErr) throw countErr;
+  const total = count || 0;
+
+  // Get projects page
+  const from = page * pageSize;
+  const to = from + pageSize - 1;
+
+  const { data: projects, error: projErr } = await supabase
+    .from('projects')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .range(from, to);
+
+  if (projErr) throw projErr;
+  if (!projects || projects.length === 0) {
+    return { data: [], total, page, pageSize, hasMore: false };
+  }
+
+  // Get owner profiles
+  const ownerIds = [...new Set(projects.map(p => p.owner_id))];
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('*')
+    .in('id', ownerIds);
+
+  // Get visits for these projects
+  const projectIds = projects.map(p => p.id);
+  const { data: visits } = await supabase
+    .from('visits')
+    .select('id, project_id, date')
+    .in('project_id', projectIds);
+
+  // Get photo records for all visits
+  const visitIds = visits?.map(v => v.id) || [];
+  const { data: photos } = visitIds.length > 0
+    ? await supabase
+        .from('photo_records')
+        .select('id, visit_id, status')
+        .in('visit_id', visitIds)
+    : { data: [] };
+
+  // Build project-to-visit map
+  const visitsByProject = new Map<string, typeof visits>();
+  visits?.forEach(v => {
+    const arr = visitsByProject.get(v.project_id) || [];
+    arr.push(v);
+    visitsByProject.set(v.project_id, arr);
+  });
+
+  // Build visit-to-photos map
+  const photosByVisit = new Map<string, typeof photos>();
+  photos?.forEach(p => {
+    const arr = photosByVisit.get(p.visit_id) || [];
+    arr.push(p);
+    photosByVisit.set(p.visit_id, arr);
+  });
+
+  // Build profiles map
+  const profileMap = new Map<string, Profile>();
+  profiles?.forEach(p => profileMap.set(p.id, p as Profile));
+
+  // Combine
+  const enriched = projects.map(project => {
+    const projectVisits = visitsByProject.get(project.id) || [];
+    const projectVisitIds = projectVisits.map(v => v.id);
+    const projectPhotos = projectVisitIds.flatMap(vid => photosByVisit.get(vid) || []);
+
+    // Find last visit date
+    const sortedVisits = [...projectVisits].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+    const lastVisitDate = sortedVisits[0]?.date;
+
+    return {
+      ...(project as Project),
+      owner: profileMap.get(project.owner_id),
+      visit_count: projectVisits.length,
+      photo_count: projectPhotos.length,
+      open_issues: projectPhotos.filter(p => p.status === 'issue').length,
+      last_activity: lastVisitDate
+        ? formatRelativeDate(lastVisitDate)
+        : 'нет активности',
+    };
+  });
+
+  return {
+    data: enriched,
+    total,
+    page,
+    pageSize,
+    hasMore: from + projects.length < total,
+  };
 }
 
 /** Fetch a single project by ID */
@@ -627,11 +745,11 @@ export async function updateProfile(input: UpdateProfileInput): Promise<Profile>
 
 // ======================== NOTIFICATIONS (computed) ========================
 
-/** Compute notifications from existing data */
+/** Вычисляемые уведомления из существующих данных */
 export async function fetchNotifications(): Promise<Notification[]> {
   const notifications: Notification[] = [];
 
-  // Recent photo issues/resolved
+  // Замечания на фото (issue / resolved)
   const { data: recentPhotos } = await supabase
     .from('photo_records')
     .select('id, comment, status, zone, created_at')
@@ -652,7 +770,7 @@ export async function fetchNotifications(): Promise<Notification[]> {
     });
   });
 
-  // Overdue invoices
+  // Просроченные счета
   const { data: overdueInvoices } = await supabase
     .from('invoices')
     .select('id, title, amount, due_date')
@@ -671,7 +789,7 @@ export async function fetchNotifications(): Promise<Notification[]> {
     });
   });
 
-  // Recent visits
+  // Последние визиты
   const { data: recentVisits } = await supabase
     .from('visits')
     .select('id, title, date, status')
@@ -689,23 +807,68 @@ export async function fetchNotifications(): Promise<Notification[]> {
     });
   });
 
+  // Критические риски комплектации
+  const { data: riskyItems } = await supabase
+    .from('supply_items')
+    .select('id, name, lead_time_days, target_stage_id, status, created_at')
+    .in('status', ['pending', 'approved', 'in_review'])
+    .gt('lead_time_days', 0)
+    .limit(20);
+
+  if (riskyItems && riskyItems.length > 0) {
+    const stageIds = [...new Set(riskyItems.map(si => si.target_stage_id).filter(Boolean))] as string[];
+    const { data: stages } = stageIds.length > 0
+      ? await supabase.from('stages').select('id, start_date').in('id', stageIds)
+      : { data: [] };
+    const stageMap = new Map<string, string>();
+    stages?.forEach(s => { if (s.start_date) stageMap.set(s.id, s.start_date); });
+
+    const today = new Date();
+    riskyItems.forEach(si => {
+      if (!si.target_stage_id) return;
+      const stageStart = stageMap.get(si.target_stage_id);
+      if (!stageStart) return;
+      const deadline = new Date(stageStart);
+      deadline.setDate(deadline.getDate() - si.lead_time_days);
+      const daysUntil = Math.round((deadline.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      if (daysUntil <= 7) {
+        notifications.push({
+          id: `supply-${si.id}`,
+          type: 'supply_risk',
+          text: daysUntil < 0
+            ? `Просрочен заказ: ${si.name} (${Math.abs(daysUntil)} дн.)`
+            : `Скоро дедлайн заказа: ${si.name} (${daysUntil} дн.)`,
+          time: si.created_at,
+          relativeTime: daysUntil < 0 ? 'просрочен' : `${daysUntil} дн.`,
+          read: false,
+        });
+      }
+    });
+  }
+
   return notifications
     .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
-    .slice(0, 20);
+    .slice(0, 30);
 }
 
 // ======================== ACTIVITY FEED ========================
 
 /** Fetch recent activity from photos, visits, invoices, supply items, members */
-export async function fetchActivityFeed(): Promise<ActivityItem[]> {
+export async function fetchActivityFeed(limit: number = 50): Promise<ActivityItem[]> {
   const items: ActivityItem[] = [];
 
-  // Recent photos (last 10)
+  // Scale sub-query limits relative to the requested total limit
+  const photoLimit = Math.max(5, Math.ceil(limit * 0.4));
+  const visitLimit = Math.max(3, Math.ceil(limit * 0.3));
+  const invoiceLimit = Math.max(2, Math.ceil(limit * 0.15));
+  const supplyLimit = Math.max(2, Math.ceil(limit * 0.15));
+
+  // Recent photos
   const { data: photos } = await supabase
     .from('photo_records')
     .select('id, comment, status, zone, created_at, visit_id')
     .order('created_at', { ascending: false })
-    .limit(10);
+    .limit(photoLimit);
 
   photos?.forEach(p => {
     const zone = p.zone || 'Без зоны';
@@ -721,12 +884,12 @@ export async function fetchActivityFeed(): Promise<ActivityItem[]> {
     }
   });
 
-  // Recent visits (last 8)
+  // Recent visits
   const { data: visits } = await supabase
     .from('visits')
     .select('id, title, date, status, created_at')
     .order('created_at', { ascending: false })
-    .limit(8);
+    .limit(visitLimit);
 
   visits?.forEach(v => {
     if (v.status === 'planned') {
@@ -738,12 +901,12 @@ export async function fetchActivityFeed(): Promise<ActivityItem[]> {
     }
   });
 
-  // Recent invoices (last 5)
+  // Recent invoices
   const { data: invoices } = await supabase
     .from('invoices')
     .select('id, title, amount, status, created_at')
     .order('created_at', { ascending: false })
-    .limit(5);
+    .limit(invoiceLimit);
 
   invoices?.forEach(inv => {
     const amountStr = new Intl.NumberFormat('ru-RU').format(inv.amount) + ' \u20BD';
@@ -754,12 +917,12 @@ export async function fetchActivityFeed(): Promise<ActivityItem[]> {
     }
   });
 
-  // Recent supply changes (last 5)
+  // Recent supply changes
   const { data: supplyItems } = await supabase
     .from('supply_items')
     .select('id, name, status, created_at')
     .order('created_at', { ascending: false })
-    .limit(5);
+    .limit(supplyLimit);
 
   supplyItems?.forEach(si => {
     const statusText: Record<string, string> = {
@@ -773,7 +936,7 @@ export async function fetchActivityFeed(): Promise<ActivityItem[]> {
   // Sort by time and add relative dates
   return items
     .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
-    .slice(0, 15)
+    .slice(0, limit)
     .map(item => ({ ...item, relativeTime: formatRelativeDate(item.time) }));
 }
 
@@ -827,9 +990,7 @@ export async function createDocument(input: CreateDocumentInput): Promise<Docume
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Не авторизован');
 
-  const { data, error } = await supabase
-    .from('documents')
-    .insert({
+  const insertData: Record<string, unknown> = {
       project_id: input.project_id,
       title: sanitize(input.title),
       version: input.version || '1.0',
@@ -837,12 +998,133 @@ export async function createDocument(input: CreateDocumentInput): Promise<Docume
       file_url: input.file_url,
       uploaded_by: user.id,
       status: input.status || 'draft',
-    })
+  };
+  if (input.category) insertData.category = input.category;
+
+  const { data, error } = await supabase
+    .from('documents')
+    .insert(insertData)
     .select()
     .single();
 
   if (error) throw error;
   return data as Document;
+}
+
+// ======================== DOCUMENTS BY CATEGORY ========================
+
+/** Fetch documents filtered by category */
+export async function fetchDocumentsByCategory(projectId: string, category: DocumentCategory): Promise<Document[]> {
+  const { data, error } = await supabase
+    .from('documents')
+    .select('*')
+    .eq('project_id', projectId)
+    .eq('category', category)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data || []) as Document[];
+}
+
+// ======================== PROJECT PHOTOS (ALL) ========================
+
+/** Fetch all photo records for a project (across all visits) */
+export async function fetchProjectPhotos(projectId: string): Promise<PhotoRecordWithVisit[]> {
+  // First get all visits
+  const { data: visits, error: vErr } = await supabase
+    .from('visits')
+    .select('id, title, date')
+    .eq('project_id', projectId);
+  if (vErr) throw vErr;
+  if (!visits || visits.length === 0) return [];
+
+  const visitIds = visits.map(v => v.id);
+  const { data: photos, error: pErr } = await supabase
+    .from('photo_records')
+    .select('*')
+    .in('visit_id', visitIds)
+    .order('created_at', { ascending: false });
+  if (pErr) throw pErr;
+
+  const visitMap = new Map(visits.map(v => [v.id, v]));
+  return (photos || []).map(p => {
+    const visit = visitMap.get(p.visit_id);
+    return {
+      ...(p as PhotoRecord),
+      visit_title: visit?.title,
+      visit_date: visit?.date,
+    };
+  });
+}
+
+// ======================== TASKS ========================
+
+/** Fetch tasks for a project */
+export async function fetchProjectTasks(projectId: string): Promise<Task[]> {
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('*')
+    .eq('project_id', projectId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data || []) as Task[];
+}
+
+/** Create a task */
+export async function createTask(input: CreateTaskInput): Promise<Task> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Не авторизован');
+
+  const { data, error } = await supabase
+    .from('tasks')
+    .insert({
+      project_id: input.project_id,
+      title: sanitize(input.title),
+      description: input.description ? sanitize(input.description) : null,
+      photo_record_id: input.photo_record_id || null,
+      assigned_to: input.assigned_to || null,
+      due_date: input.due_date || null,
+      created_by: user.id,
+      status: 'open',
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return data as Task;
+}
+
+/** Update task status */
+export async function updateTaskStatus(taskId: string, status: TaskStatus): Promise<Task> {
+  const { data, error } = await supabase
+    .from('tasks')
+    .update({ status })
+    .eq('id', taskId)
+    .select()
+    .single();
+  if (error) throw new Error(humanError(error));
+  return data as Task;
+}
+
+/** Delete a task */
+export async function deleteTask(taskId: string): Promise<void> {
+  const { error } = await supabase
+    .from('tasks')
+    .delete()
+    .eq('id', taskId);
+  if (error) throw new Error(humanError(error));
+}
+
+// ======================== PROJECT WEBCAM ========================
+
+/** Update project webcam URL */
+export async function updateProjectWebcam(projectId: string, webcamUrl: string | null): Promise<Project> {
+  const { data, error } = await supabase
+    .from('projects')
+    .update({ webcam_url: webcamUrl })
+    .eq('id', projectId)
+    .select()
+    .single();
+  if (error) throw new Error(humanError(error));
+  return data as Project;
 }
 
 // ======================== PROJECT MEMBERS ========================

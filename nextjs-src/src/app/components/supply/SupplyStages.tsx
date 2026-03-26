@@ -46,16 +46,16 @@ export function SupplyStages({ stages, items }: SupplyStagesProps) {
         const progress = stage.total > 0 ? Math.round((stage.delivered / stage.total) * 100) : 0;
 
         return (
-          <div key={stage.id} className="bg-white border border-[#E8E6E1] rounded-xl p-5">
+          <div key={stage.id} className="bg-white border border-line rounded-xl p-5">
             {/* Stage header */}
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-[#F0EEE9] flex items-center justify-center text-[13px] font-semibold font-mono-custom text-[#6B6B6B]">
+                <div className="w-8 h-8 rounded-lg bg-srf-secondary flex items-center justify-center text-[13px] font-semibold font-mono-custom text-ink-muted">
                   {stage.sort_order}
                 </div>
                 <div>
                   <h4 className="text-[14px] font-semibold">{stage.name}</h4>
-                  <div className="text-[11px] text-[#9B9B9B]">
+                  <div className="text-[11px] text-ink-faint">
                     {stage.start_date ? formatShortDate(stage.start_date) : "—"}
                     {stage.end_date ? ` → ${formatShortDate(stage.end_date)}` : ""}
                   </div>
@@ -63,7 +63,7 @@ export function SupplyStages({ stages, items }: SupplyStagesProps) {
               </div>
               <div className="flex items-center gap-2">
                 {stage.critical > 0 && (
-                  <span className="flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-[#FEE2E2] text-[#DC2626]">
+                  <span className="flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-err-bg text-err">
                     <Icons.Alert className="w-3 h-3" /> {stage.critical}
                   </span>
                 )}
@@ -80,14 +80,14 @@ export function SupplyStages({ stages, items }: SupplyStagesProps) {
             {stage.total > 0 && (
               <div className="mb-3">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-[11px] text-[#9B9B9B]">
+                  <span className="text-[11px] text-ink-faint">
                     {stage.delivered}/{stage.total} доставлено
                   </span>
-                  <span className="text-[11px] font-mono-custom text-[#6B6B6B]">{progress}%</span>
+                  <span className="text-[11px] font-mono-custom text-ink-muted">{progress}%</span>
                 </div>
-                <div className="h-1.5 bg-[#F0EEE9] rounded-full overflow-hidden">
+                <div className="h-1.5 bg-srf-secondary rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-[#2C5F2D] rounded-full transition-all duration-500"
+                    className="h-full bg-ink rounded-full transition-all duration-500"
                     style={{ width: `${progress}%` }}
                   />
                 </div>
@@ -103,12 +103,12 @@ export function SupplyStages({ stages, items }: SupplyStagesProps) {
                   return (
                     <div
                       key={item.id}
-                      className="flex items-center justify-between py-2 border-b border-[#F0EEE9] last:border-none"
+                      className="flex items-center justify-between py-2 border-b border-line-light last:border-none"
                     >
                       <div className="flex-1 min-w-0">
-                        <span className="text-[13px] text-[#1A1A1A]">{item.name}</span>
+                        <span className="text-[13px] text-ink">{item.name}</span>
                         {item.supplier && (
-                          <span className="text-[11px] text-[#9B9B9B] ml-2">{item.supplier}</span>
+                          <span className="text-[11px] text-ink-faint ml-2">{item.supplier}</span>
                         )}
                       </div>
                       <div className="flex items-center gap-2 ml-3">
@@ -130,7 +130,7 @@ export function SupplyStages({ stages, items }: SupplyStagesProps) {
                 })}
               </div>
             ) : (
-              <div className="text-[12px] text-[#9B9B9B] py-2">
+              <div className="text-[12px] text-ink-faint py-2">
                 Нет позиций для этого этапа
               </div>
             )}

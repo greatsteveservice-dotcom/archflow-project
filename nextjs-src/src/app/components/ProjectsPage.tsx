@@ -6,7 +6,7 @@ import ProjectCard from "./ProjectCard";
 import EmptyState from "./EmptyState";
 import { ErrorMessage } from "./Loading";
 import { ProjectsListSkeleton } from "./Skeleton";
-import { useProjects } from "../lib/hooks";
+import { useProjectsPaginated } from "../lib/hooks";
 
 interface ProjectsPageProps {
   onNavigate: (page: string, ctx?: any) => void;
@@ -14,7 +14,15 @@ interface ProjectsPageProps {
 }
 
 export default function ProjectsPage({ onNavigate, onCreateProject }: ProjectsPageProps) {
-  const { data: projects, loading, error } = useProjects();
+  const {
+    projects,
+    total,
+    loading,
+    loadingMore,
+    error,
+    hasMore,
+    loadMore,
+  } = useProjectsPaginated();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
@@ -55,17 +63,17 @@ export default function ProjectsPage({ onNavigate, onCreateProject }: ProjectsPa
       {/* Search + filters */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-5">
         <div className="relative flex-1 max-w-[340px] w-full">
-          <Icons.Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]" />
+          <Icons.Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Поиск по названию или адресу..."
-            className="w-full pl-9 pr-3 py-2 border border-[#E5E7EB] rounded-lg text-sm outline-none focus:border-[#111827] transition-colors bg-white"
+            className="w-full pl-9 pr-3 py-2 border border-line rounded-lg text-sm outline-none focus:border-ink transition-colors bg-white"
           />
           {search && (
             <button
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-[#374151]"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-faint hover:text-ink-secondary"
               onClick={() => setSearch("")}
             >
               <Icons.X className="w-3.5 h-3.5" />
@@ -74,7 +82,7 @@ export default function ProjectsPage({ onNavigate, onCreateProject }: ProjectsPa
         </div>
         <div className="stab">
           <button className={`stb ${statusFilter === "all" ? "active" : ""}`} onClick={() => setStatusFilter("all")}>
-            Все ({projects.length})
+            Все ({total})
           </button>
           <button className={`stb ${statusFilter === "active" ? "active" : ""}`} onClick={() => setStatusFilter("active")}>
             Активные ({activeCount})
@@ -89,21 +97,36 @@ export default function ProjectsPage({ onNavigate, onCreateProject }: ProjectsPa
 
       {/* Results */}
       {filtered.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {filtered.map((project) => (
-            <ProjectCard
-              key={project.id}
-              project={project}
-              onClick={() => onNavigate("project", project.id)}
-            />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {filtered.map((project) => (
+              <ProjectCard
+                key={project.id}
+                project={project}
+                onClick={() => onNavigate("project", project.id)}
+              />
+            ))}
+          </div>
+
+          {/* Load more */}
+          {hasMore && !search && statusFilter === "all" && (
+            <div className="flex justify-center mt-6">
+              <button
+                onClick={loadMore}
+                disabled={loadingMore}
+                className="px-5 py-2 text-sm font-medium text-ink-secondary border border-line rounded-lg hover:bg-surface transition-colors disabled:opacity-50"
+              >
+                {loadingMore ? 'Загрузка...' : `Показать ещё (${projects.length} из ${total})`}
+              </button>
+            </div>
+          )}
+        </>
       ) : (
-        <div className="text-center py-12 text-[#9CA3AF]">
+        <div className="text-center py-12 text-ink-faint">
           <Icons.Search className="w-6 h-6 mx-auto mb-2 opacity-40" />
           <div className="text-[13px]">Проекты не найдены</div>
           {search && (
-            <button className="text-[12px] text-[#2563EB] hover:underline mt-1" onClick={() => { setSearch(""); setStatusFilter("all"); }}>
+            <button className="text-[12px] text-info hover:underline mt-1" onClick={() => { setSearch(""); setStatusFilter("all"); }}>
               Сбросить фильтры
             </button>
           )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { Icons } from "./Icons";
+import { Icons, ArchflowLogo } from "./Icons";
 import { useAuth } from "../lib/auth";
 
 interface SidebarProps {
@@ -41,26 +41,20 @@ export default function Sidebar({ currentPage, onNavigate, isOpen, onClose }: Si
   };
 
   const sidebarContent = (
-    <aside className="w-[240px] bg-[#111827] text-white flex flex-col flex-shrink-0 h-screen">
-      {/* Logo */}
-      <div className="px-5 pt-5 pb-4 border-b border-white/[0.08] flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-md bg-white/10 flex items-center justify-center">
-            <Icons.Layers className="w-4 h-4 text-white/70" />
-          </div>
-          <span className="text-[15px] font-bold tracking-tight">Archflow</span>
+    <aside className="w-[220px] bg-ink text-white flex flex-col flex-shrink-0 h-screen">
+      {/* Logo — minimal */}
+      <div className="px-5 pt-5 pb-5 flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <ArchflowLogo className="w-7 h-7" mono />
+          <span className="text-[15px] font-semibold tracking-tight">Archflow</span>
         </div>
-        {/* Close button on mobile */}
-        <button className="md:hidden p-1 text-white/50 hover:text-white" onClick={onClose}>
-          <Icons.X className="w-5 h-5" />
+        <button className="md:hidden p-1 text-white/40 hover:text-white" onClick={onClose}>
+          <Icons.X className="w-4 h-4" />
         </button>
       </div>
 
-      {/* Nav */}
-      <nav className="p-3 flex-1">
-        <div className="text-[10px] font-medium text-white/25 uppercase tracking-wider px-3 mb-2">
-          Навигация
-        </div>
+      {/* Nav — clean, no section headers */}
+      <nav className="px-3 flex-1 space-y-0.5">
         <div
           className={`sidebar-item ${isActive("dashboard") ? "active" : ""}`}
           onClick={() => handleNav("dashboard")}
@@ -77,25 +71,21 @@ export default function Sidebar({ currentPage, onNavigate, isOpen, onClose }: Si
         </div>
       </nav>
 
-      {/* Bottom */}
-      <div className="p-3 border-t border-white/[0.08]">
+      {/* Bottom — compact */}
+      <div className="px-3 pb-3 space-y-0.5">
+        <div
+          className="sidebar-item"
+          onClick={() => handleNav("profile")}
+        >
+          <div className="w-5 h-5 rounded-full bg-white/15 flex items-center justify-center text-[9px] font-semibold">
+            {initials}
+          </div>
+          <span className="truncate">{profile?.full_name || "..."}</span>
+          <span className="text-[10px] text-white/30 ml-auto">{roleLabel[profile?.role || ""] || ""}</span>
+        </div>
         <div className="sidebar-item" onClick={signOut}>
           <Icons.LogOut className="w-4 h-4" />
           Выйти
-        </div>
-        <div
-          className="flex items-center gap-2.5 px-3 py-2 mt-1 rounded-lg cursor-pointer hover:bg-white/[0.06] transition-colors"
-          onClick={() => handleNav("profile")}
-        >
-          <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-semibold">
-            {initials}
-          </div>
-          <div>
-            <div className="text-[12px] font-medium">{profile?.full_name || "..."}</div>
-            <div className="text-[10px] text-white/35">
-              {roleLabel[profile?.role || ""] || "..."}
-            </div>
-          </div>
         </div>
       </div>
     </aside>

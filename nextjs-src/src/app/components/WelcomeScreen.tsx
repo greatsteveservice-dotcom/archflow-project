@@ -1,6 +1,6 @@
 "use client";
 
-import { Icons } from "./Icons";
+import { Icons, ArchflowLogo } from "./Icons";
 import { useAuth } from "../lib/auth";
 
 interface WelcomeScreenProps {
@@ -14,46 +14,38 @@ export default function WelcomeScreen({ onCreateProject, onNavigate }: WelcomeSc
   const isDesigner = profile?.role === "designer" || profile?.role === "assistant";
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center p-4 sm:p-7">
-      <div className="text-center max-w-[480px] animate-fade-in">
+    <div className="min-h-[80vh] flex items-center justify-center p-4 sm:p-8">
+      <div className="text-center max-w-[520px] animate-fade-in">
         {/* Welcome icon */}
-        <div className="w-16 h-16 rounded-2xl bg-[#111827] flex items-center justify-center mx-auto mb-6">
-          <Icons.Layers className="w-8 h-8 text-white" />
+        <div className="mx-auto mb-6">
+          <ArchflowLogo className="w-14 h-14" />
         </div>
 
-        <h1 className="text-2xl font-bold mb-2">
+        <h1 className="text-[26px] font-bold mb-2 tracking-tight">
           Добро пожаловать, {firstName}!
         </h1>
-        <p className="text-[14px] text-[#6B7280] mb-8 leading-relaxed">
+        <p className="text-[14px] text-ink-muted mb-10 leading-relaxed max-w-[400px] mx-auto">
           {isDesigner
             ? "Archflow поможет управлять дизайн-проектами, визитами на объекты и комплектацией. Создайте первый проект чтобы начать."
             : "Вас пригласили для совместной работы над дизайн-проектом. Скоро здесь появятся ваши проекты."
           }
         </p>
 
-        {/* Feature cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8 text-left">
-          <div className="card p-4">
-            <div className="w-8 h-8 rounded-lg bg-[#EFF6FF] flex items-center justify-center mb-3">
-              <Icons.Camera className="w-4 h-4 text-[#2563EB]" />
+        {/* Feature cards — monochrome */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-10 text-left">
+          {[
+            { icon: <Icons.Camera className="w-4 h-4" />, title: "Авторский надзор", desc: "Визиты, фото, замечания" },
+            { icon: <Icons.Box className="w-4 h-4" />, title: "Комплектация", desc: "Заказы, сроки, риски" },
+            { icon: <Icons.Receipt className="w-4 h-4" />, title: "Счета", desc: "Выставление и оплата" },
+          ].map((f, i) => (
+            <div key={i} className="bg-white border border-line rounded-xl p-4">
+              <div className="w-8 h-8 rounded-lg bg-srf-secondary flex items-center justify-center mb-3 text-ink-muted">
+                {f.icon}
+              </div>
+              <div className="text-[13px] font-medium mb-1">{f.title}</div>
+              <div className="text-[11px] text-ink-faint leading-relaxed">{f.desc}</div>
             </div>
-            <div className="text-[13px] font-medium mb-1">Авторский надзор</div>
-            <div className="text-[11px] text-[#9CA3AF]">Визиты, фото, замечания</div>
-          </div>
-          <div className="card p-4">
-            <div className="w-8 h-8 rounded-lg bg-[#FFF7ED] flex items-center justify-center mb-3">
-              <Icons.Box className="w-4 h-4 text-[#D97706]" />
-            </div>
-            <div className="text-[13px] font-medium mb-1">Комплектация</div>
-            <div className="text-[11px] text-[#9CA3AF]">Заказы, сроки, риски</div>
-          </div>
-          <div className="card p-4">
-            <div className="w-8 h-8 rounded-lg bg-[#ECFDF3] flex items-center justify-center mb-3">
-              <Icons.Receipt className="w-4 h-4 text-[#16A34A]" />
-            </div>
-            <div className="text-[13px] font-medium mb-1">Счета</div>
-            <div className="text-[11px] text-[#9CA3AF]">Выставление и оплата</div>
-          </div>
+          ))}
         </div>
 
         {/* Action buttons */}

@@ -55,14 +55,14 @@ export default function CreateProjectModal({ open, onClose, onSuccess }: CreateP
   return (
     <Modal open={open} onClose={handleClose} title="Новый проект">
       {error && (
-        <div className="bg-[#FEF0EC] border border-[#E85D3A]/20 text-[#E85D3A] text-[13px] px-4 py-2.5 rounded-lg mb-4">
+        <div className="bg-err-bg border border-err/20 text-err text-[13px] px-4 py-2.5 rounded-lg mb-4">
           {error}
         </div>
       )}
 
       <form onSubmit={handleSubmit}>
         <div className="mb-4">
-          <label className="block text-xs font-medium text-[#6B6B6B] mb-1.5">
+          <label className="block text-xs font-medium text-ink-muted mb-1.5">
             Название проекта *
           </label>
           <input
@@ -70,13 +70,13 @@ export default function CreateProjectModal({ open, onClose, onSuccess }: CreateP
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Квартира на Патриарших"
-            className="w-full px-3 py-2.5 border border-[#E8E6E1] rounded-lg text-sm outline-none transition-colors focus:border-[#2C5F2D]"
+            className="w-full px-3 py-2.5 border border-line rounded-lg text-sm outline-none transition-colors focus:border-ink"
             autoFocus
           />
         </div>
 
         <div className="mb-4">
-          <label className="block text-xs font-medium text-[#6B6B6B] mb-1.5">
+          <label className="block text-xs font-medium text-ink-muted mb-1.5">
             Адрес
           </label>
           <input
@@ -84,33 +84,33 @@ export default function CreateProjectModal({ open, onClose, onSuccess }: CreateP
             value={address}
             onChange={(e) => setAddress(e.target.value)}
             placeholder="Москва, ул. Малая Бронная, 15"
-            className="w-full px-3 py-2.5 border border-[#E8E6E1] rounded-lg text-sm outline-none transition-colors focus:border-[#2C5F2D]"
+            className="w-full px-3 py-2.5 border border-line rounded-lg text-sm outline-none transition-colors focus:border-ink"
           />
         </div>
 
         <div className="grid grid-cols-2 gap-3 mb-6">
           <div>
-            <label className="block text-xs font-medium text-[#6B6B6B] mb-1.5">
+            <label className="block text-xs font-medium text-ink-muted mb-1.5">
               Тип стройки
             </label>
             <select
               value={scenarioType}
               onChange={(e) => setScenarioType(e.target.value as ScenarioType)}
-              className="w-full px-3 py-2.5 border border-[#E8E6E1] rounded-lg text-sm outline-none transition-colors focus:border-[#2C5F2D] bg-white"
+              className="w-full px-3 py-2.5 border border-line rounded-lg text-sm outline-none transition-colors focus:border-ink bg-white"
             >
               <option value="block">Блок</option>
               <option value="gkl">ГКЛ</option>
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-[#6B6B6B] mb-1.5">
+            <label className="block text-xs font-medium text-ink-muted mb-1.5">
               Дата начала
             </label>
             <input
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="w-full px-3 py-2.5 border border-[#E8E6E1] rounded-lg text-sm outline-none transition-colors focus:border-[#2C5F2D]"
+              className="w-full px-3 py-2.5 border border-line rounded-lg text-sm outline-none transition-colors focus:border-ink"
             />
           </div>
         </div>
@@ -119,14 +119,14 @@ export default function CreateProjectModal({ open, onClose, onSuccess }: CreateP
           <button
             type="button"
             onClick={handleClose}
-            className="px-4 py-2.5 border border-[#E8E6E1] rounded-lg text-sm font-medium text-[#6B6B6B] hover:bg-gray-50 transition-colors"
+            className="px-4 py-2.5 border border-line rounded-lg text-sm font-medium text-ink-muted hover:bg-gray-50 transition-colors"
           >
             Отмена
           </button>
           <button
             type="submit"
             disabled={saving}
-            className="px-5 py-2.5 bg-[#2C5F2D] text-white rounded-lg text-sm font-medium hover:bg-[#1E4620] transition-colors disabled:opacity-50"
+            className="px-5 py-2.5 bg-ink text-white rounded-lg text-sm font-medium hover:bg-ink-hover transition-colors disabled:opacity-50"
           >
             {saving ? "Создание..." : "Создать проект"}
           </button>

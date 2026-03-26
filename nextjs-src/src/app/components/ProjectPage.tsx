@@ -9,14 +9,14 @@ import { useProject, useProjectVisits, useProjectInvoices } from "../lib/hooks";
 import { usePermissions } from "../lib/permissions";
 import { updateProject } from "../lib/queries";
 import type { ProjectPermissions } from "../lib/types";
+import { exportVisitsCsv, exportInvoicesCsv } from "../lib/export";
 import SupplyModule from "./supply/SupplyModule";
-import OverviewTab from "./project/OverviewTab";
-import JournalTab from "./project/JournalTab";
-import VisitsTab from "./project/VisitsTab";
-import DocsTab from "./project/DocsTab";
+import DesignTab from "./project/DesignTab";
+import SupervisionTab from "./project/SupervisionTab";
 import SettingsTab from "./project/SettingsTab";
+import OnboardingTip from "./OnboardingTip";
 
-type ProjectTab = "overview" | "journal" | "visits" | "supply" | "docs" | "settings";
+type ProjectTab = "design" | "supervision" | "supply" | "settings";
 
 interface ProjectPageProps {
   projectId: string;
@@ -26,11 +26,9 @@ interface ProjectPageProps {
 }
 
 const ALL_TABS: { id: ProjectTab; label: string; icon: React.FC<{ className?: string }>; permKey: keyof ProjectPermissions }[] = [
-  { id: "overview", label: "Обзор", icon: Icons.Grid, permKey: "canViewOverview" },
-  { id: "journal", label: "Journal", icon: Icons.Camera, permKey: "canViewJournal" },
-  { id: "visits", label: "Визиты", icon: Icons.Calendar, permKey: "canViewVisits" },
-  { id: "supply", label: "Supply", icon: Icons.Box, permKey: "canViewSupply" },
-  { id: "docs", label: "Документы", icon: Icons.File, permKey: "canViewDocs" },
+  { id: "design", label: "Дизайн", icon: Icons.File, permKey: "canViewDesign" },
+  { id: "supervision", label: "Авторский надзор", icon: Icons.Camera, permKey: "canViewSupervision" },
+  { id: "supply", label: "Комплектация", icon: Icons.Box, permKey: "canViewSupply" },
   { id: "settings", label: "Настройки", icon: Icons.Settings, permKey: "canViewSettings" },
 ];
 
@@ -41,7 +39,7 @@ export default function ProjectPage({ projectId, onNavigate, toast, onMenuToggle
   const { permissions } = usePermissions(projectId);
 
   const visibleTabs = ALL_TABS.filter(t => permissions[t.permKey]);
-  const [activeTab, setActiveTab] = useState<ProjectTab>("overview");
+  const [activeTab, setActiveTab] = useState<ProjectTab>("design");
 
   // Title editing state
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -105,7 +103,7 @@ export default function ProjectPage({ projectId, onNavigate, toast, onMenuToggle
           { label: project.title },
         ]}
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             {permissions.canEditProjectSettings && !isEditingTitle && (
               <button
                 className="btn btn-secondary p-2"
@@ -115,8 +113,21 @@ export default function ProjectPage({ projectId, onNavigate, toast, onMenuToggle
                 <Icons.Edit className="w-4 h-4" />
               </button>
             )}
-            <button className="btn btn-secondary">
-              <Icons.Download className="w-4 h-4" /> Экспорт
+            <button
+              className="btn btn-secondary p-2 sm:px-4 sm:py-2.5"
+              onClick={() => {
+                if (!project) return;
+                if (activeTab === 'design') {
+                  exportInvoicesCsv(projectInvoices, project.title);
+                  toast('Счета экспортированы в CSV');
+                } else {
+                  exportVisitsCsv(projectVisits, project.title);
+                  toast('Визиты экспортированы в CSV');
+                }
+              }}
+              title="Экспорт в CSV"
+            >
+              <Icons.Download className="w-4 h-4" /> <span className="hidden sm:inline">Экспорт</span>
             </button>
           </div>
         }
@@ -124,14 +135,14 @@ export default function ProjectPage({ projectId, onNavigate, toast, onMenuToggle
 
       {/* Inline title editing */}
       {isEditingTitle && (
-        <div className="px-4 sm:px-7 py-3 bg-[#F9FAFB] border-b border-[#E5E7EB] flex items-center gap-3">
+        <div className="px-4 sm:px-8 py-3 bg-srf-raised border-b border-line flex items-center gap-3">
           <input
             ref={titleInputRef}
             type="text"
             value={editTitle}
             onChange={e => setEditTitle(e.target.value)}
             onKeyDown={handleTitleKeyDown}
-            className="flex-1 text-[15px] font-medium px-3 py-2 border border-[#D1D5DB] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#111827] focus:border-transparent"
+            className="flex-1 text-[15px] font-medium px-3 py-2 border border-ink-ghost rounded-lg focus:outline-none focus:ring-2 focus:ring-ink focus:border-transparent"
             placeholder="Название проекта"
             disabled={savingTitle}
           />
@@ -153,7 +164,7 @@ export default function ProjectPage({ projectId, onNavigate, toast, onMenuToggle
       )}
 
       {/* Tabs */}
-      <div className="tn px-4 sm:px-7 overflow-x-auto scrollbar-hide">
+      <div className="tn px-4 sm:px-8 overflow-x-auto scrollbar-hide">
         {visibleTabs.map(t => (
           <div
             key={t.id}
@@ -167,42 +178,41 @@ export default function ProjectPage({ projectId, onNavigate, toast, onMenuToggle
       </div>
 
       {/* Tab content */}
-      <div className="p-4 sm:p-7">
-        {activeTab === "overview" && permissions.canViewOverview && (
-          <OverviewTab
-            project={project}
-            visits={projectVisits}
-            invoices={projectInvoices}
-            onTabChange={(tab) => setActiveTab(tab as ProjectTab)}
-          />
-        )}
-        {activeTab === "journal" && permissions.canViewJournal && (
-          <JournalTab
-            project={project}
+      <div className="p-4 sm:p-8">
+        <OnboardingTip
+          id="project-tabs-v2"
+          title="Управление проектом"
+          text="Переключайтесь между вкладками: Дизайн (документы и счета), Авторский надзор (календарь, фото, задачи), Комплектация и Настройки."
+          className="mb-5"
+        />
+        {activeTab === "design" && permissions.canViewDesign && (
+          <DesignTab
             projectId={projectId}
-            visits={projectVisits}
             invoices={projectInvoices}
-            onSelectVisit={handleSelectVisit}
             toast={toast}
             refetchInvoices={refetchInvoices}
+            canUploadDocument={permissions.canUploadDocument}
             canCreateInvoice={permissions.canCreateInvoice}
           />
         )}
-        {activeTab === "visits" && permissions.canViewVisits && (
-          <VisitsTab
+        {activeTab === "supervision" && permissions.canViewSupervision && (
+          <SupervisionTab
             project={project}
             projectId={projectId}
             visits={projectVisits}
             toast={toast}
             refetchVisits={() => { refetchVisits(); refetchProject(); }}
+            refetchProject={refetchProject}
+            onSelectVisit={handleSelectVisit}
             canCreateVisit={permissions.canCreateVisit}
+            canUploadPhoto={permissions.canUploadPhoto}
+            canChangePhotoStatus={permissions.canChangePhotoStatus}
+            canManageTasks={permissions.canManageTasks}
+            canEditProjectSettings={permissions.canEditProjectSettings}
           />
         )}
         {activeTab === "supply" && permissions.canViewSupply && (
           <SupplyModule projectId={projectId} toast={toast} />
-        )}
-        {activeTab === "docs" && permissions.canViewDocs && (
-          <DocsTab projectId={projectId} toast={toast} canUploadDocument={permissions.canUploadDocument} />
         )}
         {activeTab === "settings" && permissions.canViewSettings && (
           <SettingsTab
