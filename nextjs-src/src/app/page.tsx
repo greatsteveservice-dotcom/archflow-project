@@ -12,6 +12,7 @@ import ProfilePage from "./components/ProfilePage";
 import CreateProjectModal from "./components/CreateProjectModal";
 import Topbar from "./components/Topbar";
 import Toast from "./components/Toast";
+import FeedbackBar from "./components/FeedbackBar";
 import OfflineBanner from "./components/OfflineBanner";
 import SearchModal from "./components/SearchModal";
 import { useProjects } from "./lib/hooks";
@@ -182,7 +183,7 @@ export default function Home() {
       {/* Sidebar kept as no-op for compat */}
       <Sidebar currentPage={page} onNavigate={navigate} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <div className="overflow-x-hidden">
+      <div className="overflow-x-hidden" style={{ paddingBottom: 56 }}>
         {showWelcome ? (
           <WelcomeScreen
             onCreateProject={() => { setWelcomeDismissed(true); setShowCreateProject(true); }}
@@ -210,6 +211,8 @@ export default function Home() {
         onClose={() => setSearchOpen(false)}
         onNavigate={navigate}
       />
+
+      <FeedbackBar />
 
       {toastMsg && <Toast msg={toastMsg} onClose={() => setToastMsg(null)} />}
     </div>
