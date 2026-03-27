@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "../lib/auth";
 
 export default function FeedbackBar() {
+  const { profile } = useAuth();
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
   const [sent, setSent] = useState(false);
@@ -43,10 +45,17 @@ export default function FeedbackBar() {
     if (!text.trim() || sending) return;
     setSending(true);
     try {
-      // If a feedback endpoint exists, POST there; otherwise console.log
-      console.log("[Feedback]", text.trim());
+      await fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: text.trim(),
+          userEmail: profile?.email || undefined,
+          userName: profile?.full_name || undefined,
+        }),
+      });
     } catch {
-      // silently fail
+      // silently fail — don't block user
     }
     setSending(false);
     setText("");
