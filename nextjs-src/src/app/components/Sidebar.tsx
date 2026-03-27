@@ -2,6 +2,7 @@
 
 import { Icons, ArchflowLogo } from "./Icons";
 import { useAuth } from "../lib/auth";
+import { useTheme } from "../lib/theme";
 
 interface SidebarProps {
   currentPage: string;
@@ -12,6 +13,7 @@ interface SidebarProps {
 
 export default function Sidebar({ currentPage, onNavigate, isOpen, onClose }: SidebarProps) {
   const { profile, signOut } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   const isActive = (id: string) =>
     currentPage === id ||
@@ -41,7 +43,7 @@ export default function Sidebar({ currentPage, onNavigate, isOpen, onClose }: Si
   };
 
   const sidebarContent = (
-    <aside className="w-[220px] bg-ink text-white flex flex-col flex-shrink-0 h-screen">
+    <aside className="w-[220px] bg-[#111827] text-white flex flex-col flex-shrink-0 h-screen">
       {/* Logo — minimal */}
       <div className="px-5 pt-5 pb-5 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
@@ -77,11 +79,19 @@ export default function Sidebar({ currentPage, onNavigate, isOpen, onClose }: Si
           className="sidebar-item"
           onClick={() => handleNav("profile")}
         >
-          <div className="w-5 h-5 rounded-full bg-white/15 flex items-center justify-center text-[9px] font-semibold">
-            {initials}
-          </div>
+          {profile?.avatar_url ? (
+            <img src={profile.avatar_url} alt="" className="w-5 h-5 rounded-full object-cover" />
+          ) : (
+            <div className="w-5 h-5 rounded-full bg-white/15 flex items-center justify-center text-[9px] font-semibold">
+              {initials}
+            </div>
+          )}
           <span className="truncate">{profile?.full_name || "..."}</span>
           <span className="text-[10px] text-white/30 ml-auto">{roleLabel[profile?.role || ""] || ""}</span>
+        </div>
+        <div className="sidebar-item" onClick={toggleTheme}>
+          {theme === 'dark' ? <Icons.Sun className="w-4 h-4" /> : <Icons.Moon className="w-4 h-4" />}
+          {theme === 'dark' ? 'Светлая' : 'Тёмная'}
         </div>
         <div className="sidebar-item" onClick={signOut}>
           <Icons.LogOut className="w-4 h-4" />

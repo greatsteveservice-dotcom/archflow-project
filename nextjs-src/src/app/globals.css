@@ -4,9 +4,62 @@
 
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500&display=swap');
 
+/* ─── Light Theme (default) ─── */
+/* RGB triplets for Tailwind opacity support: bg-ink/50, text-err/20, etc. */
 :root {
   --font-body: 'DM Sans', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
+
+  --ink: 17 24 39;
+  --ink-hover: 31 41 55;
+  --ink-secondary: 55 65 81;
+  --ink-muted: 107 114 128;
+  --ink-faint: 156 163 175;
+  --ink-ghost: 209 213 219;
+
+  --srf: 255 255 255;
+  --srf-hover: 250 250 248;
+  --srf-raised: 249 250 251;
+  --srf-secondary: 243 244 246;
+
+  --line: 229 231 235;
+  --line-light: 243 244 246;
+
+  --ok: 22 163 74;
+  --ok-bg: 236 253 243;
+  --err: 220 38 38;
+  --err-bg: 254 242 242;
+  --warn: 217 119 6;
+  --warn-bg: 255 247 237;
+  --info: 37 99 235;
+  --info-bg: 239 246 255;
+}
+
+/* ─── Dark Theme ─── */
+.dark {
+  --ink: 249 250 251;
+  --ink-hover: 229 231 235;
+  --ink-secondary: 209 213 219;
+  --ink-muted: 156 163 175;
+  --ink-faint: 107 114 128;
+  --ink-ghost: 75 85 99;
+
+  --srf: 31 41 55;
+  --srf-hover: 38 48 64;
+  --srf-raised: 17 24 39;
+  --srf-secondary: 55 65 81;
+
+  --line: 55 65 81;
+  --line-light: 31 41 55;
+
+  --ok: 34 197 94;
+  --ok-bg: 5 46 22;
+  --err: 239 68 68;
+  --err-bg: 69 10 10;
+  --warn: 245 158 11;
+  --warn-bg: 69 26 3;
+  --info: 59 130 246;
+  --info-bg: 23 37 84;
 }
 
 body {
@@ -35,7 +88,7 @@ body {
     font-family: var(--font-body);
   }
   .btn-primary {
-    @apply bg-ink text-white border border-ink;
+    @apply bg-ink text-srf border border-ink;
   }
   .btn-primary:hover { @apply bg-ink-hover border-ink-hover; }
   .btn-secondary {

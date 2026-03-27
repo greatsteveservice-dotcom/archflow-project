@@ -69,7 +69,7 @@ export default function ProjectsPage({ onNavigate, onCreateProject }: ProjectsPa
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Поиск по названию или адресу..."
-            className="w-full pl-9 pr-3 py-2 border border-line rounded-lg text-sm outline-none focus:border-ink transition-colors bg-white"
+            className="w-full pl-9 pr-3 py-2 border border-line rounded-lg text-sm outline-none focus:border-ink transition-colors bg-srf"
           />
           {search && (
             <button

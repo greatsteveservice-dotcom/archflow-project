@@ -16,7 +16,7 @@ interface TopbarProps {
 
 export default function Topbar({ title, breadcrumbs, actions, onMenuToggle }: TopbarProps) {
   return (
-    <div className="px-4 sm:px-8 py-4 sm:py-5 flex items-center justify-between border-b border-line bg-white sticky top-0 z-10 gap-2">
+    <div className="px-4 sm:px-8 py-4 sm:py-5 flex items-center justify-between border-b border-line bg-srf sticky top-0 z-10 gap-2">
       <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
         {/* Гамбургер — только мобиле */}
         {onMenuToggle && (

@@ -1,10 +1,9 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Icons } from './Icons';
 import Topbar from './Topbar';
-import Toast from './Toast';
 import { useAuth } from '../lib/auth';
-import { updateProfile } from '../lib/queries';
+import { updateProfile, uploadAvatar } from '../lib/queries';
 
 const ROLE_LABELS: Record<string, string> = {
   designer: 'Дизайнер',
@@ -29,6 +28,8 @@ export default function ProfilePage({ onNavigate, onMenuToggle, toast }: Profile
   const [company, setCompany] = useState('');
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   // Init form fields from profile
   useEffect(() => {
@@ -74,6 +75,23 @@ export default function ProfilePage({ onNavigate, onMenuToggle, toast }: Profile
     }
   };
 
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { toast('Максимум 5 МБ'); return; }
+    setUploadingAvatar(true);
+    try {
+      await uploadAvatar(file);
+      await refreshProfile();
+      toast('Аватар обновлён');
+    } catch (err: any) {
+      toast(err.message || 'Ошибка загрузки аватара');
+    } finally {
+      setUploadingAvatar(false);
+      e.target.value = '';
+    }
+  };
+
   const initials = fullName
     ? fullName
         .split(' ')
@@ -100,8 +118,32 @@ export default function ProfilePage({ onNavigate, onMenuToggle, toast }: Profile
         {/* Avatar + Name header */}
         <div className="card p-6 mb-6">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-ink text-white flex items-center justify-center text-xl font-bold flex-shrink-0">
-              {initials}
+            <div className="relative group flex-shrink-0">
+              {profile.avatar_url ? (
+                <img src={profile.avatar_url} alt="" className="w-16 h-16 rounded-full object-cover" />
+              ) : (
+                <div className="w-16 h-16 rounded-full bg-ink text-srf flex items-center justify-center text-xl font-bold">
+                  {initials}
+                </div>
+              )}
+              <button
+                className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                onClick={() => avatarInputRef.current?.click()}
+                disabled={uploadingAvatar}
+              >
+                {uploadingAvatar ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <Icons.Camera className="w-5 h-5 text-white" />
+                )}
+              </button>
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarUpload}
+              />
             </div>
             <div>
               <div className="text-[17px] font-semibold">{profile.full_name}</div>

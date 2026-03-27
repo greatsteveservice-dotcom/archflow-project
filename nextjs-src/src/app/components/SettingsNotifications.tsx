@@ -90,7 +90,7 @@ export function NotificationsPage() {
               className={`flex items-start gap-3 py-3 border-b border-line-light last:border-none ${isRead ? 'opacity-60' : ''}`}
             >
               <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                isUrgent && !isRead ? 'bg-ink text-white' : 'bg-srf-secondary text-ink-muted'
+                isUrgent && !isRead ? 'bg-ink text-srf' : 'bg-srf-secondary text-ink-muted'
               }`}>
                 <IconComp className="w-3 h-3" />
               </div>

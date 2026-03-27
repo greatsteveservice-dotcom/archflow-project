@@ -96,7 +96,7 @@ export default function CreateProjectModal({ open, onClose, onSuccess }: CreateP
             <select
               value={scenarioType}
               onChange={(e) => setScenarioType(e.target.value as ScenarioType)}
-              className="w-full px-3 py-2.5 border border-line rounded-lg text-sm outline-none transition-colors focus:border-ink bg-white"
+              className="w-full px-3 py-2.5 border border-line rounded-lg text-sm outline-none transition-colors focus:border-ink bg-srf"
             >
               <option value="block">Блок</option>
               <option value="gkl">ГКЛ</option>
@@ -126,7 +126,7 @@ export default function CreateProjectModal({ open, onClose, onSuccess }: CreateP
           <button
             type="submit"
             disabled={saving}
-            className="px-5 py-2.5 bg-ink text-white rounded-lg text-sm font-medium hover:bg-ink-hover transition-colors disabled:opacity-50"
+            className="px-5 py-2.5 bg-ink text-srf rounded-lg text-sm font-medium hover:bg-ink-hover transition-colors disabled:opacity-50"
           >
             {saving ? "Создание..." : "Создать проект"}
           </button>

@@ -73,7 +73,7 @@ export function SupplyDashboard({ items, stages }: SupplyDashboardProps) {
           return (
             <div
               key={card.label}
-              className="bg-white border border-line rounded-xl p-4"
+              className="bg-srf border border-line rounded-xl p-4"
             >
               <div className="flex items-center justify-between mb-3">
                 <span className="text-[12px] text-ink-faint font-medium">{card.label}</span>
@@ -89,7 +89,7 @@ export function SupplyDashboard({ items, stages }: SupplyDashboardProps) {
 
       <div className="grid grid-cols-2 gap-5">
         {/* Critical warnings */}
-        <div className="bg-white border border-line rounded-xl p-5">
+        <div className="bg-srf border border-line rounded-xl p-5">
           <h3 className="text-[14px] font-semibold mb-4 flex items-center gap-2">
             <Icons.Alert className="w-4 h-4 text-err" />
             Критические позиции
@@ -131,7 +131,7 @@ export function SupplyDashboard({ items, stages }: SupplyDashboardProps) {
         </div>
 
         {/* Upcoming stages */}
-        <div className="bg-white border border-line rounded-xl p-5">
+        <div className="bg-srf border border-line rounded-xl p-5">
           <h3 className="text-[14px] font-semibold mb-4 flex items-center gap-2">
             <Icons.Clock className="w-4 h-4 text-warn" />
             Ближайшие этапы

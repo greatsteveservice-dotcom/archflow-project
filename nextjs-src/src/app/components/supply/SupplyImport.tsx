@@ -217,7 +217,7 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
         {stepsConfig.map((s, i) => (
           <div key={s.n} className="flex items-center gap-2">
             <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-semibold ${
-              step > s.n ? 'bg-ink text-white' : step === s.n ? 'bg-ink text-white' : 'bg-srf-secondary text-ink-faint'
+              step > s.n ? 'bg-ink text-srf' : step === s.n ? 'bg-ink text-srf' : 'bg-srf-secondary text-ink-faint'
             }`}>
               {step > s.n ? <Icons.Check className="w-3.5 h-3.5" /> : s.n}
             </div>

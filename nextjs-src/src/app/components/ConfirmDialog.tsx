@@ -51,7 +51,7 @@ export default function ConfirmDialog({
       onClick={loading ? undefined : onCancel}
     >
       <div
-        className="bg-white rounded-2xl p-6 w-full max-w-[380px] mx-4 shadow-xl animate-slide-up"
+        className="bg-srf rounded-2xl p-6 w-full max-w-[380px] mx-4 shadow-xl animate-slide-up"
         onClick={(e) => e.stopPropagation()}
       >
         <h3 className="text-[15px] font-semibold mb-2">{title}</h3>
@@ -67,8 +67,8 @@ export default function ConfirmDialog({
           <button
             className={`text-[13px] py-2 px-4 rounded-lg font-medium transition-all ${
               danger
-                ? "bg-err text-white hover:bg-red-800"
-                : "bg-ink text-white hover:bg-ink-hover"
+                ? "bg-err text-white hover:bg-red-700"
+                : "bg-ink text-srf hover:bg-ink-hover"
             } ${loading ? "opacity-60 cursor-not-allowed" : ""}`}
             onClick={onConfirm}
             disabled={loading}

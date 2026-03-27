@@ -430,15 +430,24 @@ export async function createProject(input: CreateProjectInput): Promise<Project>
   return data as Project;
 }
 
-/** Update project title/address */
-export async function updateProject(projectId: string, updates: { title?: string; address?: string }): Promise<Project> {
-  const sanitized: Record<string, string> = {};
-  if (updates.title) sanitized.title = sanitize(updates.title);
-  if (updates.address) sanitized.address = sanitize(updates.address);
+/** Update project fields */
+export async function updateProject(projectId: string, updates: {
+  title?: string;
+  address?: string;
+  scenario_type?: 'block' | 'gkl';
+  start_date?: string | null;
+  supply_discount?: number;
+}): Promise<Project> {
+  const payload: Record<string, unknown> = {};
+  if (updates.title) payload.title = sanitize(updates.title);
+  if (updates.address) payload.address = sanitize(updates.address);
+  if (updates.scenario_type) payload.scenario_type = updates.scenario_type;
+  if (updates.start_date !== undefined) payload.start_date = updates.start_date;
+  if (updates.supply_discount !== undefined) payload.supply_discount = updates.supply_discount;
 
   const { data, error } = await supabase
     .from('projects')
-    .update(sanitized)
+    .update(payload)
     .eq('id', projectId)
     .select()
     .single();
@@ -741,6 +750,31 @@ export async function updateProfile(input: UpdateProfileInput): Promise<Profile>
 
   if (error) throw error;
   return data as Profile;
+}
+
+/** Upload avatar and update profile */
+export async function uploadAvatar(file: File): Promise<string> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Не авторизован');
+
+  const ext = file.name.split('.').pop() || 'jpg';
+  const path = `${user.id}/avatar.${ext}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from('avatars')
+    .upload(path, file, { upsert: true, contentType: file.type });
+  if (uploadError) throw uploadError;
+
+  const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path);
+  const avatarUrl = urlData.publicUrl + '?t=' + Date.now();
+
+  const { error: updateError } = await supabase
+    .from('profiles')
+    .update({ avatar_url: avatarUrl })
+    .eq('id', user.id);
+  if (updateError) throw updateError;
+
+  return avatarUrl;
 }
 
 // ======================== NOTIFICATIONS (computed) ========================

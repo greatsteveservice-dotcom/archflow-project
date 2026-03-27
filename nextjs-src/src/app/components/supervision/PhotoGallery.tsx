@@ -62,7 +62,7 @@ export default function PhotoGallery({ projectId, toast, canChangePhotoStatus = 
           <button
             key={f.key}
             className={`text-[11px] px-2.5 py-1 rounded-lg transition-all ${
-              filter === f.key ? 'bg-ink text-white' : 'bg-srf-secondary text-ink-muted hover:bg-line'
+              filter === f.key ? 'bg-ink text-srf' : 'bg-srf-secondary text-ink-muted hover:bg-line'
             }`}
             onClick={() => setFilter(f.key)}
           >
@@ -136,7 +136,7 @@ export default function PhotoGallery({ projectId, toast, canChangePhotoStatus = 
                   <select
                     value={selectedPhoto.status}
                     onChange={e => handleStatusChange(selectedPhoto.id, e.target.value as PhotoStatus)}
-                    className="text-[12px] border border-line rounded-lg px-2 py-1 bg-white"
+                    className="text-[12px] border border-line rounded-lg px-2 py-1 bg-srf"
                   >
                     <option value="new">Новое</option>
                     <option value="issue">Замечание</option>

@@ -130,12 +130,12 @@ export default function InvoiceList({ projectId, invoices, toast, refetchInvoice
           <div className="relative flex-1 max-w-[260px] w-full">
             <Icons.Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-faint" />
             <input type="text" value={invSearch} onChange={(e) => setInvSearch(e.target.value)}
-              placeholder="Поиск..." className="w-full pl-8 pr-3 py-1.5 border border-line rounded-lg text-[12px] outline-none focus:border-ink transition-colors bg-white" />
+              placeholder="Поиск..." className="w-full pl-8 pr-3 py-1.5 border border-line rounded-lg text-[12px] outline-none focus:border-ink transition-colors bg-srf" />
           </div>
           <div className="flex gap-1">
             {(['all', 'pending', 'paid'] as const).map(s => (
               <button key={s} className={`text-[11px] px-2.5 py-1 rounded-lg transition-all ${
-                invStatusFilter === s ? 'bg-ink text-white' : 'bg-srf-secondary text-ink-muted hover:bg-line'
+                invStatusFilter === s ? 'bg-ink text-srf' : 'bg-srf-secondary text-ink-muted hover:bg-line'
               }`} onClick={() => setInvStatusFilter(s)}>
                 {s === 'all' ? 'Все' : s === 'pending' ? 'Ожидает' : 'Оплачен'}
               </button>

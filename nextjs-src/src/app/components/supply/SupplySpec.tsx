@@ -63,7 +63,7 @@ export function SupplySpec({ items, stages, projectId, refetchItems, toast }: Su
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Поиск по названию, поставщику..."
-            className="w-full pl-9 pr-3 py-2 border border-line rounded-lg text-sm outline-none focus:border-ink transition-colors bg-white"
+            className="w-full pl-9 pr-3 py-2 border border-line rounded-lg text-sm outline-none focus:border-ink transition-colors bg-srf"
             style={{ fontFamily: "var(--font-body)" }}
           />
         </div>
@@ -108,7 +108,7 @@ export function SupplySpec({ items, stages, projectId, refetchItems, toast }: Su
             return (
               <div
                 key={item.id}
-                className="bg-white border border-line rounded-xl p-4 cursor-pointer active:bg-srf-hover transition-colors"
+                className="bg-srf border border-line rounded-xl p-4 cursor-pointer active:bg-srf-hover transition-colors"
                 onClick={() => setSelectedItem(item)}
               >
                 <div className="flex items-baseline justify-between gap-2 mb-1">
@@ -145,7 +145,7 @@ export function SupplySpec({ items, stages, projectId, refetchItems, toast }: Su
       </div>
 
       {/* Desktop table */}
-      <div className="hidden sm:block bg-white border border-line rounded-xl overflow-x-auto">
+      <div className="hidden sm:block bg-srf border border-line rounded-xl overflow-x-auto">
         <table className="w-full text-left">
           <thead>
             <tr className="border-b border-line-light">

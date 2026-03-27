@@ -47,7 +47,7 @@ export default function OnboardingTip({ id, title, text, className = "" }: Onboa
   };
 
   return (
-    <div className={`bg-ink text-white rounded-xl px-4 py-3 flex items-start gap-3 animate-fade-in ${className}`}>
+    <div className={`bg-[#111827] text-white rounded-xl px-4 py-3 flex items-start gap-3 animate-fade-in ${className}`}>
       <div className="w-5 h-5 rounded-full bg-white/15 flex items-center justify-center flex-shrink-0 mt-0.5">
         <Icons.Info className="w-3 h-3" />
       </div>

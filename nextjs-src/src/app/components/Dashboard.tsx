@@ -48,7 +48,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
           { label: "Открытых замечаний", value: String(openIssues), change: openIssues > 0 ? "требуют внимания" : "всё ОК", up: false, danger: openIssues > 0 },
           { label: "Фото загружено", value: String(totalPhotos), change: "по всем проектам", up: true },
         ].map((stat, i) => (
-          <div key={i} className="bg-white border border-line rounded-xl p-4">
+          <div key={i} className="bg-srf border border-line rounded-xl p-4">
             <div className="text-xs text-ink-faint mb-1.5">{stat.label}</div>
             <div
               className={`text-2xl font-bold font-mono-custom ${stat.danger ? "text-err" : "text-ink"}`}
@@ -66,7 +66,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-base font-semibold">Последняя активность</h2>
       </div>
-      <div className="bg-white border border-line rounded-xl px-5 py-1 mb-6">
+      <div className="bg-srf border border-line rounded-xl px-5 py-1 mb-6">
         {activityLoading ? (
           <div className="py-6 text-center text-[13px] text-ink-faint">Загрузка...</div>
         ) : visibleActivity.length > 0 ? (

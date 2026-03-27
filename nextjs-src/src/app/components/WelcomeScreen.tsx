@@ -38,7 +38,7 @@ export default function WelcomeScreen({ onCreateProject, onNavigate }: WelcomeSc
             { icon: <Icons.Box className="w-4 h-4" />, title: "Комплектация", desc: "Заказы, сроки, риски" },
             { icon: <Icons.Receipt className="w-4 h-4" />, title: "Счета", desc: "Выставление и оплата" },
           ].map((f, i) => (
-            <div key={i} className="bg-white border border-line rounded-xl p-4">
+            <div key={i} className="bg-srf border border-line rounded-xl p-4">
               <div className="w-8 h-8 rounded-lg bg-srf-secondary flex items-center justify-center mb-3 text-ink-muted">
                 {f.icon}
               </div>

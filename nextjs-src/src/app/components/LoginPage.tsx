@@ -113,7 +113,7 @@ export default function LoginPage() {
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-2xl p-8 shadow-2xl">
+        <div className="bg-srf rounded-2xl p-8 shadow-2xl">
           <h2 className="text-lg font-semibold mb-1">{titles[mode].heading}</h2>
           <p className="text-[13px] text-ink-faint mb-6">{titles[mode].sub}</p>
 

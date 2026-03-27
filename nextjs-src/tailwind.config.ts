@@ -1,40 +1,44 @@
 import type { Config } from "tailwindcss";
 import plugin from "tailwindcss/plugin";
 
+/** Helper: CSS variable as rgb() with alpha support */
+const cv = (name: string) => `rgb(var(--${name}) / <alpha-value>)`;
+
 const config: Config = {
   content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
+  darkMode: "class",
   theme: {
     extend: {
       colors: {
-        // ─── Core Palette (90% of the UI) ───
-        ink: "#111827",           // primary text, buttons, accents
-        "ink-hover": "#1F2937",   // hover on ink backgrounds
-        "ink-secondary": "#374151", // secondary text (darker muted)
-        "ink-muted": "#6B7280",   // muted text, labels
-        "ink-faint": "#9CA3AF",   // faint text, placeholders
-        "ink-ghost": "#D1D5DB",   // disabled text, subtle icons
+        // ─── Core Palette (CSS variables, RGB for opacity support) ───
+        ink:            cv("ink"),
+        "ink-hover":    cv("ink-hover"),
+        "ink-secondary":cv("ink-secondary"),
+        "ink-muted":    cv("ink-muted"),
+        "ink-faint":    cv("ink-faint"),
+        "ink-ghost":    cv("ink-ghost"),
 
-        "srf": "#FFFFFF",         // surface (cards, modals)
-        "srf-hover": "#FAFAF8",   // surface hover
-        "srf-raised": "#F9FAFB",  // raised background (page bg)
-        "srf-secondary": "#F3F4F6", // secondary surface (empty states)
+        "srf":          cv("srf"),
+        "srf-hover":    cv("srf-hover"),
+        "srf-raised":   cv("srf-raised"),
+        "srf-secondary":cv("srf-secondary"),
 
-        "line": "#E5E7EB",        // borders
-        "line-light": "#F3F4F6",  // subtle borders/dividers
+        "line":         cv("line"),
+        "line-light":   cv("line-light"),
 
-        // ─── Semantic (10% — only when meaning matters) ───
-        "ok": "#16A34A",          // success, approved, paid
-        "ok-bg": "#ECFDF3",       // success background
-        "err": "#DC2626",         // error, issue, critical
-        "err-bg": "#FEF2F2",      // error background
-        "warn": "#D97706",        // warning, pending, in progress
-        "warn-bg": "#FFF7ED",     // warning background
-        "info": "#2563EB",        // info, new, links
-        "info-bg": "#EFF6FF",     // info background
+        // ─── Semantic ───
+        "ok":      cv("ok"),
+        "ok-bg":   cv("ok-bg"),
+        "err":     cv("err"),
+        "err-bg":  cv("err-bg"),
+        "warn":    cv("warn"),
+        "warn-bg": cv("warn-bg"),
+        "info":    cv("info"),
+        "info-bg": cv("info-bg"),
       },
       fontFamily: {
         body: ["DM Sans", "sans-serif"],

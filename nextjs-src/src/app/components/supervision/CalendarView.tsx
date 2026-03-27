@@ -141,7 +141,7 @@ export default function CalendarView({ projectId, visits, toast, refetchVisits, 
               <div
                 key={day}
                 className={`aspect-square flex flex-col items-center justify-center rounded-lg cursor-pointer transition-all text-[13px]
-                  ${isSelected ? 'bg-ink text-white' : isToday ? 'bg-srf-secondary font-semibold' : 'hover:bg-srf-raised'}
+                  ${isSelected ? 'bg-ink text-srf' : isToday ? 'bg-srf-secondary font-semibold' : 'hover:bg-srf-raised'}
                 `}
                 onClick={() => handleDayClick(day)}
               >

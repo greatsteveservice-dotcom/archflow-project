@@ -37,7 +37,7 @@ export default function Modal({ open, onClose, title, children }: ModalProps) {
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-t-2xl sm:rounded-2xl p-5 sm:p-7 w-full sm:w-[440px] max-w-full sm:max-w-[90vw] max-h-[90vh] overflow-y-auto shadow-xl animate-slide-up"
+        className="bg-srf rounded-t-2xl sm:rounded-2xl p-5 sm:p-7 w-full sm:w-[440px] max-w-full sm:max-w-[90vw] max-h-[90vh] overflow-y-auto shadow-xl animate-slide-up"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-lg font-semibold mb-5">{title}</h2>

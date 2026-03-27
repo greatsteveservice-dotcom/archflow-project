@@ -88,7 +88,7 @@ export function SupplyTimeline({ items, stages }: SupplyTimelineProps) {
   }
 
   return (
-    <div className="bg-white border border-line rounded-xl overflow-hidden">
+    <div className="bg-srf border border-line rounded-xl overflow-hidden">
       {/* Month header */}
       <div className="relative h-8 border-b border-line-light bg-srf-hover">
         {months.map((m, i) => (

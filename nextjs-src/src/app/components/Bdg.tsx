@@ -41,7 +41,7 @@ const STATUS_MAP: Record<string, { variant: Variant; label: string }> = {
 };
 
 const VARIANT_CLASSES: Record<Variant, string> = {
-  filled:   'bg-ink text-white',
+  filled:   'bg-ink text-srf',
   outlined: 'border border-ink-ghost text-ink-secondary bg-transparent',
   ghost:    'bg-srf-secondary text-ink-muted',
 };

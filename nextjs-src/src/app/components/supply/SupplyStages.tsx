@@ -46,7 +46,7 @@ export function SupplyStages({ stages, items }: SupplyStagesProps) {
         const progress = stage.total > 0 ? Math.round((stage.delivered / stage.total) * 100) : 0;
 
         return (
-          <div key={stage.id} className="bg-white border border-line rounded-xl p-5">
+          <div key={stage.id} className="bg-srf border border-line rounded-xl p-5">
             {/* Stage header */}
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
