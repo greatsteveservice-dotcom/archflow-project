@@ -11,21 +11,24 @@ interface EmptyStateProps {
   };
 }
 
-export default function EmptyState({ icon, title, description, action }: EmptyStateProps) {
+export default function EmptyState({ title, description, action }: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center py-16 text-center">
-      <div className="w-14 h-14 rounded-2xl bg-srf-secondary flex items-center justify-center mb-4 text-ink-faint">
-        {icon}
-      </div>
-      <h3 className="text-[15px] font-semibold text-ink-secondary mb-1">{title}</h3>
+    <div className="af-empty">
+      <div className="af-empty-dash">—</div>
+      <div className="af-empty-label">{title}</div>
       {description && (
-        <p className="text-[13px] text-ink-faint max-w-[320px]">{description}</p>
+        <p style={{
+          fontFamily: "'IBM Plex Mono', monospace",
+          fontSize: 11,
+          color: '#AAA',
+          marginTop: 8,
+          maxWidth: 320,
+        }}>
+          {description}
+        </p>
       )}
       {action && (
-        <button
-          className="btn btn-primary mt-4 text-[13px]"
-          onClick={action.onClick}
-        >
+        <button className="af-empty-btn" onClick={action.onClick}>
           {action.label}
         </button>
       )}

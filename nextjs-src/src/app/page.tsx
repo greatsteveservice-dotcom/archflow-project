@@ -14,7 +14,6 @@ import Topbar from "./components/Topbar";
 import Toast from "./components/Toast";
 import OfflineBanner from "./components/OfflineBanner";
 import SearchModal from "./components/SearchModal";
-import { Icons } from "./components/Icons";
 import { useProjects } from "./lib/hooks";
 import { useAuth } from "./lib/auth";
 import { acceptProjectInvitation } from "./lib/queries";
@@ -52,7 +51,6 @@ export default function Home() {
     const inviteToken = params.get('invite');
     if (!inviteToken) return;
 
-    // Clear the URL parameter
     window.history.replaceState({}, '', window.location.pathname);
 
     acceptProjectInvitation(inviteToken)
@@ -69,24 +67,23 @@ export default function Home() {
       });
   }, [session, refetchProjects]);
 
-  // Auth loading state
+  // Auth loading state — editorial
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-[#111827] flex items-center justify-center">
-        <div className="flex items-center gap-3">
-          <div className="w-6 h-6 border-[3px] border-white/20 border-t-white rounded-full animate-spin" />
-          <span className="text-white text-sm">Загрузка Archflow...</span>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.2em', color: '#AAA' }}>
+          Загрузка...
         </div>
       </div>
     );
   }
 
-  // Not authenticated — show login
+  // Not authenticated
   if (!session) {
     return <LoginPage />;
   }
 
-  // New user — show welcome screen (0 projects, first visit)
+  // New user welcome
   const showWelcome = !welcomeDismissed && !projectsLoading && projects !== null && projects.length === 0 && page === "dashboard";
 
   const navigate = (newPage: string, ctx: any = null) => {
@@ -96,6 +93,7 @@ export default function Home() {
 
   const openSidebar = () => setSidebarOpen(true);
   const openSearch = () => setSearchOpen(true);
+  const goHome = () => navigate("projects");
 
   const renderPage = () => {
     switch (page) {
@@ -104,18 +102,21 @@ export default function Home() {
           <>
             <Topbar
               title="Дашборд"
-              onMenuToggle={openSidebar}
+              depth={1}
               onSearchOpen={openSearch}
+              onLogoClick={goHome}
               actions={
                 canCreateProject ? (
                   <button className="btn btn-primary" onClick={() => setShowCreateProject(true)}>
-                    <Icons.Plus className="w-4 h-4" /> <span className="hidden sm:inline">Новый проект</span>
+                    + <span className="hidden sm:inline">Новый проект</span>
                   </button>
                 ) : undefined
               }
             />
-            <div className="p-4 sm:p-7">
-              <Dashboard onNavigate={navigate} />
+            <div className="af-layout">
+              <div className="af-content">
+                <Dashboard onNavigate={navigate} />
+              </div>
             </div>
           </>
         );
@@ -124,18 +125,21 @@ export default function Home() {
           <>
             <Topbar
               title="Проекты"
-              onMenuToggle={openSidebar}
+              depth={1}
               onSearchOpen={openSearch}
+              onLogoClick={goHome}
               actions={
                 canCreateProject ? (
                   <button className="btn btn-primary" onClick={() => setShowCreateProject(true)}>
-                    <Icons.Plus className="w-4 h-4" /> <span className="hidden sm:inline">Новый проект</span>
+                    + <span className="hidden sm:inline">Новый проект</span>
                   </button>
                 ) : undefined
               }
             />
-            <div className="p-4 sm:p-7">
-              <ProjectsPage onNavigate={navigate} />
+            <div className="af-layout">
+              <div className="af-content">
+                <ProjectsPage onNavigate={navigate} onCreateProject={canCreateProject ? () => setShowCreateProject(true) : undefined} />
+              </div>
             </div>
           </>
         );
@@ -174,10 +178,11 @@ export default function Home() {
   };
 
   return (
-    <div className="flex min-h-screen bg-srf-raised">
+    <div className="min-h-screen bg-white">
+      {/* Sidebar kept as no-op for compat */}
       <Sidebar currentPage={page} onNavigate={navigate} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <div className="flex-1 overflow-x-hidden">
+      <div className="overflow-x-hidden">
         {showWelcome ? (
           <WelcomeScreen
             onCreateProject={() => { setWelcomeDismissed(true); setShowCreateProject(true); }}
@@ -188,7 +193,6 @@ export default function Home() {
         )}
       </div>
 
-      {/* Create Project Modal */}
       <CreateProjectModal
         open={showCreateProject}
         onClose={() => setShowCreateProject(false)}
@@ -201,14 +205,12 @@ export default function Home() {
 
       <OfflineBanner />
 
-      {/* Global Search (Cmd+K) */}
       <SearchModal
         open={searchOpen}
         onClose={() => setSearchOpen(false)}
         onNavigate={navigate}
       />
 
-      {/* Toast */}
       {toastMsg && <Toast msg={toastMsg} onClose={() => setToastMsg(null)} />}
     </div>
   );

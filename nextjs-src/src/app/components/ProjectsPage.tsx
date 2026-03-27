@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Icons } from "./Icons";
 import ProjectCard from "./ProjectCard";
 import EmptyState from "./EmptyState";
 import { ErrorMessage } from "./Loading";
@@ -46,9 +45,9 @@ export default function ProjectsPage({ onNavigate, onCreateProject }: ProjectsPa
     return (
       <div className="animate-fade-in">
         <EmptyState
-          icon={<Icons.Folder className="w-7 h-7" />}
+          icon={null}
           title="Нет проектов"
-          description="Создайте первый проект, чтобы начать вести авторский надзор"
+          description="Создайте первый проект"
           action={onCreateProject ? { label: '+ Создать проект', onClick: onCreateProject } : undefined}
         />
       </div>
@@ -58,25 +57,35 @@ export default function ProjectsPage({ onNavigate, onCreateProject }: ProjectsPa
   const activeCount = projects.filter(p => p.status === 'active').length;
   const completedCount = projects.filter(p => p.status === 'completed').length;
 
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+
   return (
     <div className="animate-fade-in">
+      {/* Page title */}
+      <div className="mb-8">
+        <h1 className="af-page-title">Проекты</h1>
+        <p className="af-page-subtitle">{total} проектов · {dateStr}</p>
+      </div>
+
       {/* Search + filters */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-5">
         <div className="relative flex-1 max-w-[340px] w-full">
-          <Icons.Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Поиск по названию или адресу..."
-            className="w-full pl-9 pr-3 py-2 border border-line rounded-lg text-sm outline-none focus:border-ink transition-colors bg-srf"
+            placeholder="Поиск..."
+            className="af-input"
+            style={{ height: 44, fontSize: 12 }}
           />
           {search && (
             <button
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-faint hover:text-ink-secondary"
+              className="absolute right-3 top-1/2 -translate-y-1/2"
               onClick={() => setSearch("")}
+              style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: '#AAA' }}
             >
-              <Icons.X className="w-3.5 h-3.5" />
+              ✕
             </button>
           )}
         </div>
@@ -98,14 +107,21 @@ export default function ProjectsPage({ onNavigate, onCreateProject }: ProjectsPa
       {/* Results */}
       {filtered.length > 0 ? (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {filtered.map((project) => (
+          <div className="grid grid-cols-1 md:grid-cols-2" style={{ gap: 'var(--af-gap)' }}>
+            {filtered.map((project, i) => (
               <ProjectCard
                 key={project.id}
                 project={project}
+                index={i}
                 onClick={() => onNavigate("project", project.id)}
               />
             ))}
+            {/* Add new project */}
+            {onCreateProject && (
+              <button className="af-project-add" onClick={onCreateProject}>
+                <span className="af-project-add-label">+ Новый проект</span>
+              </button>
+            )}
           </div>
 
           {/* Load more */}
@@ -114,7 +130,8 @@ export default function ProjectsPage({ onNavigate, onCreateProject }: ProjectsPa
               <button
                 onClick={loadMore}
                 disabled={loadingMore}
-                className="px-5 py-2 text-sm font-medium text-ink-secondary border border-line rounded-lg hover:bg-surface transition-colors disabled:opacity-50"
+                className="af-btn af-btn-outline"
+                style={{ height: 44, fontSize: 10 }}
               >
                 {loadingMore ? 'Загрузка...' : `Показать ещё (${projects.length} из ${total})`}
               </button>
@@ -122,11 +139,11 @@ export default function ProjectsPage({ onNavigate, onCreateProject }: ProjectsPa
           )}
         </>
       ) : (
-        <div className="text-center py-12 text-ink-faint">
-          <Icons.Search className="w-6 h-6 mx-auto mb-2 opacity-40" />
-          <div className="text-[13px]">Проекты не найдены</div>
+        <div className="af-empty">
+          <div className="af-empty-dash">—</div>
+          <div className="af-empty-label">Проекты не найдены</div>
           {search && (
-            <button className="text-[12px] text-info hover:underline mt-1" onClick={() => { setSearch(""); setStatusFilter("all"); }}>
+            <button className="af-empty-btn" onClick={() => { setSearch(""); setStatusFilter("all"); }}>
               Сбросить фильтры
             </button>
           )}

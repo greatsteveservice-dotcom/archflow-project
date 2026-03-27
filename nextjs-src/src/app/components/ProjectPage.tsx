@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Icons } from "./Icons";
 import Topbar from "./Topbar";
 import { ErrorMessage } from "./Loading";
 import { ProjectPageSkeleton } from "./Skeleton";
@@ -14,7 +13,6 @@ import SupplyModule from "./supply/SupplyModule";
 import DesignTab from "./project/DesignTab";
 import SupervisionTab from "./project/SupervisionTab";
 import SettingsTab from "./project/SettingsTab";
-import OnboardingTip from "./OnboardingTip";
 
 type ProjectTab = "design" | "supervision" | "supply" | "settings";
 
@@ -26,11 +24,10 @@ interface ProjectPageProps {
   onSearchOpen?: () => void;
 }
 
-const ALL_TABS: { id: ProjectTab; label: string; icon: React.FC<{ className?: string }>; permKey: keyof ProjectPermissions }[] = [
-  { id: "design", label: "Дизайн", icon: Icons.File, permKey: "canViewDesign" },
-  { id: "supervision", label: "Авторский надзор", icon: Icons.Camera, permKey: "canViewSupervision" },
-  { id: "supply", label: "Комплектация", icon: Icons.Box, permKey: "canViewSupply" },
-  { id: "settings", label: "Настройки", icon: Icons.Settings, permKey: "canViewSettings" },
+const SECTION_CONFIG: { id: ProjectTab; label: string; permKey: keyof ProjectPermissions; index: string }[] = [
+  { id: "design", label: "Дизайн", permKey: "canViewDesign", index: "01" },
+  { id: "supervision", label: "Авторский надзор", permKey: "canViewSupervision", index: "02" },
+  { id: "supply", label: "Комплектация", permKey: "canViewSupply", index: "03" },
 ];
 
 export default function ProjectPage({ projectId, onNavigate, toast, onMenuToggle, onSearchOpen }: ProjectPageProps) {
@@ -40,13 +37,13 @@ export default function ProjectPage({ projectId, onNavigate, toast, onMenuToggle
   const { data: membersWithProfiles } = useProjectMembersWithProfiles(projectId);
   const { permissions } = usePermissions(projectId);
 
-  // Real-time updates
   useProjectRealtime(projectId, { refetchProject, refetchVisits, refetchInvoices });
 
-  const visibleTabs = ALL_TABS.filter(t => permissions[t.permKey]);
-  const [activeTab, setActiveTab] = useState<ProjectTab>("design");
+  const visibleSections = SECTION_CONFIG.filter(t => permissions[t.permKey]);
+  // null = Level 2 (section list), string = Level 3 (section content)
+  const [activeTab, setActiveTab] = useState<ProjectTab | null>(null);
 
-  // Title editing state
+  // Title editing
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [savingTitle, setSavingTitle] = useState(false);
@@ -98,137 +95,182 @@ export default function ProjectPage({ projectId, onNavigate, toast, onMenuToggle
     if (e.key === 'Escape') setIsEditingTitle(false);
   };
 
+  const sectionLabel = activeTab
+    ? SECTION_CONFIG.find(s => s.id === activeTab)?.label || ''
+    : '';
+
+  const depth = activeTab ? 3 : 2;
+
+  const breadcrumbs = activeTab
+    ? [
+        { label: 'Проекты', onClick: () => onNavigate("projects") },
+        { label: project.title, onClick: () => setActiveTab(null) },
+        { label: sectionLabel },
+      ]
+    : [
+        { label: 'Проекты', onClick: () => onNavigate("projects") },
+        { label: project.title },
+      ];
+
+  const isShortName = (name: string) => name.length <= 8;
+
   return (
     <div className="animate-fade-in">
       <Topbar
-        title={isEditingTitle ? editTitle : project.title}
-        onMenuToggle={onMenuToggle}
+        title={project.title}
         onSearchOpen={onSearchOpen}
-        breadcrumbs={[
-          { label: "Проекты", onClick: () => onNavigate("projects") },
-          { label: project.title },
-        ]}
+        onLogoClick={() => onNavigate("projects")}
+        depth={depth}
+        breadcrumbs={breadcrumbs}
+        contextLabel={activeTab ? sectionLabel : undefined}
         actions={
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            {permissions.canEditProjectSettings && !isEditingTitle && (
+          <div className="flex items-center gap-2">
+            {permissions.canEditProjectSettings && !isEditingTitle && !activeTab && (
               <button
-                className="btn btn-secondary p-2"
+                className="btn btn-secondary"
                 onClick={handleStartEditTitle}
-                title="Редактировать название"
+                style={{ padding: '0 12px', minHeight: 36, fontSize: 9 }}
               >
-                <Icons.Edit className="w-4 h-4" />
+                Ред.
               </button>
             )}
-            <button
-              className="btn btn-secondary p-2 sm:px-4 sm:py-2.5"
-              onClick={() => {
-                if (!project) return;
-                if (activeTab === 'design') {
-                  exportInvoicesCsv(projectInvoices, project.title);
-                  toast('Счета экспортированы в CSV');
-                } else {
-                  exportVisitsCsv(projectVisits, project.title);
-                  toast('Визиты экспортированы в CSV');
-                }
-              }}
-              title="Экспорт в CSV"
-            >
-              <Icons.Download className="w-4 h-4" /> <span className="hidden sm:inline">Экспорт</span>
-            </button>
+            {activeTab && (
+              <button
+                className="btn btn-secondary"
+                onClick={() => {
+                  if (activeTab === 'design') {
+                    exportInvoicesCsv(projectInvoices, project.title);
+                    toast('Счета экспортированы');
+                  } else {
+                    exportVisitsCsv(projectVisits, project.title);
+                    toast('Визиты экспортированы');
+                  }
+                }}
+                style={{ padding: '0 12px', minHeight: 36, fontSize: 9 }}
+              >
+                Экспорт →
+              </button>
+            )}
           </div>
         }
       />
 
       {/* Inline title editing */}
       {isEditingTitle && (
-        <div className="px-4 sm:px-8 py-3 bg-srf-raised border-b border-line flex items-center gap-3">
+        <div className="af-content" style={{ background: '#F6F6F4', borderBottom: '0.5px solid #EBEBEB', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 24px' }}>
           <input
             ref={titleInputRef}
             type="text"
             value={editTitle}
             onChange={e => setEditTitle(e.target.value)}
             onKeyDown={handleTitleKeyDown}
-            className="flex-1 text-[15px] font-medium px-3 py-2 border border-ink-ghost rounded-lg focus:outline-none focus:ring-2 focus:ring-ink focus:border-transparent"
+            className="af-input"
+            style={{ flex: 1, height: 40 }}
             placeholder="Название проекта"
             disabled={savingTitle}
           />
-          <button
-            className="btn btn-primary text-[12px] py-2 px-4"
-            onClick={handleSaveTitle}
-            disabled={savingTitle || !editTitle.trim()}
-          >
-            {savingTitle ? 'Сохранение...' : 'Сохранить'}
+          <button className="af-btn" style={{ height: 40, padding: '0 16px', fontSize: 9 }} onClick={handleSaveTitle} disabled={savingTitle || !editTitle.trim()}>
+            {savingTitle ? '...' : 'Сохранить'}
           </button>
-          <button
-            className="btn btn-secondary text-[12px] py-2 px-4"
-            onClick={() => setIsEditingTitle(false)}
-            disabled={savingTitle}
-          >
+          <button className="af-btn af-btn-outline" style={{ height: 40, padding: '0 16px', fontSize: 9 }} onClick={() => setIsEditingTitle(false)} disabled={savingTitle}>
             Отмена
           </button>
         </div>
       )}
 
-      {/* Tabs */}
-      <div className="tn px-4 sm:px-8 overflow-x-auto scrollbar-hide">
-        {visibleTabs.map(t => (
-          <div
-            key={t.id}
-            className={`ti ${activeTab === t.id ? "active" : ""}`}
-            onClick={() => setActiveTab(t.id)}
-          >
-            <t.icon className="w-3.5 h-3.5" />
-            {t.label}
-          </div>
-        ))}
-      </div>
+      <div className="af-layout">
+        {/* ═══ LEVEL 2: Section blocks ═══ */}
+        {activeTab === null && (
+          <div style={{ padding: 0 }}>
+            {visibleSections.map((section) => (
+              <button
+                key={section.id}
+                className="af-block"
+                onClick={() => setActiveTab(section.id)}
+              >
+                <div className="af-block-inner">
+                  <span className="af-block-index">{section.index} — Раздел</span>
+                  <span className={`af-block-name ${isShortName(section.label) ? 'af-block-name-short' : 'af-block-name-long'}`}>
+                    {section.label}
+                  </span>
+                  <span className="af-block-sub">
+                    {section.id === 'design' && `${projectInvoices.length} счетов`}
+                    {section.id === 'supervision' && `${projectVisits.length} визитов`}
+                    {section.id === 'supply' && 'Позиции комплектации'}
+                  </span>
+                </div>
+                <span className="af-block-arrow">→</span>
+              </button>
+            ))}
 
-      {/* Tab content */}
-      <div className="p-4 sm:p-8">
-        <OnboardingTip
-          id="project-tabs-v2"
-          title="Управление проектом"
-          text="Переключайтесь между вкладками: Дизайн (документы и счета), Авторский надзор (календарь, фото, задачи), Комплектация и Настройки."
-          className="mb-5"
-        />
-        {activeTab === "design" && permissions.canViewDesign && (
-          <DesignTab
-            projectId={projectId}
-            invoices={projectInvoices}
-            toast={toast}
-            refetchInvoices={refetchInvoices}
-            canUploadDocument={permissions.canUploadDocument}
-            canCreateInvoice={permissions.canCreateInvoice}
-          />
+            {/* Settings — dark block */}
+            {permissions.canViewSettings && (
+              <button
+                className="af-block af-block-settings"
+                onClick={() => setActiveTab("settings")}
+              >
+                <div className="af-block-inner">
+                  <span className="af-block-name">Настройки</span>
+                </div>
+                <span className="af-block-arrow">→</span>
+              </button>
+            )}
+          </div>
         )}
-        {activeTab === "supervision" && permissions.canViewSupervision && (
-          <SupervisionTab
-            project={project}
-            projectId={projectId}
-            visits={projectVisits}
-            toast={toast}
-            refetchVisits={() => { refetchVisits(); refetchProject(); }}
-            refetchProject={refetchProject}
-            onSelectVisit={handleSelectVisit}
-            canCreateVisit={permissions.canCreateVisit}
-            canUploadPhoto={permissions.canUploadPhoto}
-            canChangePhotoStatus={permissions.canChangePhotoStatus}
-            canManageTasks={permissions.canManageTasks}
-            canEditProjectSettings={permissions.canEditProjectSettings}
-            members={membersWithProfiles || []}
-          />
-        )}
-        {activeTab === "supply" && permissions.canViewSupply && (
-          <SupplyModule projectId={projectId} toast={toast} />
-        )}
-        {activeTab === "settings" && permissions.canViewSettings && (
-          <SettingsTab
-            project={project}
-            projectId={projectId}
-            toast={toast}
-            canDeleteProject={permissions.canDeleteProject}
-            onDeleteProject={() => onNavigate('projects')}
-          />
+
+        {/* ═══ LEVEL 3: Section content ═══ */}
+        {activeTab !== null && (
+          <div>
+            {/* Section hero */}
+            {activeTab !== 'settings' && (
+              <div className="af-section-hero">
+                <h2 className="af-section-hero-title">{sectionLabel}</h2>
+              </div>
+            )}
+
+            {/* Content */}
+            <div className="af-content">
+              {activeTab === "design" && permissions.canViewDesign && (
+                <DesignTab
+                  projectId={projectId}
+                  invoices={projectInvoices}
+                  toast={toast}
+                  refetchInvoices={refetchInvoices}
+                  canUploadDocument={permissions.canUploadDocument}
+                  canCreateInvoice={permissions.canCreateInvoice}
+                />
+              )}
+              {activeTab === "supervision" && permissions.canViewSupervision && (
+                <SupervisionTab
+                  project={project}
+                  projectId={projectId}
+                  visits={projectVisits}
+                  toast={toast}
+                  refetchVisits={() => { refetchVisits(); refetchProject(); }}
+                  refetchProject={refetchProject}
+                  onSelectVisit={handleSelectVisit}
+                  canCreateVisit={permissions.canCreateVisit}
+                  canUploadPhoto={permissions.canUploadPhoto}
+                  canChangePhotoStatus={permissions.canChangePhotoStatus}
+                  canManageTasks={permissions.canManageTasks}
+                  canEditProjectSettings={permissions.canEditProjectSettings}
+                  members={membersWithProfiles || []}
+                />
+              )}
+              {activeTab === "supply" && permissions.canViewSupply && (
+                <SupplyModule projectId={projectId} toast={toast} />
+              )}
+              {activeTab === "settings" && permissions.canViewSettings && (
+                <SettingsTab
+                  project={project}
+                  projectId={projectId}
+                  toast={toast}
+                  canDeleteProject={permissions.canDeleteProject}
+                  onDeleteProject={() => onNavigate('projects')}
+                />
+              )}
+            </div>
+          </div>
         )}
       </div>
     </div>

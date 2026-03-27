@@ -1,5 +1,4 @@
 import type { Config } from "tailwindcss";
-import plugin from "tailwindcss/plugin";
 
 /** Helper: CSS variable as rgb() with alpha support */
 const cv = (name: string) => `rgb(var(--${name}) / <alpha-value>)`;
@@ -14,7 +13,6 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // ─── Core Palette (CSS variables, RGB for opacity support) ───
         ink:            cv("ink"),
         "ink-hover":    cv("ink-hover"),
         "ink-secondary":cv("ink-secondary"),
@@ -30,7 +28,6 @@ const config: Config = {
         "line":         cv("line"),
         "line-light":   cv("line-light"),
 
-        // ─── Semantic ───
         "ok":      cv("ok"),
         "ok-bg":   cv("ok-bg"),
         "err":     cv("err"),
@@ -41,17 +38,20 @@ const config: Config = {
         "info-bg": cv("info-bg"),
       },
       fontFamily: {
-        body: ["DM Sans", "sans-serif"],
-        mono: ["JetBrains Mono", "monospace"],
+        body: ["'IBM Plex Mono'", "monospace"],
+        mono: ["'IBM Plex Mono'", "monospace"],
+        display: ["'Playfair Display'", "serif"],
       },
       borderRadius: {
-        xl: "12px",
-        "2xl": "16px",
+        xl: "0px",
+        "2xl": "0px",
       },
       boxShadow: {
-        sm: "0 1px 3px rgba(0,0,0,0.04)",
-        md: "0 4px 16px rgba(0,0,0,0.06)",
-        lg: "0 8px 32px rgba(0,0,0,0.08)",
+        sm: "none",
+        md: "none",
+        lg: "none",
+        xl: "none",
+        "2xl": "none",
       },
     },
   },

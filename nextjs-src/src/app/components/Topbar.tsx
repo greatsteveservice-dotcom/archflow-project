@@ -1,6 +1,6 @@
 'use client';
-import { Icons } from './Icons';
-import NotificationDropdown from './NotificationDropdown';
+
+import { useAuth } from '../lib/auth';
 
 interface BreadcrumbItem {
   label: string;
@@ -11,52 +11,69 @@ interface TopbarProps {
   title: string;
   breadcrumbs?: BreadcrumbItem[];
   actions?: React.ReactNode;
+  depth?: number; // 1–4 for progress indicator
+  contextLabel?: string;
   onMenuToggle?: () => void;
   onSearchOpen?: () => void;
+  onLogoClick?: () => void;
 }
 
-export default function Topbar({ title, breadcrumbs, actions, onMenuToggle, onSearchOpen }: TopbarProps) {
+export default function Topbar({ title, breadcrumbs, actions, depth = 1, contextLabel, onMenuToggle, onSearchOpen, onLogoClick }: TopbarProps) {
+  const { profile } = useAuth();
+
+  const roleLabel: Record<string, string> = {
+    designer: 'Дизайнер',
+    client: 'Заказчик',
+    contractor: 'Подрядчик',
+    supplier: 'Комплектатор',
+    assistant: 'Ассистент',
+  };
+
+  const ctx = contextLabel || roleLabel[profile?.role || ''] || '';
+
   return (
-    <div className="px-4 sm:px-8 py-4 sm:py-5 flex items-center justify-between border-b border-line bg-srf sticky top-0 z-10 gap-2">
-      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-        {/* Гамбургер — только мобиле */}
-        {onMenuToggle && (
-          <button className="md:hidden p-1.5 -ml-1.5 rounded-lg hover:bg-srf-secondary flex-shrink-0" onClick={onMenuToggle}>
-            <Icons.Menu className="w-5 h-5" />
-          </button>
-        )}
-        <div className="min-w-0">
-          {breadcrumbs && (
-            <div className="hidden sm:flex items-center gap-1.5 text-[12px] text-ink-faint mb-0.5">
-              {breadcrumbs.map((b, i) => (
-                <span key={i} className="flex items-center gap-1.5">
-                  {i > 0 && <Icons.ChevronRight className="w-3 h-3" />}
-                  {b.onClick ? (
-                    <span className="cursor-pointer hover:text-ink-secondary transition-colors" onClick={b.onClick}>{b.label}</span>
-                  ) : (
-                    <span className="text-ink-muted">{b.label}</span>
-                  )}
-                </span>
-              ))}
-            </div>
+    <div className="bg-white">
+      {/* Top bar: logo + context */}
+      <div className="af-topbar">
+        <span className="af-topbar-logo" onClick={onLogoClick}>ArchFlow</span>
+        <div className="af-topbar-right">
+          {onSearchOpen && (
+            <button
+              onClick={onSearchOpen}
+              className="af-topbar-context"
+              style={{ cursor: 'pointer', background: 'none', border: 'none', padding: '4px 0' }}
+              title="Поиск (⌘K)"
+            >
+              ⌘K
+            </button>
           )}
-          <h1 className="text-[17px] sm:text-[20px] font-semibold truncate">{title}</h1>
+          {actions}
+          <span className="af-topbar-context">{ctx}</span>
         </div>
       </div>
-      <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-        {onSearchOpen && (
-          <button
-            className="p-2 rounded-lg hover:bg-srf-secondary transition-colors flex items-center gap-2"
-            onClick={onSearchOpen}
-            title="Поиск (⌘K)"
-          >
-            <Icons.Search className="w-4 h-4 text-ink-muted" />
-            <kbd className="hidden lg:inline-flex text-[11px] text-ink-faint bg-srf-secondary px-1.5 py-0.5 rounded font-mono">⌘K</kbd>
-          </button>
-        )}
-        {actions}
-        <NotificationDropdown />
+
+      {/* Progress indicator */}
+      <div className="af-progress">
+        {[1, 2, 3, 4].map(i => (
+          <div key={i} className={`af-progress-line ${i <= depth ? 'active' : ''}`} />
+        ))}
       </div>
+
+      {/* Breadcrumb */}
+      {breadcrumbs && breadcrumbs.length > 0 && (
+        <div className="af-breadcrumb">
+          {breadcrumbs.map((b, i) => (
+            <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              {i > 0 && <span className="af-crumb-sep">/</span>}
+              {b.onClick ? (
+                <button className="af-crumb" onClick={b.onClick}>{b.label}</button>
+              ) : (
+                <span className="af-crumb active">{b.label}</span>
+              )}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
