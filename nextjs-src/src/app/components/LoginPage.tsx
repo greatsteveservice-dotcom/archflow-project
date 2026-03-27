@@ -37,11 +37,22 @@ export default function LoginPage() {
         setLoading(false);
         return;
       }
+      if (password.length < 6) {
+        setError("Пароль должен быть не менее 6 символов");
+        setLoading(false);
+        return;
+      }
+      if (password !== confirmPassword) {
+        setError("Пароли не совпадают");
+        setLoading(false);
+        return;
+      }
       const result = await signUp(email, password, fullName);
       if (result.error) {
         setError(result.error);
       } else {
-        setSuccess("Аккаунт создан! Вы можете войти.");
+        // If auto-login didn't happen (email confirmation required), show message
+        setSuccess("Аккаунт создан! Проверьте почту для подтверждения или войдите.");
         setMode("login");
       }
     } else if (mode === "forgot") {
@@ -179,6 +190,22 @@ export default function LoginPage() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full px-3 py-2.5 border border-line rounded-[9px] text-[13px] outline-none transition-colors focus:border-ink"
+                  required
+                  minLength={6}
+                />
+              </div>
+            )}
+
+            {/* Confirm password (register only) */}
+            {mode === "register" && (
+              <div className="mb-4">
+                <label className="block text-xs font-medium text-ink-muted mb-1.5">Подтвердите пароль</label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="••••••••"
                   className="w-full px-3 py-2.5 border border-line rounded-[9px] text-[13px] outline-none transition-colors focus:border-ink"
                   required

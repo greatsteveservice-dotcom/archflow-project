@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { sendWelcomeEmail } from "../../../lib/mailer";
 
 /**
  * Server-side signup route.
  * Uses the service_role key to create a user with auto-confirmed email.
- * This bypasses the need for SMTP configuration on self-hosted Supabase.
+ * Sends a welcome email with login credentials.
  */
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -65,6 +66,12 @@ export async function POST(req: NextRequest) {
         })
         .eq("id", data.user.id);
     }
+
+    // Send welcome email with credentials (non-blocking)
+    const userName = full_name || email.split("@")[0];
+    sendWelcomeEmail(email, userName, password).catch((err) => {
+      console.error("Failed to send welcome email:", err);
+    });
 
     return NextResponse.json({
       user: { id: data.user.id, email: data.user.email },

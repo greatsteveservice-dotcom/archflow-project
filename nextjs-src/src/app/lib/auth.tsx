@@ -108,7 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: null };
   };
 
-  // Sign up via server-side API route (auto-confirms email, no SMTP needed)
+  // Sign up via server-side API route
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
       const res = await fetch("/api/auth/signup", {
@@ -120,7 +120,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!res.ok) {
         return { error: data.error || "Ошибка регистрации" };
       }
-      // Auto sign-in after successful registration
+      // If email confirmation is required, don't auto-login
+      if (data.requiresEmailConfirmation) {
+        return { error: null };
+      }
+      // Auto sign-in after successful registration (auto-confirm mode)
       const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
       if (signInError) {
         return { error: "Аккаунт создан, но не удалось войти. Попробуйте войти вручную." };
