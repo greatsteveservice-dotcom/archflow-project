@@ -187,7 +187,7 @@ export interface VisitWithStats extends Visit {
 export interface CreateProjectInput {
   title: string;
   address?: string;
-  scenario_type: ScenarioType;
+  scenario_type?: ScenarioType;
   start_date?: string;
 }
 

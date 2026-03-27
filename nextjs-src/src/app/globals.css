@@ -201,7 +201,7 @@ body {
   width: 100%; text-align: left;
 }
 .af-block:hover, .af-block:active {
-  background: var(--af-black); color: var(--af-white);
+  background: #3D3D3D; color: var(--af-white);
 }
 .af-block:hover .af-block-index, .af-block:active .af-block-index { color: rgba(255,255,255,0.4); }
 .af-block:hover .af-block-sub, .af-block:active .af-block-sub { color: rgba(255,255,255,0.5); }
@@ -210,7 +210,7 @@ body {
 .af-block-inner { flex: 1; min-width: 0; }
 .af-block-index {
   font-family: var(--af-font-mono); font-size: 8px;
-  text-transform: uppercase; letter-spacing: 0.15em;
+  text-transform: uppercase; letter-spacing: 0.16em;
   color: #CCCCCC; display: block; margin-bottom: 4px;
   transition: color 0.15s ease;
 }
@@ -220,11 +220,11 @@ body {
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   transition: color 0.15s ease;
 }
-.af-block-name-short { font-size: 30px; }
-.af-block-name-long { font-size: 22px; }
+.af-block-name-short { font-size: 28px; }
+.af-block-name-long { font-size: 28px; }
 .af-block-sub {
   font-family: var(--af-font-mono); font-size: 8px;
-  text-transform: uppercase; letter-spacing: 0.15em;
+  text-transform: uppercase; letter-spacing: 0.16em;
   color: #BBBBBB; display: block; margin-top: 6px;
   transition: color 0.15s ease;
 }
@@ -247,8 +247,8 @@ body {
 .af-block-settings:hover { background: #333333; }
 @media (max-width: 767px) {
   .af-block { min-height: 80px; padding: 12px 16px; }
-  .af-block-name-short { font-size: 22px; }
-  .af-block-name-long { font-size: 17px; }
+  .af-block-name-short { font-size: 20px; }
+  .af-block-name-long { font-size: 20px; }
   .af-block-settings { min-height: 44px; padding: 10px 16px; }
   .af-block-settings .af-block-name { font-size: 11px; }
 }
@@ -265,7 +265,7 @@ body {
   position: relative; overflow: hidden;
 }
 .af-project-row:hover, .af-project-row:active {
-  background: var(--af-black); color: var(--af-white);
+  background: #3D3D3D; color: var(--af-white);
 }
 .af-project-row:hover .af-project-index, .af-project-row:active .af-project-index { color: rgba(255,255,255,0.3); }
 .af-project-row:hover .af-project-meta, .af-project-row:active .af-project-meta { color: rgba(255,255,255,0.5); }
@@ -363,11 +363,11 @@ body {
   cursor: pointer; background: var(--af-white);
   transition: background 0.15s ease, color 0.15s ease;
 }
-.af-tab-row:hover { background: var(--af-black); color: var(--af-white); }
+.af-tab-row:hover { background: #3D3D3D; color: var(--af-white); }
 .af-tab-row:hover .af-tab-name { color: var(--af-white); }
 .af-tab-row:hover .af-tab-index { color: rgba(255,255,255,0.4); }
 .af-tab-row:hover .af-tab-arrow { color: rgba(255,255,255,0.5); }
-.af-tab-row.active { background: var(--af-black); color: var(--af-white); }
+.af-tab-row.active { background: #3D3D3D; color: var(--af-white); }
 .af-tab-row.active .af-tab-name { color: var(--af-white); }
 .af-tab-row.active .af-tab-index { color: rgba(255,255,255,0.4); }
 .af-tab-row.active .af-tab-arrow { color: rgba(255,255,255,0.5); }
@@ -599,7 +599,7 @@ body {
   }
 
   .card { background: var(--af-offwhite); border: none; transition: background 0.15s ease, color 0.15s ease; }
-  .card:hover { background: var(--af-black); color: var(--af-white); }
+  .card:hover { background: #3D3D3D; color: var(--af-white); }
 
   .tn { @apply flex; border-bottom: 0.5px solid var(--af-border); gap: 0; background: var(--af-white); }
   .ti {

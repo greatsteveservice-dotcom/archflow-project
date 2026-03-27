@@ -152,7 +152,7 @@ export default function LoginPage() {
                 type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                placeholder="Алиса Флоренс"
+                placeholder="Имя Фамилия"
                 className="af-input"
                 required
               />

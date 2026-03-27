@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Modal from "./Modal";
-import type { ScenarioType } from "../lib/types";
 import { createProject } from "../lib/queries";
 
 interface CreateProjectModalProps {
@@ -14,7 +13,6 @@ interface CreateProjectModalProps {
 export default function CreateProjectModal({ open, onClose, onSuccess }: CreateProjectModalProps) {
   const [title, setTitle] = useState("");
   const [address, setAddress] = useState("");
-  const [scenarioType, setScenarioType] = useState<ScenarioType>("block");
   const [startDate, setStartDate] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -31,7 +29,6 @@ export default function CreateProjectModal({ open, onClose, onSuccess }: CreateP
       await createProject({
         title: title.trim(),
         address: address.trim() || undefined,
-        scenario_type: scenarioType,
         start_date: startDate || undefined,
       });
       onSuccess();
@@ -46,7 +43,6 @@ export default function CreateProjectModal({ open, onClose, onSuccess }: CreateP
   const handleClose = () => {
     setTitle("");
     setAddress("");
-    setScenarioType("block");
     setStartDate("");
     setError("");
     onClose();
@@ -88,31 +84,16 @@ export default function CreateProjectModal({ open, onClose, onSuccess }: CreateP
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3 mb-6">
-          <div>
-            <label className="block text-xs font-medium text-ink-muted mb-1.5">
-              Тип стройки
-            </label>
-            <select
-              value={scenarioType}
-              onChange={(e) => setScenarioType(e.target.value as ScenarioType)}
-              className="w-full px-3 py-2.5 border border-line rounded-lg text-sm outline-none transition-colors focus:border-ink bg-srf"
-            >
-              <option value="block">Блок</option>
-              <option value="gkl">ГКЛ</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-ink-muted mb-1.5">
-              Дата начала
-            </label>
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="w-full px-3 py-2.5 border border-line rounded-lg text-sm outline-none transition-colors focus:border-ink"
-            />
-          </div>
+        <div className="mb-6">
+          <label className="block text-xs font-medium text-ink-muted mb-1.5">
+            Дата начала
+          </label>
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="w-full px-3 py-2.5 border border-line rounded-lg text-sm outline-none transition-colors focus:border-ink"
+          />
         </div>
 
         <div className="flex gap-2 justify-end">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import Sidebar from "./components/Sidebar";
 import Dashboard from "./components/Dashboard";
 import ProjectsPage from "./components/ProjectsPage";
@@ -30,8 +30,25 @@ export default function Home() {
   const [searchOpen, setSearchOpen] = useState(false);
   const { data: projects, loading: projectsLoading, refetch: refetchProjects } = useProjects();
   const [welcomeDismissed, setWelcomeDismissed] = useState(false);
+  const isPopState = useRef(false);
 
   const toast = useCallback((msg: string) => setToastMsg(msg), []);
+
+  // Browser history — back/forward support
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      if (e.state?.page) {
+        isPopState.current = true;
+        setPage(e.state.page);
+        setContext(e.state.context ?? null);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    // Push initial state
+    window.history.replaceState({ page, context }, '', '/');
+    return () => window.removeEventListener('popstate', handlePopState);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Cmd+K / Ctrl+K to open search
   useEffect(() => {
@@ -88,8 +105,13 @@ export default function Home() {
   const showWelcome = !welcomeDismissed && !projectsLoading && projects !== null && projects.length === 0 && page === "dashboard";
 
   const navigate = (newPage: string, ctx: any = null) => {
+    if (isPopState.current) {
+      isPopState.current = false;
+      return;
+    }
     setPage(newPage);
     setContext(ctx);
+    window.history.pushState({ page: newPage, context: ctx }, '', '/');
   };
 
   const openSidebar = () => setSidebarOpen(true);
