@@ -8,9 +8,9 @@ import { useProjectTasks } from '../../lib/hooks';
 import { createTask, updateTaskStatus, updateTaskAssignment, deleteTask } from '../../lib/queries';
 
 const STATUS_CONFIG: Record<TaskStatus, { label: string; bg: string; text: string }> = {
-  open: { label: 'Открыта', bg: 'bg-warn-bg', text: 'text-warn' },
-  in_progress: { label: 'В работе', bg: 'bg-info-bg', text: 'text-info' },
-  done: { label: 'Выполнена', bg: 'bg-ok-bg', text: 'text-ok' },
+  open: { label: 'Открыта', bg: 'bg-srf-secondary', text: 'text-ink' },
+  in_progress: { label: 'В работе', bg: 'bg-srf-secondary', text: 'text-ink-secondary' },
+  done: { label: 'Выполнена', bg: 'bg-srf-secondary', text: 'text-ink-muted' },
 };
 
 interface TasksViewProps {
@@ -125,8 +125,8 @@ export default function TasksView({ projectId, toast, canManageTasks = true, mem
   const renderColumn = (title: string, items: Task[], status: TaskStatus) => (
     <div className="flex-1 min-w-[240px]">
       <div className="flex items-center gap-2 mb-3">
-        <div className="w-2 h-2 rounded-full"
-          style={{ backgroundColor: status === 'open' ? '#D97706' : status === 'in_progress' ? '#2563EB' : '#16A34A' }} />
+        <div className="w-2 h-2"
+          style={{ backgroundColor: status === 'open' ? '#111' : status === 'in_progress' ? '#AAA' : '#E0E0E0' }} />
         <h4 className="text-[13px] font-semibold">{title}</h4>
         <span className="text-[11px] text-ink-faint">({items.length})</span>
       </div>
@@ -171,7 +171,7 @@ export default function TasksView({ projectId, toast, canManageTasks = true, mem
                   )}
                   {status !== 'done' && (
                     <button
-                      className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-ok-bg text-ink-faint hover:text-ok transition-all"
+                      className="opacity-0 group-hover:opacity-100 p-1 hover:bg-srf-secondary text-ink-faint hover:text-ink transition-all"
                       onClick={() => handleStatusChange(task.id, status === 'open' ? 'in_progress' : 'done')}
                       title={status === 'open' ? 'В работу' : 'Готово'}
                     >
@@ -180,7 +180,7 @@ export default function TasksView({ projectId, toast, canManageTasks = true, mem
                   )}
                   {status === 'done' && (
                     <button
-                      className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-warn-bg text-ink-faint hover:text-warn transition-all"
+                      className="opacity-0 group-hover:opacity-100 p-1 hover:bg-srf-secondary text-ink-faint hover:text-ink transition-all"
                       onClick={() => handleStatusChange(task.id, 'open')}
                       title="Вернуть"
                     >
@@ -188,7 +188,7 @@ export default function TasksView({ projectId, toast, canManageTasks = true, mem
                     </button>
                   )}
                   <button
-                    className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-err-bg text-ink-faint hover:text-err transition-all"
+                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-srf-secondary text-ink-faint hover:text-ink transition-all"
                     onClick={() => setTaskToDelete(task)}
                     title="Удалить"
                   >

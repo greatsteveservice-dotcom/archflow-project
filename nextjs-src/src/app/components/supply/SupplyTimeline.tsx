@@ -156,7 +156,7 @@ export function SupplyTimeline({ items, stages }: SupplyTimelineProps) {
           </div>
         ))}
         <div className="flex items-center gap-1.5 ml-2">
-          <div className="w-3 h-0.5 bg-err rounded" />
+          <div className="w-3 h-0.5 bg-[#111]" />
           <span className="text-[10px] text-ink-faint">Сегодня</span>
         </div>
       </div>

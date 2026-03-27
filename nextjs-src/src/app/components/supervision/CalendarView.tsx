@@ -92,29 +92,36 @@ export default function CalendarView({ projectId, visits, toast, refetchVisits, 
   const selectedVisits = selectedDate ? visitsByDate.get(selectedDate) || [] : [];
 
   const getStatusColor = (v: VisitWithStats) => {
-    if (v.status === 'planned') return 'bg-warn';
-    if (v.status === 'issues_found') return 'bg-err';
-    return 'bg-ok';
+    if (v.status === 'planned') return 'bg-[#AAA]';
+    if (v.status === 'issues_found') return 'bg-[#111]';
+    return 'bg-[#E0E0E0]';
   };
 
   return (
     <div className="animate-fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between mb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
         <div className="flex items-center gap-3">
-          <button className="p-1.5 rounded-lg hover:bg-srf-secondary" onClick={prevMonth}>
+          <button className="p-1.5 hover:bg-srf-secondary" onClick={prevMonth}>
             <Icons.ChevronLeft className="w-4 h-4" />
           </button>
-          <h3 className="text-[15px] font-semibold min-w-[160px] text-center">
+          <h3 style={{
+            fontFamily: "'Playfair Display', serif",
+            fontSize: 15,
+            fontWeight: 700,
+            minWidth: 140,
+            textAlign: 'center',
+            color: '#111',
+          }}>
             {MONTHS_RU[currentMonth]} {currentYear}
           </h3>
-          <button className="p-1.5 rounded-lg hover:bg-srf-secondary" onClick={nextMonth}>
+          <button className="p-1.5 hover:bg-srf-secondary" onClick={nextMonth}>
             <Icons.ChevronRight className="w-4 h-4" />
           </button>
         </div>
         {canCreateVisit && (
-          <button className="btn btn-primary text-[12px] py-1.5 px-3" onClick={() => handlePlanVisit()}>
-            <Icons.Plus className="w-3.5 h-3.5" /> Запланировать
+          <button className="btn btn-primary text-[12px] py-1.5 px-3 whitespace-nowrap" onClick={() => handlePlanVisit()}>
+            + Запланировать
           </button>
         )}
       </div>

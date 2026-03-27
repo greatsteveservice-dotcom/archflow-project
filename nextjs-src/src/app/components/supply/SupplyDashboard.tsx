@@ -1,9 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
-import { Icons } from "../Icons";
 import { formatPrice, formatShortDate } from "../../lib/queries";
-import { RISK_CONFIG, SUPPLY_STATUS_CONFIG } from "../../lib/types";
+import { RISK_CONFIG } from "../../lib/types";
 import type { SupplyItemWithCalc, Stage } from "../../lib/types";
 
 interface SupplyDashboardProps {
@@ -38,60 +37,35 @@ export function SupplyDashboard({ items, stages }: SupplyDashboardProps) {
   }, [stages]);
 
   const kpiCards = [
-    {
-      label: "Всего позиций",
-      value: stats.total,
-      icon: Icons.Box,
-      color: "#2C5F2D",
-    },
-    {
-      label: "Общий бюджет",
-      value: formatPrice(stats.totalBudget),
-      icon: Icons.Receipt,
-      color: "#2563EB",
-    },
-    {
-      label: "Заказано",
-      value: `${stats.ordered}/${stats.total}`,
-      icon: Icons.Check,
-      color: "#16A34A",
-    },
-    {
-      label: "Требуют внимания",
-      value: stats.critical,
-      icon: Icons.Alert,
-      color: stats.critical > 0 ? "#DC2626" : "#16A34A",
-    },
+    { label: "Всего позиций", value: stats.total },
+    { label: "Общий бюджет", value: formatPrice(stats.totalBudget) },
+    { label: "Заказано", value: `${stats.ordered}/${stats.total}` },
+    { label: "Требуют внимания", value: stats.critical },
   ];
 
   return (
     <div>
       {/* KPI Cards */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
-        {kpiCards.map((card) => {
-          const Icon = card.icon;
-          return (
-            <div
-              key={card.label}
-              className="bg-srf border border-line rounded-xl p-4"
-            >
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-[12px] text-ink-faint font-medium">{card.label}</span>
-                <span style={{ color: card.color }}><Icon className="w-4 h-4" /></span>
-              </div>
-              <div className="text-xl font-semibold font-mono-custom" style={{ color: card.color }}>
-                {card.value}
-              </div>
-            </div>
-          );
-        })}
+      <div className="grid grid-cols-2 sm:grid-cols-4" style={{ gap: 'var(--af-gap, 2px)', marginBottom: 24 }}>
+        {kpiCards.map((card) => (
+          <div key={card.label} className="af-metric">
+            <div className="af-metric-value">{card.value}</div>
+            <div className="af-metric-label">{card.label}</div>
+          </div>
+        ))}
       </div>
 
-      <div className="grid grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         {/* Critical warnings */}
-        <div className="bg-srf border border-line rounded-xl p-5">
-          <h3 className="text-[14px] font-semibold mb-4 flex items-center gap-2">
-            <Icons.Alert className="w-4 h-4 text-err" />
+        <div style={{ background: '#F6F6F4', padding: 20, border: '0.5px solid #E0E0E0' }}>
+          <h3 style={{
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: 9,
+            letterSpacing: '0.16em',
+            textTransform: 'uppercase',
+            color: '#AAA',
+            marginBottom: 16,
+          }}>
             Критические позиции
           </h3>
           {criticalItems.length === 0 ? (
@@ -131,9 +105,15 @@ export function SupplyDashboard({ items, stages }: SupplyDashboardProps) {
         </div>
 
         {/* Upcoming stages */}
-        <div className="bg-srf border border-line rounded-xl p-5">
-          <h3 className="text-[14px] font-semibold mb-4 flex items-center gap-2">
-            <Icons.Clock className="w-4 h-4 text-warn" />
+        <div style={{ background: '#F6F6F4', padding: 20, border: '0.5px solid #E0E0E0' }}>
+          <h3 style={{
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: 9,
+            letterSpacing: '0.16em',
+            textTransform: 'uppercase',
+            color: '#AAA',
+            marginBottom: 16,
+          }}>
             Ближайшие этапы
           </h3>
           {upcomingStages.length === 0 ? (
@@ -158,9 +138,9 @@ export function SupplyDashboard({ items, stages }: SupplyDashboardProps) {
                     </div>
                     <div className="text-[11px] text-ink-faint">
                       {stageItems.length} позиций · {pending > 0 ? (
-                        <span className="text-warn">{pending} не заказано</span>
+                        <span style={{ color: '#111', fontWeight: 500 }}>{pending} не заказано</span>
                       ) : (
-                        <span className="text-ok">всё заказано</span>
+                        <span style={{ color: '#AAA' }}>всё заказано</span>
                       )}
                     </div>
                   </div>

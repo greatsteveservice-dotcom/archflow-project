@@ -353,8 +353,11 @@ body {
 /* ═══════════════════════════════════════════════
    TAB ROWS (Level 3 sub-tabs)
    ═══════════════════════════════════════════════ */
+.af-tab-list {
+  display: flex; flex-direction: column;
+}
 .af-tab-row {
-  display: flex; align-items: center;
+  display: flex; align-items: center; justify-content: space-between;
   min-height: 72px; padding: 0 24px;
   border-bottom: 0.5px solid #F0F0F0;
   cursor: pointer; background: var(--af-white);
