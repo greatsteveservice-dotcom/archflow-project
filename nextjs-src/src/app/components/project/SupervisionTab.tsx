@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { Icons } from '../Icons';
-import type { ProjectWithStats, VisitWithStats } from '../../lib/types';
+import type { ProjectWithStats, VisitWithStats, ProjectMemberWithProfile } from '../../lib/types';
 import CalendarView from '../supervision/CalendarView';
 import PhotoGallery from '../supervision/PhotoGallery';
 import ReportsView from '../supervision/ReportsView';
@@ -31,6 +31,7 @@ interface SupervisionTabProps {
   canChangePhotoStatus?: boolean;
   canManageTasks?: boolean;
   canEditProjectSettings?: boolean;
+  members?: ProjectMemberWithProfile[];
 }
 
 export default function SupervisionTab({
@@ -38,7 +39,7 @@ export default function SupervisionTab({
   refetchVisits, refetchProject, onSelectVisit,
   canCreateVisit = true, canUploadPhoto = true,
   canChangePhotoStatus = true, canManageTasks = true,
-  canEditProjectSettings = true,
+  canEditProjectSettings = true, members = [],
 }: SupervisionTabProps) {
   const [activeSubTab, setActiveSubTab] = useState<SubTabId>('calendar');
 
@@ -90,6 +91,7 @@ export default function SupervisionTab({
             projectId={projectId}
             toast={toast}
             canManageTasks={canManageTasks}
+            members={members}
           />
         )}
         {activeSubTab === 'camera' && (

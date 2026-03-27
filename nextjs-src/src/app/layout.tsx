@@ -3,6 +3,7 @@ import "./globals.css";
 import { AuthProvider } from "./lib/auth";
 import { ThemeProvider } from "./lib/theme";
 import YandexMetrika from "./components/YandexMetrika";
+import ServiceWorkerRegistration from "./components/ServiceWorkerRegistration";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -71,6 +72,7 @@ export default function RootLayout({
           <AuthProvider>{children}</AuthProvider>
         </ThemeProvider>
         <YandexMetrika />
+        <ServiceWorkerRegistration />
       </body>
     </html>
   );

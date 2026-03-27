@@ -13,6 +13,7 @@ import CreateProjectModal from "./components/CreateProjectModal";
 import Topbar from "./components/Topbar";
 import Toast from "./components/Toast";
 import OfflineBanner from "./components/OfflineBanner";
+import SearchModal from "./components/SearchModal";
 import { Icons } from "./components/Icons";
 import { useProjects } from "./lib/hooks";
 import { useAuth } from "./lib/auth";
@@ -26,10 +27,23 @@ export default function Home() {
   const [showCreateProject, setShowCreateProject] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const { data: projects, loading: projectsLoading, refetch: refetchProjects } = useProjects();
   const [welcomeDismissed, setWelcomeDismissed] = useState(false);
 
   const toast = useCallback((msg: string) => setToastMsg(msg), []);
+
+  // Cmd+K / Ctrl+K to open search
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setSearchOpen(prev => !prev);
+      }
+    };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, []);
 
   // Handle invite token from URL
   useEffect(() => {
@@ -81,6 +95,7 @@ export default function Home() {
   };
 
   const openSidebar = () => setSidebarOpen(true);
+  const openSearch = () => setSearchOpen(true);
 
   const renderPage = () => {
     switch (page) {
@@ -90,6 +105,7 @@ export default function Home() {
             <Topbar
               title="Дашборд"
               onMenuToggle={openSidebar}
+              onSearchOpen={openSearch}
               actions={
                 canCreateProject ? (
                   <button className="btn btn-primary" onClick={() => setShowCreateProject(true)}>
@@ -109,6 +125,7 @@ export default function Home() {
             <Topbar
               title="Проекты"
               onMenuToggle={openSidebar}
+              onSearchOpen={openSearch}
               actions={
                 canCreateProject ? (
                   <button className="btn btn-primary" onClick={() => setShowCreateProject(true)}>
@@ -129,6 +146,7 @@ export default function Home() {
             onNavigate={navigate}
             toast={toast}
             onMenuToggle={openSidebar}
+            onSearchOpen={openSearch}
           />
         );
       case "visit":
@@ -139,6 +157,7 @@ export default function Home() {
             onNavigate={navigate}
             toast={toast}
             onMenuToggle={openSidebar}
+            onSearchOpen={openSearch}
           />
         );
       case "profile":
@@ -181,6 +200,13 @@ export default function Home() {
       />
 
       <OfflineBanner />
+
+      {/* Global Search (Cmd+K) */}
+      <SearchModal
+        open={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        onNavigate={navigate}
+      />
 
       {/* Toast */}
       {toastMsg && <Toast msg={toastMsg} onClose={() => setToastMsg(null)} />}

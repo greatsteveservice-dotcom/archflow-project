@@ -19,6 +19,7 @@ interface VisitPageProps {
   onNavigate: (page: string, ctx?: any) => void;
   toast: (msg: string) => void;
   onMenuToggle?: () => void;
+  onSearchOpen?: () => void;
 }
 
 const ZONES = ["Спальня", "Гостиная", "Кухня", "Ванная", "Детская", "Прихожая", "Коридор", "Балкон"];
@@ -30,7 +31,7 @@ const STATUS_OPTIONS: { value: PhotoStatus; label: string }[] = [
   { value: "new", label: "Новое" },
 ];
 
-export default function VisitPage({ projectId, visitId, onNavigate, toast, onMenuToggle }: VisitPageProps) {
+export default function VisitPage({ projectId, visitId, onNavigate, toast, onMenuToggle, onSearchOpen }: VisitPageProps) {
   const { data: project, loading: loadingProject } = useProject(projectId);
   const { data: visit, loading: loadingVisit, error: errorVisit, refetch: refetchVisit } = useVisit(visitId);
   const { data: photos, loading: loadingPhotos, refetch: refetchPhotos } = useVisitPhotos(visitId);
@@ -176,6 +177,7 @@ export default function VisitPage({ projectId, visitId, onNavigate, toast, onMen
     <Topbar
       title={visit.title}
       onMenuToggle={onMenuToggle}
+      onSearchOpen={onSearchOpen}
       breadcrumbs={[
         { label: 'Проекты', onClick: () => onNavigate('projects') },
         { label: project.title, onClick: () => onNavigate('project', projectId) },

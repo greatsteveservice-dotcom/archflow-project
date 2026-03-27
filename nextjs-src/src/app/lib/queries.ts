@@ -1138,6 +1138,18 @@ export async function updateTaskStatus(taskId: string, status: TaskStatus): Prom
   return data as Task;
 }
 
+/** Update task assignment */
+export async function updateTaskAssignment(taskId: string, assignedTo: string | null): Promise<Task> {
+  const { data, error } = await supabase
+    .from('tasks')
+    .update({ assigned_to: assignedTo })
+    .eq('id', taskId)
+    .select()
+    .single();
+  if (error) throw new Error(humanError(error));
+  return data as Task;
+}
+
 /** Delete a task */
 export async function deleteTask(taskId: string): Promise<void> {
   const { error } = await supabase
@@ -1263,6 +1275,114 @@ export async function deleteDocument(documentId: string): Promise<void> {
     .delete()
     .eq('id', documentId);
   if (error) throw new Error(humanError(error));
+}
+
+// ======================== GLOBAL SEARCH ========================
+
+export interface SearchResult {
+  type: 'project' | 'visit' | 'document' | 'supply' | 'task';
+  id: string;
+  title: string;
+  subtitle: string;
+  projectId?: string;
+  visitId?: string;
+}
+
+/** Search across projects, visits, documents, supply items, tasks */
+export async function globalSearch(query: string): Promise<SearchResult[]> {
+  if (!query || query.trim().length < 2) return [];
+
+  const q = query.trim().toLowerCase();
+  const results: SearchResult[] = [];
+
+  // Search projects (title, address)
+  const { data: projects } = await supabase
+    .from('projects')
+    .select('id, title, address, status')
+    .or(`title.ilike.%${q}%,address.ilike.%${q}%`)
+    .limit(5);
+
+  projects?.forEach(p => {
+    results.push({
+      type: 'project',
+      id: p.id,
+      title: p.title,
+      subtitle: p.address || p.status,
+      projectId: p.id,
+    });
+  });
+
+  // Search visits (title, note)
+  const { data: visits } = await supabase
+    .from('visits')
+    .select('id, title, date, project_id')
+    .or(`title.ilike.%${q}%`)
+    .limit(5);
+
+  visits?.forEach(v => {
+    results.push({
+      type: 'visit',
+      id: v.id,
+      title: v.title,
+      subtitle: formatShortDate(v.date),
+      projectId: v.project_id,
+      visitId: v.id,
+    });
+  });
+
+  // Search documents (title)
+  const { data: docs } = await supabase
+    .from('documents')
+    .select('id, title, format, project_id')
+    .ilike('title', `%${q}%`)
+    .limit(5);
+
+  docs?.forEach(d => {
+    results.push({
+      type: 'document',
+      id: d.id,
+      title: d.title,
+      subtitle: d.format,
+      projectId: d.project_id,
+    });
+  });
+
+  // Search supply items (name, supplier, category)
+  const { data: supply } = await supabase
+    .from('supply_items')
+    .select('id, name, supplier, category, project_id')
+    .or(`name.ilike.%${q}%,supplier.ilike.%${q}%,category.ilike.%${q}%`)
+    .limit(5);
+
+  supply?.forEach(s => {
+    results.push({
+      type: 'supply',
+      id: s.id,
+      title: s.name,
+      subtitle: s.supplier || s.category || 'Комплектация',
+      projectId: s.project_id,
+    });
+  });
+
+  // Search tasks (title, description)
+  const { data: tasks } = await supabase
+    .from('tasks')
+    .select('id, title, status, project_id')
+    .or(`title.ilike.%${q}%`)
+    .limit(5);
+
+  tasks?.forEach(t => {
+    const statusLabel: Record<string, string> = { open: 'Открыта', in_progress: 'В работе', done: 'Готово' };
+    results.push({
+      type: 'task',
+      id: t.id,
+      title: t.title,
+      subtitle: statusLabel[t.status] || t.status,
+      projectId: t.project_id,
+    });
+  });
+
+  return results;
 }
 
 /** Remove a project member */

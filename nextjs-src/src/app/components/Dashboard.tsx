@@ -5,7 +5,7 @@ import { Icons } from "./Icons";
 import ProjectCard from "./ProjectCard";
 import { ErrorMessage } from "./Loading";
 import { DashboardSkeleton } from "./Skeleton";
-import { useProjects, useActivityFeed } from "../lib/hooks";
+import { useProjects, useActivityFeed, useDashboardRealtime } from "../lib/hooks";
 import OnboardingTip from "./OnboardingTip";
 
 const INITIAL_ACTIVITY = 8;
@@ -16,8 +16,11 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ onNavigate }: DashboardProps) {
-  const { data: projects, loading, error } = useProjects();
-  const { data: activity, loading: activityLoading } = useActivityFeed();
+  const { data: projects, loading, error, refetch: refetchProjects } = useProjects();
+  const { data: activity, loading: activityLoading, refetch: refetchActivity } = useActivityFeed();
+
+  // Real-time updates
+  useDashboardRealtime(() => { refetchProjects(); refetchActivity(); });
   const [activityLimit, setActivityLimit] = useState(INITIAL_ACTIVITY);
 
   if (loading) return <DashboardSkeleton />;

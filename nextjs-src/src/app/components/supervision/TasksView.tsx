@@ -3,9 +3,9 @@ import { useState, useMemo } from 'react';
 import { Icons } from '../Icons';
 import Modal from '../Modal';
 import ConfirmDialog from '../ConfirmDialog';
-import type { Task, TaskStatus } from '../../lib/types';
+import type { Task, TaskStatus, ProjectMemberWithProfile } from '../../lib/types';
 import { useProjectTasks } from '../../lib/hooks';
-import { createTask, updateTaskStatus, deleteTask } from '../../lib/queries';
+import { createTask, updateTaskStatus, updateTaskAssignment, deleteTask } from '../../lib/queries';
 
 const STATUS_CONFIG: Record<TaskStatus, { label: string; bg: string; text: string }> = {
   open: { label: 'Открыта', bg: 'bg-warn-bg', text: 'text-warn' },
@@ -17,17 +17,32 @@ interface TasksViewProps {
   projectId: string;
   toast: (msg: string) => void;
   canManageTasks?: boolean;
+  members?: ProjectMemberWithProfile[];
 }
 
-export default function TasksView({ projectId, toast, canManageTasks = true }: TasksViewProps) {
+export default function TasksView({ projectId, toast, canManageTasks = true, members = [] }: TasksViewProps) {
   const { data: tasks, loading, refetch } = useProjectTasks(projectId);
   const [showModal, setShowModal] = useState(false);
   const [tTitle, setTTitle] = useState('');
   const [tDesc, setTDesc] = useState('');
   const [tDue, setTDue] = useState('');
+  const [tAssignee, setTAssignee] = useState('');
   const [saving, setSaving] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // Build member lookup for display
+  const memberMap = useMemo(() => {
+    const map = new Map<string, { name: string; initials: string }>();
+    members.forEach(m => {
+      if (m.profile) {
+        const name = m.profile.full_name || m.profile.email || '?';
+        const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+        map.set(m.user_id, { name, initials });
+      }
+    });
+    return map;
+  }, [members]);
 
   const grouped = useMemo(() => {
     if (!tasks) return { open: [], in_progress: [], done: [] };
@@ -42,11 +57,17 @@ export default function TasksView({ projectId, toast, canManageTasks = true }: T
     if (!tTitle.trim()) return;
     setSaving(true);
     try {
-      await createTask({ project_id: projectId, title: tTitle.trim(), description: tDesc || undefined, due_date: tDue || undefined });
+      await createTask({
+        project_id: projectId,
+        title: tTitle.trim(),
+        description: tDesc || undefined,
+        due_date: tDue || undefined,
+        assigned_to: tAssignee || undefined,
+      });
       toast('Задача создана');
       refetch();
       setShowModal(false);
-      setTTitle(''); setTDesc(''); setTDue('');
+      setTTitle(''); setTDesc(''); setTDue(''); setTAssignee('');
     } catch (e: any) {
       toast(e.message || 'Ошибка');
     }
@@ -56,6 +77,15 @@ export default function TasksView({ projectId, toast, canManageTasks = true }: T
   const handleStatusChange = async (taskId: string, status: TaskStatus) => {
     try {
       await updateTaskStatus(taskId, status);
+      refetch();
+    } catch (e: any) {
+      toast(e.message || 'Ошибка');
+    }
+  };
+
+  const handleAssignChange = async (taskId: string, assignedTo: string | null) => {
+    try {
+      await updateTaskAssignment(taskId, assignedTo);
       refetch();
     } catch (e: any) {
       toast(e.message || 'Ошибка');
@@ -78,10 +108,24 @@ export default function TasksView({ projectId, toast, canManageTasks = true }: T
 
   if (loading) return <div className="text-[13px] text-ink-faint py-4">Загрузка...</div>;
 
+  const renderAssignee = (task: Task) => {
+    if (!task.assigned_to) return null;
+    const info = memberMap.get(task.assigned_to);
+    if (!info) return null;
+    return (
+      <span className="text-[10px] text-ink-faint flex items-center gap-0.5" title={info.name}>
+        <span className="w-3.5 h-3.5 rounded-full bg-srf-secondary flex items-center justify-center text-[7px] font-semibold flex-shrink-0">
+          {info.initials}
+        </span>
+        <span className="truncate max-w-[80px]">{info.name.split(' ')[0]}</span>
+      </span>
+    );
+  };
+
   const renderColumn = (title: string, items: Task[], status: TaskStatus) => (
     <div className="flex-1 min-w-[240px]">
       <div className="flex items-center gap-2 mb-3">
-        <div className={`w-2 h-2 rounded-full ${STATUS_CONFIG[status].bg.replace('bg-', 'bg-')}`}
+        <div className="w-2 h-2 rounded-full"
           style={{ backgroundColor: status === 'open' ? '#D97706' : status === 'in_progress' ? '#2563EB' : '#16A34A' }} />
         <h4 className="text-[13px] font-semibold">{title}</h4>
         <span className="text-[11px] text-ink-faint">({items.length})</span>
@@ -93,7 +137,7 @@ export default function TasksView({ projectId, toast, canManageTasks = true }: T
               <div className="flex-1 min-w-0">
                 <div className="text-[13px] font-medium">{task.title}</div>
                 {task.description && <div className="text-[11px] text-ink-muted mt-0.5 line-clamp-2">{task.description}</div>}
-                <div className="flex items-center gap-2 mt-1.5">
+                <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                   {task.due_date && (
                     <span className="text-[10px] text-ink-faint flex items-center gap-0.5">
                       <Icons.Calendar className="w-2.5 h-2.5" /> {task.due_date}
@@ -104,10 +148,27 @@ export default function TasksView({ projectId, toast, canManageTasks = true }: T
                       <Icons.Camera className="w-2.5 h-2.5" /> Из фото
                     </span>
                   )}
+                  {renderAssignee(task)}
                 </div>
               </div>
               {canManageTasks && (
                 <div className="flex items-center gap-1 flex-shrink-0">
+                  {/* Assign dropdown */}
+                  {members.length > 0 && (
+                    <select
+                      className="opacity-0 group-hover:opacity-100 text-[10px] bg-srf border border-line rounded cursor-pointer text-ink-faint hover:text-ink transition-all h-6 px-0.5"
+                      title="Назначить"
+                      value={task.assigned_to || ''}
+                      onChange={(e) => handleAssignChange(task.id, e.target.value || null)}
+                    >
+                      <option value="">—</option>
+                      {members.map(m => (
+                        <option key={m.user_id} value={m.user_id}>
+                          {m.profile?.full_name || m.profile?.email || m.user_id.slice(0, 8)}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                   {status !== 'done' && (
                     <button
                       className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-ok-bg text-ink-faint hover:text-ok transition-all"
@@ -181,6 +242,19 @@ export default function TasksView({ projectId, toast, canManageTasks = true }: T
             <label>Описание</label>
             <textarea value={tDesc} onChange={e => setTDesc(e.target.value)} placeholder="Необязательно" rows={2} />
           </div>
+          {members.length > 0 && (
+            <div className="modal-field">
+              <label>Исполнитель</label>
+              <select value={tAssignee} onChange={e => setTAssignee(e.target.value)}>
+                <option value="">Не назначен</option>
+                {members.map(m => (
+                  <option key={m.user_id} value={m.user_id}>
+                    {m.profile?.full_name || m.profile?.email || m.user_id.slice(0, 8)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="modal-field">
             <label>Срок</label>
             <input type="date" value={tDue} onChange={e => setTDue(e.target.value)} />

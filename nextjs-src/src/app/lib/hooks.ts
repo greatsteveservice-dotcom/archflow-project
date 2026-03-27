@@ -4,7 +4,8 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { supabase } from './supabase';
 import type { ProjectWithStats, VisitWithStats, PhotoRecord, Profile, Stage, SupplyItem, Invoice, Notification, ActivityItem, Document, ProjectMember, ProjectMemberWithProfile, DocumentCategory, Task, PhotoRecordWithVisit } from './types';
 import {
   fetchProjects,
@@ -271,4 +272,92 @@ export function useProjectTasks(projectId: string | null) {
     () => projectId ? fetchProjectTasks(projectId) : Promise.resolve([]),
     [projectId]
   );
+}
+
+// ======================== REALTIME SUBSCRIPTIONS ========================
+
+type RealtimeTable = 'projects' | 'visits' | 'photo_records' | 'invoices' | 'supply_items' | 'tasks' | 'documents' | 'project_members';
+
+interface UseRealtimeOptions {
+  /** Tables to subscribe to */
+  tables: RealtimeTable[];
+  /** Filter events by project_id (optional) */
+  projectId?: string;
+  /** Callback on any change */
+  onUpdate: () => void;
+  /** Enable/disable (default: true) */
+  enabled?: boolean;
+}
+
+/**
+ * Subscribe to Supabase Realtime changes on specified tables.
+ * Calls onUpdate callback when INSERT/UPDATE/DELETE happens.
+ */
+export function useRealtimeSubscription({ tables, projectId, onUpdate, enabled = true }: UseRealtimeOptions) {
+  const onUpdateRef = useRef(onUpdate);
+  onUpdateRef.current = onUpdate;
+
+  useEffect(() => {
+    if (!enabled || tables.length === 0) return;
+
+    const channelName = `realtime-${tables.join('-')}-${projectId || 'all'}-${Date.now()}`;
+    const channel = supabase.channel(channelName);
+
+    tables.forEach(table => {
+      const filter = projectId ? `project_id=eq.${projectId}` : undefined;
+      channel.on(
+        'postgres_changes' as any,
+        {
+          event: '*',
+          schema: 'public',
+          table,
+          ...(filter ? { filter } : {}),
+        },
+        () => {
+          // Debounce slightly to batch rapid changes
+          setTimeout(() => onUpdateRef.current(), 100);
+        }
+      );
+    });
+
+    channel.subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [tables.join(','), projectId, enabled]);
+}
+
+/**
+ * Subscribe to realtime changes for a project — auto-refetches project data.
+ * Usage: pass refetch callbacks from your hooks, and they will be called on changes.
+ */
+export function useProjectRealtime(
+  projectId: string | null,
+  callbacks: { refetchProject?: () => void; refetchVisits?: () => void; refetchInvoices?: () => void; refetchTasks?: () => void }
+) {
+  const callbacksRef = useRef(callbacks);
+  callbacksRef.current = callbacks;
+
+  useRealtimeSubscription({
+    tables: ['visits', 'photo_records', 'invoices', 'supply_items', 'tasks', 'documents'],
+    projectId: projectId || undefined,
+    enabled: !!projectId,
+    onUpdate: () => {
+      callbacksRef.current.refetchProject?.();
+      callbacksRef.current.refetchVisits?.();
+      callbacksRef.current.refetchInvoices?.();
+      callbacksRef.current.refetchTasks?.();
+    },
+  });
+}
+
+/**
+ * Subscribe to realtime changes for the dashboard — auto-refetches projects list.
+ */
+export function useDashboardRealtime(refetch: () => void) {
+  useRealtimeSubscription({
+    tables: ['projects', 'visits', 'photo_records', 'invoices'],
+    onUpdate: refetch,
+  });
 }

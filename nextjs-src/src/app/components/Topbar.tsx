@@ -12,9 +12,10 @@ interface TopbarProps {
   breadcrumbs?: BreadcrumbItem[];
   actions?: React.ReactNode;
   onMenuToggle?: () => void;
+  onSearchOpen?: () => void;
 }
 
-export default function Topbar({ title, breadcrumbs, actions, onMenuToggle }: TopbarProps) {
+export default function Topbar({ title, breadcrumbs, actions, onMenuToggle, onSearchOpen }: TopbarProps) {
   return (
     <div className="px-4 sm:px-8 py-4 sm:py-5 flex items-center justify-between border-b border-line bg-srf sticky top-0 z-10 gap-2">
       <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
@@ -43,6 +44,16 @@ export default function Topbar({ title, breadcrumbs, actions, onMenuToggle }: To
         </div>
       </div>
       <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+        {onSearchOpen && (
+          <button
+            className="p-2 rounded-lg hover:bg-srf-secondary transition-colors flex items-center gap-2"
+            onClick={onSearchOpen}
+            title="Поиск (⌘K)"
+          >
+            <Icons.Search className="w-4 h-4 text-ink-muted" />
+            <kbd className="hidden lg:inline-flex text-[11px] text-ink-faint bg-srf-secondary px-1.5 py-0.5 rounded font-mono">⌘K</kbd>
+          </button>
+        )}
         {actions}
         <NotificationDropdown />
       </div>

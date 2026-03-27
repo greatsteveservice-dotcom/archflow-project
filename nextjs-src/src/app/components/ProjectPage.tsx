@@ -5,7 +5,7 @@ import { Icons } from "./Icons";
 import Topbar from "./Topbar";
 import { ErrorMessage } from "./Loading";
 import { ProjectPageSkeleton } from "./Skeleton";
-import { useProject, useProjectVisits, useProjectInvoices } from "../lib/hooks";
+import { useProject, useProjectVisits, useProjectInvoices, useProjectMembersWithProfiles, useProjectRealtime } from "../lib/hooks";
 import { usePermissions } from "../lib/permissions";
 import { updateProject } from "../lib/queries";
 import type { ProjectPermissions } from "../lib/types";
@@ -23,6 +23,7 @@ interface ProjectPageProps {
   onNavigate: (page: string, ctx?: any) => void;
   toast: (msg: string) => void;
   onMenuToggle?: () => void;
+  onSearchOpen?: () => void;
 }
 
 const ALL_TABS: { id: ProjectTab; label: string; icon: React.FC<{ className?: string }>; permKey: keyof ProjectPermissions }[] = [
@@ -32,11 +33,15 @@ const ALL_TABS: { id: ProjectTab; label: string; icon: React.FC<{ className?: st
   { id: "settings", label: "Настройки", icon: Icons.Settings, permKey: "canViewSettings" },
 ];
 
-export default function ProjectPage({ projectId, onNavigate, toast, onMenuToggle }: ProjectPageProps) {
+export default function ProjectPage({ projectId, onNavigate, toast, onMenuToggle, onSearchOpen }: ProjectPageProps) {
   const { data: project, loading: loadingProject, error: errorProject, refetch: refetchProject } = useProject(projectId);
   const { data: visits, loading: loadingVisits, refetch: refetchVisits } = useProjectVisits(projectId);
   const { data: invoices, refetch: refetchInvoices } = useProjectInvoices(projectId);
+  const { data: membersWithProfiles } = useProjectMembersWithProfiles(projectId);
   const { permissions } = usePermissions(projectId);
+
+  // Real-time updates
+  useProjectRealtime(projectId, { refetchProject, refetchVisits, refetchInvoices });
 
   const visibleTabs = ALL_TABS.filter(t => permissions[t.permKey]);
   const [activeTab, setActiveTab] = useState<ProjectTab>("design");
@@ -98,6 +103,7 @@ export default function ProjectPage({ projectId, onNavigate, toast, onMenuToggle
       <Topbar
         title={isEditingTitle ? editTitle : project.title}
         onMenuToggle={onMenuToggle}
+        onSearchOpen={onSearchOpen}
         breadcrumbs={[
           { label: "Проекты", onClick: () => onNavigate("projects") },
           { label: project.title },
@@ -209,6 +215,7 @@ export default function ProjectPage({ projectId, onNavigate, toast, onMenuToggle
             canChangePhotoStatus={permissions.canChangePhotoStatus}
             canManageTasks={permissions.canManageTasks}
             canEditProjectSettings={permissions.canEditProjectSettings}
+            members={membersWithProfiles || []}
           />
         )}
         {activeTab === "supply" && permissions.canViewSupply && (
