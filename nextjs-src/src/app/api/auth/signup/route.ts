@@ -67,11 +67,14 @@ export async function POST(req: NextRequest) {
         .eq("id", data.user.id);
     }
 
-    // Send welcome email with credentials (non-blocking)
+    // Send welcome email with credentials (must await — Netlify kills function after return)
     const userName = full_name || email.split("@")[0];
-    sendWelcomeEmail(email, userName, password).catch((err) => {
-      console.error("Failed to send welcome email:", err);
-    });
+    try {
+      await sendWelcomeEmail(email, userName, password);
+    } catch (emailErr) {
+      console.error("Failed to send welcome email:", emailErr);
+      // Don't fail signup if email fails — user is already created
+    }
 
     return NextResponse.json({
       user: { id: data.user.id, email: data.user.email },
