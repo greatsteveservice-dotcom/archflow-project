@@ -135,7 +135,7 @@ export default function CalendarView({ projectId, visits, toast, refetchVisits, 
         </div>
         <div className="grid grid-cols-7 gap-0.5">
           {Array.from({ length: firstDay }).map((_, i) => (
-            <div key={`empty-${i}`} className="aspect-square" />
+            <div key={`empty-${i}`} className="aspect-square md:aspect-auto md:h-[52px]" />
           ))}
           {Array.from({ length: daysInMonth }).map((_, i) => {
             const day = i + 1;
@@ -147,7 +147,7 @@ export default function CalendarView({ projectId, visits, toast, refetchVisits, 
             return (
               <div
                 key={day}
-                className={`aspect-square flex flex-col items-center justify-center rounded-lg cursor-pointer transition-all text-[13px]
+                className={`aspect-square md:aspect-auto md:h-[52px] flex flex-col items-center justify-center rounded-lg cursor-pointer transition-all text-[13px]
                   ${isSelected ? 'text-white' : isToday ? 'bg-srf-secondary font-semibold' : 'hover:bg-srf-raised'}
                 `}
                 style={isSelected ? { background: '#3D3D3D' } : undefined}
