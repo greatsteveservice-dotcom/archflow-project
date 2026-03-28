@@ -201,7 +201,7 @@ body {
   width: 100%; text-align: left;
 }
 .af-block:hover, .af-block:active {
-  background: #3D3D3D; color: var(--af-white);
+  background: var(--af-black); color: var(--af-white);
 }
 .af-block:hover .af-block-index, .af-block:active .af-block-index { color: rgba(255,255,255,0.4); }
 .af-block:hover .af-block-sub, .af-block:active .af-block-sub { color: rgba(255,255,255,0.5); }
@@ -218,6 +218,7 @@ body {
   font-family: var(--af-font-display); font-weight: 700;
   color: var(--af-black); display: block; line-height: 1.1;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  text-transform: uppercase;
   transition: color 0.15s ease;
 }
 .af-block-name-short { font-size: 28px; }
@@ -265,7 +266,7 @@ body {
   position: relative; overflow: hidden;
 }
 .af-project-row:hover, .af-project-row:active {
-  background: #3D3D3D; color: var(--af-white);
+  background: var(--af-black); color: var(--af-white);
 }
 .af-project-row:hover .af-project-index, .af-project-row:active .af-project-index { color: rgba(255,255,255,0.3); }
 .af-project-row:hover .af-project-meta, .af-project-row:active .af-project-meta { color: rgba(255,255,255,0.5); }
@@ -363,11 +364,11 @@ body {
   cursor: pointer; background: var(--af-white);
   transition: background 0.15s ease, color 0.15s ease;
 }
-.af-tab-row:hover { background: #3D3D3D; color: var(--af-white); }
+.af-tab-row:hover { background: var(--af-black); color: var(--af-white); }
 .af-tab-row:hover .af-tab-name { color: var(--af-white); }
 .af-tab-row:hover .af-tab-index { color: rgba(255,255,255,0.4); }
 .af-tab-row:hover .af-tab-arrow { color: rgba(255,255,255,0.5); }
-.af-tab-row.active { background: #3D3D3D; color: var(--af-white); }
+.af-tab-row.active { background: var(--af-black); color: var(--af-white); }
 .af-tab-row.active .af-tab-name { color: var(--af-white); }
 .af-tab-row.active .af-tab-index { color: rgba(255,255,255,0.4); }
 .af-tab-row.active .af-tab-arrow { color: rgba(255,255,255,0.5); }
@@ -599,7 +600,7 @@ body {
   }
 
   .card { background: var(--af-offwhite); border: none; transition: background 0.15s ease, color 0.15s ease; }
-  .card:hover { background: #3D3D3D; color: var(--af-white); }
+  .card:hover { background: var(--af-black); color: var(--af-white); }
 
   .tn { @apply flex; border-bottom: 0.5px solid var(--af-border); gap: 0; background: var(--af-white); }
   .ti {

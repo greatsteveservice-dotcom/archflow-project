@@ -91,12 +91,6 @@ export default function CalendarView({ projectId, visits, toast, refetchVisits, 
 
   const selectedVisits = selectedDate ? visitsByDate.get(selectedDate) || [] : [];
 
-  const getStatusColor = (v: VisitWithStats) => {
-    if (v.status === 'planned') return 'bg-[#AAA]';
-    if (v.status === 'issues_found') return 'bg-[#111]';
-    return 'bg-[#E0E0E0]';
-  };
-
   return (
     <div className="animate-fade-in">
       {/* Header */}
@@ -127,15 +121,15 @@ export default function CalendarView({ projectId, visits, toast, refetchVisits, 
       </div>
 
       {/* Calendar grid */}
-      <div className="card p-4">
+      <div style={{ background: '#FFFFFF', padding: 16 }}>
         <div className="grid grid-cols-7 gap-0.5 mb-2">
           {DAYS_RU.map(d => (
-            <div key={d} className="text-[11px] font-medium text-ink-faint text-center py-1">{d}</div>
+            <div key={d} style={{ background: '#FFFFFF', color: '#111', fontSize: 11, fontWeight: 500, textAlign: 'center', padding: '4px 0' }}>{d}</div>
           ))}
         </div>
         <div className="grid grid-cols-7 gap-0.5">
           {Array.from({ length: firstDay }).map((_, i) => (
-            <div key={`empty-${i}`} className="aspect-square md:aspect-auto md:h-[52px]" />
+            <div key={`empty-${i}`} className="aspect-square md:aspect-auto md:h-[52px]" style={{ background: '#FFFFFF' }} />
           ))}
           {Array.from({ length: daysInMonth }).map((_, i) => {
             const day = i + 1;
@@ -147,17 +141,19 @@ export default function CalendarView({ projectId, visits, toast, refetchVisits, 
             return (
               <div
                 key={day}
-                className={`aspect-square md:aspect-auto md:h-[52px] flex flex-col items-center justify-center rounded-lg cursor-pointer transition-all text-[13px]
-                  ${isSelected ? 'text-white' : isToday ? 'bg-srf-secondary font-semibold' : 'hover:bg-srf-raised'}
-                `}
-                style={isSelected ? { background: '#3D3D3D' } : undefined}
+                className="aspect-square md:aspect-auto md:h-[52px] flex flex-col items-center justify-center cursor-pointer transition-all text-[13px]"
+                style={{
+                  background: isSelected ? '#111111' : '#FFFFFF',
+                  color: isSelected ? '#FFFFFF' : '#111111',
+                  fontWeight: isToday ? 600 : 400,
+                }}
                 onClick={() => handleDayClick(day)}
               >
                 <span>{day}</span>
                 {dayVisits.length > 0 && (
                   <div className="flex gap-0.5 mt-0.5">
-                    {dayVisits.slice(0, 3).map((v, idx) => (
-                      <div key={idx} className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-white/70' : getStatusColor(v)}`} />
+                    {dayVisits.slice(0, 3).map((_, idx) => (
+                      <div key={idx} style={{ width: 5, height: 5, background: isSelected ? '#FFFFFF' : '#111111' }} />
                     ))}
                   </div>
                 )}
