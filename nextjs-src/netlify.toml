@@ -24,3 +24,15 @@
   to = "https://archflow.ru/:splat"
   status = 301
   force = true
+
+# Prevent CDN/browser caching of HTML and SW
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+    Service-Worker-Allowed = "/"
