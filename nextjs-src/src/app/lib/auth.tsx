@@ -58,18 +58,66 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (!error && data) {
       setProfile(data as Profile);
+    } else if (error && (error.code === 'PGRST301' || error.message?.includes('Invalid authentication') || error.message?.includes('JWT'))) {
+      // Token is invalid/expired — clear stale session and force re-login
+      console.warn('Auth token invalid, signing out:', error.message);
+      await supabase.auth.signOut();
+      setSession(null);
+      setUser(null);
+      setProfile(null);
     }
   }, []);
 
   // Initialize auth state
   useEffect(() => {
-    // Get current session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
+    // Get current session — validate it's still usable
+    supabase.auth.getSession().then(async ({ data: { session }, error }) => {
+      if (error || !session) {
+        // No session or error getting it — clear everything
+        setSession(null);
+        setUser(null);
+        setProfile(null);
+        setLoading(false);
+        return;
       }
+
+      // Check if the JWT is expired (access_token exp < now)
+      try {
+        const payload = JSON.parse(atob(session.access_token.split('.')[1]));
+        if (payload.exp && payload.exp * 1000 < Date.now()) {
+          // Token expired — try refreshing
+          const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
+          if (refreshError || !refreshed.session) {
+            // Refresh failed — force re-login
+            console.warn('Session expired, refresh failed — signing out');
+            await supabase.auth.signOut();
+            setSession(null);
+            setUser(null);
+            setProfile(null);
+            setLoading(false);
+            return;
+          }
+          // Use refreshed session
+          setSession(refreshed.session);
+          setUser(refreshed.session.user);
+          fetchProfile(refreshed.session.user.id);
+          setLoading(false);
+          return;
+        }
+      } catch {
+        // Malformed token — sign out
+        console.warn('Malformed JWT — signing out');
+        await supabase.auth.signOut();
+        setSession(null);
+        setUser(null);
+        setProfile(null);
+        setLoading(false);
+        return;
+      }
+
+      setSession(session);
+      setUser(session.user);
+      fetchProfile(session.user.id);
       setLoading(false);
     });
 
@@ -90,6 +138,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
         setProfile(null);
       }
+      // Handle sign out
+      if (event === 'SIGNED_OUT') {
+        setSession(null);
+        setUser(null);
+        setProfile(null);
+      }
       // Handle password recovery event
       if (event === 'PASSWORD_RECOVERY') {
         setIsRecovery(true);
@@ -101,11 +155,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Sign in with email/password
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      return { error: translateAuthError(error.message) };
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        return { error: translateAuthError(error.message) };
+      }
+      return { error: null };
+    } catch {
+      return { error: "Ошибка сети. Проверьте подключение и попробуйте снова." };
     }
-    return { error: null };
   };
 
   // Sign up via server-side API route
@@ -120,14 +178,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!res.ok) {
         return { error: data.error || "Ошибка регистрации" };
       }
-      // If email confirmation is required, don't auto-login
-      if (data.requiresEmailConfirmation) {
-        return { error: null };
-      }
-      // Auto sign-in after successful registration (auto-confirm mode)
-      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-      if (signInError) {
-        return { error: "Аккаунт создан, но не удалось войти. Попробуйте войти вручную." };
+      // Account created successfully. Try auto-login but don't fail if it doesn't work.
+      // The user will see the confirm screen either way.
+      try {
+        await supabase.auth.signInWithPassword({ email, password });
+      } catch {
+        // Network error on auto-login — account was still created, show confirm screen
       }
       return { error: null };
     } catch {
@@ -180,17 +236,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 // ======================== HELPERS ========================
 
 function translateAuthError(message: string): string {
-  if (message.includes("Invalid login credentials")) {
+  const lower = message.toLowerCase();
+  if (lower.includes("invalid login credentials") || lower.includes("invalid authentication credentials") || lower.includes("invalid credentials")) {
     return "Неверный email или пароль";
   }
-  if (message.includes("Email not confirmed")) {
+  if (lower.includes("email not confirmed")) {
     return "Email не подтверждён";
   }
-  if (message.includes("User already registered")) {
+  if (lower.includes("already registered") || lower.includes("already exists")) {
     return "Пользователь с таким email уже зарегистрирован";
   }
-  if (message.includes("Password should be at least")) {
+  if (lower.includes("password should be at least") || lower.includes("password is too short")) {
     return "Пароль должен быть не менее 6 символов";
+  }
+  if (lower.includes("rate limit") || lower.includes("too many requests")) {
+    return "Слишком много попыток. Подождите минуту и попробуйте снова.";
+  }
+  if (lower.includes("network") || lower.includes("fetch")) {
+    return "Ошибка сети. Проверьте подключение и попробуйте снова.";
   }
   return message;
 }
