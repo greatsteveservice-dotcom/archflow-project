@@ -15,12 +15,13 @@ import Toast from "./components/Toast";
 import FeedbackBar from "./components/FeedbackBar";
 import OfflineBanner from "./components/OfflineBanner";
 import SearchModal from "./components/SearchModal";
+import OnboardingFlow from "./components/OnboardingFlow";
 import { useProjects } from "./lib/hooks";
 import { useAuth } from "./lib/auth";
 import { acceptProjectInvitation, acceptRbacInvite } from "./lib/queries";
 
 export default function Home() {
-  const { session, profile, loading: authLoading } = useAuth();
+  const { session, profile, loading: authLoading, refreshProfile } = useAuth();
   const canCreateProject = profile?.role === 'designer' || profile?.role === 'assistant';
   const [page, setPage] = useState("projects");
   const [context, setContext] = useState<any>(null);
@@ -179,6 +180,18 @@ export default function Home() {
           </button>
         </div>
       </div>
+    );
+  }
+
+  // Onboarding flow for new users
+  const showOnboarding = profile && profile.onboarding_completed === false;
+
+  if (showOnboarding && session?.user) {
+    return (
+      <OnboardingFlow
+        userId={session.user.id}
+        onComplete={() => refreshProfile()}
+      />
     );
   }
 

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "../lib/auth";
+import { supabase } from "../lib/supabase";
 
 export default function FeedbackBar() {
   const { profile } = useAuth();
@@ -9,6 +10,9 @@ export default function FeedbackBar() {
   const [text, setText] = useState("");
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Lock body scroll when modal open
   useEffect(() => {
@@ -39,11 +43,54 @@ export default function FeedbackBar() {
     setOpen(false);
     setText("");
     setSent(false);
+    setFile(null);
+    setPreview(null);
   }, []);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    if (f.size > 10 * 1024 * 1024) {
+      alert("Максимальный размер файла — 10 МБ");
+      return;
+    }
+    setFile(f);
+    const url = URL.createObjectURL(f);
+    setPreview(url);
+  };
+
+  const removeFile = () => {
+    setFile(null);
+    if (preview) URL.revokeObjectURL(preview);
+    setPreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
 
   const handleSubmit = async () => {
     if (!text.trim() || sending) return;
     setSending(true);
+    let imageUrl: string | undefined;
+
+    // Upload screenshot if attached
+    if (file) {
+      try {
+        const timestamp = Date.now();
+        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const path = `feedback/${timestamp}_${safeName}`;
+        const { error } = await supabase.storage
+          .from('feedback-screenshots')
+          .upload(path, file, { contentType: file.type, upsert: false });
+        if (!error) {
+          const { data } = supabase.storage
+            .from('feedback-screenshots')
+            .getPublicUrl(path);
+          imageUrl = data.publicUrl;
+        }
+      } catch {
+        // continue without image
+      }
+    }
+
     try {
       await fetch("/api/feedback", {
         method: "POST",
@@ -52,6 +99,7 @@ export default function FeedbackBar() {
           text: text.trim(),
           userEmail: profile?.email || undefined,
           userName: profile?.full_name || undefined,
+          imageUrl,
         }),
       });
     } catch {
@@ -59,6 +107,8 @@ export default function FeedbackBar() {
     }
     setSending(false);
     setText("");
+    setFile(null);
+    setPreview(null);
     setSent(true);
   };
 
@@ -266,6 +316,68 @@ export default function FeedbackBar() {
                     boxSizing: "border-box",
                   }}
                 />
+                {/* Screenshot attachment */}
+                <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8 }}>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    style={{ display: "none" }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    style={{
+                      fontFamily: "'IBM Plex Mono', monospace",
+                      fontSize: 7,
+                      textTransform: "uppercase" as const,
+                      letterSpacing: "0.14em",
+                      color: "#AAA",
+                      border: "0.5px solid #DDD",
+                      background: "none",
+                      padding: "3px 8px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    📎 Прикрепить скриншот
+                  </button>
+                  {file && (
+                    <button
+                      type="button"
+                      onClick={removeFile}
+                      style={{
+                        fontFamily: "'IBM Plex Mono', monospace",
+                        fontSize: 7,
+                        color: "#CCC",
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        padding: 0,
+                      }}
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+                {preview && file && (
+                  <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 8 }}>
+                    <img
+                      src={preview}
+                      alt=""
+                      style={{ height: 40, objectFit: "cover", border: "0.5px solid #EBEBEB" }}
+                    />
+                    <span style={{
+                      fontFamily: "'IBM Plex Mono', monospace",
+                      fontSize: 7,
+                      color: "#AAA",
+                      letterSpacing: "0.08em",
+                    }}>
+                      {file.name.length > 30 ? file.name.slice(0, 27) + '...' : file.name}
+                    </span>
+                  </div>
+                )}
+
                 <button
                   onClick={handleSubmit}
                   disabled={!text.trim() || sending}

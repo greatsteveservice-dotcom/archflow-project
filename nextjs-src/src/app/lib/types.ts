@@ -32,6 +32,7 @@ export interface Profile {
   company: string | null;
   avatar_url: string | null;
   role: UserRole;
+  onboarding_completed: boolean;
   created_at: string;
   updated_at: string;
 }

@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useAuth } from "../lib/auth";
+import { supabase } from "../lib/supabase";
 
-type Mode = "login" | "register" | "forgot" | "reset";
+type Mode = "login" | "register" | "forgot" | "reset" | "confirm";
 
 export default function LoginPage({ inviteHint = false }: { inviteHint?: boolean }) {
   const { signIn, signUp, resetPassword, updatePassword, isRecovery } = useAuth();
@@ -15,6 +16,7 @@ export default function LoginPage({ inviteHint = false }: { inviteHint?: boolean
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState("");
+  const [resendStatus, setResendStatus] = useState<"idle" | "sent">("idle");
 
   // Switch to reset mode when recovery token is detected
   if (isRecovery && mode !== "reset") {
@@ -50,8 +52,7 @@ export default function LoginPage({ inviteHint = false }: { inviteHint?: boolean
       if (result.error) {
         setError(result.error);
       } else {
-        setSuccess("Аккаунт создан! Проверьте почту для подтверждения или войдите.");
-        setMode("login");
+        setMode("confirm");
       }
     } else if (mode === "forgot") {
       if (!email.trim()) {
@@ -94,11 +95,19 @@ export default function LoginPage({ inviteHint = false }: { inviteHint?: boolean
     setConfirmPassword("");
   };
 
+  const handleResend = async () => {
+    if (!email.trim()) return;
+    await supabase.auth.resend({ type: 'signup', email });
+    setResendStatus("sent");
+    setTimeout(() => setResendStatus("idle"), 3000);
+  };
+
   const titles: Record<Mode, { heading: string; sub: string }> = {
     login: { heading: "Войти", sub: "Управление дизайн-проектами" },
     register: { heading: "Регистрация", sub: "Создайте аккаунт для работы" },
     forgot: { heading: "Восстановление", sub: "Введите email для сброса пароля" },
     reset: { heading: "Новый пароль", sub: "Придумайте новый пароль" },
+    confirm: { heading: "Проверьте почту", sub: "" },
   };
 
   const buttonLabels: Record<Mode, string> = {
@@ -106,7 +115,66 @@ export default function LoginPage({ inviteHint = false }: { inviteHint?: boolean
     register: "Зарегистрироваться",
     forgot: "Отправить ссылку",
     reset: "Сохранить пароль",
+    confirm: "",
   };
+
+  // Email confirmation screen
+  if (mode === "confirm") {
+    return (
+      <div style={{ minHeight: '100vh', background: '#fff', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ background: '#111', padding: 32 }}>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, fontWeight: 900, color: '#fff' }}>
+            ArchFlow
+          </div>
+        </div>
+        <div style={{ padding: '32px 24px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 900, color: '#111', marginBottom: 8 }}>
+            Проверьте почту
+          </h2>
+          <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: '#777', marginBottom: 2 }}>
+            Мы отправили письмо на
+          </p>
+          <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: '#111', marginBottom: 16 }}>
+            {email}
+          </p>
+          <div style={{
+            background: '#F6F6F4', borderLeft: '2px solid #111', padding: '12px 14px',
+            fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, color: '#777', lineHeight: 1.7,
+          }}>
+            Если письмо не пришло — проверьте папку Спам или Промоакции.
+          </div>
+          <div style={{ marginTop: 20 }}>
+            <button
+              onClick={handleResend}
+              style={{
+                border: '0.5px solid #DDD', color: '#AAA', background: 'none',
+                fontFamily: "'IBM Plex Mono', monospace", fontSize: 7,
+                textTransform: 'uppercase', letterSpacing: '0.14em',
+                padding: '8px 16px', cursor: 'pointer',
+              }}
+            >
+              {resendStatus === 'sent' ? 'Письмо отправлено' : 'Отправить повторно'}
+            </button>
+          </div>
+          <div style={{ marginTop: 'auto', paddingTop: 24 }}>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 7, color: '#CCC' }}>
+              Уже подтвердили?{' '}
+              <button
+                onClick={() => switchMode('login')}
+                style={{
+                  color: '#111', background: 'none', border: 'none',
+                  fontFamily: "'IBM Plex Mono', monospace", fontSize: 7,
+                  cursor: 'pointer', textDecoration: 'underline',
+                }}
+              >
+                → Войти
+              </button>
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-white">

@@ -5,7 +5,7 @@ const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
 export async function POST(req: NextRequest) {
   try {
-    const { text, userEmail, userName } = await req.json();
+    const { text, userEmail, userName, imageUrl } = await req.json();
 
     if (!text || typeof text !== "string" || text.trim().length === 0) {
       return NextResponse.json({ error: "Текст обязателен" }, { status: 400 });
@@ -24,6 +24,9 @@ export async function POST(req: NextRequest) {
       `— ${userName || "Аноним"}${userEmail ? ` (${userEmail})` : ""}`,
       `— ${new Date().toLocaleString("ru-RU", { timeZone: "Europe/Moscow" })}`,
     ];
+    if (imageUrl) {
+      lines.push(`📎 ${imageUrl}`);
+    }
     const message = lines.join("\n");
 
     if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
