@@ -25,7 +25,6 @@
   status = 301
   force = true
 
-# Prevent CDN/browser caching of HTML and SW
 [[headers]]
   for = "/*"
   [headers.values]
