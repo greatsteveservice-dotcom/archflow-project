@@ -503,16 +503,17 @@ export default function ChatView({ projectId, toast }: ChatViewProps) {
 
   return (
     <div style={{
-      display: 'flex', flexDirection: 'column',
-      height: 'calc(100vh - 200px)', minHeight: '100vh',
       background: '#FFFFFF',
+      display: 'flex',
+      flexDirection: 'column',
+      minHeight: '100%',
     }}>
       {/* Push notification permission banner */}
       <PushPermissionBanner />
 
-      {/* Tab bar — always rendered */}
+      {/* Tab bar — always rendered unconditionally */}
       <div style={{
-        display: 'flex', gap: 0,
+        display: 'flex',
         borderBottom: '0.5px solid #EBEBEB',
         background: '#FFFFFF',
         flexShrink: 0,
@@ -525,23 +526,24 @@ export default function ChatView({ projectId, toast }: ChatViewProps) {
               key={tab}
               onClick={() => setActiveTab(tab)}
               style={{
-                position: 'relative',
-                padding: '10px 16px',
-                background: 'none',
-                border: 'none',
-                borderBottom: isActive ? '2px solid #111' : '2px solid transparent',
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: 9,
-                fontWeight: isActive ? 600 : 400,
-                letterSpacing: '0.12em',
-                textTransform: 'uppercase',
+                flex: 1,
+                padding: '10px 0',
+                textAlign: 'center' as const,
+                fontSize: 7,
+                letterSpacing: '0.16em',
+                textTransform: 'uppercase' as const,
+                fontFamily: 'var(--font-ibm-mono), monospace',
                 color: isActive ? '#111' : '#AAA',
+                fontWeight: isActive ? 600 : 400,
+                borderTop: 'none',
+                borderLeft: 'none',
+                borderRight: 'none',
+                borderBottom: isActive ? '2px solid #111' : '2px solid transparent',
+                background: 'none',
                 cursor: 'pointer',
-                transition: 'color 0.15s',
               }}
             >
               {tabLabels[tab]}
-              {/* Unread dot */}
               {!isActive && unread > 0 && (
                 <span style={{
                   display: 'inline-block',
@@ -555,22 +557,21 @@ export default function ChatView({ projectId, toast }: ChatViewProps) {
             </button>
           );
         })}
-
-        {/* "Заказчик не видит" label on team tab */}
-        {activeTab === 'team' && !isClientOnly && (
-          <div style={{
-            marginLeft: 'auto',
-            display: 'flex', alignItems: 'center',
-            paddingRight: 16,
-            fontFamily: "'IBM Plex Mono', monospace",
-            fontSize: 8,
-            letterSpacing: '0.08em',
-            color: '#DDD',
-          }}>
-            Заказчик не видит
-          </div>
-        )}
       </div>
+
+      {/* "Заказчик не видит" label */}
+      {activeTab === 'team' && !isClientOnly && (
+        <div style={{
+          textAlign: 'right',
+          padding: '4px 16px 0',
+          fontFamily: 'var(--font-ibm-mono), monospace',
+          fontSize: 7,
+          letterSpacing: '0.08em',
+          color: '#DDD',
+        }}>
+          Заказчик не видит
+        </div>
+      )}
 
       {/* Member pills */}
       <MemberPills members={activeTab === 'team' ? teamMembers : clientMembers} />
