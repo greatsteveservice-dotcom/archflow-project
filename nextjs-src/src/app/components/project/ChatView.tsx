@@ -504,75 +504,73 @@ export default function ChatView({ projectId, toast }: ChatViewProps) {
   return (
     <div style={{
       display: 'flex', flexDirection: 'column',
-      height: 'calc(100vh - 200px)', minHeight: 400,
+      height: 'calc(100vh - 200px)', minHeight: '100vh',
       background: '#FFFFFF',
     }}>
       {/* Push notification permission banner */}
       <PushPermissionBanner />
 
-      {/* Tab bar */}
-      {availableTabs.length > 1 && (
-        <div style={{
-          display: 'flex', gap: 0,
-          borderBottom: '0.5px solid #EBEBEB',
-          background: '#FFFFFF',
-          flexShrink: 0,
-        }}>
-          {availableTabs.map(tab => {
-            const isActive = activeTab === tab;
-            const unread = tab === 'team' ? teamUnread : clientUnread;
-            return (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                style={{
-                  position: 'relative',
-                  padding: '10px 16px',
-                  background: 'none',
-                  border: 'none',
-                  borderBottom: isActive ? '2px solid #111' : '2px solid transparent',
-                  fontFamily: "'IBM Plex Mono', monospace",
-                  fontSize: 9,
-                  fontWeight: isActive ? 600 : 400,
-                  letterSpacing: '0.12em',
-                  textTransform: 'uppercase',
-                  color: isActive ? '#111' : '#AAA',
-                  cursor: 'pointer',
-                  transition: 'color 0.15s',
-                }}
-              >
-                {tabLabels[tab]}
-                {/* Unread dot */}
-                {!isActive && unread > 0 && (
-                  <span style={{
-                    display: 'inline-block',
-                    width: 5, height: 5,
-                    background: '#111',
-                    borderRadius: '50%',
-                    marginLeft: 6,
-                    verticalAlign: 'middle',
-                  }} />
-                )}
-              </button>
-            );
-          })}
+      {/* Tab bar — always rendered */}
+      <div style={{
+        display: 'flex', gap: 0,
+        borderBottom: '0.5px solid #EBEBEB',
+        background: '#FFFFFF',
+        flexShrink: 0,
+      }}>
+        {availableTabs.map(tab => {
+          const isActive = activeTab === tab;
+          const unread = tab === 'team' ? teamUnread : clientUnread;
+          return (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              style={{
+                position: 'relative',
+                padding: '10px 16px',
+                background: 'none',
+                border: 'none',
+                borderBottom: isActive ? '2px solid #111' : '2px solid transparent',
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: 9,
+                fontWeight: isActive ? 600 : 400,
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                color: isActive ? '#111' : '#AAA',
+                cursor: 'pointer',
+                transition: 'color 0.15s',
+              }}
+            >
+              {tabLabels[tab]}
+              {/* Unread dot */}
+              {!isActive && unread > 0 && (
+                <span style={{
+                  display: 'inline-block',
+                  width: 5, height: 5,
+                  background: '#111',
+                  borderRadius: '50%',
+                  marginLeft: 6,
+                  verticalAlign: 'middle',
+                }} />
+              )}
+            </button>
+          );
+        })}
 
-          {/* "Заказчик не видит" label on team tab */}
-          {activeTab === 'team' && (
-            <div style={{
-              marginLeft: 'auto',
-              display: 'flex', alignItems: 'center',
-              paddingRight: 16,
-              fontFamily: "'IBM Plex Mono', monospace",
-              fontSize: 8,
-              letterSpacing: '0.08em',
-              color: '#DDD',
-            }}>
-              Заказчик не видит
-            </div>
-          )}
-        </div>
-      )}
+        {/* "Заказчик не видит" label on team tab */}
+        {activeTab === 'team' && !isClientOnly && (
+          <div style={{
+            marginLeft: 'auto',
+            display: 'flex', alignItems: 'center',
+            paddingRight: 16,
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: 8,
+            letterSpacing: '0.08em',
+            color: '#DDD',
+          }}>
+            Заказчик не видит
+          </div>
+        )}
+      </div>
 
       {/* Member pills */}
       <MemberPills members={activeTab === 'team' ? teamMembers : clientMembers} />
