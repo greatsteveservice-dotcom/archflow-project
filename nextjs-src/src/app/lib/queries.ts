@@ -21,6 +21,8 @@ import type {
   CreateVisitReportInput, CreateVisitRemarkInput, CreateRemarkCommentInput,
   ContractorTask, ContractorTaskWithDetails, CreateContractorTaskInput,
   ChatType, ChatMessage, ChatMessageWithAuthor, ChatRead, SendChatMessageInput,
+  DesignFile, DesignFileWithProfile, DesignFileComment, DesignFileCommentWithProfile,
+  DesignFolder, CreateDesignFileInput,
 } from './types';
 
 // ======================== CONSTANTS ========================
@@ -2243,4 +2245,188 @@ export async function removePushSubscription(
     .eq('endpoint', endpoint);
 
   if (error) throw error;
+}
+
+// ======================== DESIGN FILES ========================
+
+/** Fetch design files for a project, optionally filtered by folder */
+export async function fetchDesignFiles(
+  projectId: string,
+  folder?: DesignFolder,
+): Promise<DesignFileWithProfile[]> {
+  let query = supabase
+    .from('design_files')
+    .select('*')
+    .eq('project_id', projectId)
+    .order('created_at', { ascending: false });
+
+  if (folder) {
+    query = query.eq('folder', folder);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  if (!data || data.length === 0) return [];
+
+  // Fetch uploader profiles
+  const uploaderIds = [...new Set(data.map(f => f.uploaded_by).filter(Boolean))] as string[];
+  let profiles: Profile[] = [];
+  if (uploaderIds.length > 0) {
+    const { data: p } = await supabase.from('profiles').select('*').in('id', uploaderIds);
+    profiles = (p || []) as Profile[];
+  }
+  const profileMap = new Map(profiles.map(p => [p.id, p]));
+
+  return data.map(f => ({
+    ...f,
+    uploader: f.uploaded_by ? profileMap.get(f.uploaded_by) : undefined,
+  })) as DesignFileWithProfile[];
+}
+
+/** Fetch file counts per folder for a project */
+export async function fetchDesignFileCounts(
+  projectId: string,
+): Promise<Record<DesignFolder, number>> {
+  const { data, error } = await supabase
+    .from('design_files')
+    .select('folder')
+    .eq('project_id', projectId);
+
+  if (error) throw error;
+
+  const counts: Record<string, number> = { concept: 0, visuals: 0, drawings: 0, documents: 0 };
+  (data || []).forEach(f => {
+    counts[f.folder] = (counts[f.folder] || 0) + 1;
+  });
+  return counts as Record<DesignFolder, number>;
+}
+
+/** Fetch a single design file by ID */
+export async function fetchDesignFile(fileId: string): Promise<DesignFileWithProfile | null> {
+  const { data, error } = await supabase
+    .from('design_files')
+    .select('*')
+    .eq('id', fileId)
+    .single();
+
+  if (error) return null;
+  if (!data) return null;
+
+  let uploader: Profile | undefined;
+  if (data.uploaded_by) {
+    const { data: p } = await supabase.from('profiles').select('*').eq('id', data.uploaded_by).single();
+    uploader = p as Profile | undefined;
+  }
+
+  return { ...data, uploader } as DesignFileWithProfile;
+}
+
+/** Create a design file record */
+export async function createDesignFile(input: CreateDesignFileInput): Promise<DesignFile> {
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const { data, error } = await supabase
+    .from('design_files')
+    .insert({
+      project_id: input.project_id,
+      folder: input.folder,
+      name: sanitize(input.name),
+      file_path: input.file_path,
+      file_url: input.file_url,
+      file_size: input.file_size || null,
+      file_type: input.file_type || null,
+      uploaded_by: user?.id || null,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as DesignFile;
+}
+
+/** Delete a design file (removes from storage too) */
+export async function deleteDesignFile(fileId: string, filePath: string): Promise<void> {
+  // Delete from storage
+  await supabase.storage.from('design-files').remove([filePath]);
+
+  // Delete from database
+  const { error } = await supabase.from('design_files').delete().eq('id', fileId);
+  if (error) throw error;
+}
+
+/** Fetch comments for a design file */
+export async function fetchDesignFileComments(
+  fileId: string,
+): Promise<DesignFileCommentWithProfile[]> {
+  const { data, error } = await supabase
+    .from('design_file_comments')
+    .select('*')
+    .eq('file_id', fileId)
+    .order('created_at', { ascending: true });
+
+  if (error) throw error;
+  if (!data || data.length === 0) return [];
+
+  const userIds = [...new Set(data.map(c => c.user_id))];
+  let profiles: Profile[] = [];
+  if (userIds.length > 0) {
+    const { data: p } = await supabase.from('profiles').select('*').in('id', userIds);
+    profiles = (p || []) as Profile[];
+  }
+  const profileMap = new Map(profiles.map(p => [p.id, p]));
+
+  return data.map(c => ({
+    ...c,
+    author: profileMap.get(c.user_id),
+  })) as DesignFileCommentWithProfile[];
+}
+
+/** Add a comment to a design file */
+export async function createDesignFileComment(
+  fileId: string,
+  projectId: string,
+  text: string,
+): Promise<DesignFileComment> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { data, error } = await supabase
+    .from('design_file_comments')
+    .insert({
+      file_id: fileId,
+      project_id: projectId,
+      user_id: user.id,
+      text: sanitize(text),
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as DesignFileComment;
+}
+
+/** Delete a comment */
+export async function deleteDesignFileComment(commentId: string): Promise<void> {
+  const { error } = await supabase.from('design_file_comments').delete().eq('id', commentId);
+  if (error) throw error;
+}
+
+/** Count comments for a file */
+export async function fetchDesignFileCommentCounts(
+  fileIds: string[],
+): Promise<Map<string, number>> {
+  if (fileIds.length === 0) return new Map();
+
+  const { data, error } = await supabase
+    .from('design_file_comments')
+    .select('file_id')
+    .in('file_id', fileIds);
+
+  if (error) return new Map();
+
+  const counts = new Map<string, number>();
+  (data || []).forEach(c => {
+    counts.set(c.file_id, (counts.get(c.file_id) || 0) + 1);
+  });
+  return counts;
 }

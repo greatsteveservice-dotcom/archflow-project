@@ -6,7 +6,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from './supabase';
-import type { ProjectWithStats, VisitWithStats, PhotoRecord, Profile, Stage, SupplyItem, Invoice, Notification, ActivityItem, Document, ProjectMember, ProjectMemberWithProfile, DocumentCategory, Task, PhotoRecordWithVisit, RbacMemberWithProfile, ProjectAccessSettings, VisitReportWithStats, VisitRemarkWithDetails, ContractorTaskWithDetails, ChatMessageWithAuthor, ChatType } from './types';
+import type { ProjectWithStats, VisitWithStats, PhotoRecord, Profile, Stage, SupplyItem, Invoice, Notification, ActivityItem, Document, ProjectMember, ProjectMemberWithProfile, DocumentCategory, Task, PhotoRecordWithVisit, RbacMemberWithProfile, ProjectAccessSettings, VisitReportWithStats, VisitRemarkWithDetails, ContractorTaskWithDetails, ChatMessageWithAuthor, ChatType, DesignFileWithProfile, DesignFileCommentWithProfile, DesignFolder } from './types';
 import {
   fetchProjects,
   fetchProjectsPaginated,
@@ -37,6 +37,10 @@ import {
   fetchUnreadCounts,
   fetchUnreadCountByType,
   markChatRead,
+  fetchDesignFiles,
+  fetchDesignFileCounts,
+  fetchDesignFile,
+  fetchDesignFileComments,
 } from './queries';
 
 // ======================== GENERIC HOOK ========================
@@ -585,6 +589,40 @@ export function useChatUnreadByType(projectId: string | null, userId: string | n
   }, [refetch]);
 
   return { count, refetch };
+}
+
+// ======================== DESIGN FILES ========================
+
+/** Fetch design files for a project folder */
+export function useDesignFiles(projectId: string | null, folder?: DesignFolder) {
+  return useQuery<DesignFileWithProfile[]>(
+    () => projectId ? fetchDesignFiles(projectId, folder) : Promise.resolve([]),
+    [projectId, folder]
+  );
+}
+
+/** Fetch file counts per folder */
+export function useDesignFileCounts(projectId: string | null) {
+  return useQuery<Record<DesignFolder, number>>(
+    () => projectId ? fetchDesignFileCounts(projectId) : Promise.resolve({ concept: 0, visuals: 0, drawings: 0, documents: 0 }),
+    [projectId]
+  );
+}
+
+/** Fetch a single design file */
+export function useDesignFile(fileId: string | null) {
+  return useQuery<DesignFileWithProfile | null>(
+    () => fileId ? fetchDesignFile(fileId) : Promise.resolve(null),
+    [fileId]
+  );
+}
+
+/** Fetch comments for a design file */
+export function useDesignFileComments(fileId: string | null) {
+  return useQuery<DesignFileCommentWithProfile[]>(
+    () => fileId ? fetchDesignFileComments(fileId) : Promise.resolve([]),
+    [fileId]
+  );
 }
 
 // ======================== PUSH NOTIFICATIONS ========================

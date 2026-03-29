@@ -4,14 +4,14 @@ import { useState, useRef, useEffect } from "react";
 import Topbar from "./Topbar";
 import { ErrorMessage } from "./Loading";
 import { ProjectPageSkeleton } from "./Skeleton";
-import { useProject, useProjectVisits, useProjectInvoices, useProjectMembersWithProfiles, useProjectRealtime } from "../lib/hooks";
+import { useProject, useProjectVisits, useProjectInvoices, useProjectMembersWithProfiles, useProjectRealtime, useDesignFileCounts } from "../lib/hooks";
 import { usePermissions } from "../lib/permissions";
 import { updateProject } from "../lib/queries";
 import type { ProjectPermissions } from "../lib/types";
 import { exportVisitsCsv, exportInvoicesCsv } from "../lib/export";
 import dynamic from "next/dynamic";
 import SupplyModule from "./supply/SupplyModule";
-import DesignTab from "./project/DesignTab";
+import DesignSection from "./project/DesignSection";
 import SupervisionTab from "./project/SupervisionTab";
 import SettingsTab from "./project/SettingsTab";
 
@@ -38,6 +38,7 @@ export default function ProjectPage({ projectId, onNavigate, toast, onMenuToggle
   const { data: visits, loading: loadingVisits, refetch: refetchVisits } = useProjectVisits(projectId);
   const { data: invoices, refetch: refetchInvoices } = useProjectInvoices(projectId);
   const { data: membersWithProfiles } = useProjectMembersWithProfiles(projectId);
+  const { data: designCounts } = useDesignFileCounts(projectId);
   const { permissions } = usePermissions(projectId);
 
   useProjectRealtime(projectId, { refetchProject, refetchVisits, refetchInvoices });
@@ -224,7 +225,7 @@ export default function ProjectPage({ projectId, onNavigate, toast, onMenuToggle
                       {section.label}
                     </span>
                     <span className="af-block-sub">
-                      {section.id === 'design' && `${projectInvoices.length} счетов`}
+                      {section.id === 'design' && (designCounts ? `${Object.values(designCounts).reduce((a, b) => a + b, 0)} файлов` : '—')}
                       {section.id === 'supervision' && `${projectVisits.length} визитов`}
                     </span>
                   </div>
@@ -274,13 +275,12 @@ export default function ProjectPage({ projectId, onNavigate, toast, onMenuToggle
             {/* Content */}
             <div className="af-content">
               {activeTab === "design" && permissions.canViewDesign && (
-                <DesignTab
+                <DesignSection
                   projectId={projectId}
-                  invoices={projectInvoices}
                   toast={toast}
-                  refetchInvoices={refetchInvoices}
-                  canUploadDocument={permissions.canUploadDocument}
-                  canCreateInvoice={permissions.canCreateInvoice}
+                  canUpload={permissions.canUploadDocument}
+                  canDelete={permissions.canUploadDocument}
+                  canComment={true}
                 />
               )}
               {activeTab === "supervision" && permissions.canViewSupervision && (

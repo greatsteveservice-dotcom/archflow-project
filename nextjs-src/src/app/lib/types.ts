@@ -571,3 +571,61 @@ export interface SendChatMessageInput {
   ref_id?: string;
   ref_preview?: string;
 }
+
+// ======================== DESIGN FILES ========================
+
+export type DesignFolder = 'concept' | 'visuals' | 'drawings' | 'documents';
+
+export interface DesignFile {
+  id: string;
+  project_id: string;
+  folder: DesignFolder;
+  name: string;
+  file_path: string;
+  file_url: string;
+  file_size: number | null;
+  file_type: string | null;
+  uploaded_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DesignFileWithProfile extends DesignFile {
+  uploader?: Profile;
+}
+
+export interface DesignFileComment {
+  id: string;
+  file_id: string;
+  project_id: string;
+  user_id: string;
+  text: string;
+  created_at: string;
+}
+
+export interface DesignFileCommentWithProfile extends DesignFileComment {
+  author?: Profile;
+}
+
+export interface CreateDesignFileInput {
+  project_id: string;
+  folder: DesignFolder;
+  name: string;
+  file_path: string;
+  file_url: string;
+  file_size?: number;
+  file_type?: string;
+}
+
+export interface DesignFolderConfig {
+  id: DesignFolder;
+  label: string;
+  index: string;
+}
+
+export const DESIGN_FOLDERS: DesignFolderConfig[] = [
+  { id: 'concept', label: 'Концепция', index: '01' },
+  { id: 'visuals', label: 'Визуализации', index: '02' },
+  { id: 'drawings', label: 'Чертежи', index: '03' },
+  { id: 'documents', label: 'Документы', index: '04' },
+];
