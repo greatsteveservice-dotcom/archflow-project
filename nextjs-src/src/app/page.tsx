@@ -17,12 +17,12 @@ import OfflineBanner from "./components/OfflineBanner";
 import SearchModal from "./components/SearchModal";
 import { useProjects } from "./lib/hooks";
 import { useAuth } from "./lib/auth";
-import { acceptProjectInvitation } from "./lib/queries";
+import { acceptProjectInvitation, acceptRbacInvite } from "./lib/queries";
 
 export default function Home() {
   const { session, profile, loading: authLoading } = useAuth();
   const canCreateProject = profile?.role === 'designer' || profile?.role === 'assistant';
-  const [page, setPage] = useState("dashboard");
+  const [page, setPage] = useState("projects");
   const [context, setContext] = useState<any>(null);
   const [showCreateProject, setShowCreateProject] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
@@ -31,6 +31,17 @@ export default function Home() {
   const { data: projects, loading: projectsLoading, refetch: refetchProjects } = useProjects();
   const [welcomeDismissed, setWelcomeDismissed] = useState(false);
   const isPopState = useRef(false);
+
+  // RBAC invite token from /invite/TOKEN path
+  const [rbacInviteToken, setRbacInviteToken] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      const match = window.location.pathname.match(/^\/invite\/(.+)$/);
+      return match ? decodeURIComponent(match[1]) : null;
+    }
+    return null;
+  });
+  const [inviteAccepting, setInviteAccepting] = useState(false);
+  const [inviteError, setInviteError] = useState<string | null>(null);
 
   const toast = useCallback((msg: string) => setToastMsg(msg), []);
 
@@ -85,6 +96,38 @@ export default function Home() {
       });
   }, [session, refetchProjects]);
 
+  // Handle RBAC invite token from /invite/TOKEN path
+  useEffect(() => {
+    if (!session || !rbacInviteToken || inviteAccepting) return;
+
+    setInviteAccepting(true);
+    setInviteError(null);
+
+    acceptRbacInvite(rbacInviteToken)
+      .then((result) => {
+        // Clear URL
+        window.history.replaceState({}, '', '/');
+        setRbacInviteToken(null);
+
+        if (result?.project_id) {
+          refetchProjects();
+          setPage('project');
+          setContext(result.project_id);
+          setToastMsg('Вы добавлены в проект');
+        } else {
+          setToastMsg('Приглашение принято');
+        }
+      })
+      .catch((err) => {
+        window.history.replaceState({}, '', '/');
+        setRbacInviteToken(null);
+        setInviteError(err.message || 'Ссылка недействительна или уже использована');
+      })
+      .finally(() => {
+        setInviteAccepting(false);
+      });
+  }, [session, rbacInviteToken, inviteAccepting, refetchProjects]);
+
   // Auth loading state — editorial
   if (authLoading) {
     return (
@@ -98,7 +141,45 @@ export default function Home() {
 
   // Not authenticated
   if (!session) {
-    return <LoginPage />;
+    return <LoginPage inviteHint={!!rbacInviteToken} />;
+  }
+
+  // RBAC invite accepting screen
+  if (inviteAccepting) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, fontWeight: 700, color: '#111', marginBottom: 12 }}>
+            Принимаем приглашение
+          </h1>
+          <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: '#AAA' }}>
+            Подождите...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // RBAC invite error screen
+  if (inviteError) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center" style={{ maxWidth: 400 }}>
+          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, fontWeight: 700, color: '#111', marginBottom: 12 }}>
+            Ссылка недействительна
+          </h1>
+          <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: '#999', marginBottom: 24 }}>
+            {inviteError}
+          </p>
+          <button
+            onClick={() => { setInviteError(null); navigate('projects'); }}
+            className="af-btn"
+          >
+            Перейти к проектам
+          </button>
+        </div>
+      </div>
+    );
   }
 
   // New user welcome
@@ -121,28 +202,9 @@ export default function Home() {
   const renderPage = () => {
     switch (page) {
       case "dashboard":
-        return (
-          <>
-            <Topbar
-              title="Дашборд"
-              depth={1}
-              onSearchOpen={openSearch}
-              onLogoClick={goHome}
-              actions={
-                canCreateProject ? (
-                  <button className="btn btn-primary" onClick={() => setShowCreateProject(true)}>
-                    + <span className="hidden sm:inline">Новый проект</span>
-                  </button>
-                ) : undefined
-              }
-            />
-            <div className="af-layout">
-              <div className="af-content">
-                <Dashboard onNavigate={navigate} />
-              </div>
-            </div>
-          </>
-        );
+        // Dashboard hidden — redirect to projects
+        navigate("projects");
+        return null;
       case "projects":
         return (
           <>

@@ -5,7 +5,7 @@ import { useAuth } from "../lib/auth";
 
 type Mode = "login" | "register" | "forgot" | "reset";
 
-export default function LoginPage() {
+export default function LoginPage({ inviteHint = false }: { inviteHint?: boolean }) {
   const { signIn, signUp, resetPassword, updatePassword, isRecovery } = useAuth();
   const [mode, setMode] = useState<Mode>(isRecovery ? "reset" : "login");
   const [email, setEmail] = useState("");
@@ -128,6 +128,13 @@ export default function LoginPage() {
           </h2>
           <p className="af-label mt-1">{titles[mode].sub}</p>
         </div>
+
+        {/* Invite hint */}
+        {inviteHint && (
+          <div className="mb-6 p-3" style={{ background: '#F6F6F4', fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: '#111' }}>
+            Вы получили приглашение в проект. Войдите или зарегистрируйтесь, чтобы принять его.
+          </div>
+        )}
 
         {/* Error */}
         {error && (

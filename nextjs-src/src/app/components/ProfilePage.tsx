@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import { Icons } from './Icons';
 import Topbar from './Topbar';
 import { useAuth } from '../lib/auth';
@@ -120,7 +121,7 @@ export default function ProfilePage({ onNavigate, onMenuToggle, toast }: Profile
           <div className="flex items-center gap-4">
             <div className="relative group flex-shrink-0">
               {profile.avatar_url ? (
-                <img src={profile.avatar_url} alt="" className="w-16 h-16 rounded-full object-cover" />
+                <Image src={profile.avatar_url} alt="" width={64} height={64} className="w-16 h-16 rounded-full object-cover" />
               ) : (
                 <div className="w-16 h-16 rounded-full bg-ink text-srf flex items-center justify-center text-xl font-bold">
                   {initials}

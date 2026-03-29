@@ -9,12 +9,15 @@ import { usePermissions } from "../lib/permissions";
 import { updateProject } from "../lib/queries";
 import type { ProjectPermissions } from "../lib/types";
 import { exportVisitsCsv, exportInvoicesCsv } from "../lib/export";
+import dynamic from "next/dynamic";
 import SupplyModule from "./supply/SupplyModule";
 import DesignTab from "./project/DesignTab";
 import SupervisionTab from "./project/SupervisionTab";
 import SettingsTab from "./project/SettingsTab";
 
-type ProjectTab = "design" | "supervision" | "supply" | "settings";
+const ChatView = dynamic(() => import("./project/ChatView"), { loading: () => null, ssr: false });
+
+type ProjectTab = "design" | "supervision" | "supply" | "chat" | "settings";
 
 interface ProjectPageProps {
   projectId: string;
@@ -24,10 +27,10 @@ interface ProjectPageProps {
   onSearchOpen?: () => void;
 }
 
-const SECTION_CONFIG: { id: ProjectTab; label: string; permKey: keyof ProjectPermissions; index: string }[] = [
+const SECTION_CONFIG: { id: ProjectTab; label: string; permKey: keyof ProjectPermissions; index: string; disabled?: boolean }[] = [
   { id: "design", label: "Дизайн", permKey: "canViewDesign", index: "01" },
   { id: "supervision", label: "Авторский надзор", permKey: "canViewSupervision", index: "02" },
-  { id: "supply", label: "Комплектация", permKey: "canViewSupply", index: "03" },
+  { id: "supply", label: "Комплектация", permKey: "canViewSupply", index: "03", disabled: true },
 ];
 
 export default function ProjectPage({ projectId, onNavigate, toast, onMenuToggle, onSearchOpen }: ProjectPageProps) {
@@ -96,7 +99,7 @@ export default function ProjectPage({ projectId, onNavigate, toast, onMenuToggle
   };
 
   const sectionLabel = activeTab
-    ? SECTION_CONFIG.find(s => s.id === activeTab)?.label || ''
+    ? (activeTab === 'chat' ? 'Чат' : SECTION_CONFIG.find(s => s.id === activeTab)?.label || '')
     : '';
 
   const depth = activeTab ? 3 : 2;
@@ -182,26 +185,66 @@ export default function ProjectPage({ projectId, onNavigate, toast, onMenuToggle
         {/* ═══ LEVEL 2: Section blocks ═══ */}
         {activeTab === null && (
           <div style={{ padding: 0 }}>
-            {visibleSections.map((section) => (
-              <button
-                key={section.id}
-                className="af-block"
-                onClick={() => setActiveTab(section.id)}
-              >
-                <div className="af-block-inner">
-                  <span className="af-block-index">{section.index} — Раздел</span>
-                  <span className={`af-block-name ${isShortName(section.label) ? 'af-block-name-short' : 'af-block-name-long'}`}>
-                    {section.label}
-                  </span>
-                  <span className="af-block-sub">
-                    {section.id === 'design' && `${projectInvoices.length} счетов`}
-                    {section.id === 'supervision' && `${projectVisits.length} визитов`}
-                    {section.id === 'supply' && 'Позиции комплектации'}
-                  </span>
+            {visibleSections.map((section) =>
+              section.disabled ? (
+                <div
+                  key={section.id}
+                  className="af-block af-block-disabled"
+                  style={{ cursor: 'default', background: '#F6F6F4' }}
+                >
+                  <div className="af-block-inner">
+                    <span className="af-block-index" style={{ color: '#DDDDDD' }}>{section.index} — Раздел</span>
+                    <span
+                      className={`af-block-name ${isShortName(section.label) ? 'af-block-name-short' : 'af-block-name-long'}`}
+                      style={{ color: '#CCCCCC' }}
+                    >
+                      {section.label}
+                    </span>
+                    <span style={{
+                      fontFamily: "'IBM Plex Mono', monospace",
+                      fontSize: 8,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.16em',
+                      color: '#AAAAAA',
+                    }}>
+                      Будет доступно в апреле
+                    </span>
+                  </div>
+                  <span className="af-block-arrow" style={{ color: '#DDDDDD' }}>→</span>
                 </div>
-                <span className="af-block-arrow">→</span>
-              </button>
-            ))}
+              ) : (
+                <button
+                  key={section.id}
+                  className="af-block"
+                  onClick={() => setActiveTab(section.id)}
+                >
+                  <div className="af-block-inner">
+                    <span className="af-block-index">{section.index} — Раздел</span>
+                    <span className={`af-block-name ${isShortName(section.label) ? 'af-block-name-short' : 'af-block-name-long'}`}>
+                      {section.label}
+                    </span>
+                    <span className="af-block-sub">
+                      {section.id === 'design' && `${projectInvoices.length} счетов`}
+                      {section.id === 'supervision' && `${projectVisits.length} визитов`}
+                    </span>
+                  </div>
+                  <span className="af-block-arrow">→</span>
+                </button>
+              )
+            )}
+
+            {/* Chat block */}
+            <button
+              className="af-block"
+              onClick={() => setActiveTab("chat")}
+            >
+              <div className="af-block-inner">
+                <span className="af-block-index">04 — Раздел</span>
+                <span className="af-block-name af-block-name-short">Чат</span>
+                <span className="af-block-sub">Обсуждение проекта</span>
+              </div>
+              <span className="af-block-arrow">→</span>
+            </button>
 
             {/* Settings — dark block */}
             {permissions.canViewSettings && (
@@ -222,7 +265,7 @@ export default function ProjectPage({ projectId, onNavigate, toast, onMenuToggle
         {activeTab !== null && (
           <div>
             {/* Section hero */}
-            {activeTab !== 'settings' && (
+            {activeTab !== 'settings' && activeTab !== 'chat' && (
               <div className="af-section-hero">
                 <h2 className="af-section-hero-title">{sectionLabel}</h2>
               </div>
@@ -259,6 +302,9 @@ export default function ProjectPage({ projectId, onNavigate, toast, onMenuToggle
               )}
               {activeTab === "supply" && permissions.canViewSupply && (
                 <SupplyModule projectId={projectId} toast={toast} />
+              )}
+              {activeTab === "chat" && (
+                <ChatView projectId={projectId} toast={toast} />
               )}
               {activeTab === "settings" && permissions.canViewSettings && (
                 <SettingsTab

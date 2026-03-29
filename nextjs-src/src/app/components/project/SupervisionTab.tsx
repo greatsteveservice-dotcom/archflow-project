@@ -1,13 +1,18 @@
 'use client';
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import type { ProjectWithStats, VisitWithStats, ProjectMemberWithProfile } from '../../lib/types';
-import CalendarView from '../supervision/CalendarView';
 import PhotoGallery from '../supervision/PhotoGallery';
-import ReportsView from '../supervision/ReportsView';
-import TasksView from '../supervision/TasksView';
 import CameraView from '../supervision/CameraView';
+import SupervisionSettings from '../supervision/SupervisionSettings';
+
+const CalendarView = dynamic(() => import('../supervision/CalendarView'), { loading: () => null, ssr: false });
+const ReportsListView = dynamic(() => import('../supervision/ReportsListView'), { loading: () => null, ssr: false });
+const ReportDetailView = dynamic(() => import('../supervision/ReportDetailView'), { loading: () => null, ssr: false });
+const ContractorTasksView = dynamic(() => import('../supervision/ContractorTasksView'), { loading: () => null, ssr: false });
 
 const SUB_TABS = [
+  { id: 'settings', label: 'Настройки надзора' },
   { id: 'calendar', label: 'Календарь' },
   { id: 'photos', label: 'Фото' },
   { id: 'reports', label: 'Отчёты' },
@@ -41,6 +46,7 @@ export default function SupervisionTab({
   canEditProjectSettings = true, members = [],
 }: SupervisionTabProps) {
   const [activeSubTab, setActiveSubTab] = useState<SubTabId | null>(null);
+  const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
 
   // Tab-row list (Level 3 → Level 4 navigation)
   if (activeSubTab === null) {
@@ -54,21 +60,10 @@ export default function SupervisionTab({
               onClick={() => setActiveSubTab(tab.id)}
             >
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-                <span style={{
-                  fontFamily: "'Playfair Display', serif",
-                  fontSize: 15,
-                  fontWeight: 400,
-                  color: '#111',
-                  letterSpacing: '-0.01em',
-                }}>{tab.label}</span>
-                <span style={{
-                  fontFamily: "'IBM Plex Mono', monospace",
-                  fontSize: 7,
-                  letterSpacing: '0.1em',
-                  color: '#CCC',
-                }}>{String(idx + 1).padStart(2, '0')}</span>
+                <span className="af-tab-name">{tab.label}</span>
+                <span className="af-tab-index">{String(idx + 1).padStart(2, '0')}</span>
               </div>
-              <span style={{ fontSize: 10, color: '#CCC' }}>→</span>
+              <span className="af-tab-arrow">→</span>
             </div>
           ))}
         </div>
@@ -76,13 +71,14 @@ export default function SupervisionTab({
     );
   }
 
-  const currentTab = SUB_TABS.find(t => t.id === activeSubTab);
-
   return (
     <div className="animate-fade-in">
       {/* Back link */}
       <button
-        onClick={() => setActiveSubTab(null)}
+        onClick={() => {
+          if (selectedReportId) { setSelectedReportId(null); return; }
+          setActiveSubTab(null);
+        }}
         style={{
           fontFamily: "'IBM Plex Mono', monospace",
           fontSize: 8,
@@ -101,6 +97,12 @@ export default function SupervisionTab({
 
       {/* Content */}
       <div className="animate-fade-in">
+        {activeSubTab === 'settings' && (
+          <SupervisionSettings
+            projectId={projectId}
+            toast={toast}
+          />
+        )}
         {activeSubTab === 'calendar' && (
           <CalendarView
             projectId={projectId}
@@ -117,14 +119,24 @@ export default function SupervisionTab({
             canChangePhotoStatus={canChangePhotoStatus}
           />
         )}
-        {activeSubTab === 'reports' && (
-          <ReportsView
-            visits={visits}
-            onSelectVisit={onSelectVisit}
+        {activeSubTab === 'reports' && !selectedReportId && (
+          <ReportsListView
+            projectId={projectId}
+            toast={toast}
+            onSelectReport={setSelectedReportId}
+          />
+        )}
+        {activeSubTab === 'reports' && selectedReportId && (
+          <ReportDetailView
+            reportId={selectedReportId}
+            projectId={projectId}
+            toast={toast}
+            onBack={() => setSelectedReportId(null)}
+            members={members}
           />
         )}
         {activeSubTab === 'tasks' && (
-          <TasksView
+          <ContractorTasksView
             projectId={projectId}
             toast={toast}
             canManageTasks={canManageTasks}

@@ -2,8 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=IBM+Plex+Mono:wght@300;400&display=swap');
-
 /* ═══════════════════════════════════════════════
    ARCHFLOW — Editorial Design System
    ═══════════════════════════════════════════════ */
@@ -16,8 +14,8 @@
   --af-border: #EBEBEB;
   --af-white: #FFFFFF;
   --af-gap: 2px;
-  --af-font-display: 'Playfair Display', serif;
-  --af-font-mono: 'IBM Plex Mono', monospace;
+  --af-font-display: var(--font-playfair), 'Playfair Display', serif;
+  --af-font-mono: var(--font-ibm-mono), 'IBM Plex Mono', monospace;
 
   /* Legacy Tailwind vars → monochrome */
   --font-body: var(--af-font-mono);
@@ -207,6 +205,11 @@ body {
 .af-block:hover .af-block-sub, .af-block:active .af-block-sub { color: rgba(255,255,255,0.5); }
 .af-block:hover .af-block-arrow, .af-block:active .af-block-arrow { color: rgba(255,255,255,0.6); }
 .af-block:hover .af-block-name, .af-block:active .af-block-name { color: var(--af-white); }
+/* Disabled block — no hover */
+.af-block-disabled:hover, .af-block-disabled:active { background: #F6F6F4 !important; color: inherit !important; }
+.af-block-disabled:hover .af-block-index, .af-block-disabled:active .af-block-index { color: #DDDDDD !important; }
+.af-block-disabled:hover .af-block-name, .af-block-disabled:active .af-block-name { color: #CCCCCC !important; }
+.af-block-disabled:hover .af-block-arrow, .af-block-disabled:active .af-block-arrow { color: #DDDDDD !important; }
 .af-block-inner { flex: 1; min-width: 0; }
 .af-block-index {
   font-family: var(--af-font-mono); font-size: 8px;
@@ -379,7 +382,7 @@ body {
 }
 .af-tab-index {
   font-family: var(--af-font-mono); font-size: 9px;
-  color: #CCCCCC; margin-left: 16px;
+  color: #CCCCCC;
   transition: color 0.15s ease;
 }
 .af-tab-arrow {

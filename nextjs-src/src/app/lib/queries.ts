@@ -15,6 +15,12 @@ import type {
   CreatePhotoRecordInput, CreateProjectMemberInput, CreateInvoiceInput,
   CreateSupplyItemInput, CreateDocumentInput, UpdateProfileInput,
   DocumentCategory, Task, TaskStatus, CreateTaskInput, PhotoRecordWithVisit,
+  MemberRole, RbacMember, RbacMemberWithProfile, ProjectAccessSettings,
+  VisitReport, VisitReportWithStats, VisitRemark, VisitRemarkWithDetails,
+  RemarkComment, RemarkCommentWithProfile, ReportStatus, RemarkStatus,
+  CreateVisitReportInput, CreateVisitRemarkInput, CreateRemarkCommentInput,
+  ContractorTask, ContractorTaskWithDetails, CreateContractorTaskInput,
+  ChatType, ChatMessage, ChatMessageWithAuthor, ChatRead, SendChatMessageInput,
 } from './types';
 
 // ======================== CONSTANTS ========================
@@ -1173,6 +1179,135 @@ export async function updateProjectWebcam(projectId: string, webcamUrl: string |
   return data as Project;
 }
 
+// ======================== SUPERVISION CONFIG ========================
+
+const SV_KEY = (pid: string) => `archflow:sv_config:${pid}`;
+
+/** Load supervision config for a project (localStorage, fallback until DB migration) */
+export function loadSupervisionConfig(projectId: string): import('./types').SupervisionConfig | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(SV_KEY(projectId));
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+/** Save supervision config for a project */
+export function saveSupervisionConfig(projectId: string, config: import('./types').SupervisionConfig): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(SV_KEY(projectId), JSON.stringify(config));
+}
+
+// ======================== RBAC: MEMBERS + ACCESS SETTINGS ========================
+
+/** Fetch RBAC members for a project (uses new columns from migration 012) */
+export async function fetchRbacMembers(projectId: string): Promise<RbacMember[]> {
+  const { data, error } = await supabase
+    .from('project_members')
+    .select('*')
+    .eq('project_id', projectId)
+    .not('member_role', 'is', null)
+    .order('created_at', { ascending: true });
+  if (error) throw new Error(humanError(error));
+  return (data || []) as RbacMember[];
+}
+
+/** Fetch RBAC members with profile data */
+export async function fetchRbacMembersWithProfiles(projectId: string): Promise<RbacMemberWithProfile[]> {
+  const members = await fetchRbacMembers(projectId);
+  if (members.length === 0) return [];
+
+  const userIds = members.map(m => m.user_id).filter(Boolean) as string[];
+  if (userIds.length === 0) return members.map(m => ({ ...m }));
+
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('*')
+    .in('id', userIds);
+
+  const profileMap = new Map<string, import('./types').Profile>();
+  profiles?.forEach(p => profileMap.set(p.id, p as import('./types').Profile));
+
+  return members.map(m => ({
+    ...m,
+    profile: m.user_id ? profileMap.get(m.user_id) : undefined,
+  }));
+}
+
+/** Create RBAC invite (inserts pending member with token) */
+export async function createRbacInvite(
+  projectId: string,
+  memberRole: MemberRole,
+  email: string
+): Promise<RbacMember> {
+  const token = crypto.randomUUID().replace(/-/g, '');
+  const { data, error } = await supabase
+    .from('project_members')
+    .insert({
+      project_id: projectId,
+      member_role: memberRole,
+      role: memberRole === 'team' ? 'assistant' : memberRole, // map to legacy user_role
+      access_level: memberRole === 'team' ? 'full' : 'view',
+      invite_token: token,
+      invite_email: email.trim().toLowerCase(),
+      status: 'pending',
+    })
+    .select()
+    .single();
+  if (error) {
+    if (error.code === '23505') throw new Error('Этот email уже приглашён в проект');
+    throw new Error(humanError(error));
+  }
+  return data as RbacMember;
+}
+
+/** Remove RBAC member */
+export async function removeRbacMember(memberId: string): Promise<void> {
+  const { error } = await supabase
+    .from('project_members')
+    .delete()
+    .eq('id', memberId);
+  if (error) throw new Error(humanError(error));
+}
+
+/** Accept RBAC invite by token (uses RPC from migration 012) */
+export async function acceptRbacInvite(token: string): Promise<{ project_id: string; role: string } | null> {
+  const { data, error } = await supabase.rpc('accept_member_invite', { p_token: token });
+  if (error) throw new Error(humanError(error));
+  if (data?.error) throw new Error(data.error);
+  return data;
+}
+
+// ─── Access settings ────────────────────────────────────
+
+/** Fetch access settings for a project */
+export async function fetchAccessSettings(projectId: string): Promise<ProjectAccessSettings | null> {
+  const { data, error } = await supabase
+    .from('project_access_settings')
+    .select('*')
+    .eq('project_id', projectId)
+    .maybeSingle();
+  if (error) throw new Error(humanError(error));
+  return data as ProjectAccessSettings | null;
+}
+
+/** Upsert access settings for a project */
+export async function upsertAccessSettings(
+  projectId: string,
+  settings: { client_can_see_design: boolean; client_can_see_furnishing: boolean }
+): Promise<ProjectAccessSettings> {
+  const { data, error } = await supabase
+    .from('project_access_settings')
+    .upsert(
+      { project_id: projectId, ...settings },
+      { onConflict: 'project_id' }
+    )
+    .select()
+    .single();
+  if (error) throw new Error(humanError(error));
+  return data as ProjectAccessSettings;
+}
+
 // ======================== PROJECT MEMBERS ========================
 
 export async function fetchProjectMembers(projectId: string): Promise<ProjectMember[]> {
@@ -1275,6 +1410,397 @@ export async function deleteDocument(documentId: string): Promise<void> {
     .delete()
     .eq('id', documentId);
   if (error) throw new Error(humanError(error));
+}
+
+// ======================== VISIT REPORTS ========================
+
+/** Fetch all reports for a project, with remark stats */
+export async function fetchVisitReports(projectId: string): Promise<VisitReportWithStats[]> {
+  const { data, error } = await supabase
+    .from('visit_reports')
+    .select('*')
+    .eq('project_id', projectId)
+    .order('visit_date', { ascending: false });
+  if (error) throw new Error(humanError(error));
+
+  const reports = (data || []) as VisitReport[];
+  if (reports.length === 0) return [];
+
+  // Fetch remark stats in bulk
+  const reportIds = reports.map(r => r.id);
+  const { data: remarks } = await supabase
+    .from('visit_remarks')
+    .select('id, report_id, status')
+    .in('report_id', reportIds);
+
+  const remarksByReport = new Map<string, { total: number; open: number; resolved: number }>();
+  (remarks || []).forEach(r => {
+    const stats = remarksByReport.get(r.report_id) || { total: 0, open: 0, resolved: 0 };
+    stats.total++;
+    if (r.status === 'open') stats.open++;
+    if (r.status === 'resolved') stats.resolved++;
+    remarksByReport.set(r.report_id, stats);
+  });
+
+  return reports.map(r => {
+    const stats = remarksByReport.get(r.id) || { total: 0, open: 0, resolved: 0 };
+    return {
+      ...r,
+      remark_count: stats.total,
+      open_count: stats.open,
+      resolved_count: stats.resolved,
+    };
+  });
+}
+
+/** Fetch a single report by ID */
+export async function fetchVisitReport(reportId: string): Promise<VisitReport | null> {
+  const { data, error } = await supabase
+    .from('visit_reports')
+    .select('*')
+    .eq('id', reportId)
+    .maybeSingle();
+  if (error) throw new Error(humanError(error));
+  return data as VisitReport | null;
+}
+
+/** Create a visit report */
+export async function createVisitReport(input: CreateVisitReportInput): Promise<VisitReport> {
+  const { data, error } = await supabase
+    .from('visit_reports')
+    .insert({
+      project_id: input.project_id,
+      visit_date: input.visit_date,
+      status: input.status || 'draft',
+      general_comment: input.general_comment || null,
+    })
+    .select()
+    .single();
+  if (error) {
+    if (error.code === '23505') throw new Error('Отчёт на эту дату уже существует');
+    throw new Error(humanError(error));
+  }
+  return data as VisitReport;
+}
+
+/** Update a visit report */
+export async function updateVisitReport(
+  reportId: string,
+  updates: Partial<Pick<VisitReport, 'status' | 'general_comment'>>
+): Promise<VisitReport> {
+  const { data, error } = await supabase
+    .from('visit_reports')
+    .update(updates)
+    .eq('id', reportId)
+    .select()
+    .single();
+  if (error) throw new Error(humanError(error));
+  return data as VisitReport;
+}
+
+/** Delete a visit report */
+export async function deleteVisitReport(reportId: string): Promise<void> {
+  const { error } = await supabase
+    .from('visit_reports')
+    .delete()
+    .eq('id', reportId);
+  if (error) throw new Error(humanError(error));
+}
+
+// ─── Remarks ─────────────────────────────────────────────
+
+/** Fetch remarks for a report with comments and assignee profiles */
+export async function fetchVisitRemarks(reportId: string): Promise<VisitRemarkWithDetails[]> {
+  const { data, error } = await supabase
+    .from('visit_remarks')
+    .select('*')
+    .eq('report_id', reportId)
+    .order('number', { ascending: true });
+  if (error) throw new Error(humanError(error));
+
+  const remarks = (data || []) as VisitRemark[];
+  if (remarks.length === 0) return [];
+
+  // Fetch comments
+  const remarkIds = remarks.map(r => r.id);
+  const { data: comments } = await supabase
+    .from('remark_comments')
+    .select('*')
+    .in('remark_id', remarkIds)
+    .order('created_at', { ascending: true });
+
+  // Fetch unique user IDs for comments + assignees
+  const userIds = new Set<string>();
+  remarks.forEach(r => { if (r.assigned_to) userIds.add(r.assigned_to); });
+  (comments || []).forEach(c => userIds.add(c.user_id));
+
+  const profiles = new Map<string, Profile>();
+  if (userIds.size > 0) {
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('*')
+      .in('id', Array.from(userIds));
+    (profileData || []).forEach(p => profiles.set(p.id, p as Profile));
+  }
+
+  // Group comments by remark
+  const commentsByRemark = new Map<string, RemarkCommentWithProfile[]>();
+  (comments || []).forEach(c => {
+    const arr = commentsByRemark.get(c.remark_id) || [];
+    arr.push({ ...c, author: profiles.get(c.user_id) });
+    commentsByRemark.set(c.remark_id, arr);
+  });
+
+  return remarks.map(r => ({
+    ...r,
+    assignee: r.assigned_to ? profiles.get(r.assigned_to) : undefined,
+    comments: commentsByRemark.get(r.id) || [],
+  }));
+}
+
+/** Create a remark */
+export async function createVisitRemark(input: CreateVisitRemarkInput): Promise<VisitRemark> {
+  // Get next number
+  const { count } = await supabase
+    .from('visit_remarks')
+    .select('*', { count: 'exact', head: true })
+    .eq('report_id', input.report_id);
+
+  const { data, error } = await supabase
+    .from('visit_remarks')
+    .insert({
+      report_id: input.report_id,
+      project_id: input.project_id,
+      number: (count || 0) + 1,
+      text: sanitize(input.text),
+      deadline: input.deadline || null,
+      assigned_to: input.assigned_to || null,
+    })
+    .select()
+    .single();
+  if (error) throw new Error(humanError(error));
+  return data as VisitRemark;
+}
+
+/** Update a remark */
+export async function updateVisitRemark(
+  remarkId: string,
+  updates: Partial<Pick<VisitRemark, 'text' | 'status' | 'deadline' | 'assigned_to'>>
+): Promise<VisitRemark> {
+  const { data, error } = await supabase
+    .from('visit_remarks')
+    .update(updates)
+    .eq('id', remarkId)
+    .select()
+    .single();
+  if (error) throw new Error(humanError(error));
+  return data as VisitRemark;
+}
+
+/** Delete a remark */
+export async function deleteVisitRemark(remarkId: string): Promise<void> {
+  const { error } = await supabase
+    .from('visit_remarks')
+    .delete()
+    .eq('id', remarkId);
+  if (error) throw new Error(humanError(error));
+}
+
+// ─── Remark Comments ─────────────────────────────────────
+
+/** Create a remark comment */
+export async function createRemarkComment(input: CreateRemarkCommentInput): Promise<RemarkComment> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { data, error } = await supabase
+    .from('remark_comments')
+    .insert({
+      remark_id: input.remark_id,
+      project_id: input.project_id,
+      user_id: user.id,
+      text: sanitize(input.text),
+    })
+    .select()
+    .single();
+  if (error) throw new Error(humanError(error));
+  return data as RemarkComment;
+}
+
+// ─── Auto-draft ──────────────────────────────────────────
+
+/** Check if today is a scheduled visit day and auto-create draft if needed */
+export async function ensureTodayDraft(projectId: string, isScheduledToday: boolean): Promise<VisitReport | null> {
+  if (!isScheduledToday) return null;
+
+  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+
+  // Check if report already exists for today
+  const { data: existing } = await supabase
+    .from('visit_reports')
+    .select('id')
+    .eq('project_id', projectId)
+    .eq('visit_date', today)
+    .maybeSingle();
+
+  if (existing) return null; // already exists
+
+  // Create draft
+  try {
+    return await createVisitReport({
+      project_id: projectId,
+      visit_date: today,
+      status: 'draft',
+    });
+  } catch {
+    return null; // silently fail (may be a race condition)
+  }
+}
+
+// ======================== CONTRACTOR TASKS ========================
+
+/** Fetch contractor tasks for a project with assignee profiles + remark info */
+export async function fetchContractorTasks(projectId: string): Promise<ContractorTaskWithDetails[]> {
+  const { data, error } = await supabase
+    .from('contractor_tasks')
+    .select('*')
+    .eq('project_id', projectId)
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(humanError(error));
+
+  const tasks = (data || []) as ContractorTask[];
+  if (tasks.length === 0) return [];
+
+  // Fetch assignee profiles
+  const userIds = [...new Set(tasks.map(t => t.assigned_to))];
+  const profiles = new Map<string, Profile>();
+  if (userIds.length > 0) {
+    const { data: pData } = await supabase.from('profiles').select('*').in('id', userIds);
+    (pData || []).forEach(p => profiles.set(p.id, p as Profile));
+  }
+
+  // Fetch remark info for linked tasks
+  const remarkIds = tasks.map(t => t.remark_id).filter(Boolean) as string[];
+  const remarkMap = new Map<string, { number: number; date: string }>();
+  if (remarkIds.length > 0) {
+    const { data: rData } = await supabase
+      .from('visit_remarks')
+      .select('id, number, report_id')
+      .in('id', remarkIds);
+    if (rData && rData.length > 0) {
+      const reportIds = [...new Set(rData.map(r => r.report_id))];
+      const { data: repData } = await supabase
+        .from('visit_reports')
+        .select('id, visit_date')
+        .in('id', reportIds);
+      const reportDateMap = new Map<string, string>();
+      (repData || []).forEach(r => reportDateMap.set(r.id, r.visit_date));
+      rData.forEach(r => {
+        remarkMap.set(r.id, { number: r.number, date: reportDateMap.get(r.report_id) || '' });
+      });
+    }
+  }
+
+  return tasks.map(t => ({
+    ...t,
+    assignee: profiles.get(t.assigned_to),
+    remark_number: t.remark_id ? remarkMap.get(t.remark_id)?.number : undefined,
+    remark_date: t.remark_id ? remarkMap.get(t.remark_id)?.date : undefined,
+  }));
+}
+
+/** Fetch contractor tasks assigned to current user */
+export async function fetchMyContractorTasks(): Promise<ContractorTaskWithDetails[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data, error } = await supabase
+    .from('contractor_tasks')
+    .select('*')
+    .eq('assigned_to', user.id)
+    .order('status', { ascending: true })
+    .order('deadline', { ascending: true, nullsFirst: false });
+  if (error) throw new Error(humanError(error));
+  return (data || []) as ContractorTaskWithDetails[];
+}
+
+/** Fetch contractor tasks linked to a remark */
+export async function fetchRemarkTasks(remarkId: string): Promise<ContractorTask[]> {
+  const { data, error } = await supabase
+    .from('contractor_tasks')
+    .select('*')
+    .eq('remark_id', remarkId)
+    .order('created_at', { ascending: true });
+  if (error) throw new Error(humanError(error));
+  return (data || []) as ContractorTask[];
+}
+
+/** Create contractor task */
+export async function createContractorTask(input: CreateContractorTaskInput): Promise<ContractorTask> {
+  const { data, error } = await supabase
+    .from('contractor_tasks')
+    .insert({
+      project_id: input.project_id,
+      title: sanitize(input.title),
+      description: input.description ? sanitize(input.description) : null,
+      assigned_to: input.assigned_to,
+      deadline: input.deadline || null,
+      remark_id: input.remark_id || null,
+      photos: input.photos || null,
+    })
+    .select()
+    .single();
+  if (error) throw new Error(humanError(error));
+  return data as ContractorTask;
+}
+
+/** Update contractor task */
+export async function updateContractorTask(
+  taskId: string,
+  updates: Partial<Pick<ContractorTask, 'title' | 'description' | 'status' | 'deadline' | 'assigned_to' | 'completed_at'>>
+): Promise<ContractorTask> {
+  const { data, error } = await supabase
+    .from('contractor_tasks')
+    .update(updates)
+    .eq('id', taskId)
+    .select()
+    .single();
+  if (error) throw new Error(humanError(error));
+  return data as ContractorTask;
+}
+
+/** Delete contractor task */
+export async function deleteContractorTask(taskId: string): Promise<void> {
+  const { error } = await supabase
+    .from('contractor_tasks')
+    .delete()
+    .eq('id', taskId);
+  if (error) throw new Error(humanError(error));
+}
+
+/** Check if project has pending alerts (for badge) */
+export async function checkProjectAlerts(projectId: string): Promise<boolean> {
+  // 1. Has open/in_progress contractor tasks
+  const { count: taskCount } = await supabase
+    .from('contractor_tasks')
+    .select('*', { count: 'exact', head: true })
+    .eq('project_id', projectId)
+    .in('status', ['open', 'in_progress']);
+  if ((taskCount || 0) > 0) return true;
+
+  // 2. Has open remarks with deadline <= today + 3 days
+  const soon = new Date();
+  soon.setDate(soon.getDate() + 3);
+  const soonStr = soon.toISOString().slice(0, 10);
+  const { count: remarkCount } = await supabase
+    .from('visit_remarks')
+    .select('*', { count: 'exact', head: true })
+    .eq('project_id', projectId)
+    .eq('status', 'open')
+    .lte('deadline', soonStr);
+  if ((remarkCount || 0) > 0) return true;
+
+  return false;
 }
 
 // ======================== GLOBAL SEARCH ========================
@@ -1485,4 +2011,236 @@ function humanError(err: { code?: string; message?: string; details?: string }):
   }
   // Fallback
   return msg || 'Произошла ошибка. Попробуйте ещё раз';
+}
+
+// ======================== CHAT ========================
+
+/** Fetch chat messages for a project (newest first, paginated) */
+export async function fetchChatMessages(
+  projectId: string,
+  limit = 50,
+  before?: string,
+  chatType?: ChatType,
+): Promise<ChatMessageWithAuthor[]> {
+  let query = supabase
+    .from('chat_messages')
+    .select('*')
+    .eq('project_id', projectId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (chatType) {
+    query = query.eq('chat_type', chatType);
+  }
+
+  if (before) {
+    query = query.lt('created_at', before);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  if (!data || data.length === 0) return [];
+
+  // Fetch author profiles
+  const userIds = [...new Set(data.map(m => m.user_id))];
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('*')
+    .in('id', userIds);
+
+  const profileMap = new Map((profiles || []).map(p => [p.id, p]));
+
+  return data.map(m => ({
+    ...m,
+    author: profileMap.get(m.user_id) || undefined,
+  }));
+}
+
+/** Send a chat message */
+export async function sendChatMessage(
+  input: SendChatMessageInput,
+  userId: string,
+): Promise<ChatMessage> {
+  const { data, error } = await supabase
+    .from('chat_messages')
+    .insert({
+      project_id: input.project_id,
+      user_id: userId,
+      text: sanitize(input.text),
+      chat_type: input.chat_type || 'team',
+      ref_type: input.ref_type || null,
+      ref_id: input.ref_id || null,
+      ref_preview: input.ref_preview ? sanitize(input.ref_preview) : null,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+/** Delete a chat message (own only) */
+export async function deleteChatMessage(messageId: string): Promise<void> {
+  const { error } = await supabase
+    .from('chat_messages')
+    .delete()
+    .eq('id', messageId);
+
+  if (error) throw error;
+}
+
+/** Update a chat message text (own only) */
+export async function updateChatMessage(
+  messageId: string,
+  text: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from('chat_messages')
+    .update({ text: sanitize(text) })
+    .eq('id', messageId);
+
+  if (error) throw error;
+}
+
+/** Get or create the chat_reads row, return last_read_at */
+export async function fetchChatRead(
+  projectId: string,
+  userId: string,
+  chatType: ChatType = 'team',
+): Promise<string | null> {
+  const { data } = await supabase
+    .from('chat_reads')
+    .select('last_read_at')
+    .eq('project_id', projectId)
+    .eq('user_id', userId)
+    .eq('chat_type', chatType)
+    .single();
+
+  return data?.last_read_at || null;
+}
+
+/** Mark chat as read (upsert) */
+export async function markChatRead(
+  projectId: string,
+  userId: string,
+  chatType: ChatType = 'team',
+): Promise<void> {
+  const { error } = await supabase
+    .from('chat_reads')
+    .upsert(
+      { project_id: projectId, user_id: userId, chat_type: chatType, last_read_at: new Date().toISOString() },
+      { onConflict: 'project_id,user_id,chat_type' },
+    );
+
+  if (error) throw error;
+}
+
+/** Count unread messages per project for a user (sum of both chat types) */
+export async function fetchUnreadCounts(
+  projectIds: string[],
+  userId: string,
+): Promise<Map<string, number>> {
+  if (projectIds.length === 0) return new Map();
+
+  // Get last read times for all projects (both chat types)
+  const { data: reads } = await supabase
+    .from('chat_reads')
+    .select('project_id, chat_type, last_read_at')
+    .eq('user_id', userId)
+    .in('project_id', projectIds);
+
+  // Key: "projectId:chatType" → last_read_at
+  const readMap = new Map((reads || []).map(r => [`${r.project_id}:${r.chat_type}`, r.last_read_at]));
+  const result = new Map<string, number>();
+
+  // For each project, count unread in both chat types
+  await Promise.all(
+    projectIds.map(async (pid) => {
+      let total = 0;
+      for (const ct of ['team', 'client'] as const) {
+        const lastRead = readMap.get(`${pid}:${ct}`);
+        let query = supabase
+          .from('chat_messages')
+          .select('id', { count: 'exact', head: true })
+          .eq('project_id', pid)
+          .eq('chat_type', ct)
+          .neq('user_id', userId);
+
+        if (lastRead) {
+          query = query.gt('created_at', lastRead);
+        }
+
+        const { count } = await query;
+        if (count && count > 0) total += count;
+      }
+      if (total > 0) result.set(pid, total);
+    }),
+  );
+
+  return result;
+}
+
+/** Count unread messages for a specific chat type in a project */
+export async function fetchUnreadCountByType(
+  projectId: string,
+  userId: string,
+  chatType: ChatType,
+): Promise<number> {
+  const { data: read } = await supabase
+    .from('chat_reads')
+    .select('last_read_at')
+    .eq('project_id', projectId)
+    .eq('user_id', userId)
+    .eq('chat_type', chatType)
+    .single();
+
+  let query = supabase
+    .from('chat_messages')
+    .select('id', { count: 'exact', head: true })
+    .eq('project_id', projectId)
+    .eq('chat_type', chatType)
+    .neq('user_id', userId);
+
+  if (read?.last_read_at) {
+    query = query.gt('created_at', read.last_read_at);
+  }
+
+  const { count } = await query;
+  return count || 0;
+}
+
+// ======================== PUSH SUBSCRIPTIONS ========================
+
+/** Save a push subscription for the current user */
+export async function savePushSubscription(
+  userId: string,
+  subscription: { endpoint: string; keys: { p256dh: string; auth: string } },
+): Promise<void> {
+  const { error } = await supabase
+    .from('push_subscriptions')
+    .upsert(
+      {
+        user_id: userId,
+        endpoint: subscription.endpoint,
+        p256dh: subscription.keys.p256dh,
+        auth_key: subscription.keys.auth,
+      },
+      { onConflict: 'user_id,endpoint' },
+    );
+
+  if (error) throw error;
+}
+
+/** Remove a push subscription */
+export async function removePushSubscription(
+  userId: string,
+  endpoint: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from('push_subscriptions')
+    .delete()
+    .eq('user_id', userId)
+    .eq('endpoint', endpoint);
+
+  if (error) throw error;
 }

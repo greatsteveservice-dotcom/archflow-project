@@ -287,6 +287,52 @@ export interface CreateSupplyItemInput {
   notes?: string;
 }
 
+// ======================== RBAC (Role-Based Access) ========================
+
+export type MemberRole = 'team' | 'client' | 'contractor';
+export type MemberStatus = 'pending' | 'active';
+
+export interface RbacMember {
+  id: string;
+  project_id: string;
+  user_id: string | null;
+  role: UserRole;             // legacy profile-level role
+  member_role: MemberRole | null;
+  access_level: AccessLevel;
+  invite_token: string | null;
+  invite_email: string | null;
+  status: MemberStatus;
+  invited_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RbacMemberWithProfile extends RbacMember {
+  profile?: Profile;
+}
+
+export interface ProjectAccessSettings {
+  id: string;
+  project_id: string;
+  client_can_see_design: boolean;
+  client_can_see_furnishing: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// ======================== SUPERVISION CONFIG ========================
+
+export interface SupervisionConfig {
+  visitSchedule: {
+    type: 'weekly' | 'biweekly' | 'monthly' | 'custom';
+    weekday: number | null;       // 0=Mon,1=Tue,2=Wed,3=Thu,4=Fri,5=Sat
+    customDay: number | null;     // day of month 1-28
+  };
+  billingDay: number;             // 1-28
+  reminderDays: number;           // working days before billing
+  extraVisitCost: number | null;  // optional, in rubles
+}
+
 // ======================== PERMISSIONS ========================
 
 export interface ProjectPermissions {
@@ -367,3 +413,160 @@ export const RISK_CONFIG: Record<RiskLevel, { label: string; bg: string; text: s
   medium:   { label: 'Средний',   bg: '#F3F4F6', text: '#374151' },
   low:      { label: 'Низкий',    bg: '#F3F4F6', text: '#6B7280' },
 };
+
+// ======================== VISIT REPORTS ========================
+
+export type ReportStatus = 'draft' | 'filled' | 'published';
+export type RemarkStatus = 'open' | 'in_progress' | 'resolved';
+
+export interface VisitReport {
+  id: string;
+  project_id: string;
+  visit_date: string;
+  status: ReportStatus;
+  general_comment: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface VisitRemark {
+  id: string;
+  report_id: string;
+  project_id: string;
+  number: number;
+  text: string;
+  status: RemarkStatus;
+  deadline: string | null;
+  assigned_to: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RemarkComment {
+  id: string;
+  remark_id: string;
+  project_id: string;
+  user_id: string;
+  text: string;
+  created_at: string;
+}
+
+/** Remark with its comments and assigned profile */
+export interface VisitRemarkWithDetails extends VisitRemark {
+  assignee?: Profile;
+  comments: RemarkCommentWithProfile[];
+}
+
+/** Comment with author profile */
+export interface RemarkCommentWithProfile extends RemarkComment {
+  author?: Profile;
+}
+
+/** Report with computed stats */
+export interface VisitReportWithStats extends VisitReport {
+  remark_count: number;
+  open_count: number;
+  resolved_count: number;
+}
+
+export interface CreateVisitReportInput {
+  project_id: string;
+  visit_date: string;
+  status?: ReportStatus;
+  general_comment?: string;
+}
+
+export interface CreateVisitRemarkInput {
+  report_id: string;
+  project_id: string;
+  text: string;
+  deadline?: string;
+  assigned_to?: string;
+}
+
+export interface CreateRemarkCommentInput {
+  remark_id: string;
+  project_id: string;
+  text: string;
+}
+
+// ======================== CONTRACTOR TASKS ========================
+
+export interface ContractorTask {
+  id: string;
+  project_id: string;
+  remark_id: string | null;
+  title: string;
+  description: string | null;
+  photos: string[] | null;
+  assigned_to: string;
+  deadline: string | null;
+  status: TaskStatus;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ContractorTaskWithDetails extends ContractorTask {
+  assignee?: Profile;
+  remark_number?: number;
+  remark_date?: string;
+}
+
+export interface CreateContractorTaskInput {
+  project_id: string;
+  title: string;
+  description?: string;
+  assigned_to: string;
+  deadline?: string;
+  remark_id?: string;
+  photos?: string[];
+}
+
+// ======================== CHAT ========================
+
+export type ChatRefType = 'remark' | 'report' | 'task';
+export type ChatType = 'team' | 'client';
+
+export interface ChatMessage {
+  id: string;
+  project_id: string;
+  user_id: string;
+  text: string;
+  chat_type: ChatType;
+  ref_type: ChatRefType | null;
+  ref_id: string | null;
+  ref_preview: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ChatMessageWithAuthor extends ChatMessage {
+  author?: Profile;
+}
+
+export interface ChatRead {
+  id: string;
+  project_id: string;
+  user_id: string;
+  chat_type: ChatType;
+  last_read_at: string;
+}
+
+export interface PushSubscription {
+  id: string;
+  user_id: string;
+  endpoint: string;
+  p256dh: string;
+  auth_key: string;
+  created_at: string;
+}
+
+export interface SendChatMessageInput {
+  project_id: string;
+  text: string;
+  chat_type?: ChatType;
+  ref_type?: ChatRefType;
+  ref_id?: string;
+  ref_preview?: string;
+}

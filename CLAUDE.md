@@ -1,121 +1,139 @@
-# CLAUDE.md — ArchFlow
-> Инструкции для Claude Code. Читай этот файл перед любым действием в проекте.
+# CLAUDE.md
 
----
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Режим работы
+## Operating Mode
 
-- Действуй автономно. Не спрашивай подтверждений на правки файлов, установку зависимостей, рефакторинг до 300 строк
-- Принимай решения сам, если задача не требует продуктового выбора
-- Если нужно уточнение по продуктовой логике — задай один вопрос, не несколько
-- После выполнения задачи кратко напиши что сделал (2-3 строки)
+- Act autonomously. No confirmations needed for file edits, dependency installs, refactoring under 300 lines.
+- Make technical decisions yourself. Only ask if it's a product-level choice (one question max).
+- After completing a task, write a brief summary (2-3 lines).
+- Update PROJECT_CONTEXT.md after significant changes.
 
----
+## Commands
 
-## Стек
+All commands run from `nextjs-src/`:
 
-- **Frontend:** React + TypeScript + Tailwind CSS
-- **Framework:** Next.js (App Router)
-- **БД:** TBD — Supabase или PostgreSQL + Prisma
-- **Auth:** invite-links + role-based access
-
----
-
-## Дизайн-система — СТРОГО СОБЛЮДАТЬ
-
-### Шрифты (подключены через Google Fonts):
-```
-Playfair Display 700 — все заголовки
-IBM Plex Mono 400 — все лейблы, интерфейсные элементы
+```bash
+cd nextjs-src
+npm run dev      # Dev server on port 3000
+npm run build    # Production build
+npm run lint     # ESLint via Next.js
+npm start        # Production server
 ```
 
-### Цвета — ТОЛЬКО ЭТИ:
+No test framework is configured. No CI pipeline exists.
+
+Deploy: Netlify auto-deploy from GitHub (configured in `netlify.toml`). Domain: archflow.ru.
+
+## Architecture
+
+**SPA with client-side routing** — single entry point at `nextjs-src/src/app/page.tsx`. All navigation is state-driven (`useState` + `window.history`), not Next.js file-based routing. The App Router is used only for API routes and the root layout.
+
+### Key directories (all under `nextjs-src/src/app/`)
+
+- `lib/` — data layer: queries, hooks, types, auth, permissions, theme, supabase client
+- `components/` — ~50 React components
+- `components/project/` — project-level tabs (DesignTab, SupervisionTab, SettingsTab, ChatView, AccessScreen)
+- `components/supervision/` — supervision module (CalendarView, PhotoGallery, ReportsListView, ContractorTasksView, etc.)
+- `components/supply/` — supply chain module (SupplyModule, SupplyDashboard, SupplyTimeline, SupplyStages, SupplyImport)
+- `api/` — server routes: auth/signup, feedback (→ Telegram), push/send
+
+### Data layer pattern
+
+1. **`queries.ts`** (~70KB) — all Supabase query functions, organized by domain. Single source of truth for data access.
+2. **`hooks.ts`** (~19KB) — 22 custom hooks wrapping queries via generic `useQuery<T>()`. Each returns `{ data, loading, error, refetch }`.
+3. **`types.ts`** — TypeScript interfaces matching the Supabase schema exactly. Includes row types, input types, and enriched view types (e.g., `ProjectWithStats`, `SupplyItemWithCalc`).
+4. **`auth.tsx`** — `AuthProvider` context: session, profile, signIn/signUp/signOut. Uses Supabase Auth (email/password).
+5. **`permissions.ts`** — `resolvePermissions(role, accessLevel)` → 19 boolean flags. Checked at render time to show/hide UI.
+6. **`theme.tsx`** — `ThemeProvider` for light/dark mode via `.dark` class on `<html>`.
+
+Real-time: Supabase `postgres_changes` subscriptions auto-refetch hooks.
+
+### Database
+
+Supabase on Beget Cloud. 15 migrations in `nextjs-src/supabase/migrations/`. Core tables: `profiles`, `projects`, `project_members`, `stages`, `visits`, `photo_records`, `invoices`, `documents`, `supply_items`, `contract_payments`, `tasks`, `rbac_members`, `visit_reports`, `visit_remarks`, `chat_messages`.
+
+### Component hierarchy
+
 ```
-#111111   — основной текст, инвертированный фон
-#F6F6F4   — фон страниц
-#EBEBEB   — разделители, бордеры
-#FFFFFF   — фон карточек
+page.tsx (SPA shell, routing state)
+  ├── AuthProvider → ThemeProvider
+  ├── Topbar / Sidebar
+  ├── ProjectsPage | ProjectPage | VisitPage | ProfilePage
+  ├── SearchModal (⌘K)
+  ├── FeedbackBar (fixed bottom)
+  └── Toast / OfflineBanner
 ```
 
-### Правила вёрстки:
-- `border-radius: 0` везде — без исключений
-- Зазоры между блоками: `gap: 2px`
-- Hover-состояние: инверсия цвета (bg меняется с белого на #111, текст — наоборот)
-- Кнопки: ghost (border + transparent bg), при hover — инверсия
-- Никаких цветных акцентов, никаких теней
+### PWA
 
----
+Service Worker (`public/sw.js`): cache-first for static assets, network-first for API. Manifest at `public/manifest.json`.
 
-## Архитектура — навигация
+## Design System — STRICT
+
+### Fonts (Google Fonts)
+- **Playfair Display 700** — all headings (`font-display` in Tailwind)
+- **IBM Plex Mono 400** — all labels, UI text, body (`font-body` / `font-mono`)
+
+### Colors — ONLY these
+| Token | Hex | Usage |
+|-------|-----|-------|
+| `--af-black` | `#111111` | Primary text, inverted backgrounds |
+| `--af-offwhite` | `#F6F6F4` | Page backgrounds |
+| `--af-border` | `#EBEBEB` | Borders, dividers |
+| `--af-white` | `#FFFFFF` | Card backgrounds |
+
+Dark mode uses CSS variables (`--ink`, `--srf`, `--line` in RGB format) that swap in `.dark` class.
+
+### Rules
+- `border-radius: 0` everywhere — no exceptions
+- Block gaps: `2px`
+- Hover: color inversion (white bg → `#111`, dark text → white)
+- Buttons: ghost style (border + transparent bg), invert on hover
+- No color accents, no shadows
+- CSS classes prefixed with `.af-` (see `globals.css`, 778 lines)
+
+## Do NOT change without explicit instruction
+
+- Font pair (Playfair Display + IBM Plex Mono)
+- Color palette (monochrome only)
+- `border-radius` (always 0)
+- Navigation structure
+- Role/permission logic
+
+## Navigation Structure
 
 ```
 /login
-/projects                        — список проектов
-/projects/:id                    — выбор раздела (4 блока)
-/projects/:id/design             — Дизайн (вкладки)
-/projects/:id/supply             — Комплектация
-/projects/:id/supply/items       — Позиции
-/projects/:id/supply/timeline    — Gantt
-/projects/:id/supply/stages      — Этапы
-/projects/:id/supply/import      — Импорт Excel
-/projects/:id/journal            — Авторский надзор
-/projects/:id/journal/visits     — Визиты
-/projects/:id/journal/invoices   — Счета
-/projects/:id/journal/planning   — Планирование
-/projects/:id/settings           — Настройки проекта
+/projects                        — project list
+/projects/:id                    — section picker (4 blocks)
+/projects/:id/design             — Design (tabs inside)
+/projects/:id/supply             — Supply (items, timeline, stages, import)
+/projects/:id/journal            — Supervision (visits, invoices, planning)
+/projects/:id/settings           — Project settings
 ```
 
----
+## Roles
 
-## База данных
+5 roles: `designer` (full access), `client` (view only), `contractor` (view + photos + comments), `supplier` (supply only), `assistant` (delegated). Invite via invite-links with base64 tokens.
 
-12 таблиц. Ключевые:
+## Feedback Bar
 
-```
-User, Project, Contract
-Visit → PhotoRecord
-ConstructionStage → SupplyItem
-ProjectMember (роли: designer, client, contractor, supplier, assistant)
-Invoice, PaymentSchedule, ProjectDocument
-```
+Fixed bottom bar on all screens except login: "Что-то не так?" → feedback form. Height 40px, bg `#111111`, text white, IBM Plex Mono.
 
-`order_deadline` для SupplyItem = `stage.start_date - lead_time_days`
-
----
-
-## Компоненты — соглашения
-
-- Компоненты в `src/components/`
-- Страницы в `src/app/` (Next.js App Router)
-- Shared UI в `src/components/ui/`
-- Типы в `src/types/`
-- Mock data для разработки в `src/lib/mock-data.ts`
-
----
-
-## Что запрещено менять без явного указания
-
-- Шрифтовую пару
-- Цветовую палитру
-- border-radius (он всегда 0)
-- Структуру навигации
-- Логику ролей
-
----
-
-## Обратная связь (компонент)
-
-На всех экранах кроме логина — фиксированная строка снизу: `"Что-то не так?"` → открывает форму обратной связи. Позиция: `fixed bottom-0`, высота 40px, фон `#111111`, текст `#FFFFFF`, шрифт IBM Plex Mono.
-
----
-
-## Demo credentials
+## Environment Variables
 
 ```
-designer: demo@archflow.app / demo
-client:   client@archflow.app / client123
+NEXT_PUBLIC_SUPABASE_URL     — Supabase instance URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY — Supabase public anon key
+NEXT_PUBLIC_YM_ID            — Yandex Metrika ID
+RESEND_API_KEY               — Email service (Resend)
+TELEGRAM_BOT_TOKEN           — Feedback bot token
+TELEGRAM_CHAT_ID             — Feedback chat ID
 ```
 
----
+## Demo Credentials
 
-*При значимых изменениях обновляй PROJECT_CONTEXT.md*
+```
+designer: demo@archflow.ru / Demo2026!
+```

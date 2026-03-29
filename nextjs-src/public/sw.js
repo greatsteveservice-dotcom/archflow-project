@@ -126,3 +126,53 @@ function isStaticAsset(pathname) {
   return /\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|webp)(\?.*)?$/.test(pathname) ||
     pathname.startsWith('/_next/static/');
 }
+
+// ======================== PUSH NOTIFICATIONS ========================
+
+self.addEventListener('push', (event) => {
+  if (!event.data) return;
+
+  let payload;
+  try {
+    payload = event.data.json();
+  } catch {
+    payload = { title: 'Archflow', body: event.data.text() };
+  }
+
+  const { title, body, icon, badge, data } = payload;
+
+  event.waitUntil(
+    self.registration.showNotification(title || 'Archflow', {
+      body: body || '',
+      icon: icon || '/icon-192.png',
+      badge: badge || '/icon-192.png',
+      data: data || {},
+      tag: data?.projectId ? `chat-${data.projectId}` : 'archflow',
+      renotify: true,
+    })
+  );
+});
+
+// Click on notification — open or focus the app
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  const projectId = event.notification.data?.projectId;
+  const targetUrl = projectId ? `/?project=${projectId}&tab=chat` : '/';
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      // Focus existing tab if found
+      for (const client of clients) {
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          if (projectId) {
+            client.postMessage({ type: 'NAVIGATE_CHAT', projectId });
+          }
+          return client.focus();
+        }
+      }
+      // Open new window
+      return self.clients.openWindow(targetUrl);
+    })
+  );
+});

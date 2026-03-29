@@ -6,7 +6,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from './supabase';
-import type { ProjectWithStats, VisitWithStats, PhotoRecord, Profile, Stage, SupplyItem, Invoice, Notification, ActivityItem, Document, ProjectMember, ProjectMemberWithProfile, DocumentCategory, Task, PhotoRecordWithVisit } from './types';
+import type { ProjectWithStats, VisitWithStats, PhotoRecord, Profile, Stage, SupplyItem, Invoice, Notification, ActivityItem, Document, ProjectMember, ProjectMemberWithProfile, DocumentCategory, Task, PhotoRecordWithVisit, RbacMemberWithProfile, ProjectAccessSettings, VisitReportWithStats, VisitRemarkWithDetails, ContractorTaskWithDetails, ChatMessageWithAuthor, ChatType } from './types';
 import {
   fetchProjects,
   fetchProjectsPaginated,
@@ -27,6 +27,16 @@ import {
   fetchDocumentsByCategory,
   fetchProjectPhotos,
   fetchProjectTasks,
+  fetchRbacMembersWithProfiles,
+  fetchAccessSettings,
+  fetchVisitReports,
+  fetchVisitRemarks,
+  fetchContractorTasks,
+  checkProjectAlerts,
+  fetchChatMessages,
+  fetchUnreadCounts,
+  fetchUnreadCountByType,
+  markChatRead,
 } from './queries';
 
 // ======================== GENERIC HOOK ========================
@@ -274,6 +284,75 @@ export function useProjectTasks(projectId: string | null) {
   );
 }
 
+/** Fetch RBAC members with profiles for a project */
+export function useRbacMembers(projectId: string | null) {
+  return useQuery<RbacMemberWithProfile[]>(
+    () => projectId ? fetchRbacMembersWithProfiles(projectId) : Promise.resolve([]),
+    [projectId]
+  );
+}
+
+/** Fetch project access settings */
+export function useAccessSettings(projectId: string | null) {
+  return useQuery<ProjectAccessSettings | null>(
+    () => projectId ? fetchAccessSettings(projectId) : Promise.resolve(null),
+    [projectId]
+  );
+}
+
+/** Fetch visit reports for a project */
+export function useVisitReports(projectId: string | null) {
+  return useQuery<VisitReportWithStats[]>(
+    () => projectId ? fetchVisitReports(projectId) : Promise.resolve([]),
+    [projectId]
+  );
+}
+
+/** Fetch remarks for a report */
+export function useVisitRemarks(reportId: string | null) {
+  return useQuery<VisitRemarkWithDetails[]>(
+    () => reportId ? fetchVisitRemarks(reportId) : Promise.resolve([]),
+    [reportId]
+  );
+}
+
+/** Fetch contractor tasks for a project */
+export function useContractorTasks(projectId: string | null) {
+  return useQuery<ContractorTaskWithDetails[]>(
+    () => projectId ? fetchContractorTasks(projectId) : Promise.resolve([]),
+    [projectId]
+  );
+}
+
+/** Check if project has pending alerts (badge dot) */
+export function usePendingAlerts(projectIds: string[]): Map<string, boolean> {
+  const [alerts, setAlerts] = useState<Map<string, boolean>>(new Map());
+
+  useEffect(() => {
+    if (projectIds.length === 0) return;
+    let cancelled = false;
+
+    Promise.all(
+      projectIds.map(async id => {
+        try {
+          const has = await checkProjectAlerts(id);
+          return [id, has] as [string, boolean];
+        } catch {
+          return [id, false] as [string, boolean];
+        }
+      })
+    ).then(results => {
+      if (!cancelled) {
+        setAlerts(new Map(results));
+      }
+    });
+
+    return () => { cancelled = true; };
+  }, [projectIds.join(',')]);
+
+  return alerts;
+}
+
 // ======================== REALTIME SUBSCRIPTIONS ========================
 
 type RealtimeTable = 'projects' | 'visits' | 'photo_records' | 'invoices' | 'supply_items' | 'tasks' | 'documents' | 'project_members';
@@ -359,5 +438,235 @@ export function useDashboardRealtime(refetch: () => void) {
   useRealtimeSubscription({
     tables: ['projects', 'visits', 'photo_records', 'invoices'],
     onUpdate: refetch,
+  });
+}
+
+// ======================== CHAT ========================
+
+/** Fetch chat messages with auto-scroll-to-load-more */
+export function useChatMessages(projectId: string | null, chatType: ChatType = 'team') {
+  const [messages, setMessages] = useState<ChatMessageWithAuthor[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [hasMore, setHasMore] = useState(true);
+
+  const fetchInitial = useCallback(async () => {
+    if (!projectId) return;
+    setLoading(true);
+    try {
+      const data = await fetchChatMessages(projectId, 50, undefined, chatType);
+      setMessages(data);
+      setHasMore(data.length >= 50);
+    } catch {
+      // silent
+    } finally {
+      setLoading(false);
+    }
+  }, [projectId, chatType]);
+
+  useEffect(() => {
+    fetchInitial();
+  }, [fetchInitial]);
+
+  const loadMore = useCallback(async () => {
+    if (!projectId || !hasMore || messages.length === 0) return;
+    const oldest = messages[messages.length - 1].created_at;
+    try {
+      const older = await fetchChatMessages(projectId, 50, oldest, chatType);
+      setMessages(prev => [...prev, ...older]);
+      setHasMore(older.length >= 50);
+    } catch {
+      // silent
+    }
+  }, [projectId, chatType, hasMore, messages]);
+
+  // Append a new message locally (optimistic)
+  const appendMessage = useCallback((msg: ChatMessageWithAuthor) => {
+    setMessages(prev => [msg, ...prev]);
+  }, []);
+
+  // Remove a message locally
+  const removeMessage = useCallback((id: string) => {
+    setMessages(prev => prev.filter(m => m.id !== id));
+  }, []);
+
+  return { messages, loading, hasMore, loadMore, refetch: fetchInitial, appendMessage, removeMessage };
+}
+
+/** Realtime subscription for chat_messages — calls onNewMessage on INSERT */
+export function useChatRealtime(
+  projectId: string | null,
+  onNewMessage: (payload: any) => void,
+) {
+  const callbackRef = useRef(onNewMessage);
+  callbackRef.current = onNewMessage;
+
+  useEffect(() => {
+    if (!projectId) return;
+
+    const channel = supabase
+      .channel(`chat:${projectId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_messages',
+          filter: `project_id=eq.${projectId}`,
+        },
+        (payload) => {
+          callbackRef.current(payload);
+        },
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'chat_messages',
+          filter: `project_id=eq.${projectId}`,
+        },
+        (payload) => {
+          callbackRef.current(payload);
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [projectId]);
+}
+
+/** Unread message counts for project list */
+export function useUnreadCounts(projectIds: string[], userId: string | null) {
+  const [counts, setCounts] = useState<Map<string, number>>(new Map());
+
+  const refetch = useCallback(async () => {
+    if (!userId || projectIds.length === 0) return;
+    try {
+      const data = await fetchUnreadCounts(projectIds, userId);
+      setCounts(data);
+    } catch {
+      // silent
+    }
+  }, [projectIds.join(','), userId]);
+
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
+
+  return { counts, refetch };
+}
+
+/** Auto-mark chat as read when component is mounted */
+export function useChatMarkRead(projectId: string | null, userId: string | null, chatType: ChatType = 'team') {
+  useEffect(() => {
+    if (!projectId || !userId) return;
+    markChatRead(projectId, userId, chatType).catch(() => {});
+  }, [projectId, userId, chatType]);
+}
+
+/** Unread count for a specific chat type in a project */
+export function useChatUnreadByType(projectId: string | null, userId: string | null, chatType: ChatType) {
+  const [count, setCount] = useState(0);
+
+  const refetch = useCallback(async () => {
+    if (!projectId || !userId) return;
+    try {
+      const c = await fetchUnreadCountByType(projectId, userId, chatType);
+      setCount(c);
+    } catch {
+      // silent
+    }
+  }, [projectId, userId, chatType]);
+
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
+
+  return { count, refetch };
+}
+
+// ======================== PUSH NOTIFICATIONS ========================
+
+const VAPID_PUBLIC_KEY = typeof window !== 'undefined'
+  ? (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '')
+  : '';
+
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+/** Check if push is available and already subscribed */
+export function usePushStatus() {
+  const [isSupported, setIsSupported] = useState(false);
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [permission, setPermission] = useState<NotificationPermission>('default');
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const supported = 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window && !!VAPID_PUBLIC_KEY;
+    setIsSupported(supported);
+    if (!supported) return;
+
+    setPermission(Notification.permission);
+
+    // Check existing subscription
+    navigator.serviceWorker.ready.then(reg => {
+      reg.pushManager.getSubscription().then(sub => {
+        setIsSubscribed(!!sub);
+      });
+    }).catch(() => {});
+  }, []);
+
+  return { isSupported, isSubscribed, permission };
+}
+
+/** Subscribe to push notifications */
+export async function subscribeToPush(userId: string): Promise<boolean> {
+  try {
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') return false;
+
+    const reg = await navigator.serviceWorker.ready;
+    const subscription = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY).buffer as ArrayBuffer,
+    });
+
+    const json = subscription.toJSON();
+    const { savePushSubscription } = await import('./queries');
+    await savePushSubscription(userId, {
+      endpoint: json.endpoint!,
+      keys: { p256dh: json.keys!.p256dh!, auth: json.keys!.auth! },
+    });
+
+    return true;
+  } catch (err) {
+    console.error('Push subscribe error:', err);
+    return false;
+  }
+}
+
+/** Fire-and-forget: notify other project members about a new message */
+export function sendPushNotification(
+  projectId: string,
+  senderUserId: string,
+  senderName: string,
+  text: string,
+) {
+  fetch('/api/push/send', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ projectId, senderUserId, senderName, text }),
+  }).catch(() => {
+    // Fire and forget — don't block the UI
   });
 }

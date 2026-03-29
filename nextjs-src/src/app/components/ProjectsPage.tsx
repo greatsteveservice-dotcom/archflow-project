@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import ProjectCard from "./ProjectCard";
 import EmptyState from "./EmptyState";
 import { ErrorMessage } from "./Loading";
 import { ProjectsListSkeleton } from "./Skeleton";
-import { useProjectsPaginated } from "../lib/hooks";
+import { useProjectsPaginated, usePendingAlerts, useUnreadCounts } from "../lib/hooks";
+import { useAuth } from "../lib/auth";
+import { fetchProject } from "../lib/queries";
 
 interface ProjectsPageProps {
   onNavigate: (page: string, ctx?: any) => void;
@@ -24,6 +26,14 @@ export default function ProjectsPage({ onNavigate, onCreateProject }: ProjectsPa
   } = useProjectsPaginated();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const { user } = useAuth();
+  const projectIds = useMemo(() => (projects || []).map(p => p.id), [projects]);
+  const alerts = usePendingAlerts(projectIds);
+  const { counts: unreadCounts } = useUnreadCounts(projectIds, user?.id || null);
+
+  const prefetchProject = useCallback((id: string) => {
+    fetchProject(id).catch(() => {});
+  }, []);
 
   const filtered = useMemo(() => {
     if (!projects) return [];
@@ -113,7 +123,10 @@ export default function ProjectsPage({ onNavigate, onCreateProject }: ProjectsPa
                 key={project.id}
                 project={project}
                 index={i}
+                hasAlert={alerts.get(project.id) || false}
+                unreadCount={unreadCounts.get(project.id) || 0}
                 onClick={() => onNavigate("project", project.id)}
+                onHover={() => prefetchProject(project.id)}
               />
             ))}
             {/* Add new project */}

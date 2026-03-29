@@ -1,5 +1,6 @@
 'use client';
 import { useState, useMemo } from 'react';
+import Image from 'next/image';
 import { Icons } from '../Icons';
 import Modal from '../Modal';
 import type { PhotoRecordWithVisit, PhotoStatus } from '../../lib/types';
@@ -84,7 +85,7 @@ export default function PhotoGallery({ projectId, toast, canChangePhotoStatus = 
               >
                 {photo.photo_url ? (
                   <div className="aspect-square bg-srf-secondary relative">
-                    <img src={photo.photo_url} alt="" className="w-full h-full object-cover" />
+                    <Image src={photo.photo_url} alt="" fill sizes="(max-width: 640px) 50vw, 25vw" className="object-cover" />
                     <div className="absolute top-2 right-2">
                       <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-md ${cfg.bg} ${cfg.color}`}>
                         {cfg.label}
@@ -120,7 +121,7 @@ export default function PhotoGallery({ projectId, toast, canChangePhotoStatus = 
         {selectedPhoto && (
           <div className="space-y-4">
             {selectedPhoto.photo_url && (
-              <img src={selectedPhoto.photo_url} alt="" className="w-full rounded-xl" />
+              <Image src={selectedPhoto.photo_url} alt="" width={960} height={720} sizes="(max-width: 480px) 92vw, 448px" className="w-full" style={{ height: 'auto' }} />
             )}
             <div className="space-y-2 text-[13px]">
               {selectedPhoto.comment && (

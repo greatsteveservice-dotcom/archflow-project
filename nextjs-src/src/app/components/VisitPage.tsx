@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import Image from "next/image";
 import { Icons } from "./Icons";
 import Topbar from "./Topbar";
 import { ErrorMessage } from "./Loading";
@@ -201,7 +202,7 @@ export default function VisitPage({ projectId, visitId, onNavigate, toast, onMen
               return (
                 <div key={photo.id} className="af-file-thumb group" style={{ aspectRatio: '1/1' }}>
                   {photo.photo_url ? (
-                    <img src={photo.photo_url} alt={photo.comment || 'Фото'} loading="lazy" />
+                    <Image src={photo.photo_url} alt={photo.comment || 'Фото'} fill sizes="33vw" style={{ objectFit: 'cover' }} />
                   ) : (
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', color: '#CCC' }}>
                       —

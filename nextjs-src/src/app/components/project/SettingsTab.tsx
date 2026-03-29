@@ -4,6 +4,7 @@ import { Icons } from '../Icons';
 import Bdg from '../Bdg';
 import Modal from '../Modal';
 import ConfirmDialog from '../ConfirmDialog';
+import AccessScreen from './AccessScreen';
 import type { ProjectWithStats, ProjectMemberWithProfile, UserRole, AccessLevel } from '../../lib/types';
 import { useProjectMembersWithProfiles } from '../../lib/hooks';
 import { inviteProjectMember, createProjectInvitation, removeProjectMember, deleteProject } from '../../lib/queries';
@@ -36,7 +37,7 @@ interface SettingsTabProps {
 }
 
 export default function SettingsTab({ project, projectId, toast, canDeleteProject = false, onDeleteProject }: SettingsTabProps) {
-  const [sub, setSub] = useState<'roles' | 'details'>('roles');
+  const [sub, setSub] = useState<'roles' | 'details' | 'access'>('roles');
   const { data: members, loading, refetch: refetchMembers } = useProjectMembersWithProfiles(projectId);
 
   // Invite modal
@@ -158,6 +159,9 @@ export default function SettingsTab({ project, projectId, toast, canDeleteProjec
         </button>
         <button className={`stb ${sub === 'details' ? 'active' : ''}`} onClick={() => setSub('details')}>
           <Icons.Settings className="w-3.5 h-3.5" /> Детали проекта
+        </button>
+        <button className={`stb ${sub === 'access' ? 'active' : ''}`} onClick={() => setSub('access')}>
+          <Icons.Users className="w-3.5 h-3.5" /> Доступ
         </button>
       </div>
 
@@ -295,6 +299,10 @@ export default function SettingsTab({ project, projectId, toast, canDeleteProjec
             </div>
           )}
         </div>
+      )}
+
+      {sub === 'access' && (
+        <AccessScreen projectId={projectId} toast={toast} onBack={() => setSub('roles')} />
       )}
 
       {/* Invite Modal */}

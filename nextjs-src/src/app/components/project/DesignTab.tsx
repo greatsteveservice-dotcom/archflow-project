@@ -40,21 +40,10 @@ export default function DesignTab({ projectId, invoices, toast, refetchInvoices,
               onClick={() => setActiveSubTab(tab.id)}
             >
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-                <span style={{
-                  fontFamily: "'Playfair Display', serif",
-                  fontSize: 15,
-                  fontWeight: 400,
-                  color: '#111',
-                  letterSpacing: '-0.01em',
-                }}>{tab.label}</span>
-                <span style={{
-                  fontFamily: "'IBM Plex Mono', monospace",
-                  fontSize: 7,
-                  letterSpacing: '0.1em',
-                  color: '#CCC',
-                }}>{String(idx + 1).padStart(2, '0')}</span>
+                <span className="af-tab-name">{tab.label}</span>
+                <span className="af-tab-index">{String(idx + 1).padStart(2, '0')}</span>
               </div>
-              <span style={{ fontSize: 10, color: '#CCC' }}>→</span>
+              <span className="af-tab-arrow">→</span>
             </div>
           ))}
         </div>
