@@ -1,7 +1,9 @@
 // Archflow Service Worker — offline caching
-const CACHE_NAME = 'archflow-v1';
-const STATIC_CACHE = 'archflow-static-v1';
-const API_CACHE = 'archflow-api-v1';
+// Bump version to invalidate all caches on deploy
+const SW_VERSION = '2';
+const CACHE_NAME = 'archflow-v' + SW_VERSION;
+const STATIC_CACHE = 'archflow-static-v' + SW_VERSION;
+const API_CACHE = 'archflow-api-v' + SW_VERSION;
 
 // Static assets to precache
 const PRECACHE_URLS = [
