@@ -192,10 +192,145 @@ function Slide({ children }: SlideProps) {
 
 function SlideCaption({ num, title, desc }: { num?: string; title: string; desc: string }) {
   return (
-    <div style={{ padding: '16px 0 0' }}>
-      {num && <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 7, color: '#CCC', textTransform: 'uppercase', letterSpacing: '0.16em', marginBottom: 6 }}>{num}</div>}
-      <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 16, fontWeight: 900, color: '#111', marginBottom: 6 }}>{title}</h3>
-      <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: '#777', lineHeight: 1.6 }}>{desc}</p>
+    <div style={{ padding: '20px 0 0' }}>
+      {num && <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: '#CCC', textTransform: 'uppercase', letterSpacing: '0.16em', marginBottom: 8 }}>{num}</div>}
+      <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 700, color: '#111', marginBottom: 8 }}>{title}</h3>
+      <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, color: '#777', lineHeight: 1.6 }}>{desc}</p>
+    </div>
+  );
+}
+
+// ======================== MAIN COMPONENT ========================
+
+// ======================== CLIENT ONBOARDING ========================
+
+function ClientOnboarding({ userId, onComplete }: { userId: string; onComplete: () => void }) {
+  const [current, setCurrent] = useState(0);
+  const touchStartX = useRef(0);
+  const touchEndX = useRef(0);
+  const TOTAL = 3;
+
+  const next = useCallback(() => {
+    if (current < TOTAL - 1) setCurrent(c => c + 1);
+  }, [current]);
+
+  const prev = useCallback(() => {
+    if (current > 0) setCurrent(c => c - 1);
+  }, [current]);
+
+  const handleComplete = async () => {
+    try {
+      await supabase.from('profiles').update({ onboarding_completed: true }).eq('id', userId);
+    } catch {}
+    onComplete();
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.changedTouches[0].screenX; };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    touchEndX.current = e.changedTouches[0].screenX;
+    const diff = touchStartX.current - touchEndX.current;
+    if (Math.abs(diff) > 50) { if (diff > 0) next(); else prev(); }
+  };
+
+  const isLast = current === TOTAL - 1;
+
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, background: '#fff', zIndex: 9999, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
+      <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
+        <div style={{ display: 'flex', transition: 'transform 0.3s ease', transform: `translateX(-${current * 100}%)`, height: '100%' }}>
+          {/* CLIENT SLIDE 1 — Welcome */}
+          <Slide>
+            <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ background: '#111', padding: '32px 24px 24px' }}>
+                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 32, fontWeight: 900, color: '#fff', marginBottom: 10 }}>ArchFlow</div>
+              </div>
+              <div style={{ padding: '28px 24px', flex: 1, overflowY: 'auto' }}>
+                <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 900, color: '#111', marginBottom: 12 }}>
+                  Добро пожаловать
+                </h2>
+                <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, color: '#777', lineHeight: 1.6, marginBottom: 20 }}>
+                  Дизайнер открыл вам доступ к проекту. Здесь вы можете следить за ходом работ.
+                </p>
+                <div style={{ background: '#F6F6F4', borderLeft: '2px solid #111', padding: '14px 16px' }}>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: '#AAA', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 8 }}>Что здесь можно</div>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: '#555', lineHeight: 1.7 }}>
+                    Просматривать отчёты, комментировать, общаться с дизайнером напрямую.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Slide>
+
+          {/* CLIENT SLIDE 2 — Supervision */}
+          <Slide>
+            <div style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '24px 24px', overflowY: 'auto' }}>
+              <CalendarPreview />
+              <SlideCaption num="01 / 02" title="Авторский надзор" desc="Смотрите отчёты по визитам, замечания и их статусы." />
+            </div>
+          </Slide>
+
+          {/* CLIENT SLIDE 3 — Chat */}
+          <Slide>
+            <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ padding: '24px 24px', flex: 1, overflowY: 'auto' }}>
+                <ClientChatPreview />
+                <SlideCaption num="02 / 02" title="Общайтесь с дизайнером" desc="Задавайте вопросы и комментируйте прямо в приложении." />
+              </div>
+            </div>
+          </Slide>
+        </div>
+      </div>
+
+      {/* Bottom bar */}
+      <div style={{
+        padding: '12px 24px', paddingBottom: 'calc(12px + env(safe-area-inset-bottom, 0px))',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        borderTop: '0.5px solid #EBEBEB', background: '#fff', flexShrink: 0,
+      }}>
+        <div style={{ display: 'flex', gap: 4 }}>
+          {Array.from({ length: TOTAL }).map((_, i) => (
+            <button key={i} onClick={() => setCurrent(i)} style={{ width: 14, height: 2, border: 'none', padding: 0, cursor: 'pointer', background: i === current ? '#111' : '#E0E0E0', transition: 'background 0.2s' }} />
+          ))}
+        </div>
+        <button
+          onClick={isLast ? handleComplete : next}
+          style={{
+            background: '#111', color: '#fff', border: 'none',
+            fontFamily: "'IBM Plex Mono', monospace", fontSize: 7,
+            textTransform: 'uppercase', letterSpacing: '0.16em',
+            padding: '8px 14px', cursor: 'pointer',
+          }}
+        >
+          {isLast ? 'Открыть проект →' : 'Далее →'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ClientChatPreview() {
+  const msgs = [
+    { text: 'Добрый день! Как продвигается ремонт?', own: true },
+    { text: 'Всё по графику, на этой неделе начнём плитку', own: false },
+  ];
+  return (
+    <div style={{ border: '0.5px solid #E0E0E0', background: '#fff', fontSize: 0 }}>
+      <div style={{ padding: '6px 0', textAlign: 'center', fontFamily: "'IBM Plex Mono', monospace", fontSize: 5, fontWeight: 600, color: '#111', borderBottom: '1.5px solid #111', textTransform: 'uppercase', letterSpacing: '0.12em' }}>С дизайнером</div>
+      <div style={{ padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {msgs.map((m, i) => (
+          <div key={i} style={{ display: 'flex', justifyContent: m.own ? 'flex-end' : 'flex-start' }}>
+            <div style={{
+              background: m.own ? '#111' : '#F6F6F4', color: m.own ? '#fff' : '#111',
+              padding: '4px 8px', fontFamily: "'IBM Plex Mono', monospace", fontSize: 6,
+              maxWidth: '70%',
+            }}>{m.text}</div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -204,10 +339,18 @@ function SlideCaption({ num, title, desc }: { num?: string; title: string; desc:
 
 interface OnboardingFlowProps {
   userId: string;
+  userRole?: string;
   onComplete: () => void;
 }
 
-export default function OnboardingFlow({ userId, onComplete }: OnboardingFlowProps) {
+export default function OnboardingFlow({ userId, userRole, onComplete }: OnboardingFlowProps) {
+  if (userRole === 'client') {
+    return <ClientOnboarding userId={userId} onComplete={onComplete} />;
+  }
+  return <DesignerOnboarding userId={userId} onComplete={onComplete} />;
+}
+
+function DesignerOnboarding({ userId, onComplete }: { userId: string; onComplete: () => void }) {
   const [current, setCurrent] = useState(0);
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
@@ -272,28 +415,28 @@ export default function OnboardingFlow({ userId, onComplete }: OnboardingFlowPro
           {/* SLIDE 1 — Welcome */}
           <Slide>
             <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ background: '#111', padding: '28px 24px 20px' }}>
-                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 26, fontWeight: 900, color: '#fff', marginBottom: 8 }}>ArchFlow</div>
+              <div style={{ background: '#111', padding: '32px 24px 24px' }}>
+                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 32, fontWeight: 900, color: '#fff', marginBottom: 10 }}>ArchFlow</div>
                 <span style={{
-                  fontFamily: "'IBM Plex Mono', monospace", fontSize: 7, color: '#555',
-                  border: '0.5px solid #333', padding: '2px 8px',
+                  fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: '#555',
+                  border: '0.5px solid #333', padding: '3px 10px',
                   textTransform: 'uppercase', letterSpacing: '0.16em',
                 }}>Early Access</span>
               </div>
-              <div style={{ padding: '24px 24px', flex: 1, overflowY: 'auto' }}>
-                <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 900, color: '#111', marginBottom: 8 }}>
+              <div style={{ padding: '28px 24px', flex: 1, overflowY: 'auto' }}>
+                <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 900, color: '#111', marginBottom: 12 }}>
                   Добро пожаловать в команду
                 </h2>
-                <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: '#777', lineHeight: 1.6, marginBottom: 16 }}>
+                <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, color: '#777', lineHeight: 1.6, marginBottom: 20 }}>
                   Один из первых дизайнеров на платформе. Ваш голос будет формировать продукт.
                 </p>
-                <div style={{ background: '#F6F6F4', borderLeft: '2px solid #111', padding: '12px 14px', marginBottom: 16 }}>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 7, color: '#AAA', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 6 }}>Наше обещание</div>
-                  <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 13, color: '#111', lineHeight: 1.5 }}>
+                <div style={{ background: '#F6F6F4', borderLeft: '2px solid #111', padding: '14px 16px', marginBottom: 20 }}>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: '#AAA', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 8 }}>Наше обещание</div>
+                  <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 16, color: '#111', lineHeight: 1.5 }}>
                     Ранние пользователи получат лучшие условия — это обещание, а не маркетинг.
                   </div>
                 </div>
-                <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, color: '#AAA' }}>
+                <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: '#AAA' }}>
                   За 30 секунд покажем как это работает →
                 </p>
               </div>
@@ -343,14 +486,14 @@ export default function OnboardingFlow({ userId, onComplete }: OnboardingFlowPro
           {/* SLIDE 7 — CTA */}
           <Slide>
             <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ background: '#111', padding: '28px 24px 20px' }}>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 7, color: '#555', textTransform: 'uppercase', letterSpacing: '0.16em', marginBottom: 8 }}>Готово</div>
-                <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 900, color: '#fff' }}>
+              <div style={{ background: '#111', padding: '32px 24px 24px' }}>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: '#555', textTransform: 'uppercase', letterSpacing: '0.16em', marginBottom: 10 }}>Готово</div>
+                <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 900, color: '#fff' }}>
                   Создайте первый проект
                 </h2>
               </div>
-              <div style={{ padding: '24px 24px', flex: 1, overflowY: 'auto' }}>
-                <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: '#777', lineHeight: 1.6, marginBottom: 16 }}>
+              <div style={{ padding: '28px 24px', flex: 1, overflowY: 'auto' }}>
+                <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, color: '#777', lineHeight: 1.6, marginBottom: 20 }}>
                   Займёт 3 минуты. Потом пригласите заказчика — оценит прозрачность.
                 </p>
                 {[
@@ -358,23 +501,23 @@ export default function OnboardingFlow({ userId, onComplete }: OnboardingFlowPro
                   { n: '02', t: 'Настройте авторский надзор' },
                   { n: '03', t: 'Пригласите заказчика и команду' },
                 ].map((step, i) => (
-                  <div key={i} style={{ background: '#F6F6F4', padding: '10px 14px', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 6, color: '#CCC' }}>{step.n}</span>
-                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, color: '#555' }}>{step.t}</span>
+                  <div key={i} style={{ background: '#F6F6F4', padding: '12px 16px', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: '#CCC' }}>{step.n}</span>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: '#555' }}>{step.t}</span>
                   </div>
                 ))}
 
                 {/* PWA install hint */}
-                <div style={{ background: '#F6F6F4', borderLeft: '2px solid #111', padding: '10px 14px', marginTop: 12 }}>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 6, color: '#AAA', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Совет</div>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, color: '#111', marginTop: 4 }}>Добавьте на рабочий стол</div>
+                <div style={{ background: '#F6F6F4', borderLeft: '2px solid #111', padding: '12px 16px', marginTop: 16 }}>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: '#AAA', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Совет</div>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: '#111', marginTop: 6 }}>Добавьте на рабочий стол</div>
                   {(platform === 'ios' || platform === 'unknown') && (
-                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 7, color: '#777', lineHeight: 1.6, marginTop: 4 }}>
+                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: '#777', lineHeight: 1.6, marginTop: 6 }}>
                       Safari → кнопка поделиться →{'\u00A0'}«На экран домой»
                     </div>
                   )}
                   {(platform === 'android' || platform === 'unknown') && (
-                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 7, color: '#777', lineHeight: 1.6, marginTop: platform === 'unknown' ? 2 : 4 }}>
+                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: '#777', lineHeight: 1.6, marginTop: platform === 'unknown' ? 2 : 6 }}>
                       Chrome → меню →{'\u00A0'}«Добавить на главный экран»
                     </div>
                   )}
