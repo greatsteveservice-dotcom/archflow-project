@@ -135,5 +135,5 @@ TELEGRAM_CHAT_ID             — Feedback chat ID
 ## Demo Credentials
 
 ```
-designer: demo@archflow.ru / Demo2026!
+designer: demo@archflow.ru / oDEgaa9rsAJD&ocw
 ```

@@ -4,7 +4,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useId } from 'react';
 import { supabase } from './supabase';
 import type { ProjectWithStats, VisitWithStats, PhotoRecord, Profile, Stage, SupplyItem, Invoice, Notification, ActivityItem, Document, ProjectMember, ProjectMemberWithProfile, DocumentCategory, Task, PhotoRecordWithVisit, RbacMemberWithProfile, ProjectAccessSettings, VisitReportWithStats, VisitRemarkWithDetails, ContractorTaskWithDetails, ChatMessageWithAuthor, ChatType, DesignFileWithProfile, DesignFileCommentWithProfile, DesignFolder } from './types';
 import {
@@ -483,9 +483,12 @@ export function useChatMessages(projectId: string | null, chatType: ChatType = '
     }
   }, [projectId, chatType, hasMore, messages]);
 
-  // Append a new message locally (optimistic)
+  // Append a new message locally (optimistic, with deduplication)
   const appendMessage = useCallback((msg: ChatMessageWithAuthor) => {
-    setMessages(prev => [msg, ...prev]);
+    setMessages(prev => {
+      if (prev.some(m => m.id === msg.id)) return prev;
+      return [msg, ...prev];
+    });
   }, []);
 
   // Remove a message locally
@@ -496,19 +499,29 @@ export function useChatMessages(projectId: string | null, chatType: ChatType = '
   return { messages, loading, hasMore, loadMore, refetch: fetchInitial, appendMessage, removeMessage };
 }
 
-/** Realtime subscription for chat_messages — calls onNewMessage on INSERT */
+/** Realtime subscription for chat_messages — calls onNewMessage on INSERT/DELETE.
+ *
+ * IMPORTANT: supabase.channel(name) in v2.x returns the SAME object when
+ * called with the same name.  Because ChatView mounts two ChatTabPanel
+ * instances (team + client) that both call this hook with the same projectId,
+ * we MUST include a per-instance unique suffix (useId) so each panel gets
+ * its own independent RealtimeChannel.  Without this the second panel's
+ * .subscribe() is a no-op and cleanup in either panel kills both subscriptions.
+ */
 export function useChatRealtime(
   projectId: string | null,
   onNewMessage: (payload: any) => void,
 ) {
+  const instanceId = useId();
   const callbackRef = useRef(onNewMessage);
   callbackRef.current = onNewMessage;
 
   useEffect(() => {
     if (!projectId) return;
 
+    const channelName = `chat:${projectId}:${instanceId}`;
     const channel = supabase
-      .channel(`chat:${projectId}`)
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -533,12 +546,16 @@ export function useChatRealtime(
           callbackRef.current(payload);
         },
       )
-      .subscribe();
+      .subscribe((status, err) => {
+        if (status === 'CHANNEL_ERROR') {
+          console.warn(`[Realtime] channel ${channelName} error:`, err?.message);
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [projectId]);
+  }, [projectId, instanceId]);
 }
 
 /** Unread message counts for project list */
@@ -604,7 +621,7 @@ export function useDesignFiles(projectId: string | null, folder?: DesignFolder) 
 /** Fetch file counts per folder */
 export function useDesignFileCounts(projectId: string | null) {
   return useQuery<Record<DesignFolder, number>>(
-    () => projectId ? fetchDesignFileCounts(projectId) : Promise.resolve({ concept: 0, visuals: 0, drawings: 0, documents: 0 }),
+    () => projectId ? fetchDesignFileCounts(projectId) : Promise.resolve({ design_project: 0, visuals: 0, drawings: 0, furniture: 0, engineering: 0, documents: 0 }),
     [projectId]
   );
 }
@@ -700,11 +717,18 @@ export function sendPushNotification(
   senderName: string,
   text: string,
 ) {
-  fetch('/api/push/send', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ projectId, senderUserId, senderName, text }),
-  }).catch(() => {
-    // Fire and forget — don't block the UI
+  // Get current session token for authenticated API call
+  supabase.auth.getSession().then(({ data: { session } }) => {
+    if (!session?.access_token) return;
+    fetch('/api/push/send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ projectId, senderUserId, senderName, text }),
+    }).catch(() => {
+      // Fire and forget — don't block the UI
+    });
   });
 }

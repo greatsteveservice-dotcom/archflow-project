@@ -5,7 +5,9 @@ import { sendWelcomeEmail } from "../../../lib/mailer";
 /**
  * Server-side signup route.
  * Uses the service_role key to create a user with auto-confirmed email.
- * Sends a welcome email with login credentials.
+ * Sends a welcome email (no credentials for security).
+ *
+ * SECURITY: role is hardcoded to 'designer' — never accepted from the client.
  */
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -14,7 +16,9 @@ const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { email, password, full_name, role } = body;
+    const { email, password, full_name } = body;
+    // NOTE: `role` is intentionally NOT destructured from body.
+    // It is always hardcoded below to prevent privilege escalation.
 
     if (!email || !password) {
       return NextResponse.json(
@@ -56,21 +60,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    // Update profile with role if specified
-    if (data.user && (role || full_name)) {
+    // Update profile: role is ALWAYS 'designer', never from client input
+    if (data.user) {
+      const userName = full_name || email.split("@")[0];
       await supabaseAdmin
         .from("profiles")
         .update({
-          ...(full_name && { full_name }),
-          ...(role && { role }),
+          full_name: userName,
+          role: "designer",  // ← hardcoded, never from request body
         })
         .eq("id", data.user.id);
     }
 
-    // Send welcome email with credentials (must await — Netlify kills function after return)
+    // Send welcome email (must await — Netlify kills function after return)
     const userName = full_name || email.split("@")[0];
     try {
-      await sendWelcomeEmail(email, userName, password);
+      await sendWelcomeEmail(email, userName);
     } catch (emailErr) {
       console.error("Failed to send welcome email:", emailErr);
       // Don't fail signup if email fails — user is already created

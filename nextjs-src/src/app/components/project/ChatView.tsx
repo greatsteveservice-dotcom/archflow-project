@@ -259,16 +259,23 @@ function ChatTabPanel({ projectId, chatType, userId, profile, toast, isActive }:
     }
   }, [hasMore, loading, loadMore]);
 
-  // Realtime: on new message from others, fetch full message with profile
+  // Realtime: on new message, fetch full message with author profile and append.
+  // Own messages are already added optimistically in handleSend;
+  // appendMessage deduplicates by id, so no doubles.
   useChatRealtime(projectId, useCallback(async (payload: any) => {
     if (payload.eventType === 'INSERT') {
       const newMsg = payload.new;
-      // Only handle messages for this chat type
       if (newMsg.chat_type !== chatType) return;
+      // Skip own messages sent from THIS tab (already added optimistically).
+      // Messages from other tabs/devices of the same user will still appear
+      // because appendMessage deduplicates — at worst it's a no-op.
       if (newMsg.user_id === userId) return;
       try {
+        // Fetch latest message with author profile joined
         const fresh = await fetchChatMessages(projectId, 1, undefined, chatType);
-        if (fresh.length > 0 && fresh[0].id === newMsg.id) {
+        if (fresh.length > 0) {
+          // appendMessage deduplicates by id — safe to call even if
+          // the fetched message is different from the realtime payload
           appendMessage(fresh[0]);
         }
       } catch {
@@ -396,10 +403,12 @@ function ChatTabPanel({ projectId, chatType, userId, profile, toast, isActive }:
 
       {/* Input area */}
       <div style={{
-        padding: '8px 16px 12px',
+        padding: '8px 16px',
+        paddingBottom: 'calc(8px + env(safe-area-inset-bottom, 0px))',
         background: '#FFFFFF',
         borderTop: '0.5px solid #EBEBEB',
         display: 'flex', gap: 8, alignItems: 'flex-end',
+        flexShrink: 0,
       }}>
         <textarea
           ref={inputRef}
@@ -455,14 +464,24 @@ interface ChatViewProps {
 export default function ChatView({ projectId, toast }: ChatViewProps) {
   const { user, profile } = useAuth();
   const userId = user?.id || '';
-  const userRole = profile?.role || 'client';
 
-  // Determine available tabs based on role
-  const isClientOnly = userRole === 'client';
+  // Fetch members for pills and role detection
+  const { data: membersWithProfiles } = useProjectMembersWithProfiles(projectId);
+
+  // Determine role from project-level member_role (not global profile.role)
+  const currentMember = membersWithProfiles?.find(m => m.user_id === userId);
+  const isClientOnly = currentMember ? currentMember.member_role === 'client' : profile?.role === 'client';
   const availableTabs: ChatType[] = isClientOnly ? ['client'] : ['team', 'client'];
   const defaultTab: ChatType = isClientOnly ? 'client' : 'team';
 
   const [activeTab, setActiveTab] = useState<ChatType>(defaultTab);
+
+  // Sync active tab when member data loads and role is determined
+  useEffect(() => {
+    if (isClientOnly && activeTab === 'team') {
+      setActiveTab('client');
+    }
+  }, [isClientOnly, activeTab]);
 
   // Unread counts for each tab
   const { count: teamUnread, refetch: refetchTeamUnread } = useChatUnreadByType(projectId, userId, 'team');
@@ -473,9 +492,6 @@ export default function ChatView({ projectId, toast }: ChatViewProps) {
     if (activeTab === 'team') refetchClientUnread();
     else refetchTeamUnread();
   }, [activeTab, refetchTeamUnread, refetchClientUnread]);
-
-  // Fetch members for pills
-  const { data: membersWithProfiles } = useProjectMembersWithProfiles(projectId);
 
   // Filter members for each tab
   // team tab: designer + assistant (team members)
@@ -506,7 +522,9 @@ export default function ChatView({ projectId, toast }: ChatViewProps) {
       background: '#FFFFFF',
       display: 'flex',
       flexDirection: 'column',
-      minHeight: '100%',
+      height: 'calc(100dvh - 140px)',
+      maxHeight: 'calc(100dvh - 140px)',
+      overflow: 'hidden',
     }}>
       {/* Push notification permission banner */}
       <PushPermissionBanner />

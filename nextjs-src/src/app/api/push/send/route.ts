@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import webpush from 'web-push';
 import { createClient } from '@supabase/supabase-js';
+import { requireAuth } from '../../../lib/api-auth';
 
 /**
  * POST /api/push/send
  * Sends push notifications to all subscribed members of a project
  * (except the sender).
+ *
+ * SECURITY: Requires a valid Supabase JWT in Authorization header.
+ * The senderUserId from the body MUST match the authenticated user.
  *
  * Body: { projectId, senderUserId, senderName, text }
  */
@@ -26,10 +30,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'VAPID keys not configured' }, { status: 500 });
     }
 
+    // ── Auth check ──────────────────────────────────────
+    const auth = await requireAuth(req);
+    if (auth.error) return auth.error;
+
     const { projectId, senderUserId, senderName, text } = await req.json();
 
     if (!projectId || !senderUserId || !text) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    // Verify the claimed senderUserId matches the JWT
+    if (senderUserId !== auth.user.id) {
+      return NextResponse.json(
+        { error: 'senderUserId does not match authenticated user' },
+        { status: 403 }
+      );
     }
 
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {

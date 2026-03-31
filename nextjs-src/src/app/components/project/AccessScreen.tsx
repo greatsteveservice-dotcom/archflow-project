@@ -4,6 +4,7 @@ import { Icons } from '../Icons';
 import type { MemberRole, RbacMemberWithProfile } from '../../lib/types';
 import { useRbacMembers, useAccessSettings } from '../../lib/hooks';
 import { createRbacInvite, removeRbacMember, upsertAccessSettings } from '../../lib/queries';
+import { supabase } from '../../lib/supabase';
 
 // ─── Section config ──────────────────────────────────────
 const SECTIONS: { role: MemberRole; label: string }[] = [
@@ -31,11 +32,12 @@ function getEmail(m: RbacMemberWithProfile): string {
 // ─── Component ───────────────────────────────────────────
 interface AccessScreenProps {
   projectId: string;
+  projectName?: string;
   toast: (msg: string) => void;
   onBack: () => void;
 }
 
-export default function AccessScreen({ projectId, toast, onBack }: AccessScreenProps) {
+export default function AccessScreen({ projectId, projectName, toast, onBack }: AccessScreenProps) {
   const { data: members, loading, refetch: refetchMembers } = useRbacMembers(projectId);
   const { data: accessSettings, refetch: refetchSettings } = useAccessSettings(projectId);
 
@@ -69,6 +71,18 @@ export default function AccessScreen({ projectId, toast, onBack }: AccessScreenP
       setFormEmail('');
       setOpenForm(null);
       refetchMembers();
+      // Send invite email (fire-and-forget, with JWT auth)
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (!session?.access_token) return;
+        fetch('/api/invite/send', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ email, projectName: projectName || 'Проект', inviteUrl: link }),
+        }).catch(() => {});
+      });
     } catch (err: any) {
       setFormError(err.message || 'Ошибка');
     } finally {

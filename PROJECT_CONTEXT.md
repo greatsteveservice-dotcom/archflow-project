@@ -102,7 +102,7 @@ SaaS-платформа для дизайнеров интерьера и стр
 
 ## Demo-доступ
 
-- Дизайнер: `demo@archflow.app` / `demo`
+- Дизайнер: `demo@archflow.ru` / `oDEgaa9rsAJD&ocw`
 - Заказчик: `client@archflow.app` / `client123`
 
 ---
