@@ -123,7 +123,7 @@ export default function FeedbackBar() {
           right: 0,
           zIndex: 40,
           background: "#F6F6F4",
-          borderTop: "0.5px solid #E0E0E0",
+          borderTop: "0.5px solid #EBEBEB",
           paddingBottom: "env(safe-area-inset-bottom, 0px)",
         }}
       >
@@ -158,7 +158,7 @@ export default function FeedbackBar() {
                 fontSize: 7,
                 textTransform: "uppercase" as const,
                 letterSpacing: "0.14em",
-                color: "#AAA",
+                color: "#111",
                 lineHeight: 1,
               }}
             >
@@ -231,7 +231,7 @@ export default function FeedbackBar() {
                 fontSize: 8,
                 textTransform: "uppercase" as const,
                 letterSpacing: "0.12em",
-                color: "#CCC",
+                color: "#111",
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
@@ -262,7 +262,7 @@ export default function FeedbackBar() {
                     fontSize: 9,
                     textTransform: "uppercase" as const,
                     letterSpacing: "0.2em",
-                    color: "#AAA",
+                    color: "#111",
                   }}
                 >
                   Мы учтём ваш отзыв
@@ -290,7 +290,7 @@ export default function FeedbackBar() {
                     fontSize: 9,
                     textTransform: "uppercase" as const,
                     letterSpacing: "0.18em",
-                    color: "#AAA",
+                    color: "#111",
                     marginBottom: 16,
                   }}
                 >
@@ -303,13 +303,13 @@ export default function FeedbackBar() {
                   style={{
                     width: "100%",
                     minHeight: 100,
-                    border: "0.5px solid #CCC",
+                    border: "0.5px solid #EBEBEB",
                     padding: 12,
                     fontFamily: "'IBM Plex Mono', monospace",
                     fontSize: 11,
                     fontWeight: 300,
                     color: "#111",
-                    background: "#FAFAFA",
+                    background: "#F6F6F4",
                     outline: "none",
                     resize: "vertical",
                     display: "block",
@@ -333,8 +333,8 @@ export default function FeedbackBar() {
                       fontSize: 7,
                       textTransform: "uppercase" as const,
                       letterSpacing: "0.14em",
-                      color: "#AAA",
-                      border: "0.5px solid #DDD",
+                      color: "#111",
+                      border: "0.5px solid #EBEBEB",
                       background: "none",
                       padding: "3px 8px",
                       cursor: "pointer",
@@ -349,7 +349,7 @@ export default function FeedbackBar() {
                       style={{
                         fontFamily: "'IBM Plex Mono', monospace",
                         fontSize: 7,
-                        color: "#CCC",
+                        color: "#EBEBEB",
                         background: "none",
                         border: "none",
                         cursor: "pointer",
@@ -370,7 +370,7 @@ export default function FeedbackBar() {
                     <span style={{
                       fontFamily: "'IBM Plex Mono', monospace",
                       fontSize: 7,
-                      color: "#AAA",
+                      color: "#111",
                       letterSpacing: "0.08em",
                     }}>
                       {file.name.length > 30 ? file.name.slice(0, 27) + '...' : file.name}
@@ -385,7 +385,7 @@ export default function FeedbackBar() {
                     width: "100%",
                     height: 48,
                     marginTop: 12,
-                    background: !text.trim() ? "#999" : "#111",
+                    background: !text.trim() ? "#EBEBEB" : "#111",
                     color: "#fff",
                     border: "none",
                     fontFamily: "'IBM Plex Mono', monospace",

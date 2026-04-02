@@ -26,7 +26,7 @@ export default function Toast({ msg, onClose }: ToastProps) {
         alignItems: 'center',
         gap: 10,
       }}>
-        <span style={{ color: '#AAA' }}>→</span>
+        <span style={{ color: '#EBEBEB' }}>→</span>
         {msg}
       </div>
     </div>

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Modal from "./Modal";
 import { createProject } from "../lib/queries";
 
 interface CreateProjectModalProps {
@@ -48,71 +47,114 @@ export default function CreateProjectModal({ open, onClose, onSuccess }: CreateP
     onClose();
   };
 
+  if (!open) return null;
+
+  const mono = "'IBM Plex Mono', monospace";
+  const display = "'Playfair Display', serif";
+
   return (
-    <Modal open={open} onClose={handleClose} title="Новый проект">
-      {error && (
-        <div className="bg-err-bg border border-err/20 text-err text-[13px] px-4 py-2.5 rounded-lg mb-4">
-          {error}
-        </div>
-      )}
+    <div style={{
+      position: 'fixed', inset: 0, background: '#fff', zIndex: 9999,
+      display: 'flex', flexDirection: 'column', overflow: 'auto',
+    }}>
+      {/* Header */}
+      <div style={{ padding: '16px 24px', flexShrink: 0 }}>
+        <button
+          onClick={handleClose}
+          style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            fontFamily: mono, fontSize: 9, color: '#111',
+            textTransform: 'uppercase', letterSpacing: '0.12em',
+            padding: 0,
+          }}
+        >
+          ← Назад
+        </button>
+      </div>
 
-      <form onSubmit={handleSubmit}>
-        <div className="mb-4">
-          <label className="block text-xs font-medium text-ink-muted mb-1.5">
-            Название проекта *
-          </label>
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Квартира на Патриарших"
-            className="w-full px-3 py-2.5 border border-line rounded-lg text-sm outline-none transition-colors focus:border-ink"
-            autoFocus
-          />
-        </div>
+      {/* Content */}
+      <div style={{ padding: '0 24px 40px', flex: 1 }}>
+        <h1 style={{
+          fontFamily: display, fontSize: 32, fontWeight: 900,
+          color: '#111', marginBottom: 24,
+        }}>
+          Новый проект
+        </h1>
 
-        <div className="mb-4">
-          <label className="block text-xs font-medium text-ink-muted mb-1.5">
-            Адрес
-          </label>
-          <input
-            type="text"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            placeholder="Москва, ул. Малая Бронная, 15"
-            className="w-full px-3 py-2.5 border border-line rounded-lg text-sm outline-none transition-colors focus:border-ink"
-          />
-        </div>
+        {error && (
+          <div style={{
+            border: '0.5px solid #111', padding: '10px 14px', marginBottom: 20,
+            fontFamily: mono, fontSize: 11, color: '#111',
+          }}>
+            {error}
+          </div>
+        )}
 
-        <div className="mb-6">
-          <label className="block text-xs font-medium text-ink-muted mb-1.5">
-            Дата начала
-          </label>
-          <input
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            className="w-full px-3 py-2.5 border border-line rounded-lg text-sm outline-none transition-colors focus:border-ink"
-          />
-        </div>
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: 20 }}>
+            <label style={{
+              display: 'block', fontFamily: mono, fontSize: 9,
+              color: '#111', textTransform: 'uppercase', letterSpacing: '0.12em',
+              marginBottom: 8,
+            }}>
+              Название проекта *
+            </label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Квартира на Патриарших"
+              className="af-input"
+              style={{ height: 48, fontSize: 13 }}
+              autoFocus
+            />
+          </div>
 
-        <div className="flex gap-2 justify-end">
-          <button
-            type="button"
-            onClick={handleClose}
-            className="px-4 py-2.5 border border-line rounded-lg text-sm font-medium text-ink-muted hover:bg-gray-50 transition-colors"
-          >
-            Отмена
-          </button>
+          <div style={{ marginBottom: 20 }}>
+            <label style={{
+              display: 'block', fontFamily: mono, fontSize: 9,
+              color: '#111', textTransform: 'uppercase', letterSpacing: '0.12em',
+              marginBottom: 8,
+            }}>
+              Адрес
+            </label>
+            <input
+              type="text"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder="Москва, ул. Малая Бронная, 15"
+              className="af-input"
+              style={{ height: 48, fontSize: 13 }}
+            />
+          </div>
+
+          <div style={{ marginBottom: 32 }}>
+            <label style={{
+              display: 'block', fontFamily: mono, fontSize: 9,
+              color: '#111', textTransform: 'uppercase', letterSpacing: '0.12em',
+              marginBottom: 8,
+            }}>
+              Дата начала
+            </label>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="af-input"
+              style={{ height: 48, fontSize: 13 }}
+            />
+          </div>
+
           <button
             type="submit"
             disabled={saving}
-            className="px-5 py-2.5 bg-ink text-srf rounded-lg text-sm font-medium hover:bg-ink-hover transition-colors disabled:opacity-50"
+            className="af-btn af-btn-full"
+            style={{ height: 52, fontSize: 11 }}
           >
-            {saving ? "Создание..." : "Создать проект"}
+            {saving ? "Создание..." : "Создать →"}
           </button>
-        </div>
-      </form>
-    </Modal>
+        </form>
+      </div>
+    </div>
   );
 }

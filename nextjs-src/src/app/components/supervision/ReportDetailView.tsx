@@ -22,8 +22,8 @@ const REPORT_STATUS_LABEL: Record<ReportStatus, string> = {
 };
 
 const REPORT_STATUS_STYLE: Record<ReportStatus, { border: string; color: string }> = {
-  draft: { border: '#DDD', color: '#AAA' },
-  filled: { border: '#888', color: '#888' },
+  draft: { border: '#EBEBEB', color: '#111' },
+  filled: { border: '#EBEBEB', color: '#111' },
   published: { border: '#111', color: '#111' },
 };
 
@@ -35,8 +35,8 @@ const REMARK_STATUS_LABEL: Record<RemarkStatus, string> = {
 
 const REMARK_STATUS_STYLE: Record<RemarkStatus, { bg: string; color: string }> = {
   open: { bg: '#111', color: '#FFF' },
-  in_progress: { bg: '#F6F6F4', color: '#666' },
-  resolved: { bg: '#F6F6F4', color: '#CCC' },
+  in_progress: { bg: '#F6F6F4', color: '#111' },
+  resolved: { bg: '#F6F6F4', color: '#111' },
 };
 
 const TASK_STATUS_LABEL: Record<TaskStatus, string> = {
@@ -186,7 +186,7 @@ export default function ReportDetailView({ reportId, projectId, toast, onBack, m
 
   if (loadingReport) {
     return (
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#AAA' }}>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#111' }}>
         Загрузка...
       </div>
     );
@@ -194,7 +194,7 @@ export default function ReportDetailView({ reportId, projectId, toast, onBack, m
 
   if (!report) {
     return (
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#999' }}>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#111' }}>
         Отчёт не найден
       </div>
     );
@@ -274,7 +274,7 @@ export default function ReportDetailView({ reportId, projectId, toast, onBack, m
           fontSize: 8,
           textTransform: 'uppercase',
           letterSpacing: '0.08em',
-          color: '#BBB',
+          color: '#111',
           marginBottom: 6,
         }}>
           Общий комментарий
@@ -330,7 +330,7 @@ export default function ReportDetailView({ reportId, projectId, toast, onBack, m
             fontSize: 8,
             textTransform: 'uppercase',
             letterSpacing: '0.08em',
-            color: '#BBB',
+            color: '#111',
           }}>
             Замечания {remarks ? `(${remarks.length})` : ''}
           </div>
@@ -339,7 +339,7 @@ export default function ReportDetailView({ reportId, projectId, toast, onBack, m
             style={{
               fontFamily: 'var(--font-mono)',
               fontSize: 9,
-              color: '#999',
+              color: '#111',
               background: 'none',
               border: 'none',
               cursor: 'pointer',
@@ -421,7 +421,7 @@ export default function ReportDetailView({ reportId, projectId, toast, onBack, m
               <div style={{ flex: 1 }} />
               <button
                 onClick={() => { setShowNewRemark(false); setNewRemarkText(''); }}
-                style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#AAA', background: 'none', border: 'none', cursor: 'pointer' }}
+                style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#111', background: 'none', border: 'none', cursor: 'pointer' }}
               >
                 Отмена
               </button>
@@ -447,11 +447,11 @@ export default function ReportDetailView({ reportId, projectId, toast, onBack, m
 
         {/* Remarks list */}
         {loadingRemarks ? (
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#AAA' }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#111' }}>
             Загрузка...
           </div>
         ) : (remarks || []).length === 0 ? (
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#CCC', padding: '16px 0' }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#111', padding: '16px 0' }}>
             Замечаний нет
           </div>
         ) : (
@@ -565,7 +565,7 @@ function RemarkRow({
         <div style={{
           fontFamily: 'var(--font-mono)',
           fontSize: 10,
-          color: '#CCC',
+          color: '#111',
           minWidth: 20,
           paddingTop: 1,
         }}>
@@ -609,7 +609,7 @@ function RemarkRow({
                 style={{
                   fontFamily: 'var(--font-mono)',
                   fontSize: 8,
-                  color: '#999',
+                  color: '#111',
                   background: 'none',
                   border: 'none',
                   cursor: 'pointer',
@@ -622,14 +622,14 @@ function RemarkRow({
 
             {/* Assignee */}
             {remark.assignee && (
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#AAA' }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#111' }}>
                 {remark.assignee.full_name}
               </span>
             )}
 
             {/* Deadline */}
             {remark.deadline && (
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#AAA' }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#111' }}>
                 до {remark.deadline}
               </span>
             )}
@@ -641,7 +641,7 @@ function RemarkRow({
                 style={{
                   fontFamily: 'var(--font-mono)',
                   fontSize: 8,
-                  color: '#999',
+                  color: '#111',
                   background: 'none',
                   border: 'none',
                   cursor: 'pointer',
@@ -659,7 +659,7 @@ function RemarkRow({
                 style={{
                   fontFamily: 'var(--font-mono)',
                   fontSize: 8,
-                  color: '#CCC',
+                  color: '#111',
                   background: 'none',
                   border: 'none',
                   cursor: 'pointer',
@@ -678,7 +678,7 @@ function RemarkRow({
               className="opacity-0 group-hover:opacity-100 transition-opacity"
               style={{
                 fontSize: 12,
-                color: '#DDD',
+                color: '#111',
                 background: 'none',
                 border: 'none',
                 cursor: 'pointer',
@@ -698,7 +698,7 @@ function RemarkRow({
           {remark.comments.map(c => (
             <div key={c.id} style={{
               padding: '6px 0',
-              borderTop: '0.5px solid #F0F0F0',
+              borderTop: '0.5px solid #EBEBEB',
             }}>
               <div style={{
                 fontFamily: 'var(--font-mono)',
@@ -711,7 +711,7 @@ function RemarkRow({
               <div style={{
                 fontFamily: 'var(--font-mono)',
                 fontSize: 8,
-                color: '#CCC',
+                color: '#111',
                 marginTop: 2,
               }}>
                 {c.author?.full_name || 'Автор'} · {new Date(c.created_at).toLocaleDateString('ru-RU')}
@@ -767,7 +767,7 @@ function RemarkRow({
             <div key={task.id} style={{
               fontFamily: 'var(--font-mono)',
               fontSize: 8,
-              color: '#AAA',
+              color: '#111',
               padding: '2px 0',
             }}>
               → {task.title} · {TASK_STATUS_LABEL[task.status]}
@@ -782,7 +782,7 @@ function RemarkRow({
                 fontSize: 8,
                 textTransform: 'uppercase',
                 letterSpacing: '0.06em',
-                color: '#CCC',
+                color: '#111',
                 background: 'none',
                 border: 'none',
                 cursor: 'pointer',
@@ -866,7 +866,7 @@ function RemarkRow({
                 <div style={{ flex: 1 }} />
                 <button
                   onClick={() => { setShowCreateTask(false); setNewTaskTitle(''); setNewTaskAssignee(''); }}
-                  style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#AAA', background: 'none', border: 'none', cursor: 'pointer' }}
+                  style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#111', background: 'none', border: 'none', cursor: 'pointer' }}
                 >
                   Отмена
                 </button>

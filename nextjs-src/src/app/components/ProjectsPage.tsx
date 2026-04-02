@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import ProjectCard from "./ProjectCard";
 import EmptyState from "./EmptyState";
 import { ErrorMessage } from "./Loading";
@@ -12,9 +12,10 @@ import { fetchProject } from "../lib/queries";
 interface ProjectsPageProps {
   onNavigate: (page: string, ctx?: any) => void;
   onCreateProject?: () => void;
+  refreshKey?: number;
 }
 
-export default function ProjectsPage({ onNavigate, onCreateProject }: ProjectsPageProps) {
+export default function ProjectsPage({ onNavigate, onCreateProject, refreshKey = 0 }: ProjectsPageProps) {
   const {
     projects,
     total,
@@ -23,10 +24,16 @@ export default function ProjectsPage({ onNavigate, onCreateProject }: ProjectsPa
     error,
     hasMore,
     loadMore,
+    refetch,
   } = useProjectsPaginated();
+
+  // Refresh when parent signals (e.g. after project creation)
+  useEffect(() => {
+    if (refreshKey > 0) refetch();
+  }, [refreshKey, refetch]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const projectIds = useMemo(() => (projects || []).map(p => p.id), [projects]);
   const alerts = usePendingAlerts(projectIds);
   const { counts: unreadCounts } = useUnreadCounts(projectIds, user?.id || null);
@@ -72,10 +79,29 @@ export default function ProjectsPage({ onNavigate, onCreateProject }: ProjectsPa
 
   return (
     <div className="animate-fade-in">
-      {/* Page title */}
-      <div className="mb-8">
-        <h1 className="af-page-title">Проекты</h1>
-        <p className="af-page-subtitle">{total} проектов · {dateStr}</p>
+      {/* Page title + logout */}
+      <div className="mb-8 flex items-start justify-between">
+        <div>
+          <h1 className="af-page-title">Проекты</h1>
+          <p className="af-page-subtitle">{total} проектов · {dateStr}</p>
+        </div>
+        <button
+          onClick={signOut}
+          style={{
+            background: 'none',
+            border: 'none',
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: 7,
+            textTransform: 'uppercase',
+            letterSpacing: '0.14em',
+            color: '#111',
+            cursor: 'pointer',
+            padding: '4px 0',
+            marginTop: 4,
+          }}
+        >
+          Выйти
+        </button>
       </div>
 
       {/* Search + filters */}
@@ -93,7 +119,7 @@ export default function ProjectsPage({ onNavigate, onCreateProject }: ProjectsPa
             <button
               className="absolute right-3 top-1/2 -translate-y-1/2"
               onClick={() => setSearch("")}
-              style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: '#AAA' }}
+              style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: '#EBEBEB' }}
             >
               ✕
             </button>
@@ -117,7 +143,7 @@ export default function ProjectsPage({ onNavigate, onCreateProject }: ProjectsPa
       {/* Results */}
       {filtered.length > 0 ? (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2" style={{ gap: 'var(--af-gap)' }}>
+          <div className="grid grid-cols-1 md:grid-cols-2" style={{ gap: 2 }}>
             {filtered.map((project, i) => (
               <ProjectCard
                 key={project.id}

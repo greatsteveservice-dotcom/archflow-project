@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendInviteEmail } from "../../../lib/mailer";
 import { requireAuth } from "../../../lib/api-auth";
+import { rateLimit } from "../../../lib/rate-limit";
 
 /**
  * Send invite email to a newly invited project member.
@@ -9,8 +10,14 @@ import { requireAuth } from "../../../lib/api-auth";
  * SECURITY: Requires a valid Supabase JWT in Authorization header.
  * Only authenticated users can trigger invite emails.
  */
+// Rate limit: 3 requests per hour per IP
+const checkInviteRate = rateLimit('invite', 3, 60 * 60 * 1000);
+
 export async function POST(req: NextRequest) {
   try {
+    const rateLimited = checkInviteRate(req);
+    if (rateLimited) return rateLimited;
+
     // ── Auth check ──────────────────────────────────────
     const auth = await requireAuth(req);
     if (auth.error) return auth.error;

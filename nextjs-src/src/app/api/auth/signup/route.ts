@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { sendWelcomeEmail } from "../../../lib/mailer";
+import { rateLimit } from "../../../lib/rate-limit";
 
 /**
  * Server-side signup route.
@@ -13,8 +14,14 @@ import { sendWelcomeEmail } from "../../../lib/mailer";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
+// Rate limit: 5 requests per minute per IP
+const checkSignupRate = rateLimit('signup', 5, 60 * 1000);
+
 export async function POST(req: NextRequest) {
   try {
+    const rateLimited = checkSignupRate(req);
+    if (rateLimited) return rateLimited;
+
     const body = await req.json();
     const { email, password, full_name } = body;
     // NOTE: `role` is intentionally NOT destructured from body.

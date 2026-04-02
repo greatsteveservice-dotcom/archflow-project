@@ -251,7 +251,7 @@ export default function CalendarView({ projectId, visits, toast, refetchVisits, 
             fontSize: 7,
             textTransform: 'uppercase',
             letterSpacing: '0.12em',
-            color: '#AAA',
+            color: '#111',
             marginBottom: 4,
           }}>
             Задача
@@ -268,7 +268,7 @@ export default function CalendarView({ projectId, visits, toast, refetchVisits, 
           <div style={{
             fontFamily: "'IBM Plex Mono', monospace",
             fontSize: 7,
-            color: '#AAA',
+            color: '#111',
             letterSpacing: '0.05em',
           }}>
             до {fmtDMY(taskReminder.billingDate)} · осталось {taskReminder.daysLeft} р.д.
@@ -367,7 +367,7 @@ export default function CalendarView({ projectId, visits, toast, refetchVisits, 
               <span style={{
                 fontFamily: "'IBM Plex Mono', monospace",
                 fontSize: 7, textTransform: 'uppercase',
-                letterSpacing: '0.08em', color: '#888',
+                letterSpacing: '0.08em', color: '#111',
               }}>Визит</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -375,7 +375,7 @@ export default function CalendarView({ projectId, visits, toast, refetchVisits, 
               <span style={{
                 fontFamily: "'IBM Plex Mono', monospace",
                 fontSize: 7, textTransform: 'uppercase',
-                letterSpacing: '0.08em', color: '#888',
+                letterSpacing: '0.08em', color: '#111',
               }}>Счёт</span>
             </div>
           </div>

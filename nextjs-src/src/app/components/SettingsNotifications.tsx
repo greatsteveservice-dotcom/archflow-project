@@ -79,7 +79,7 @@ export function NotificationsPage() {
           </button>
         </div>
       )}
-      <div className="bg-srf border border-line rounded-xl px-5 py-1">
+      <div className="bg-srf border border-line px-5 py-1">
         {notifications.map((n: Notification) => {
           const isRead = readIds.has(n.id);
           const IconComp = TYPE_ICON[n.type] || TYPE_ICON.photo;
@@ -164,7 +164,7 @@ export function SettingsPage() {
 
   return (
     <div className="animate-fade-in">
-      <div className="bg-srf border border-line rounded-xl p-6 max-w-[560px]">
+      <div className="bg-srf border border-line p-6 max-w-[560px]">
         <h3 className="text-base font-semibold mb-5">Профиль</h3>
         <div className="modal-field mb-4">
           <label>Имя</label>
@@ -206,7 +206,7 @@ export function SettingsPage() {
               }`}
             >
               <div
-                className="w-[18px] h-[18px] rounded-full bg-white absolute top-[2px] transition-all duration-200 shadow-sm"
+                className="w-[18px] h-[18px] rounded-full bg-white absolute top-[2px] transition-all duration-200"
                 style={{ left: prefs[item.key] ? 20 : 2 }}
               />
             </button>

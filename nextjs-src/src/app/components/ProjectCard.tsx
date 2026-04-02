@@ -32,10 +32,10 @@ const ProjectCard = memo(function ProjectCard({ project, onClick, onHover, index
         <span className="af-project-index">{String(index + 1).padStart(2, '0')}</span>
       )}
 
-      {/* Thumb */}
+      {/* Large initial letter — decorative */}
       <div className="af-project-thumb">{initial}</div>
 
-      {/* Content */}
+      {/* Content — bottom-aligned */}
       <div className="af-project-content">
         <div className="af-project-name" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           {project.title}
@@ -44,7 +44,6 @@ const ProjectCard = memo(function ProjectCard({ project, onClick, onHover, index
               width: 6,
               height: 6,
               background: '#111',
-              borderRadius: '50%',
               display: 'inline-block',
               flexShrink: 0,
             }} />

@@ -150,7 +150,7 @@ export default function ProfilePage({ onNavigate, onMenuToggle, toast }: Profile
               <div className="text-[17px] font-semibold">{profile.full_name}</div>
               <div className="text-[13px] text-ink-muted mt-0.5">{profile.email}</div>
               <div className="mt-1">
-                <span className="text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-srf-secondary text-ink-secondary">
+                <span className="text-[11px] font-medium px-2.5 py-0.5 bg-srf-secondary text-ink-secondary">
                   {ROLE_LABELS[profile.role] || profile.role}
                 </span>
               </div>

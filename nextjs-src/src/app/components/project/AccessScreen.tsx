@@ -151,7 +151,7 @@ export default function AccessScreen({ projectId, projectName, toast, onBack }: 
           }}
         >
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: '#999', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            <div style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: '#111', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
               Ссылка-приглашение
             </div>
             <div style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: '#111', wordBreak: 'break-all' }}>
@@ -167,7 +167,7 @@ export default function AccessScreen({ projectId, projectName, toast, onBack }: 
             </button>
             <button
               onClick={() => setLastInviteLink(null)}
-              style={{ fontSize: 13, color: '#CCC', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' }}
+              style={{ fontSize: 13, color: '#EBEBEB', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' }}
             >
               ×
             </button>
@@ -191,7 +191,7 @@ export default function AccessScreen({ projectId, projectName, toast, onBack }: 
                 {/* Section header */}
                 <div
                   className="text-[8px] uppercase tracking-[0.08em] mb-2 mt-6"
-                  style={{ fontFamily: 'var(--font-mono)', color: '#BBB' }}
+                  style={{ fontFamily: 'var(--font-mono)', color: '#111' }}
                 >
                   {label}
                 </div>
@@ -225,7 +225,7 @@ export default function AccessScreen({ projectId, projectName, toast, onBack }: 
                               fontSize: 10,
                               fontWeight: 600,
                               fontFamily: 'var(--font-mono)',
-                              color: '#999',
+                              color: '#111',
                             }}
                           >
                             {getInitials(m)}
@@ -239,7 +239,7 @@ export default function AccessScreen({ projectId, projectName, toast, onBack }: 
                             </div>
                             {getEmail(m) && getEmail(m) !== getDisplayName(m) && (
                               <div
-                                style={{ fontSize: 10, color: '#999', fontFamily: 'var(--font-mono)' }}
+                                style={{ fontSize: 10, color: '#111', fontFamily: 'var(--font-mono)' }}
                               >
                                 {getEmail(m)}
                               </div>
@@ -254,7 +254,7 @@ export default function AccessScreen({ projectId, projectName, toast, onBack }: 
                               fontFamily: 'var(--font-mono)',
                               padding: '2px 6px',
                               background: m.status === 'active' ? '#111' : '#F6F6F4',
-                              color: m.status === 'active' ? '#FFF' : '#999',
+                              color: m.status === 'active' ? '#FFF' : '#111',
                             }}
                           >
                             {m.status === 'active' ? 'Активен' : 'Ожидает'}
@@ -264,7 +264,7 @@ export default function AccessScreen({ projectId, projectName, toast, onBack }: 
                             className="opacity-0 group-hover:opacity-100 transition-opacity"
                             style={{
                               fontSize: 14,
-                              color: '#CCC',
+                              color: '#EBEBEB',
                               background: 'none',
                               border: 'none',
                               cursor: 'pointer',
@@ -284,7 +284,7 @@ export default function AccessScreen({ projectId, projectName, toast, onBack }: 
                   <div
                     style={{
                       fontSize: 11,
-                      color: '#CCC',
+                      color: '#111',
                       fontFamily: 'var(--font-mono)',
                       padding: '8px 12px',
                     }}
@@ -324,7 +324,7 @@ export default function AccessScreen({ projectId, projectName, toast, onBack }: 
                       <div
                         style={{
                           fontSize: 10,
-                          color: '#D00',
+                          color: '#111',
                           fontFamily: 'var(--font-mono)',
                           marginBottom: 6,
                         }}
@@ -373,7 +373,7 @@ export default function AccessScreen({ projectId, projectName, toast, onBack }: 
                         onClick={() => { setOpenForm(null); setFormEmail(''); setFormError(''); }}
                         style={{
                           fontSize: 13,
-                          color: '#CCC',
+                          color: '#EBEBEB',
                           background: 'none',
                           border: 'none',
                           cursor: 'pointer',
@@ -394,14 +394,12 @@ export default function AccessScreen({ projectId, projectName, toast, onBack }: 
                       padding: '8px 12px',
                       fontSize: 11,
                       fontFamily: 'var(--font-mono)',
-                      color: '#999',
+                      color: '#111',
                       background: 'none',
                       border: 'none',
                       cursor: 'pointer',
                       transition: 'color 0.12s',
                     }}
-                    onMouseEnter={e => (e.currentTarget.style.color = '#111')}
-                    onMouseLeave={e => (e.currentTarget.style.color = '#999')}
                   >
                     <Icons.Plus className="w-3 h-3" />
                     Добавить
@@ -471,10 +469,10 @@ function ChipToggle({
       style={{
         fontSize: 9,
         fontFamily: 'var(--font-mono)',
-        padding: '2px 8px',
-        background: active ? '#111' : '#F6F6F4',
-        color: active ? '#FFF' : '#999',
-        border: 'none',
+        padding: '2px 10px',
+        background: active ? '#111' : 'transparent',
+        color: active ? '#FFF' : '#111',
+        border: active ? '1px solid #111' : '1px solid #111',
         cursor: disabled ? 'wait' : 'pointer',
         transition: 'all 0.12s',
         opacity: disabled ? 0.5 : 1,

@@ -87,7 +87,7 @@ export default function DesignFileDetail({
 
   if (loading) {
     return (
-      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: '#AAA', textAlign: 'center', padding: '40px 0', textTransform: 'uppercase', letterSpacing: '0.2em' }}>
+      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: '#111', textAlign: 'center', padding: '40px 0', textTransform: 'uppercase', letterSpacing: '0.2em' }}>
         Загрузка...
       </div>
     );
@@ -96,7 +96,7 @@ export default function DesignFileDetail({
   if (!file) {
     return (
       <div style={{ textAlign: 'center', padding: '48px 0' }}>
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: '#AAA' }}>Файл не найден</div>
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: '#111' }}>Файл не найден</div>
         <button onClick={onBack} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, color: '#111', background: 'none', border: 'none', cursor: 'pointer', marginTop: 12, textDecoration: 'underline' }}>
           ← Назад
         </button>
@@ -111,7 +111,7 @@ export default function DesignFileDetail({
         onClick={onBack}
         style={{
           fontFamily: "'IBM Plex Mono', monospace", fontSize: 8,
-          letterSpacing: '0.14em', textTransform: 'uppercase', color: '#AAA',
+          letterSpacing: '0.14em', textTransform: 'uppercase', color: '#111',
           background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: 16,
         }}
       >
@@ -122,7 +122,7 @@ export default function DesignFileDetail({
       <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 900, color: '#111', marginBottom: 4, wordBreak: 'break-word' }}>
         {file.name}
       </h3>
-      <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, color: '#AAA', marginBottom: 20 }}>
+      <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, color: '#111', marginBottom: 20 }}>
         {formatSize(file.file_size)} · {formatDate(file.created_at)} · {file.uploader?.full_name || '—'}
       </p>
 
@@ -161,10 +161,10 @@ export default function DesignFileDetail({
         {!isImage(file.file_type) && !isPdf(file.file_type) && (
           <div style={{ textAlign: 'center', padding: '32px 0' }}>
             <div style={{
-              width: 80, height: 96, border: '0.5px solid #DDD', display: 'flex',
-              alignItems: 'center', justifyContent: 'center', margin: '0 auto', background: '#FAFAFA',
+              width: 80, height: 96, border: '0.5px solid #EBEBEB', display: 'flex',
+              alignItems: 'center', justifyContent: 'center', margin: '0 auto', background: '#F6F6F4',
             }}>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 14, fontWeight: 600, color: '#999' }}>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 14, fontWeight: 600, color: '#111' }}>
                 {file.name.split('.').pop()?.toUpperCase() || 'FILE'}
               </span>
             </div>
@@ -182,7 +182,7 @@ export default function DesignFileDetail({
           style={{
             fontFamily: "'IBM Plex Mono', monospace", fontSize: 8,
             textTransform: 'uppercase', letterSpacing: '0.14em',
-            color: '#AAA', border: '0.5px solid #DDD', padding: '8px 14px',
+            color: '#111', border: '0.5px solid #EBEBEB', padding: '8px 14px',
             textDecoration: 'none', display: 'inline-block',
           }}
         >
@@ -196,7 +196,7 @@ export default function DesignFileDetail({
                 style={{
                   fontFamily: "'IBM Plex Mono', monospace", fontSize: 8,
                   textTransform: 'uppercase', letterSpacing: '0.14em',
-                  color: '#AAA', background: 'none', border: 'none',
+                  color: '#111', background: 'none', border: 'none',
                   cursor: 'pointer', padding: '8px 0',
                 }}
               >
@@ -204,7 +204,7 @@ export default function DesignFileDetail({
               </button>
             ) : (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 7, color: '#AAA' }}>
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 7, color: '#111' }}>
                   Удалить файл?
                 </span>
                 <button
@@ -222,7 +222,7 @@ export default function DesignFileDetail({
                   onClick={() => setConfirmDelete(false)}
                   style={{
                     fontFamily: "'IBM Plex Mono', monospace", fontSize: 7,
-                    color: '#AAA', background: 'none', border: 'none',
+                    color: '#111', background: 'none', border: 'none',
                     cursor: 'pointer', padding: '4px 0',
                   }}
                 >
@@ -238,7 +238,7 @@ export default function DesignFileDetail({
       <div style={{ borderTop: '0.5px solid #EBEBEB', paddingTop: 16 }}>
         <div style={{
           fontFamily: "'IBM Plex Mono', monospace", fontSize: 8,
-          textTransform: 'uppercase', letterSpacing: '0.14em', color: '#BBB', marginBottom: 12,
+          textTransform: 'uppercase', letterSpacing: '0.14em', color: '#111', marginBottom: 12,
         }}>
           Комментарии
         </div>
@@ -251,7 +251,7 @@ export default function DesignFileDetail({
             ))}
           </div>
         ) : (
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, color: '#CCC', marginBottom: 16 }}>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, color: '#111', marginBottom: 16 }}>
             Нет комментариев
           </div>
         )}
@@ -303,22 +303,22 @@ function CommentRow({ comment }: { comment: DesignFileCommentWithProfile }) {
   };
 
   return (
-    <div style={{ paddingBottom: 10, marginBottom: 10, borderBottom: '0.5px solid #F5F5F5' }}>
+    <div style={{ paddingBottom: 10, marginBottom: 10, borderBottom: '0.5px solid #EBEBEB' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
         <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 7, textTransform: 'uppercase', color: '#111', fontWeight: 600 }}>
           {authorName}
         </span>
         <span style={{
-          fontFamily: "'IBM Plex Mono', monospace", fontSize: 6, color: '#AAA',
-          border: '0.5px solid #E8E8E8', padding: '1px 5px',
+          fontFamily: "'IBM Plex Mono', monospace", fontSize: 6, color: '#111',
+          border: '0.5px solid #EBEBEB', padding: '1px 5px',
         }}>
           {roleLabels[authorRole] || authorRole}
         </span>
-        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 6, color: '#CCC', marginLeft: 'auto' }}>
+        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 6, color: '#111', marginLeft: 'auto' }}>
           {formatTime(comment.created_at)}
         </span>
       </div>
-      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: '#555', lineHeight: 1.5 }}>
+      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: '#111', lineHeight: 1.5 }}>
         {comment.text}
       </div>
     </div>

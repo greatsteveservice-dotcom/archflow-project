@@ -57,7 +57,9 @@ export interface ProjectMember {
   project_id: string;
   user_id: string;
   role: UserRole;
+  member_role: MemberRole | null;
   access_level: AccessLevel;
+  status: MemberStatus;
   invited_at: string;
 }
 
@@ -399,20 +401,20 @@ export const PHOTO_STATUS_CONFIG: Record<PhotoStatus, { label: string; color: st
 
 // Monochrome supply status
 export const SUPPLY_STATUS_CONFIG: Record<SupplyStatus, { label: string; bg: string; text: string }> = {
-  approved:      { label: 'Согласовано',     bg: '#F3F4F6', text: '#6B7280' },
-  pending:       { label: 'Ожидает',         bg: '#F3F4F6', text: '#374151' },
-  in_review:     { label: 'На проверке',     bg: '#F3F4F6', text: '#374151' },
-  ordered:       { label: 'Заказано',        bg: '#F3F4F6', text: '#374151' },
-  in_production: { label: 'В производстве',  bg: '#F3F4F6', text: '#374151' },
-  delivered:     { label: 'Доставлено',      bg: '#F3F4F6', text: '#6B7280' },
+  approved:      { label: 'Согласовано',     bg: '#F6F6F4', text: '#111111' },
+  pending:       { label: 'Ожидает',         bg: '#F6F6F4', text: '#111111' },
+  in_review:     { label: 'На проверке',     bg: '#F6F6F4', text: '#111111' },
+  ordered:       { label: 'Заказано',        bg: '#EBEBEB', text: '#111111' },
+  in_production: { label: 'В производстве',  bg: '#EBEBEB', text: '#111111' },
+  delivered:     { label: 'Доставлено',      bg: '#F6F6F4', text: '#111111' },
 };
 
 // Risk keeps subtle semantic hint: dark=critical, medium gray=medium, light=low
 export const RISK_CONFIG: Record<RiskLevel, { label: string; bg: string; text: string }> = {
-  critical: { label: 'Критично',  bg: '#111827', text: '#FFFFFF' },
-  high:     { label: 'Высокий',   bg: '#374151', text: '#FFFFFF' },
-  medium:   { label: 'Средний',   bg: '#F3F4F6', text: '#374151' },
-  low:      { label: 'Низкий',    bg: '#F3F4F6', text: '#6B7280' },
+  critical: { label: 'Критично',  bg: '#111111', text: '#FFFFFF' },
+  high:     { label: 'Высокий',   bg: '#111111', text: '#FFFFFF' },
+  medium:   { label: 'Средний',   bg: '#EBEBEB', text: '#111111' },
+  low:      { label: 'Низкий',    bg: '#F6F6F4', text: '#111111' },
 };
 
 // ======================== VISIT REPORTS ========================
@@ -540,6 +542,9 @@ export interface ChatMessage {
   ref_preview: string | null;
   created_at: string;
   updated_at: string;
+  message_type: 'text' | 'voice';
+  voice_duration: number | null;
+  voice_original: string | null;
 }
 
 export interface ChatMessageWithAuthor extends ChatMessage {
@@ -570,11 +575,14 @@ export interface SendChatMessageInput {
   ref_type?: ChatRefType;
   ref_id?: string;
   ref_preview?: string;
+  message_type?: 'text' | 'voice';
+  voice_duration?: number;
+  voice_original?: string;
 }
 
 // ======================== DESIGN FILES ========================
 
-export type DesignFolder = 'concept' | 'visuals' | 'drawings' | 'documents';
+export type DesignFolder = 'design_project' | 'visuals' | 'drawings' | 'furniture' | 'engineering' | 'documents';
 
 export interface DesignFile {
   id: string;
@@ -624,8 +632,93 @@ export interface DesignFolderConfig {
 }
 
 export const DESIGN_FOLDERS: DesignFolderConfig[] = [
-  { id: 'concept', label: 'Концепция', index: '01' },
+  { id: 'design_project', label: 'Дизайн-проект', index: '01' },
   { id: 'visuals', label: 'Визуализации', index: '02' },
   { id: 'drawings', label: 'Чертежи', index: '03' },
-  { id: 'documents', label: 'Документы', index: '04' },
+  { id: 'furniture', label: 'Проект мебели', index: '04' },
+  { id: 'engineering', label: 'Инженерные проекты', index: '05' },
+  { id: 'documents', label: 'Документы', index: '06' },
 ];
+
+// ======================== NOTIFICATION PREFERENCES ========================
+
+export type ScheduleType = 'any' | 'work_hours_weekend' | 'work_hours' | 'custom';
+
+export interface NotificationPreferences {
+  id: string;
+  user_id: string;
+  project_id: string;
+  email_enabled: boolean;
+  telegram_enabled: boolean;
+  telegram_chat_id: string | null;
+  telegram_link_token: string | null;
+  max_enabled: boolean;
+  max_chat_id: string | null;
+  push_enabled: boolean;
+  schedule_type: ScheduleType;
+  schedule_from: string;  // time 'HH:MM'
+  schedule_to: string;
+  schedule_weekends: boolean;
+  urgent_always: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NotificationPreferencesInput {
+  user_id: string;
+  project_id: string;
+  email_enabled?: boolean;
+  telegram_enabled?: boolean;
+  telegram_chat_id?: string | null;
+  max_enabled?: boolean;
+  max_chat_id?: string | null;
+  push_enabled?: boolean;
+  schedule_type?: ScheduleType;
+  schedule_from?: string;
+  schedule_to?: string;
+  schedule_weekends?: boolean;
+  urgent_always?: boolean;
+}
+
+// ======================== ASSISTANT ========================
+
+export type AssistantEventType = 'invoice_due' | 'no_response' | 'stage_deadline' | 'contractor_overdue' | 'visit_pending' | 'suggestion';
+export type AssistantPriority = 'urgent' | 'important' | 'normal';
+export type AssistantEventStatus = 'active' | 'dismissed' | 'done';
+export type ReminderStatus = 'pending' | 'sent' | 'cancelled';
+
+export interface AssistantEvent {
+  id: string;
+  project_id: string;
+  event_type: AssistantEventType;
+  title: string;
+  description: string;
+  action_label: string | null;
+  action_type: string | null;
+  priority: AssistantPriority;
+  status: AssistantEventStatus;
+  related_id: string | null;
+  related_type: string | null;
+  created_at: string;
+  expires_at: string | null;
+}
+
+export interface Reminder {
+  id: string;
+  project_id: string;
+  chat_type: ChatType | null;
+  action_text: string;
+  target_role: string;
+  remind_at: string;
+  status: ReminderStatus;
+  created_by: string;
+  created_at: string;
+}
+
+export interface ChatAnalysisResult {
+  found: boolean;
+  action?: string;
+  target?: 'client' | 'designer' | 'contractor';
+  suggested_time?: string;
+  reminder_text?: string;
+}

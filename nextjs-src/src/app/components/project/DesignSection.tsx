@@ -59,7 +59,7 @@ export default function DesignSection({ projectId, toast, canUpload = true, canD
     );
   }
 
-  // Level 1: Folder list
+  // Level 1: Folder grid (blocks)
   return (
     <div className="animate-fade-in">
       <div className="af-tab-list">
@@ -71,20 +71,19 @@ export default function DesignSection({ projectId, toast, canUpload = true, canD
               className="af-tab-row"
               onClick={() => setActiveFolder(folder.id)}
             >
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-                <span className="af-tab-name">{folder.label}</span>
-                <span className="af-tab-index">{folder.index}</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{
-                  fontFamily: "'IBM Plex Mono', monospace",
-                  fontSize: 8,
-                  color: '#AAA',
-                }}>
-                  {pluralFiles(count)}
-                </span>
-                <span className="af-tab-arrow">→</span>
-              </div>
+              <span className="af-tab-index">{folder.index}</span>
+              <span className="af-tab-name">{folder.label}</span>
+              <span style={{
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: 8,
+                textTransform: 'uppercase',
+                letterSpacing: '0.16em',
+                color: '#111',
+                marginTop: 6,
+              }}>
+                {pluralFiles(count)}
+              </span>
+              <span className="af-tab-arrow">→</span>
             </div>
           );
         })}

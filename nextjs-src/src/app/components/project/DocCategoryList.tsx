@@ -9,10 +9,10 @@ import { useDocumentsByCategory } from '../../lib/hooks';
 import { formatDate, uploadDocument, createDocument, deleteDocument } from '../../lib/queries';
 
 const FORMAT_COLORS: Record<string, { bg: string; text: string }> = {
-  PDF:  { bg: '#111827', text: '#FFFFFF' },
-  DWG:  { bg: '#374151', text: '#FFFFFF' },
-  XLSX: { bg: '#F3F4F6', text: '#374151' },
-  PNG:  { bg: '#F3F4F6', text: '#374151' },
+  PDF:  { bg: '#111111', text: '#FFFFFF' },
+  DWG:  { bg: '#111111', text: '#FFFFFF' },
+  XLSX: { bg: '#F6F6F4', text: '#111111' },
+  PNG:  { bg: '#F6F6F4', text: '#111111' },
 };
 
 const EXT_TO_FORMAT: Record<string, DocumentFormat> = {
@@ -130,7 +130,7 @@ export default function DocCategoryList({ projectId, category, toast, canUpload 
 
       <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}>
         {(docs || []).map((doc: Document) => {
-          const fmt = FORMAT_COLORS[doc.format?.toUpperCase() || ''] || { bg: '#F3F4F6', text: '#6B7280' };
+          const fmt = FORMAT_COLORS[doc.format?.toUpperCase() || ''] || { bg: '#F6F6F4', text: '#111111' };
           const hasFile = !!doc.file_url;
           return (
             <div

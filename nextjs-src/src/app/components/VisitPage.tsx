@@ -204,7 +204,7 @@ export default function VisitPage({ projectId, visitId, onNavigate, toast, onMen
                   {photo.photo_url ? (
                     <Image src={photo.photo_url} alt={photo.comment || 'Фото'} fill sizes="33vw" style={{ objectFit: 'cover' }} />
                   ) : (
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', color: '#CCC' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', color: '#EBEBEB' }}>
                       —
                     </div>
                   )}
@@ -232,7 +232,7 @@ export default function VisitPage({ projectId, visitId, onNavigate, toast, onMen
                         style={{
                           fontFamily: "'IBM Plex Mono', monospace", fontSize: 8,
                           textTransform: 'uppercase', background: 'rgba(255,255,255,0.9)',
-                          border: '0.5px solid #CCC', padding: '2px 4px', cursor: 'pointer',
+                          border: '0.5px solid #EBEBEB', padding: '2px 4px', cursor: 'pointer',
                         }}
                       >
                         {Object.entries(PHOTO_STATUS_CONFIG).map(([key, cfg]) => (
@@ -244,7 +244,7 @@ export default function VisitPage({ projectId, visitId, onNavigate, toast, onMen
                         style={{
                           fontFamily: "'IBM Plex Mono', monospace", fontSize: 8,
                           background: 'rgba(255,255,255,0.9)',
-                          border: '0.5px solid #CCC', padding: '2px 6px', cursor: 'pointer',
+                          border: '0.5px solid #EBEBEB', padding: '2px 6px', cursor: 'pointer',
                         }}
                         title="Удалить"
                       >
@@ -330,7 +330,7 @@ export default function VisitPage({ projectId, visitId, onNavigate, toast, onMen
                       <div className="af-label" style={{ marginBottom: 8 }}>
                         {uploadStep === 'uploading' ? 'Загрузка файла...' : 'Сохранение...'}
                       </div>
-                      <div style={{ width: '100%', height: 2, background: '#E0E0E0', overflow: 'hidden' }}>
+                      <div style={{ width: '100%', height: 2, background: '#EBEBEB', overflow: 'hidden' }}>
                         <div style={{ height: '100%', background: '#111' }} className="animate-progress-indeterminate" />
                       </div>
                     </div>

@@ -14,8 +14,8 @@ const STATUS_LABEL: Record<ReportStatus, string> = {
 };
 
 const STATUS_STYLE: Record<ReportStatus, { border: string; color: string }> = {
-  draft: { border: '#DDD', color: '#AAA' },
-  filled: { border: '#888', color: '#888' },
+  draft: { border: '#EBEBEB', color: '#111' },
+  filled: { border: '#EBEBEB', color: '#111' },
   published: { border: '#111', color: '#111' },
 };
 
@@ -122,12 +122,12 @@ export default function ReportsListView({ projectId, toast, onSelectReport }: Re
       </div>
 
       {loading ? (
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#AAA' }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#111' }}>
           Загрузка...
         </div>
       ) : displayReports.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '48px 0' }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#CCC' }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#111' }}>
             Отчётов пока нет
           </div>
         </div>
@@ -154,7 +154,7 @@ export default function ReportsListView({ projectId, toast, onSelectReport }: Re
                   cursor: 'pointer',
                   transition: 'background 0.12s',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#FAFAF8'; }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#F6F6F4'; }}
                 onMouseLeave={e => { e.currentTarget.style.background = '#FFF'; }}
               >
                 {/* Left */}
@@ -165,7 +165,7 @@ export default function ReportsListView({ projectId, toast, onSelectReport }: Re
                       fontSize: 7,
                       textTransform: 'uppercase',
                       letterSpacing: '0.08em',
-                      color: '#AAA',
+                      color: '#111',
                       marginBottom: 2,
                     }}>
                       Сегодня
@@ -184,7 +184,7 @@ export default function ReportsListView({ projectId, toast, onSelectReport }: Re
                     fontSize: 7,
                     textTransform: 'uppercase',
                     letterSpacing: '0.06em',
-                    color: '#AAA',
+                    color: '#111',
                     marginTop: 2,
                   }}>
                     {getWeekdayName(report.visit_date)} · Визит {visitNum}
@@ -203,7 +203,7 @@ export default function ReportsListView({ projectId, toast, onSelectReport }: Re
                   }}>
                     {STATUS_LABEL[report.status]}
                   </span>
-                  <span style={{ color: '#CCC', fontSize: 14 }}>→</span>
+                  <span style={{ color: '#EBEBEB', fontSize: 14 }}>→</span>
                 </div>
               </div>
             );

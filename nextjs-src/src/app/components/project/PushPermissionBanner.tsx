@@ -126,8 +126,8 @@ export default function PushPermissionBanner({ onSubscribed }: PushPermissionBan
           style={{
             padding: '4px 12px',
             background: 'transparent',
-            color: 'rgba(255,255,255,0.5)',
-            border: '0.5px solid rgba(255,255,255,0.2)',
+            color: '#EBEBEB',
+            border: '0.5px solid #EBEBEB',
             fontFamily: "'IBM Plex Mono', monospace",
             fontSize: 9,
             cursor: 'pointer',

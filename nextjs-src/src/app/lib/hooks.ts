@@ -32,6 +32,7 @@ import {
   fetchVisitReports,
   fetchVisitRemarks,
   fetchContractorTasks,
+  fetchMyContractorTasks,
   checkProjectAlerts,
   fetchChatMessages,
   fetchUnreadCounts,
@@ -325,6 +326,14 @@ export function useContractorTasks(projectId: string | null) {
   return useQuery<ContractorTaskWithDetails[]>(
     () => projectId ? fetchContractorTasks(projectId) : Promise.resolve([]),
     [projectId]
+  );
+}
+
+/** Fetch all contractor tasks assigned to current user (cross-project) */
+export function useMyContractorTasks() {
+  return useQuery<ContractorTaskWithDetails[]>(
+    () => fetchMyContractorTasks(),
+    []
   );
 }
 
@@ -708,6 +717,41 @@ export async function subscribeToPush(userId: string): Promise<boolean> {
     console.error('Push subscribe error:', err);
     return false;
   }
+}
+
+// ======================== NOTIFICATION PREFERENCES ========================
+
+import { fetchNotificationPreferences, fetchAssistantEvents, fetchReminders, fetchUpcomingTimeline } from './queries';
+import type { NotificationPreferences, AssistantEvent, Reminder } from './types';
+
+export function useNotificationPreferences(userId: string | null, projectId: string | null): UseQueryResult<NotificationPreferences | null> {
+  return useQuery<NotificationPreferences | null>(
+    () => (userId && projectId) ? fetchNotificationPreferences(userId, projectId) : Promise.resolve(null),
+    [userId, projectId],
+  );
+}
+
+// ======================== ASSISTANT ========================
+
+export function useAssistantEvents(projectId: string | null): UseQueryResult<AssistantEvent[]> {
+  return useQuery<AssistantEvent[]>(
+    () => projectId ? fetchAssistantEvents(projectId) : Promise.resolve([]),
+    [projectId],
+  );
+}
+
+export function useReminders(projectId: string | null): UseQueryResult<Reminder[]> {
+  return useQuery<Reminder[]>(
+    () => projectId ? fetchReminders(projectId) : Promise.resolve([]),
+    [projectId],
+  );
+}
+
+export function useUpcomingTimeline(projectId: string | null): UseQueryResult<any[]> {
+  return useQuery<any[]>(
+    () => projectId ? fetchUpcomingTimeline(projectId) : Promise.resolve([]),
+    [projectId],
+  );
 }
 
 /** Fire-and-forget: notify other project members about a new message */

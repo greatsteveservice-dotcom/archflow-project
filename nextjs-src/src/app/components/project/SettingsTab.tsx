@@ -5,8 +5,10 @@ import Bdg from '../Bdg';
 import Modal from '../Modal';
 import ConfirmDialog from '../ConfirmDialog';
 import AccessScreen from './AccessScreen';
+import NotificationSettings from './NotificationSettings';
 import type { ProjectWithStats, ProjectMemberWithProfile, UserRole, AccessLevel } from '../../lib/types';
 import { useProjectMembersWithProfiles } from '../../lib/hooks';
+import { useAuth } from '../../lib/auth';
 import { inviteProjectMember, createProjectInvitation, removeProjectMember, deleteProject } from '../../lib/queries';
 
 const ROLE_LABEL: Record<string, string> = {
@@ -37,8 +39,12 @@ interface SettingsTabProps {
 }
 
 export default function SettingsTab({ project, projectId, toast, canDeleteProject = false, onDeleteProject }: SettingsTabProps) {
-  const [sub, setSub] = useState<'roles' | 'details' | 'access'>('roles');
+  const [sub, setSub] = useState<'roles' | 'details' | 'access' | 'notifications'>('roles');
   const { data: members, loading, refetch: refetchMembers } = useProjectMembersWithProfiles(projectId);
+  const { profile } = useAuth();
+
+  // Show notifications tab for designer/owner and client
+  const showNotifications = profile?.role === 'designer' || profile?.role === 'client';
 
   // Invite modal
   const [showInvite, setShowInvite] = useState(false);
@@ -151,6 +157,9 @@ export default function SettingsTab({ project, projectId, toast, canDeleteProjec
     return member.profile?.full_name || member.profile?.email || 'Участник';
   };
 
+  const mono = "'IBM Plex Mono', monospace";
+  const display = "'Playfair Display', serif";
+
   return (
     <div className="animate-fade-in">
       <div className="stab mb-6 w-fit">
@@ -163,39 +172,60 @@ export default function SettingsTab({ project, projectId, toast, canDeleteProjec
         <button className={`stb ${sub === 'access' ? 'active' : ''}`} onClick={() => setSub('access')}>
           <Icons.Users className="w-3.5 h-3.5" /> Доступ
         </button>
+        {showNotifications && (
+          <button className={`stb ${sub === 'notifications' ? 'active' : ''}`} onClick={() => setSub('notifications')}>
+            <Icons.Bell className="w-3.5 h-3.5" /> Уведомления
+          </button>
+        )}
       </div>
 
       {sub === 'roles' && (
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-[14px] font-semibold">Участники проекта</h3>
-            <button className="btn btn-primary text-[12px] py-1.5 px-3" onClick={() => setShowInvite(true)}>
-              <Icons.Plus className="w-3.5 h-3.5" /> Пригласить
+            <h3 style={{ fontFamily: display, fontSize: 16, fontWeight: 700, color: '#111' }}>Участники проекта</h3>
+            <button className="af-btn" onClick={() => setShowInvite(true)}>
+              + Пригласить
             </button>
           </div>
 
           {loading ? (
-            <div className="text-[13px] text-ink-faint">Загрузка...</div>
+            <div style={{ fontFamily: mono, fontSize: 9, color: '#111' }}>Загрузка...</div>
           ) : (
-            <div className="space-y-2 mb-6">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 24 }}>
               {(members || []).map((m) => (
-                <div key={m.id} className="card p-4 flex items-center justify-between group">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-srf-secondary flex items-center justify-center text-[11px] font-semibold text-ink-muted">
+                <div key={m.id} className="group" style={{
+                  background: '#fff', border: '0.5px solid #EBEBEB', padding: 16,
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{
+                      width: 28, height: 28, background: '#F6F6F4',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontFamily: mono, fontSize: 9, fontWeight: 600, color: '#111',
+                    }}>
                       {getInitials(m)}
                     </div>
                     <div>
-                      <div className="text-[13px] font-medium">{getName(m)}</div>
-                      <div className="text-[11px] text-ink-faint">{ROLE_LABEL[m.role] || m.role}</div>
+                      <div style={{ fontFamily: mono, fontSize: 10, color: '#111' }}>{getName(m)}</div>
+                      <div style={{ fontFamily: mono, fontSize: 9, color: '#111' }}>{ROLE_LABEL[m.role] || m.role}</div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Bdg s={m.role === 'designer' ? 'active' : m.access_level === 'full' ? 'approved' : 'pending'} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{
+                      fontFamily: mono, fontSize: 9, width: 96, textAlign: 'center',
+                      display: 'inline-block', whiteSpace: 'nowrap', padding: '2px 0',
+                      background: m.role === 'designer' ? '#111' : 'transparent',
+                      color: m.role === 'designer' ? '#fff' : '#111',
+                      border: m.role === 'designer' ? 'none' : '0.5px solid #EBEBEB',
+                    }}>
+                      {m.role === 'designer' ? 'Владелец' : m.access_level === 'full' ? 'Полный' : 'Ограничен'}
+                    </span>
                     {m.role !== 'designer' && (
                       <button
-                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-err-bg text-ink-faint hover:text-err"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
                         onClick={() => setMemberToDelete(m)}
                         title="Удалить участника"
+                        style={{ padding: 4, color: '#EBEBEB' }}
                       >
                         <Icons.Trash className="w-3.5 h-3.5" />
                       </button>
@@ -204,19 +234,19 @@ export default function SettingsTab({ project, projectId, toast, canDeleteProjec
                 </div>
               ))}
               {(!members || members.length === 0) && (
-                <div className="text-[13px] text-ink-faint">Участников пока нет</div>
+                <div style={{ fontFamily: mono, fontSize: 9, color: '#111' }}>Участников пока нет</div>
               )}
             </div>
           )}
 
           {/* Role templates */}
-          <div className="card p-5">
-            <h4 className="text-[13px] font-semibold mb-3">Шаблоны ролей</h4>
-            <div className="space-y-2 text-[12px]">
-              <div className="flex items-center gap-2"><Bdg s="active" /><span className="text-ink-muted">Заказчик — только просмотр</span></div>
-              <div className="flex items-center gap-2"><Bdg s="pending" /><span className="text-ink-muted">Подрядчик — просмотр + фото + комментарии</span></div>
-              <div className="flex items-center gap-2"><Bdg s="in_review" /><span className="text-ink-muted">Комплектатор — Supply + обновление статусов</span></div>
-              <div className="flex items-center gap-2"><Bdg s="approved" /><span className="text-ink-muted">Ассистент — на усмотрение дизайнера</span></div>
+          <div style={{ background: '#fff', border: '0.5px solid #EBEBEB', padding: 16 }}>
+            <h4 style={{ fontFamily: mono, fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.14em', color: '#111', marginBottom: 12 }}>Шаблоны ролей</h4>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ fontFamily: mono, fontSize: 9, width: 96, display: 'inline-block', textAlign: 'center', padding: '2px 0', border: '0.5px solid #EBEBEB', color: '#111' }}>Заказчик</span><span style={{ fontFamily: mono, fontSize: 9, color: '#111' }}>Только просмотр</span></div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ fontFamily: mono, fontSize: 9, width: 96, display: 'inline-block', textAlign: 'center', padding: '2px 0', border: '0.5px solid #EBEBEB', color: '#111' }}>Подрядчик</span><span style={{ fontFamily: mono, fontSize: 9, color: '#111' }}>Просмотр + фото + комментарии</span></div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ fontFamily: mono, fontSize: 9, width: 96, display: 'inline-block', textAlign: 'center', padding: '2px 0', border: '0.5px solid #EBEBEB', color: '#111' }}>Комплектатор</span><span style={{ fontFamily: mono, fontSize: 9, color: '#111' }}>Supply + обновление статусов</span></div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ fontFamily: mono, fontSize: 9, width: 96, display: 'inline-block', textAlign: 'center', padding: '2px 0', border: '0.5px solid #EBEBEB', color: '#111' }}>Ассистент</span><span style={{ fontFamily: mono, fontSize: 9, color: '#111' }}>На усмотрение дизайнера</span></div>
             </div>
           </div>
         </div>
@@ -224,77 +254,58 @@ export default function SettingsTab({ project, projectId, toast, canDeleteProjec
 
       {sub === 'details' && (
         <div>
-          <div className="grid gap-4 mb-8" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}>
-            <div className="card p-5">
-              <div className="flex items-center gap-2 mb-4">
-                <Icons.Calendar className="w-4 h-4 text-ink-muted" />
-                <h4 className="text-[13px] font-semibold">Даты и визиты</h4>
-              </div>
+          <div className="grid gap-4 mb-8" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 2 }}>
+            <div style={{ background: '#fff', border: '0.5px solid #EBEBEB', padding: 20 }}>
+              <h4 style={{ fontFamily: display, fontSize: 16, fontWeight: 700, color: '#111', marginBottom: 16 }}>Даты и визиты</h4>
               <div className="space-y-3">
                 <div className="modal-field">
-                  <label>Дата старта</label>
-                  <input type="date" defaultValue={project.start_date || ''} />
+                  <label style={{ fontFamily: mono, fontSize: 9 }}>Дата старта</label>
+                  <input type="date" defaultValue={project.start_date || ''} className="af-input" />
                 </div>
                 <div className="modal-field">
-                  <label>Визитов по договору</label>
-                  <input type="number" defaultValue={project.visit_count || 0} />
+                  <label style={{ fontFamily: mono, fontSize: 9 }}>Визитов по договору</label>
+                  <input type="number" defaultValue={project.visit_count || 0} className="af-input" />
                 </div>
               </div>
             </div>
 
-            <div className="card p-5">
-              <div className="flex items-center gap-2 mb-4">
-                <Icons.Receipt className="w-4 h-4 text-ink-muted" />
-                <h4 className="text-[13px] font-semibold">Платежи</h4>
-              </div>
+            <div style={{ background: '#fff', border: '0.5px solid #EBEBEB', padding: 20 }}>
+              <h4 style={{ fontFamily: display, fontSize: 16, fontWeight: 700, color: '#111', marginBottom: 16 }}>Платежи</h4>
               <div className="space-y-3">
                 <div className="modal-field">
-                  <label>Авторский надзор (₽/мес)</label>
-                  <input type="number" defaultValue={45000} />
+                  <label style={{ fontFamily: mono, fontSize: 9 }}>Авторский надзор (₽/мес)</label>
+                  <input type="number" defaultValue={45000} className="af-input" />
                 </div>
                 <div className="modal-field">
-                  <label>Следующий платёж</label>
-                  <input type="date" />
-                </div>
-              </div>
-            </div>
-
-            <div className="card p-5">
-              <div className="flex items-center gap-2 mb-4">
-                <Icons.Box className="w-4 h-4 text-ink-muted" />
-                <h4 className="text-[13px] font-semibold">Комплектация</h4>
-              </div>
-              <div className="space-y-3">
-                <div className="modal-field">
-                  <label>Скидка поставщикам (%)</label>
-                  <input type="number" defaultValue={12} />
-                </div>
-                <div className="modal-field">
-                  <label>Комиссия (%)</label>
-                  <input type="number" defaultValue={12} />
+                  <label style={{ fontFamily: mono, fontSize: 9 }}>Следующий платёж</label>
+                  <input type="date" className="af-input" />
                 </div>
               </div>
             </div>
 
             <div className="flex items-end">
-              <button className="btn btn-primary w-full justify-center py-3" onClick={() => toast('Сохранено')}>
+              <button className="af-btn af-btn-full" onClick={() => toast('Сохранено')}>
                 Сохранить
               </button>
             </div>
           </div>
+          <p style={{ fontFamily: mono, fontSize: 9, color: '#111', marginTop: 12 }}>
+            Настройки комплектации — в разделе Комплектация
+          </p>
 
           {/* Danger zone */}
           {canDeleteProject && (
-            <div className="border border-err/40 rounded-xl p-5 bg-err-bg/50">
-              <h4 className="text-[13px] font-semibold text-err mb-2">Опасная зона</h4>
-              <p className="text-[12px] text-ink-muted mb-4">
+            <div style={{ border: '0.5px solid #EBEBEB', padding: 20, marginTop: 24 }}>
+              <h4 style={{ fontFamily: mono, fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.14em', color: '#111', marginBottom: 8 }}>Опасная зона</h4>
+              <p style={{ fontFamily: mono, fontSize: 9, color: '#111', marginBottom: 16 }}>
                 Удаление проекта невозможно отменить. Все визиты, фото, документы и счета будут удалены.
               </p>
               <button
-                className="btn btn-danger text-[12px] py-2 px-4"
+                className="af-btn"
                 onClick={() => setShowDeleteProject(true)}
+                style={{ color: '#111', borderColor: '#111' }}
               >
-                <Icons.Trash className="w-3.5 h-3.5" /> Удалить проект
+                Удалить проект
               </button>
             </div>
           )}
@@ -302,7 +313,11 @@ export default function SettingsTab({ project, projectId, toast, canDeleteProjec
       )}
 
       {sub === 'access' && (
-        <AccessScreen projectId={projectId} toast={toast} onBack={() => setSub('roles')} />
+        <AccessScreen projectId={projectId} projectName={project?.title} toast={toast} onBack={() => setSub('roles')} />
+      )}
+
+      {sub === 'notifications' && (
+        <NotificationSettings projectId={projectId} toast={toast} />
       )}
 
       {/* Invite Modal */}

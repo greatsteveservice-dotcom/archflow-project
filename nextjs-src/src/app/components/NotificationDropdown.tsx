@@ -73,7 +73,7 @@ export default function NotificationDropdown() {
   return (
     <div className="relative" ref={dropdownRef}>
       <button
-        className="btn-secondary rounded-lg p-2 relative border border-line bg-srf cursor-pointer hover:bg-srf-raised transition-colors"
+        className="btn-secondary p-2 relative border border-line bg-srf cursor-pointer hover:bg-srf-raised transition-colors"
         onClick={() => setOpen(!open)}
       >
         <Icons.Bell className="w-[18px] h-[18px]" />
@@ -83,7 +83,7 @@ export default function NotificationDropdown() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-[calc(100%+6px)] w-[360px] max-h-[440px] bg-srf border border-line rounded-xl shadow-lg overflow-hidden z-50 animate-slide-up max-sm:fixed max-sm:left-3 max-sm:right-3 max-sm:w-auto max-sm:top-16">
+        <div className="absolute right-0 top-[calc(100%+6px)] w-[360px] max-h-[440px] bg-srf border border-line overflow-hidden z-50 animate-slide-up max-sm:fixed max-sm:left-3 max-sm:right-3 max-sm:w-auto max-sm:top-16">
           {/* Header */}
           <div className="px-4 py-3 border-b border-line-light flex items-center justify-between">
             <h3 className="text-[13px] font-semibold">Уведомления</h3>

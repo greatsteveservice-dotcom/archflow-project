@@ -4,8 +4,8 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import Image from 'next/image';
 import { useAuth } from '../../lib/auth';
 import { useChatMessages, useChatRealtime, useChatMarkRead, useChatUnreadByType, sendPushNotification, useProjectMembersWithProfiles } from '../../lib/hooks';
-import { sendChatMessage, deleteChatMessage, fetchChatMessages } from '../../lib/queries';
-import type { ChatMessageWithAuthor, ChatType, Profile } from '../../lib/types';
+import { sendChatMessage, deleteChatMessage, fetchChatMessages, analyzeChatMessages, createReminder } from '../../lib/queries';
+import type { ChatMessageWithAuthor, ChatType, Profile, ChatAnalysisResult } from '../../lib/types';
 import PushPermissionBanner from './PushPermissionBanner';
 
 // ======================== HELPERS ========================
@@ -40,6 +40,12 @@ function groupByDate(messages: ChatMessageWithAuthor[]): { date: string; message
   return Array.from(groups.entries()).map(([date, messages]) => ({ date, messages }));
 }
 
+function formatDuration(sec: number): string {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
 // ======================== REF BADGE ========================
 
 function RefBadge({ refType, refPreview }: { refType: string; refPreview: string | null }) {
@@ -53,11 +59,91 @@ function RefBadge({ refType, refPreview }: { refType: string; refPreview: string
       display: 'inline-flex', alignItems: 'center', gap: 4,
       padding: '2px 6px', background: '#F6F6F4', border: '0.5px solid #EBEBEB',
       fontFamily: "'IBM Plex Mono', monospace", fontSize: 8,
-      letterSpacing: '0.08em', textTransform: 'uppercase', color: '#888',
+      letterSpacing: '0.08em', textTransform: 'uppercase', color: '#111',
       marginBottom: 4,
     }}>
       <span>{labels[refType] || refType}</span>
       {refPreview && <span style={{ color: '#111', textTransform: 'none' }}>· {refPreview}</span>}
+    </div>
+  );
+}
+
+// ======================== VOICE BUBBLE ========================
+
+function VoiceBubble({ msg, isOwn }: { msg: ChatMessageWithAuthor; isOwn: boolean }) {
+  const [showOriginal, setShowOriginal] = useState(false);
+  const isVoice = msg.message_type === 'voice';
+  const isProcessing = isVoice && msg.text?.includes('обрабатывается...');
+
+  return (
+    <div style={{
+      background: isOwn ? '#111' : '#FFFFFF',
+      color: isOwn ? '#fff' : '#111',
+      border: isOwn ? 'none' : '0.5px solid #EBEBEB',
+      padding: '8px 12px',
+      fontFamily: "'IBM Plex Mono', monospace",
+      fontSize: 12,
+      lineHeight: '1.5',
+      wordBreak: 'break-word',
+      whiteSpace: 'pre-wrap',
+    }}>
+      {isVoice && !isProcessing && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          marginBottom: 4,
+          fontSize: 9,
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
+          opacity: 0.6,
+        }}>
+          <span>{'\uD83C\uDFA4'}</span>
+          {msg.voice_duration && <span>{formatDuration(msg.voice_duration)}</span>}
+        </div>
+      )}
+
+      {msg.text}
+
+      {isVoice && !isProcessing && msg.voice_original && (
+        <button
+          onClick={() => setShowOriginal(!showOriginal)}
+          style={{
+            display: 'block',
+            marginTop: 6,
+            padding: 0,
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: 8,
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+            color: isOwn ? '#EBEBEB' : '#111',
+            opacity: 0.5,
+          }}
+        >
+          {showOriginal ? 'скрыть' : 'оригинал'}
+        </button>
+      )}
+
+      {showOriginal && msg.voice_original && (
+        <div style={{
+          marginTop: 4, paddingTop: 4,
+          borderTop: `0.5px solid ${isOwn ? 'rgba(255,255,255,0.2)' : '#EBEBEB'}`,
+          fontSize: 10,
+          opacity: 0.6,
+          fontStyle: 'italic',
+        }}>
+          {msg.voice_original}
+        </div>
+      )}
+
+      <span style={{
+        display: 'inline-block', marginLeft: 8,
+        fontSize: 8, color: isOwn ? '#EBEBEB' : '#111',
+        verticalAlign: 'bottom',
+      }}>
+        {formatTime(msg.created_at)}
+      </span>
     </div>
   );
 }
@@ -128,7 +214,7 @@ function MessageBubble({ msg, isOwn, showAvatar, onDelete }: MessageBubbleProps)
           <div style={{
             fontFamily: "'IBM Plex Mono', monospace", fontSize: 8,
             letterSpacing: '0.12em', textTransform: 'uppercase',
-            color: '#999', marginBottom: 2,
+            color: '#111', marginBottom: 2,
           }}>
             {name}
           </div>
@@ -137,27 +223,8 @@ function MessageBubble({ msg, isOwn, showAvatar, onDelete }: MessageBubbleProps)
         {/* Ref badge */}
         {msg.ref_type && <RefBadge refType={msg.ref_type} refPreview={msg.ref_preview} />}
 
-        {/* Text */}
-        <div style={{
-          background: isOwn ? '#111' : '#FFFFFF',
-          color: isOwn ? '#fff' : '#111',
-          border: isOwn ? 'none' : '0.5px solid #EBEBEB',
-          padding: '8px 12px',
-          fontFamily: "'IBM Plex Mono', monospace",
-          fontSize: 12,
-          lineHeight: '1.5',
-          wordBreak: 'break-word',
-          whiteSpace: 'pre-wrap',
-        }}>
-          {msg.text}
-          <span style={{
-            display: 'inline-block', marginLeft: 8,
-            fontSize: 8, color: isOwn ? 'rgba(255,255,255,0.4)' : '#BBB',
-            verticalAlign: 'bottom',
-          }}>
-            {formatTime(msg.created_at)}
-          </span>
-        </div>
+        {/* Text / Voice */}
+        <VoiceBubble msg={msg} isOwn={isOwn} />
 
         {/* Context menu */}
         {showMenu && isOwn && (
@@ -203,7 +270,7 @@ function MemberPills({ members }: { members: Profile[] }) {
           padding: '2px 8px',
           background: '#F6F6F4', border: '0.5px solid #EBEBEB',
           fontFamily: "'IBM Plex Mono', monospace", fontSize: 8,
-          letterSpacing: '0.06em', color: '#888',
+          letterSpacing: '0.06em', color: '#111',
         }}>
           {m.avatar_url ? (
             <Image src={m.avatar_url} alt="" width={14} height={14} style={{ objectFit: 'cover', borderRadius: 0 }} />
@@ -214,6 +281,320 @@ function MemberPills({ members }: { members: Profile[] }) {
         </div>
       ))}
     </div>
+  );
+}
+
+// ======================== VOICE RECORDER ========================
+
+interface VoiceRecorderProps {
+  projectId: string;
+  userId: string;
+  chatType: ChatType;
+  profile: Profile | null;
+  appendMessage: (msg: ChatMessageWithAuthor) => void;
+  removeMessage: (id: string) => void;
+  toast: (msg: string) => void;
+  setAutoScroll: (v: boolean) => void;
+  onRecordingChange?: (recording: boolean) => void;
+}
+
+function VoiceRecorder({ projectId, userId, chatType, profile, appendMessage, removeMessage, toast, setAutoScroll, onRecordingChange }: VoiceRecorderProps) {
+  const [recording, setRecording] = useState(false);
+  const [duration, setDuration] = useState(0);
+  const [cancelled, setCancelled] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const cancelledRef = useRef(false);
+
+  const cleanup = useCallback(() => {
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+    streamRef.current?.getTracks().forEach(t => t.stop());
+    streamRef.current = null;
+    mediaRecorderRef.current = null;
+    setRecording(false);
+    setDuration(0);
+    setCancelled(false);
+    cancelledRef.current = false;
+    onRecordingChange?.(false);
+  }, [onRecordingChange]);
+
+  const startRecording = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+
+      // Check supported mimeType
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : MediaRecorder.isTypeSupported('audio/webm')
+          ? 'audio/webm'
+          : 'audio/mp4';
+
+      const mediaRecorder = new MediaRecorder(stream, { mimeType });
+      mediaRecorderRef.current = mediaRecorder;
+      chunksRef.current = [];
+      setDuration(0);
+      setCancelled(false);
+      cancelledRef.current = false;
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+
+      mediaRecorder.start(250);
+      setRecording(true);
+      onRecordingChange?.(true);
+
+      let sec = 0;
+      timerRef.current = setInterval(() => {
+        sec++;
+        setDuration(sec);
+      }, 1000);
+    } catch (err: any) {
+      toast('Нет доступа к микрофону');
+    }
+  }, [toast, onRecordingChange]);
+
+  const cancelRecording = useCallback(() => {
+    cancelledRef.current = true;
+    setCancelled(true);
+    const mr = mediaRecorderRef.current;
+    if (mr && mr.state !== 'inactive') {
+      mr.onstop = () => cleanup();
+      mr.stop();
+    } else {
+      cleanup();
+    }
+  }, [cleanup]);
+
+  const stopAndSend = useCallback(async () => {
+    const mediaRecorder = mediaRecorderRef.current;
+    if (!mediaRecorder || mediaRecorder.state === 'inactive') return;
+
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+    const finalDuration = duration;
+
+    return new Promise<void>((resolve) => {
+      mediaRecorder.onstop = async () => {
+        streamRef.current?.getTracks().forEach(t => t.stop());
+
+        if (cancelledRef.current) {
+          cleanup();
+          resolve();
+          return;
+        }
+
+        const mimeType = mediaRecorder.mimeType || 'audio/webm';
+        const blob = new Blob(chunksRef.current, { type: mimeType });
+        setRecording(false);
+        setDuration(0);
+        onRecordingChange?.(false);
+
+        if (blob.size < 1000 || finalDuration < 1) {
+          cleanup();
+          resolve();
+          return;
+        }
+
+        // Step 1: Save placeholder to DB immediately
+        try {
+          const placeholderText = `🎤 ${formatDuration(finalDuration)} · обрабатывается...`;
+          const dbMsg = await sendChatMessage({
+            project_id: projectId,
+            text: placeholderText,
+            chat_type: chatType,
+            message_type: 'voice',
+            voice_duration: finalDuration,
+          }, userId);
+
+          // Show in UI
+          appendMessage({ ...dbMsg, author: profile || undefined });
+          setAutoScroll(true);
+
+          // Step 2: Send audio to Edge Function with message_id for UPDATE
+          const formData = new FormData();
+          // Map MIME type to correct file extension (critical for iOS Safari which uses audio/mp4)
+          const extMap: Record<string, string> = {
+            'audio/mp4': 'mp4', 'video/mp4': 'mp4',
+            'audio/webm': 'webm', 'audio/webm;codecs=opus': 'webm',
+            'audio/wav': 'wav', 'audio/m4a': 'm4a', 'audio/aac': 'm4a',
+          };
+          const baseMime = mimeType.split(';')[0].trim();
+          const ext = extMap[mimeType] || extMap[baseMime] || (mimeType.includes('mp4') ? 'mp4' : 'webm');
+          formData.append('audio', blob, `voice.${ext}`);
+          formData.append('project_id', projectId);
+          formData.append('user_id', userId);
+          formData.append('chat_type', chatType);
+          formData.append('duration', String(finalDuration));
+          formData.append('message_id', dbMsg.id);
+
+          const EDGE_FN_URL = 'https://fcbllfvlpzlczinlydcm.supabase.co/functions/v1/process-voice';
+
+          // Get user's JWT access token for Supabase Edge Function auth
+          const { supabase } = await import('../../lib/supabase');
+          const { data: { session: authSession } } = await supabase.auth.getSession();
+          const accessToken = authSession?.access_token;
+          if (!accessToken) throw new Error('Нет авторизации');
+
+          const res = await fetch(EDGE_FN_URL, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+            },
+            body: formData,
+          });
+
+          if (!res.ok) {
+            const errText = await res.text().catch(() => '');
+            let errMsg = `HTTP ${res.status}`;
+            try {
+              const errData = JSON.parse(errText);
+              errMsg = errData.error || errData.msg || errMsg;
+            } catch {
+              errMsg = errText || errMsg;
+            }
+            console.error('Voice Edge Function error:', res.status, errMsg);
+            throw new Error(errMsg);
+          }
+
+          // Edge Function succeeded — update the placeholder in UI with the processed message
+          try {
+            const resData = await res.json();
+            if (resData.message) {
+              removeMessage(dbMsg.id);
+              appendMessage({ ...resData.message, author: profile || undefined });
+            }
+          } catch {
+            // Fallback: refetch latest messages if JSON parsing fails
+            const { fetchChatMessages } = await import('../../lib/queries');
+            const fresh = await fetchChatMessages(projectId, 1, undefined, chatType);
+            if (fresh.length > 0 && fresh[0].id === dbMsg.id) {
+              removeMessage(dbMsg.id);
+              appendMessage(fresh[0]);
+            }
+          }
+        } catch (err: any) {
+          toast('Ошибка: ' + (err.message || 'не удалось отправить'));
+        }
+        resolve();
+      };
+      mediaRecorder.stop();
+    });
+  }, [duration, projectId, userId, chatType, profile, appendMessage, toast, setAutoScroll, cleanup, onRecordingChange]);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      streamRef.current?.getTracks().forEach(t => t.stop());
+    };
+  }, []);
+
+  // Recording state: show full recording bar
+  if (recording) {
+    return (
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 8, flex: 1,
+      }}>
+        {/* Cancel button */}
+        <button
+          onClick={cancelRecording}
+          style={{
+            padding: '10px 12px',
+            background: 'transparent',
+            border: '0.5px solid #EBEBEB',
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: 12,
+            cursor: 'pointer',
+            color: '#111',
+            minHeight: 40,
+            display: 'flex',
+            alignItems: 'center',
+          }}
+          title="Отменить запись"
+        >
+          ✕
+        </button>
+
+        {/* Recording indicator + timer */}
+        <div style={{
+          flex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          padding: '10px 12px',
+          background: '#111',
+          color: '#fff',
+          fontFamily: "'IBM Plex Mono', monospace",
+          fontSize: 12,
+          minHeight: 40,
+          animation: 'af-voice-pulse 1.5s ease-in-out infinite',
+        }}>
+          <span style={{
+            width: 8, height: 8,
+            background: '#ff3b30',
+            display: 'inline-block',
+            animation: 'af-voice-dot 1s ease-in-out infinite',
+          }} />
+          <span style={{ letterSpacing: '0.05em' }}>
+            {formatDuration(duration)}
+          </span>
+          <span style={{ fontSize: 9, opacity: 0.6, marginLeft: 4 }}>
+            ЗАПИСЬ
+          </span>
+        </div>
+
+        {/* Send button */}
+        <button
+          onClick={stopAndSend}
+          style={{
+            padding: '10px 20px',
+            background: '#111',
+            color: '#fff',
+            border: 'none',
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: 10,
+            fontWeight: 600,
+            cursor: 'pointer',
+            textTransform: 'uppercase',
+            letterSpacing: '0.12em',
+            minHeight: 40,
+          }}
+        >
+          →
+        </button>
+      </div>
+    );
+  }
+
+  // Default: mic icon button
+  return (
+    <button
+      onClick={startRecording}
+      style={{
+        padding: '10px 14px',
+        background: 'transparent',
+        color: '#111',
+        border: '0.5px solid #EBEBEB',
+        fontFamily: "'IBM Plex Mono', monospace",
+        fontSize: 10,
+        fontWeight: 600,
+        cursor: 'pointer',
+        minHeight: 40,
+        display: 'flex',
+        alignItems: 'center',
+        flexShrink: 0,
+      }}
+      title="Голосовое сообщение"
+    >
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <rect x="9" y="1" width="6" height="12" />
+        <path d="M5 10a7 7 0 0 0 14 0" />
+        <line x1="12" y1="17" x2="12" y2="21" />
+        <line x1="8" y1="21" x2="16" y2="21" />
+      </svg>
+    </button>
   );
 }
 
@@ -240,6 +621,11 @@ function ChatTabPanel({ projectId, chatType, userId, profile, toast, isActive }:
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [autoScroll, setAutoScroll] = useState(true);
+  const [voiceRecording, setVoiceRecording] = useState(false);
+  const [suggestion, setSuggestion] = useState<ChatAnalysisResult | null>(null);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [creatingSuggestion, setCreatingSuggestion] = useState(false);
+  const suggestionCooldown = useRef(false);
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -266,16 +652,25 @@ function ChatTabPanel({ projectId, chatType, userId, profile, toast, isActive }:
     if (payload.eventType === 'INSERT') {
       const newMsg = payload.new;
       if (newMsg.chat_type !== chatType) return;
-      // Skip own messages sent from THIS tab (already added optimistically).
-      // Messages from other tabs/devices of the same user will still appear
-      // because appendMessage deduplicates — at worst it's a no-op.
+      // Skip own messages (already added optimistically via sendChatMessage)
       if (newMsg.user_id === userId) return;
       try {
-        // Fetch latest message with author profile joined
         const fresh = await fetchChatMessages(projectId, 1, undefined, chatType);
         if (fresh.length > 0) {
-          // appendMessage deduplicates by id — safe to call even if
-          // the fetched message is different from the realtime payload
+          appendMessage(fresh[0]);
+        }
+      } catch {
+        refetch();
+      }
+    } else if (payload.eventType === 'UPDATE') {
+      // Voice message transcription completed — refetch to get updated text
+      const updatedMsg = payload.new;
+      if (updatedMsg.chat_type !== chatType) return;
+      try {
+        const fresh = await fetchChatMessages(projectId, 1, undefined, chatType);
+        if (fresh.length > 0 && fresh[0].id === updatedMsg.id) {
+          // Replace the placeholder with transcribed message
+          removeMessage(updatedMsg.id);
           appendMessage(fresh[0]);
         }
       } catch {
@@ -300,6 +695,19 @@ function ChatTabPanel({ projectId, chatType, userId, profile, toast, isActive }:
       setAutoScroll(true);
       inputRef.current?.focus();
       sendPushNotification(projectId, userId, profile?.full_name || '', trimmed);
+
+      // Trigger chat analysis (debounced, every 5th message)
+      if (!suggestionCooldown.current && messages.length > 5) {
+        suggestionCooldown.current = true;
+        setTimeout(() => { suggestionCooldown.current = false; }, 60000); // 1 min cooldown
+        const last15 = messages.slice(0, 15).reverse().map(m => ({
+          author: m.author?.full_name || 'unknown',
+          text: m.text,
+        }));
+        analyzeChatMessages(projectId, chatType, last15).then(result => {
+          if (result.found) setSuggestion(result);
+        }).catch(() => {});
+      }
     } catch (e: any) {
       toast('Ошибка отправки: ' + (e.message || ''));
     }
@@ -347,7 +755,7 @@ function ChatTabPanel({ projectId, chatType, userId, profile, toast, isActive }:
         {loading && messages.length === 0 && (
           <div style={{
             textAlign: 'center', padding: 40,
-            fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: '#999',
+            fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: '#111',
           }}>
             Загрузка сообщений...
           </div>
@@ -356,7 +764,7 @@ function ChatTabPanel({ projectId, chatType, userId, profile, toast, isActive }:
         {!loading && messages.length === 0 && (
           <div style={{
             textAlign: 'center', padding: 40,
-            fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: '#999',
+            fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: '#111',
           }}>
             Чат пуст. Напишите первое сообщение.
           </div>
@@ -369,7 +777,7 @@ function ChatTabPanel({ projectId, chatType, userId, profile, toast, isActive }:
               display: 'block', margin: '0 auto 16px', padding: '6px 16px',
               background: 'transparent', border: '0.5px solid #EBEBEB',
               fontFamily: "'IBM Plex Mono', monospace", fontSize: 9,
-              cursor: 'pointer', color: '#888',
+              cursor: 'pointer', color: '#111',
               textTransform: 'uppercase', letterSpacing: '0.12em',
             }}
           >
@@ -382,7 +790,7 @@ function ChatTabPanel({ projectId, chatType, userId, profile, toast, isActive }:
             <div style={{
               textAlign: 'center', margin: '16px 0 12px',
               fontFamily: "'IBM Plex Mono', monospace", fontSize: 8,
-              letterSpacing: '0.16em', textTransform: 'uppercase', color: '#AAA',
+              letterSpacing: '0.16em', textTransform: 'uppercase', color: '#111',
             }}>
               {group.date}
             </div>
@@ -401,6 +809,94 @@ function ChatTabPanel({ projectId, chatType, userId, profile, toast, isActive }:
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Assistant suggestion */}
+      {suggestion && suggestion.found && (
+        <div style={{
+          padding: '12px 16px', background: '#111', color: '#fff',
+          borderTop: '0.5px solid #333',
+        }}>
+          <div style={{
+            fontFamily: "'IBM Plex Mono', monospace", fontSize: 7,
+            textTransform: 'uppercase', letterSpacing: '0.14em',
+            opacity: 0.6, marginBottom: 6,
+          }}>
+            Ассистент
+          </div>
+          <div style={{
+            fontFamily: "'IBM Plex Mono', monospace", fontSize: 10,
+            lineHeight: 1.5, marginBottom: 10,
+          }}>
+            {suggestion.reminder_text || suggestion.action}
+          </div>
+
+          {showTimePicker ? (
+            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+              {[
+                { label: 'Сегодня 18:00', hours: (() => { const d = new Date(); d.setHours(18, 0, 0, 0); return d; })() },
+                { label: 'Завтра 10:00', hours: (() => { const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(10, 0, 0, 0); return d; })() },
+                { label: 'Завтра 12:00', hours: (() => { const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(12, 0, 0, 0); return d; })() },
+              ].map(opt => (
+                <button
+                  key={opt.label}
+                  disabled={creatingSuggestion}
+                  onClick={async () => {
+                    setCreatingSuggestion(true);
+                    try {
+                      await createReminder({
+                        project_id: projectId,
+                        chat_type: chatType,
+                        action_text: suggestion.reminder_text || suggestion.action || '',
+                        target_role: suggestion.target || 'client',
+                        remind_at: opt.hours.toISOString(),
+                      });
+                      toast('Напоминание создано');
+                      setSuggestion(null);
+                      setShowTimePicker(false);
+                    } catch { toast('Ошибка'); }
+                    setCreatingSuggestion(false);
+                  }}
+                  style={{
+                    padding: '4px 10px', background: '#fff', color: '#111',
+                    border: 'none', cursor: 'pointer',
+                    fontFamily: "'IBM Plex Mono', monospace", fontSize: 8,
+                    fontWeight: 600, textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
+                  }}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button
+                onClick={() => setShowTimePicker(true)}
+                style={{
+                  padding: '5px 12px', background: '#fff', color: '#111',
+                  border: 'none', cursor: 'pointer',
+                  fontFamily: "'IBM Plex Mono', monospace", fontSize: 8,
+                  fontWeight: 600, textTransform: 'uppercase',
+                  letterSpacing: '0.1em',
+                }}
+              >
+                Да, создать напоминание
+              </button>
+              <button
+                onClick={() => setSuggestion(null)}
+                style={{
+                  padding: '5px 12px', background: 'transparent', color: '#fff',
+                  border: '0.5px solid #555', cursor: 'pointer',
+                  fontFamily: "'IBM Plex Mono', monospace", fontSize: 8,
+                  textTransform: 'uppercase', letterSpacing: '0.1em',
+                }}
+              >
+                Нет
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Input area */}
       <div style={{
         padding: '8px 16px',
@@ -410,45 +906,72 @@ function ChatTabPanel({ projectId, chatType, userId, profile, toast, isActive }:
         display: 'flex', gap: 8, alignItems: 'flex-end',
         flexShrink: 0,
       }}>
-        <textarea
-          ref={inputRef}
-          value={text}
-          onChange={e => setText(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Сообщение..."
-          rows={1}
-          style={{
-            flex: 1, resize: 'none',
-            padding: '10px 12px',
-            border: '0.5px solid #EBEBEB',
-            fontFamily: "'IBM Plex Mono', monospace", fontSize: 12,
-            lineHeight: '1.4', outline: 'none',
-            minHeight: 40, maxHeight: 120,
-            background: '#FAFAFA',
-            borderRadius: 0,
-          }}
-          onInput={(e) => {
-            const el = e.target as HTMLTextAreaElement;
-            el.style.height = 'auto';
-            el.style.height = Math.min(el.scrollHeight, 120) + 'px';
-          }}
-        />
-        <button
-          onClick={handleSend}
-          disabled={sending || !text.trim()}
-          style={{
-            padding: '10px 20px',
-            background: text.trim() ? '#111' : '#EBEBEB',
-            color: text.trim() ? '#fff' : '#AAA',
-            border: 'none',
-            fontFamily: "'IBM Plex Mono', monospace", fontSize: 10,
-            fontWeight: 600, cursor: text.trim() ? 'pointer' : 'default',
-            textTransform: 'uppercase', letterSpacing: '0.12em',
-            minHeight: 40, transition: 'background 0.15s',
-          }}
-        >
-          {sending ? '...' : '→'}
-        </button>
+        {voiceRecording ? (
+          <VoiceRecorder
+            projectId={projectId}
+            userId={userId}
+            chatType={chatType}
+            profile={profile}
+            appendMessage={appendMessage}
+            removeMessage={removeMessage}
+            toast={toast}
+            setAutoScroll={setAutoScroll}
+            onRecordingChange={setVoiceRecording}
+          />
+        ) : (
+          <>
+            <textarea
+              ref={inputRef}
+              value={text}
+              onChange={e => setText(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Сообщение..."
+              rows={1}
+              style={{
+                flex: 1, resize: 'none',
+                padding: '10px 12px',
+                border: '0.5px solid #EBEBEB',
+                fontFamily: "'IBM Plex Mono', monospace", fontSize: 12,
+                lineHeight: '1.4', outline: 'none',
+                minHeight: 40, maxHeight: 120,
+                background: '#F6F6F4',
+                borderRadius: 0,
+              }}
+              onInput={(e) => {
+                const el = e.target as HTMLTextAreaElement;
+                el.style.height = 'auto';
+                el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+              }}
+            />
+            <button
+              onClick={handleSend}
+              disabled={sending || !text.trim()}
+              style={{
+                padding: '10px 20px',
+                background: text.trim() ? '#111' : '#EBEBEB',
+                color: text.trim() ? '#fff' : '#EBEBEB',
+                border: 'none',
+                fontFamily: "'IBM Plex Mono', monospace", fontSize: 10,
+                fontWeight: 600, cursor: text.trim() ? 'pointer' : 'default',
+                textTransform: 'uppercase', letterSpacing: '0.12em',
+                minHeight: 40, transition: 'background 0.15s',
+              }}
+            >
+              {sending ? '...' : '→'}
+            </button>
+            <VoiceRecorder
+              projectId={projectId}
+              userId={userId}
+              chatType={chatType}
+              profile={profile}
+              appendMessage={appendMessage}
+              removeMessage={removeMessage}
+              toast={toast}
+              setAutoScroll={setAutoScroll}
+              onRecordingChange={setVoiceRecording}
+            />
+          </>
+        )}
       </div>
     </div>
   );
@@ -512,9 +1035,12 @@ export default function ChatView({ projectId, toast }: ChatViewProps) {
       .filter((p): p is Profile => !!p);
   }, [membersWithProfiles]);
 
-  const tabLabels: Record<ChatType, string> = {
-    team: 'Команда',
-    client: 'С заказчиком',
+  // Tab labels depend on role:
+  // Designer/team: "Команда" / "С заказчиком"
+  // Client: "С дизайнером" (single tab)
+  const getTabLabel = (tab: ChatType): string => {
+    if (tab === 'team') return 'Команда';
+    return isClientOnly ? 'С дизайнером' : 'С заказчиком';
   };
 
   return (
@@ -529,7 +1055,7 @@ export default function ChatView({ projectId, toast }: ChatViewProps) {
       {/* Push notification permission banner */}
       <PushPermissionBanner />
 
-      {/* Tab bar — always rendered unconditionally */}
+      {/* Tab bar */}
       <div style={{
         display: 'flex',
         borderBottom: '0.5px solid #EBEBEB',
@@ -551,7 +1077,7 @@ export default function ChatView({ projectId, toast }: ChatViewProps) {
                 letterSpacing: '0.16em',
                 textTransform: 'uppercase' as const,
                 fontFamily: 'var(--font-ibm-mono), monospace',
-                color: isActive ? '#111' : '#AAA',
+                color: isActive ? '#111' : '#111',
                 fontWeight: isActive ? 600 : 400,
                 borderTop: 'none',
                 borderLeft: 'none',
@@ -561,7 +1087,7 @@ export default function ChatView({ projectId, toast }: ChatViewProps) {
                 cursor: 'pointer',
               }}
             >
-              {tabLabels[tab]}
+              {getTabLabel(tab)}
               {!isActive && unread > 0 && (
                 <span style={{
                   display: 'inline-block',
@@ -576,20 +1102,6 @@ export default function ChatView({ projectId, toast }: ChatViewProps) {
           );
         })}
       </div>
-
-      {/* "Заказчик не видит" label */}
-      {activeTab === 'team' && !isClientOnly && (
-        <div style={{
-          textAlign: 'right',
-          padding: '4px 16px 0',
-          fontFamily: 'var(--font-ibm-mono), monospace',
-          fontSize: 7,
-          letterSpacing: '0.08em',
-          color: '#DDD',
-        }}>
-          Заказчик не видит
-        </div>
-      )}
 
       {/* Member pills */}
       <MemberPills members={activeTab === 'team' ? teamMembers : clientMembers} />

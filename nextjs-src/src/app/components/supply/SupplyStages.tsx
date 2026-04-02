@@ -12,9 +12,9 @@ interface SupplyStagesProps {
 }
 
 const STAGE_STATUS_STYLE: Record<StageStatus, { label: string; bg: string; text: string }> = {
-  pending: { label: "Ожидает", bg: "#F3F4F6", text: "#6B7280" },
-  in_progress: { label: "В работе", bg: "#FFF7ED", text: "#D97706" },
-  done: { label: "Завершён", bg: "#ECFDF3", text: "#16A34A" },
+  pending: { label: "Ожидает", bg: "#F6F6F4", text: "#111111" },
+  in_progress: { label: "В работе", bg: "#EBEBEB", text: "#111111" },
+  done: { label: "Завершён", bg: "#F6F6F4", text: "#111111" },
 };
 
 export function SupplyStages({ stages, items }: SupplyStagesProps) {

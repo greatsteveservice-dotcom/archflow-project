@@ -137,7 +137,7 @@ export default function SearchModal({ open, onClose, onNavigate }: SearchModalPr
       onClick={onClose}
     >
       <div
-        className="bg-srf rounded-2xl w-full max-w-[560px] mx-4 shadow-xl overflow-hidden animate-slide-up"
+        className="bg-srf w-full max-w-[560px] mx-4 overflow-hidden animate-slide-up"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Search input */}
@@ -154,7 +154,7 @@ export default function SearchModal({ open, onClose, onNavigate }: SearchModalPr
           {loading && (
             <div className="w-4 h-4 border-2 border-ink-faint border-t-ink rounded-full animate-spin flex-shrink-0" />
           )}
-          <kbd className="hidden sm:inline-flex text-[11px] text-ink-faint bg-srf-secondary px-1.5 py-0.5 rounded font-mono">
+          <kbd className="hidden sm:inline-flex text-[11px] text-ink-faint bg-srf-secondary px-1.5 py-0.5 font-mono">
             ESC
           </kbd>
         </div>
@@ -189,7 +189,7 @@ export default function SearchModal({ open, onClose, onNavigate }: SearchModalPr
                     <div className="text-[14px] font-medium truncate">{r.title}</div>
                     <div className="text-[12px] text-ink-muted truncate">{r.subtitle}</div>
                   </div>
-                  <span className="text-[11px] text-ink-faint bg-srf-secondary px-2 py-0.5 rounded-full flex-shrink-0">
+                  <span className="text-[11px] text-ink-faint bg-srf-secondary px-2 py-0.5 flex-shrink-0">
                     {TYPE_LABELS[r.type]}
                   </span>
                 </div>
@@ -201,13 +201,13 @@ export default function SearchModal({ open, onClose, onNavigate }: SearchModalPr
         {/* Footer hint */}
         <div className="px-4 py-2 border-t border-line flex items-center gap-4 text-[11px] text-ink-faint">
           <span className="flex items-center gap-1">
-            <kbd className="bg-srf-secondary px-1 py-0.5 rounded font-mono">↑↓</kbd> навигация
+            <kbd className="bg-srf-secondary px-1 py-0.5 font-mono">↑↓</kbd> навигация
           </span>
           <span className="flex items-center gap-1">
-            <kbd className="bg-srf-secondary px-1 py-0.5 rounded font-mono">Enter</kbd> открыть
+            <kbd className="bg-srf-secondary px-1 py-0.5 font-mono">Enter</kbd> открыть
           </span>
           <span className="flex items-center gap-1">
-            <kbd className="bg-srf-secondary px-1 py-0.5 rounded font-mono">Esc</kbd> закрыть
+            <kbd className="bg-srf-secondary px-1 py-0.5 font-mono">Esc</kbd> закрыть
           </span>
         </div>
       </div>

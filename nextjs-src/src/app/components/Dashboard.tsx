@@ -83,7 +83,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                     background: '#111',
                   }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: '#555', lineHeight: 1.5 }}>
+                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: '#111', lineHeight: 1.5 }}>
                       {item.text}
                     </div>
                     <div className="af-label" style={{ marginTop: 2, fontSize: 8 }}>

@@ -57,13 +57,13 @@ export function SupplyDashboard({ items, stages }: SupplyDashboardProps) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         {/* Critical warnings */}
-        <div style={{ background: '#F6F6F4', padding: 20, border: '0.5px solid #E0E0E0' }}>
+        <div style={{ background: '#F6F6F4', padding: 20, border: '0.5px solid #EBEBEB' }}>
           <h3 style={{
             fontFamily: "'IBM Plex Mono', monospace",
             fontSize: 9,
             letterSpacing: '0.16em',
             textTransform: 'uppercase',
-            color: '#AAA',
+            color: '#111',
             marginBottom: 16,
           }}>
             Критические позиции
@@ -105,13 +105,13 @@ export function SupplyDashboard({ items, stages }: SupplyDashboardProps) {
         </div>
 
         {/* Upcoming stages */}
-        <div style={{ background: '#F6F6F4', padding: 20, border: '0.5px solid #E0E0E0' }}>
+        <div style={{ background: '#F6F6F4', padding: 20, border: '0.5px solid #EBEBEB' }}>
           <h3 style={{
             fontFamily: "'IBM Plex Mono', monospace",
             fontSize: 9,
             letterSpacing: '0.16em',
             textTransform: 'uppercase',
-            color: '#AAA',
+            color: '#111',
             marginBottom: 16,
           }}>
             Ближайшие этапы
@@ -140,7 +140,7 @@ export function SupplyDashboard({ items, stages }: SupplyDashboardProps) {
                       {stageItems.length} позиций · {pending > 0 ? (
                         <span style={{ color: '#111', fontWeight: 500 }}>{pending} не заказано</span>
                       ) : (
-                        <span style={{ color: '#AAA' }}>всё заказано</span>
+                        <span style={{ color: '#111' }}>всё заказано</span>
                       )}
                     </div>
                   </div>

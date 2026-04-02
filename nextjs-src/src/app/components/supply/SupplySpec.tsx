@@ -291,9 +291,9 @@ export function SupplySpec({ items, stages, projectId, refetchItems, toast }: Su
                           key={s}
                           className="text-[12px] font-medium px-3 py-1.5 rounded-lg border transition-all"
                           style={{
-                            background: isActive ? cfg.bg : "white",
-                            color: isActive ? cfg.text : "#6B6B6B",
-                            borderColor: isActive ? cfg.text + "40" : "#E8E6E1",
+                            background: isActive ? cfg.bg : "#FFFFFF",
+                            color: isActive ? cfg.text : "#111111",
+                            borderColor: isActive ? cfg.text + "40" : "#EBEBEB",
                             opacity: updatingStatus ? 0.5 : 1,
                           }}
                           disabled={updatingStatus || isActive}

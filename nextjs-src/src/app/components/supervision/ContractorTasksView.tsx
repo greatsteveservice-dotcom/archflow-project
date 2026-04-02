@@ -14,14 +14,14 @@ const STATUS_LABEL: Record<TaskStatus, string> = {
 };
 
 const STATUS_BORDER: Record<TaskStatus, string> = {
-  open: '#DDD',
-  in_progress: '#888',
+  open: '#EBEBEB',
+  in_progress: '#EBEBEB',
   done: '#111',
 };
 
 const STATUS_CHIP: Record<TaskStatus, { border: string; color: string }> = {
-  open: { border: '#DDD', color: '#AAA' },
-  in_progress: { border: '#888', color: '#888' },
+  open: { border: '#EBEBEB', color: '#111' },
+  in_progress: { border: '#EBEBEB', color: '#111' },
   done: { border: '#111', color: '#111' },
 };
 
@@ -162,7 +162,7 @@ export default function ContractorTasksView({
           <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
             <button
               onClick={() => setShowCreate(false)}
-              style={{ ...chipBtnStyle, flex: 1, background: '#F6F6F4', color: '#999' }}
+              style={{ ...chipBtnStyle, flex: 1, background: '#F6F6F4', color: '#111' }}
             >
               Отмена
             </button>
@@ -204,10 +204,10 @@ export default function ContractorTasksView({
       </div>
 
       {loading ? (
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#AAA' }}>Загрузка...</div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#111' }}>Загрузка...</div>
       ) : (tasks || []).length === 0 ? (
         <div style={{ textAlign: 'center', padding: '48px 0' }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#CCC' }}>Задач пока нет</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#111' }}>Задач пока нет</div>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -227,7 +227,7 @@ export default function ContractorTasksView({
                   cursor: 'pointer',
                   transition: 'background 0.12s',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#FAFAF8'; }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#F6F6F4'; }}
                 onMouseLeave={e => { e.currentTarget.style.background = '#FFF'; }}
               >
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -236,17 +236,17 @@ export default function ContractorTasksView({
                   </div>
                   <div style={{ display: 'flex', gap: 8, marginTop: 3, flexWrap: 'wrap' }}>
                     {task.assignee && (
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#AAA' }}>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#111' }}>
                         → {task.assignee.full_name}
                       </span>
                     )}
                     {task.deadline && (
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: '#AAA' }}>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: '#111' }}>
                         до {formatShortDate(task.deadline)}
                       </span>
                     )}
                     {task.remark_number && (
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: '#BBB' }}>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: '#111' }}>
                         ← Замечание {String(task.remark_number).padStart(2, '0')}{task.remark_date ? ` · ${formatShortDate(task.remark_date)}` : ''}
                       </span>
                     )}
@@ -259,7 +259,7 @@ export default function ContractorTasksView({
                   }}>
                     {STATUS_LABEL[task.status]}
                   </span>
-                  <span style={{ color: '#CCC', fontSize: 14 }}>→</span>
+                  <span style={{ color: '#EBEBEB', fontSize: 14 }}>→</span>
                 </div>
               </div>
             );
@@ -292,7 +292,7 @@ function TaskDetail({
       </h2>
 
       {task.description && (
-        <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#555', lineHeight: 1.6, marginBottom: 16 }}>
+        <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#111', lineHeight: 1.6, marginBottom: 16 }}>
           {task.description}
         </p>
       )}
@@ -313,7 +313,7 @@ function TaskDetail({
       {/* Photos */}
       {task.photos && task.photos.length > 0 && (
         <div style={{ marginBottom: 20 }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#BBB', marginBottom: 8 }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#111', marginBottom: 8 }}>
             Фото
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2 }}>
@@ -329,7 +329,7 @@ function TaskDetail({
       {/* Status controls */}
       {canManage && !isContractor && (
         <div style={{ marginBottom: 20 }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#BBB', marginBottom: 8 }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#111', marginBottom: 8 }}>
             Статус
           </div>
           <div style={{ display: 'flex', gap: 2 }}>
@@ -341,7 +341,7 @@ function TaskDetail({
                   fontFamily: 'var(--font-mono)', fontSize: 9,
                   padding: '4px 12px',
                   background: task.status === s ? '#111' : '#F6F6F4',
-                  color: task.status === s ? '#FFF' : '#999',
+                  color: task.status === s ? '#FFF' : '#111',
                   border: 'none', cursor: 'pointer',
                   transition: 'all 0.12s',
                 }}
@@ -372,7 +372,7 @@ function TaskDetail({
 
       {isContractor && task.status === 'done' && task.completed_at && (
         <div style={{
-          fontFamily: 'var(--font-mono)', fontSize: 11, color: '#999',
+          fontFamily: 'var(--font-mono)', fontSize: 11, color: '#111',
           padding: '12px', background: '#F6F6F4', marginBottom: 20,
           textAlign: 'center',
         }}>
@@ -386,7 +386,7 @@ function TaskDetail({
           onClick={() => { onDelete(task.id); onBack(); }}
           style={{
             fontFamily: 'var(--font-mono)', fontSize: 9,
-            color: '#CCC', background: 'none', border: 'none',
+            color: '#111', background: 'none', border: 'none',
             cursor: 'pointer', padding: 0,
           }}
         >
@@ -402,7 +402,7 @@ function TaskDetail({
 function MetaRow({ label, value }: { label: string; value: string }) {
   return (
     <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#BBB', minWidth: 80 }}>
+      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#111', minWidth: 80 }}>
         {label}
       </span>
       <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#111' }}>
@@ -415,7 +415,7 @@ function MetaRow({ label, value }: { label: string; value: string }) {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#BBB', marginBottom: 4 }}>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#111', marginBottom: 4 }}>
         {label}
       </div>
       {children}

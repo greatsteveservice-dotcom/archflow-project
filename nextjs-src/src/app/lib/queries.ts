@@ -2073,6 +2073,9 @@ export async function sendChatMessage(
       ref_type: input.ref_type || null,
       ref_id: input.ref_id || null,
       ref_preview: input.ref_preview ? sanitize(input.ref_preview) : null,
+      message_type: input.message_type || 'text',
+      voice_duration: input.voice_duration || null,
+      voice_original: input.voice_original || null,
     })
     .select()
     .single();
@@ -2294,7 +2297,7 @@ export async function fetchDesignFileCounts(
 
   if (error) throw error;
 
-  const counts: Record<string, number> = { concept: 0, visuals: 0, drawings: 0, documents: 0 };
+  const counts: Record<string, number> = { design_project: 0, visuals: 0, drawings: 0, furniture: 0, engineering: 0, documents: 0 };
   (data || []).forEach(f => {
     counts[f.folder] = (counts[f.folder] || 0) + 1;
   });
@@ -2429,4 +2432,282 @@ export async function fetchDesignFileCommentCounts(
     counts.set(c.file_id, (counts.get(c.file_id) || 0) + 1);
   });
   return counts;
+}
+
+// ======================== NOTIFICATION PREFERENCES ========================
+
+import type { NotificationPreferences, NotificationPreferencesInput } from './types';
+
+/** Fetch notification preferences for a user+project */
+export async function fetchNotificationPreferences(
+  userId: string,
+  projectId: string,
+): Promise<NotificationPreferences | null> {
+  const { data, error } = await supabase
+    .from('notification_preferences')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('project_id', projectId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data as NotificationPreferences | null;
+}
+
+/** Upsert notification preferences (create or update) */
+export async function upsertNotificationPreferences(
+  input: NotificationPreferencesInput,
+): Promise<NotificationPreferences> {
+  const { data, error } = await supabase
+    .from('notification_preferences')
+    .upsert(input, { onConflict: 'user_id,project_id' })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as NotificationPreferences;
+}
+
+/** Generate a Telegram link token for the linking flow */
+export async function generateTelegramLinkToken(
+  userId: string,
+  projectId: string,
+): Promise<string> {
+  const token = crypto.randomUUID();
+
+  // Upsert to ensure row exists, set the link token
+  const { error } = await supabase
+    .from('notification_preferences')
+    .upsert({
+      user_id: userId,
+      project_id: projectId,
+      telegram_link_token: token,
+    }, { onConflict: 'user_id,project_id' });
+
+  if (error) throw error;
+  return token;
+}
+
+/** Unlink Telegram from notification preferences */
+export async function unlinkTelegram(
+  userId: string,
+  projectId: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from('notification_preferences')
+    .update({
+      telegram_enabled: false,
+      telegram_chat_id: null,
+      telegram_link_token: null,
+    })
+    .eq('user_id', userId)
+    .eq('project_id', projectId);
+
+  if (error) throw error;
+}
+
+// ======================== MAX ========================
+
+/** Generate a one-time token for linking MAX messenger */
+export async function generateMaxLinkToken(
+  userId: string,
+  projectId: string,
+): Promise<string> {
+  const token = crypto.randomUUID();
+
+  const { error } = await supabase
+    .from('notification_preferences')
+    .upsert({
+      user_id: userId,
+      project_id: projectId,
+      max_link_token: token,
+    }, { onConflict: 'user_id,project_id' });
+
+  if (error) throw error;
+  return token;
+}
+
+/** Unlink MAX from notification preferences */
+export async function unlinkMax(
+  userId: string,
+  projectId: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from('notification_preferences')
+    .update({
+      max_enabled: false,
+      max_chat_id: null,
+      max_link_token: null,
+    })
+    .eq('user_id', userId)
+    .eq('project_id', projectId);
+
+  if (error) throw error;
+}
+
+// ======================== ASSISTANT ========================
+
+import type { AssistantEvent, AssistantEventStatus, Reminder, ChatAnalysisResult } from './types';
+
+/** Fetch active assistant events for a project */
+export async function fetchAssistantEvents(
+  projectId: string,
+  status: AssistantEventStatus = 'active',
+): Promise<AssistantEvent[]> {
+  const { data, error } = await supabase
+    .from('assistant_events')
+    .select('*')
+    .eq('project_id', projectId)
+    .eq('status', status)
+    .order('priority', { ascending: true }) // urgent first
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return (data || []) as AssistantEvent[];
+}
+
+/** Dismiss an assistant event */
+export async function dismissAssistantEvent(eventId: string): Promise<void> {
+  const { error } = await supabase
+    .from('assistant_events')
+    .update({ status: 'dismissed' })
+    .eq('id', eventId);
+  if (error) throw error;
+}
+
+/** Mark an assistant event as done */
+export async function completeAssistantEvent(eventId: string): Promise<void> {
+  const { error } = await supabase
+    .from('assistant_events')
+    .update({ status: 'done' })
+    .eq('id', eventId);
+  if (error) throw error;
+}
+
+/** Create a reminder */
+export async function createReminder(input: {
+  project_id: string;
+  chat_type?: string;
+  action_text: string;
+  target_role: string;
+  remind_at: string;
+}): Promise<Reminder> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { data, error } = await supabase
+    .from('reminders')
+    .insert({ ...input, created_by: user.id })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as Reminder;
+}
+
+/** Fetch reminders for a project */
+export async function fetchReminders(
+  projectId: string,
+  status?: string,
+): Promise<Reminder[]> {
+  let q = supabase
+    .from('reminders')
+    .select('*')
+    .eq('project_id', projectId)
+    .order('remind_at', { ascending: true });
+
+  if (status) q = q.eq('status', status);
+
+  const { data, error } = await q;
+  if (error) throw error;
+  return (data || []) as Reminder[];
+}
+
+/** Trigger project analysis via Edge Function */
+export async function triggerProjectAnalysis(projectId: string): Promise<void> {
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token;
+
+  await fetch('https://fcbllfvlpzlczinlydcm.supabase.co/functions/v1/analyze-project', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ project_id: projectId }),
+  });
+}
+
+/** Analyze chat messages via Edge Function */
+export async function analyzeChatMessages(
+  projectId: string,
+  chatType: string,
+  messages: { author: string; text: string }[],
+): Promise<ChatAnalysisResult> {
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token;
+
+  const res = await fetch('https://fcbllfvlpzlczinlydcm.supabase.co/functions/v1/analyze-chat', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({
+      project_id: projectId,
+      chat_type: chatType,
+      last_messages: messages,
+    }),
+  });
+
+  if (!res.ok) return { found: false };
+  return await res.json();
+}
+
+/** Fetch upcoming timeline items (visits + stages + payments) for 2 weeks */
+export async function fetchUpcomingTimeline(projectId: string): Promise<any[]> {
+  const now = new Date();
+  const twoWeeks = new Date(now.getTime() + 14 * 86400000).toISOString().split('T')[0];
+  const today = now.toISOString().split('T')[0];
+
+  const [visitsRes, stagesRes, paymentsRes] = await Promise.all([
+    supabase.from('visits').select('id, title, date, status')
+      .eq('project_id', projectId)
+      .gte('date', today).lte('date', twoWeeks)
+      .order('date'),
+    supabase.from('stages').select('id, name, end_date, status')
+      .eq('project_id', projectId)
+      .not('end_date', 'is', null)
+      .gte('end_date', today).lte('end_date', twoWeeks)
+      .order('end_date'),
+    supabase.from('contract_payments').select('id, type, amount, next_due, status')
+      .eq('project_id', projectId)
+      .not('next_due', 'is', null)
+      .gte('next_due', today).lte('next_due', twoWeeks)
+      .order('next_due'),
+  ]);
+
+  const items: any[] = [];
+
+  (visitsRes.data || []).forEach(v => items.push({
+    type: 'visit', id: v.id, title: v.title,
+    date: v.date, status: v.status,
+  }));
+
+  (stagesRes.data || []).forEach(s => items.push({
+    type: 'stage', id: s.id, title: s.name,
+    date: s.end_date, status: s.status,
+  }));
+
+  const typeLabel: Record<string, string> = {
+    supervision: 'АН', design: 'Дизайн', supply_commission: 'Комиссия',
+  };
+  (paymentsRes.data || []).forEach(p => items.push({
+    type: 'payment', id: p.id,
+    title: `${typeLabel[p.type] || p.type}: ${p.amount?.toLocaleString('ru-RU')} ₽`,
+    date: p.next_due, status: p.status,
+  }));
+
+  items.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  return items;
 }

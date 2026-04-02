@@ -47,17 +47,17 @@ export default function OnboardingTip({ id, title, text, className = "" }: Onboa
   };
 
   return (
-    <div className={`bg-[#111827] text-white rounded-xl px-4 py-3 flex items-start gap-3 animate-fade-in ${className}`}>
+    <div className={`bg-[#111] text-white px-4 py-3 flex items-start gap-3 animate-fade-in ${className}`}>
       <div className="w-5 h-5 rounded-full bg-white/15 flex items-center justify-center flex-shrink-0 mt-0.5">
         <Icons.Info className="w-3 h-3" />
       </div>
       <div className="flex-1 min-w-0">
-        <div className="text-[13px] font-medium mb-0.5">{title}</div>
-        <div className="text-[12px] text-white/60 leading-relaxed">{text}</div>
+        <div className="text-[13px] font-medium mb-0.5" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{title}</div>
+        <div className="text-[12px] text-[#EBEBEB] leading-relaxed" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{text}</div>
       </div>
       <button
         onClick={handleDismiss}
-        className="p-1 text-white/30 hover:text-white transition-colors flex-shrink-0"
+        className="p-1 text-[#EBEBEB] hover:text-white transition-colors flex-shrink-0"
       >
         <Icons.X className="w-3.5 h-3.5" />
       </button>
