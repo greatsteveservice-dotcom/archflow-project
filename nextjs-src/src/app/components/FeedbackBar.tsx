@@ -91,6 +91,20 @@ export default function FeedbackBar() {
       }
     }
 
+    // Get current project name from URL if on a project page
+    let projectName: string | undefined;
+    try {
+      const match = window.location.pathname.match(/\/projects\/([^/]+)/);
+      if (match) {
+        const { data } = await supabase
+          .from('projects')
+          .select('title')
+          .eq('id', match[1])
+          .maybeSingle();
+        if (data?.title) projectName = data.title;
+      }
+    } catch {}
+
     try {
       await fetch("/api/feedback", {
         method: "POST",
@@ -99,6 +113,8 @@ export default function FeedbackBar() {
           text: text.trim(),
           userEmail: profile?.email || undefined,
           userName: profile?.full_name || undefined,
+          userRole: profile?.role || undefined,
+          projectName,
           imageUrl,
         }),
       });

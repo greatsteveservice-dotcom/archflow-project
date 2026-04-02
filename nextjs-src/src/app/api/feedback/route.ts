@@ -5,7 +5,7 @@ const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
 export async function POST(req: NextRequest) {
   try {
-    const { text, userEmail, userName, imageUrl } = await req.json();
+    const { text, userEmail, userName, userRole, projectName, imageUrl } = await req.json();
 
     if (!text || typeof text !== "string" || text.trim().length === 0) {
       return NextResponse.json({ error: "Текст обязателен" }, { status: 400 });
@@ -15,14 +15,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Слишком длинное сообщение" }, { status: 400 });
     }
 
+    // Role labels for readable output
+    const ROLE_LABELS: Record<string, string> = {
+      designer: 'Дизайнер',
+      client: 'Заказчик',
+      contractor: 'Подрядчик',
+      supplier: 'Комплектатор',
+      assistant: 'Ассистент',
+    };
+
     // Build Telegram message
     const lines = [
       "📩 *Новый фидбек — ArchFlow*",
       "",
+      `От: ${userName || "Аноним"} (${userEmail || "нет email"})`,
+      `Роль: ${userRole ? (ROLE_LABELS[userRole] || userRole) : "—"}`,
+      `Проект: ${projectName || "—"}`,
+      "———",
       text.trim(),
       "",
-      `— ${userName || "Аноним"}${userEmail ? ` (${userEmail})` : ""}`,
-      `— ${new Date().toLocaleString("ru-RU", { timeZone: "Europe/Moscow" })}`,
+      `🕐 ${new Date().toLocaleString("ru-RU", { timeZone: "Europe/Moscow" })}`,
     ];
     if (imageUrl) {
       lines.push(`📎 ${imageUrl}`);
