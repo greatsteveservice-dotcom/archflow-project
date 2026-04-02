@@ -340,14 +340,94 @@ function ClientChatPreview() {
 interface OnboardingFlowProps {
   userId: string;
   userRole?: string;
+  userEmail?: string;
   onComplete: () => void;
 }
 
-export default function OnboardingFlow({ userId, userRole, onComplete }: OnboardingFlowProps) {
+export default function OnboardingFlow({ userId, userRole, userEmail, onComplete }: OnboardingFlowProps) {
+  if (userEmail === 'supply-demo@archflow.ru') {
+    return <SupplyDemoOnboarding userId={userId} onComplete={onComplete} />;
+  }
   if (userRole === 'client') {
     return <ClientOnboarding userId={userId} onComplete={onComplete} />;
   }
   return <DesignerOnboarding userId={userId} onComplete={onComplete} />;
+}
+
+// ======================== SUPPLY DEMO ONBOARDING ========================
+
+function SupplyDemoOnboarding({ userId, onComplete }: { userId: string; onComplete: () => void }) {
+  const handleComplete = async () => {
+    try {
+      await supabase.from('profiles').update({ onboarding_completed: true }).eq('id', userId);
+    } catch {}
+    onComplete();
+  };
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: '#fff', zIndex: 9999,
+      display: 'flex', flexDirection: 'column', overflow: 'hidden',
+    }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+        {/* Header */}
+        <div style={{ background: '#111', padding: '32px 24px 24px' }}>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 32, fontWeight: 900, color: '#fff', marginBottom: 10 }}>ArchFlow</div>
+          <span style={{
+            fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: '#111',
+            border: '0.5px solid #111', padding: '3px 10px',
+            textTransform: 'uppercase', letterSpacing: '0.16em',
+          }}>Демо</span>
+        </div>
+
+        {/* Content */}
+        <div style={{ padding: '28px 24px', flex: 1, overflowY: 'auto' }}>
+          <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 900, color: '#111', marginBottom: 12 }}>
+            Добро пожаловать в демо Комплектации
+          </h2>
+          <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, color: '#111', lineHeight: 1.6, marginBottom: 24 }}>
+            Создайте проект, добавьте позиции и загрузите документацию.
+          </p>
+
+          {[
+            { n: '01', t: 'Создайте проект' },
+            { n: '02', t: 'Откройте раздел «Комплектация»' },
+            { n: '03', t: 'Добавьте позиции и загрузите файлы' },
+          ].map((step, i) => (
+            <div key={i} style={{ background: '#F6F6F4', padding: '14px 16px', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 14 }}>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: '#EBEBEB' }}>{step.n}</span>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, color: '#111' }}>{step.t}</span>
+            </div>
+          ))}
+
+          <div style={{ background: '#F6F6F4', borderLeft: '2px solid #111', padding: '14px 16px', marginTop: 20 }}>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: '#111', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 6 }}>Что доступно</div>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: '#111', lineHeight: 1.7 }}>
+              Спецификация, Timeline, Этапы, Импорт Excel, Документация и Настройки комплектации.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom CTA */}
+      <div style={{
+        padding: '16px 24px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
+        borderTop: '0.5px solid #EBEBEB', background: '#fff', flexShrink: 0,
+      }}>
+        <button
+          onClick={handleComplete}
+          style={{
+            width: '100%', background: '#111', color: '#fff', border: 'none',
+            fontFamily: "'IBM Plex Mono', monospace", fontSize: 9,
+            textTransform: 'uppercase', letterSpacing: '0.16em',
+            padding: '14px 0', cursor: 'pointer',
+          }}
+        >
+          Создать первый проект →
+        </button>
+      </div>
+    </div>
+  );
 }
 
 function DesignerOnboarding({ userId, onComplete }: { userId: string; onComplete: () => void }) {

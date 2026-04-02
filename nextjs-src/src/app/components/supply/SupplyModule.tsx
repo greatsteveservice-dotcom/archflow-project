@@ -12,6 +12,7 @@ import { SupplyTimeline } from "./SupplyTimeline";
 import { SupplyStages } from "./SupplyStages";
 import SupplyImport from "./SupplyImport";
 import SupplySettings from "./SupplySettings";
+import SupplyDocuments from "./SupplyDocuments";
 
 interface SupplyModuleProps {
   projectId: string;
@@ -23,6 +24,7 @@ const TABS = [
   { id: "spec", label: "Спецификация", icon: Icons.List },
   { id: "timeline", label: "Timeline", icon: Icons.Timeline },
   { id: "stages", label: "Этапы", icon: Icons.Layers },
+  { id: "docs", label: "Документы", icon: Icons.File },
   { id: "import", label: "Импорт", icon: Icons.Upload },
   { id: "settings", label: "Настройки", icon: Icons.Settings },
 ] as const;
@@ -88,6 +90,9 @@ export default function SupplyModule({ projectId, toast }: SupplyModuleProps) {
         )}
         {activeTab === "stages" && (
           <SupplyStages stages={stages} items={calcItems} />
+        )}
+        {activeTab === "docs" && (
+          <SupplyDocuments projectId={projectId} toast={doToast} />
         )}
         {activeTab === "import" && (
           <SupplyImport projectId={projectId} stages={stages} toast={doToast} onImportComplete={refetchItems} />

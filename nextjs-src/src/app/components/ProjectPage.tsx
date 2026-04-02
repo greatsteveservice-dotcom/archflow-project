@@ -30,6 +30,9 @@ interface ProjectPageProps {
   onSearchOpen?: () => void;
 }
 
+/** Demo emails that get full Supply access */
+const SUPPLY_DEMO_EMAILS = ['supply-demo@archflow.ru', 'demo@archflow.ru'];
+
 const SECTION_CONFIG: { id: ProjectTab; label: string; permKey: keyof ProjectPermissions; index: string; disabled?: boolean }[] = [
   { id: "design", label: "Дизайн", permKey: "canViewDesign", index: "01" },
   { id: "supply", label: "Комплектация", permKey: "canViewSupply", index: "02", disabled: true },
@@ -54,7 +57,10 @@ export default function ProjectPage({ projectId, initialTab, onNavigate, toast, 
 
   useProjectRealtime(projectId, { refetchProject, refetchVisits, refetchInvoices });
 
-  const visibleSections = SECTION_CONFIG.filter(t => permissions[t.permKey]);
+  const isDemoSupply = SUPPLY_DEMO_EMAILS.includes(profile?.email || '');
+  const visibleSections = SECTION_CONFIG.filter(t => permissions[t.permKey]).map(s =>
+    s.id === 'supply' && isDemoSupply ? { ...s, disabled: false } : s
+  );
   // activeTab derived from URL (initialTab prop) — null = Level 2 (section list), string = Level 3 (section content)
   const validTabs: string[] = ['design', 'supervision', 'supply', 'chat', 'settings', 'assistant'];
   const isDesigner = profile?.role === 'designer';
@@ -236,6 +242,7 @@ export default function ProjectPage({ projectId, initialTab, onNavigate, toast, 
                     </span>
                     <span className="af-block-sub">
                       {section.id === 'design' && (designCounts ? `${Object.values(designCounts).reduce((a, b) => a + b, 0)} файлов` : '—')}
+                      {section.id === 'supply' && 'Позиции и документация'}
                       {section.id === 'supervision' && `${projectVisits.length} ${isClient ? 'отчётов' : 'визитов'}`}
                     </span>
                   </div>

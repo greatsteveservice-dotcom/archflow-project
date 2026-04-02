@@ -248,6 +248,7 @@ export default function AppShell() {
       <OnboardingFlow
         userId={session.user.id}
         userRole={profile?.role}
+        userEmail={profile?.email || undefined}
         onComplete={() => refreshProfile()}
       />
     );
