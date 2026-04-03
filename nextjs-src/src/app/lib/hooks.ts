@@ -6,7 +6,7 @@
 
 import { useState, useEffect, useCallback, useRef, useId } from 'react';
 import { supabase } from './supabase';
-import type { ProjectWithStats, VisitWithStats, PhotoRecord, Profile, Stage, SupplyItem, Invoice, Notification, ActivityItem, Document, ProjectMember, ProjectMemberWithProfile, DocumentCategory, Task, PhotoRecordWithVisit, RbacMemberWithProfile, ProjectAccessSettings, VisitReportWithStats, VisitRemarkWithDetails, ContractorTaskWithDetails, ChatMessageWithAuthor, ChatType, DesignFileWithProfile, DesignFileCommentWithProfile, DesignFolder, ProjectRoom } from './types';
+import type { ProjectWithStats, VisitWithStats, PhotoRecord, Profile, Stage, SupplyItem, Invoice, Notification, ActivityItem, Document, ProjectMember, ProjectMemberWithProfile, DocumentCategory, Task, PhotoRecordWithVisit, RbacMemberWithProfile, ProjectAccessSettings, VisitReportWithStats, VisitRemarkWithDetails, ContractorTaskWithDetails, ChatMessageWithAuthor, ChatType, DesignFileWithProfile, DesignFileCommentWithProfile, DesignFolder, ProjectRoom, KindStageMapping } from './types';
 import {
   fetchProjects,
   fetchProjectsPaginated,
@@ -43,6 +43,7 @@ import {
   fetchDesignFile,
   fetchDesignFileComments,
   fetchProjectRooms,
+  fetchKindStageMappings,
 } from './queries';
 
 // ======================== GENERIC HOOK ========================
@@ -229,6 +230,14 @@ export function useProjectRooms(projectId: string | null) {
   return useQuery<ProjectRoom[]>(
     () => projectId ? fetchProjectRooms(projectId) : Promise.resolve([]),
     [projectId]
+  );
+}
+
+/** Fetch kind→stage mappings for current user */
+export function useKindStageMappings() {
+  return useQuery<KindStageMapping[]>(
+    () => fetchKindStageMappings(),
+    []
   );
 }
 

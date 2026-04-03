@@ -3,7 +3,7 @@ import { useState, useRef, useCallback, useMemo } from 'react';
 import * as XLSX from 'xlsx';
 import { Icons } from '../Icons';
 import { createSupplyItems } from '../../lib/queries';
-import type { Stage, CreateSupplyItemInput } from '../../lib/types';
+import type { Stage, CreateSupplyItemInput, KindStageMapping } from '../../lib/types';
 
 // Fields available for mapping
 const SUPPLY_FIELDS = [
@@ -43,9 +43,10 @@ interface SupplyImportProps {
   stages: Stage[];
   toast: (msg: string) => void;
   onImportComplete: () => void;
+  kindMappings?: KindStageMapping[];
 }
 
-export default function SupplyImport({ projectId, stages, toast, onImportComplete }: SupplyImportProps) {
+export default function SupplyImport({ projectId, stages, toast, onImportComplete, kindMappings = [] }: SupplyImportProps) {
   const [step, setStep] = useState(1);
   const [fileName, setFileName] = useState('');
   const [headers, setHeaders] = useState<string[]>([]);
@@ -56,6 +57,7 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
   const [error, setError] = useState('');
   const [dragOver, setDragOver] = useState(false);
   const [unmatchedStages, setUnmatchedStages] = useState<string[]>([]);
+  const [autoFilledStageItems, setAutoFilledStageItems] = useState<Set<string>>(new Set());
   const fileRef = useRef<HTMLInputElement>(null);
 
   const stepsConfig = [
@@ -157,6 +159,7 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
   const buildItems = useCallback((): CreateSupplyItemInput[] => {
     const items: CreateSupplyItemInput[] = [];
     const unmatched = new Set<string>();
+    const autoFilled = new Set<string>();
 
     for (const row of rows) {
       const item: CreateSupplyItemInput = { project_id: projectId, name: '' };
@@ -193,13 +196,27 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
         item.notes = notesParts.join('\n');
       }
 
+      // Auto-fill stage from kind→stage mapping if not already set
+      if (!item.target_stage_id && item.category && kindMappings.length > 0) {
+        const categoryLower = item.category.toLowerCase().trim();
+        const match = kindMappings.find(m => m.kind.toLowerCase().trim() === categoryLower);
+        if (match) {
+          const stageId = findStage(match.stage_name);
+          if (stageId) {
+            item.target_stage_id = stageId;
+            if (item.name) autoFilled.add(item.name);
+          }
+        }
+      }
+
       // Skip rows without name
       if (item.name) items.push(item);
     }
 
     setUnmatchedStages(Array.from(unmatched));
+    setAutoFilledStageItems(autoFilled);
     return items;
-  }, [rows, mapping, projectId, stages]);
+  }, [rows, mapping, projectId, stages, kindMappings]);
 
   const handleImport = async () => {
     setImporting(true);
@@ -254,7 +271,30 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
     return { groups, items: allItems.slice(0, 8), total: allItems.length };
   }, [rows, mapping, buildItems]);
 
-  const mappedFields = SUPPLY_FIELDS.filter(f => Object.values(mapping).includes(f.key));
+  const mappedFieldsBase = SUPPLY_FIELDS.filter(f => Object.values(mapping).includes(f.key));
+  // Include stage column in preview when kind mappings auto-filled stages even if no explicit stage column was mapped
+  const hasStageColumn = Object.values(mapping).includes('stage');
+  const mappedFields = (!hasStageColumn && autoFilledStageItems.size > 0)
+    ? [...mappedFieldsBase, { key: 'stage' as FieldKey, label: 'Этап', required: false }]
+    : mappedFieldsBase;
+
+  // Helper: resolve stage name from target_stage_id
+  const stageName = (stageId: string | undefined): string => {
+    if (!stageId) return '—';
+    const s = stages.find(st => st.id === stageId);
+    return s ? s.name : '—';
+  };
+
+  // Helper: get cell value for preview, resolving stage names
+  const cellValue = (item: CreateSupplyItemInput, fieldKey: string): string => {
+    if (fieldKey === 'stage') return stageName(item.target_stage_id);
+    return String((item as any)[fieldKey] || '—');
+  };
+
+  // Helper: is this item's stage auto-filled from kind mapping?
+  const isAutoStage = (item: CreateSupplyItemInput): boolean => {
+    return !!item.name && autoFilledStageItems.has(item.name);
+  };
 
   // Check if a field is used by another column (for dedup in dropdown)
   const isFieldUsedElsewhere = (field: FieldKey, currentColIdx: number): boolean => {
@@ -428,7 +468,10 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
                                 maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis',
                                 whiteSpace: 'nowrap',
                               }}>
-                                {(item as any)[f.key] || '—'}
+                                {cellValue(item, f.key)}
+                                {f.key === 'stage' && isAutoStage(item) && (
+                                  <span style={{ color: '#888', fontSize: 'var(--af-fs-9)', marginLeft: 4 }}>(авто)</span>
+                                )}
                               </td>
                             ))}
                           </tr>
@@ -464,7 +507,10 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
                     <tr key={i} className="border-b border-line-light">
                       {mappedFields.map(f => (
                         <td key={f.key} className="py-2 px-3 text-ink-secondary max-w-[200px] truncate">
-                          {(item as any)[f.key] || '—'}
+                          {cellValue(item, f.key)}
+                          {f.key === 'stage' && isAutoStage(item) && (
+                            <span style={{ color: '#888', fontSize: 'var(--af-fs-9)', marginLeft: 4 }}>(авто)</span>
+                          )}
                         </td>
                       ))}
                     </tr>

@@ -310,6 +310,21 @@ export interface CreateProjectRoomInput {
   sort_order?: number;
 }
 
+// ======================== KIND → STAGE MAPPING ========================
+
+export interface KindStageMapping {
+  id: string;
+  user_id: string;
+  kind: string;
+  stage_name: string;
+  created_at: string;
+}
+
+export interface CreateKindStageMappingInput {
+  kind: string;
+  stage_name: string;
+}
+
 // ======================== RBAC (Role-Based Access) ========================
 
 export type MemberRole = 'team' | 'client' | 'contractor';

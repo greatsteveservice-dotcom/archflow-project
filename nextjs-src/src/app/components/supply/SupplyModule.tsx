@@ -3,7 +3,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { Icons } from "../Icons";
 import Loading, { ErrorMessage } from "../Loading";
-import { useProjectStages, useProjectSupplyItems, useProjectRooms } from "../../lib/hooks";
+import { useProjectStages, useProjectSupplyItems, useProjectRooms, useKindStageMappings } from "../../lib/hooks";
 import { calcSupplyItem, createStage } from "../../lib/queries";
 import type { SupplyItemWithCalc } from "../../lib/types";
 import { SupplyDashboard } from "./SupplyDashboard";
@@ -14,6 +14,7 @@ import SupplyImport from "./SupplyImport";
 import SupplySettings from "./SupplySettings";
 import SupplyDocuments from "./SupplyDocuments";
 import SupplyPlan from "./SupplyPlan";
+import KindStageReconciliation from "./KindStageReconciliation";
 
 interface SupplyModuleProps {
   projectId: string;
@@ -51,6 +52,7 @@ export default function SupplyModule({ projectId, toast }: SupplyModuleProps) {
   const { data: stages, loading: loadingStages, error: errorStages, refetch: refetchStages } = useProjectStages(projectId);
   const { data: items, loading: loadingItems, error: errorItems, refetch: refetchItems } = useProjectSupplyItems(projectId);
   const { data: rooms } = useProjectRooms(projectId);
+  const { data: kindMappings, refetch: refetchMappings } = useKindStageMappings();
 
   // Add stage form state
   const [showAddStage, setShowAddStage] = useState(false);
@@ -67,6 +69,19 @@ export default function SupplyModule({ projectId, toast }: SupplyModuleProps) {
     if (!items || !stages) return [];
     return items.map((item) => calcSupplyItem(item, stages));
   }, [items, stages]);
+
+  // Find unmapped kinds (categories without kind→stage mapping)
+  const unmappedKinds = useMemo(() => {
+    if (!calcItems.length || !kindMappings) return [];
+    const mappedKindsLower = new Set((kindMappings || []).map(m => m.kind.toLowerCase().trim()));
+    const categories = new Set<string>();
+    for (const item of calcItems) {
+      if (item.category && !mappedKindsLower.has(item.category.toLowerCase().trim())) {
+        categories.add(item.category);
+      }
+    }
+    return Array.from(categories).sort();
+  }, [calcItems, kindMappings]);
 
   const handleAddStage = useCallback(async () => {
     if (!newStageName.trim() || addingStage) return;
@@ -139,6 +154,16 @@ export default function SupplyModule({ projectId, toast }: SupplyModuleProps) {
           );
         })}
       </div>
+
+      {/* Kind→Stage reconciliation banner */}
+      {hasStages && unmappedKinds.length > 0 && (
+        <KindStageReconciliation
+          unmappedKinds={unmappedKinds}
+          stages={stages!}
+          toast={doToast}
+          onSaved={refetchMappings}
+        />
+      )}
 
       {/* Tab content */}
       <div className="animate-fade-in">
@@ -301,7 +326,7 @@ export default function SupplyModule({ projectId, toast }: SupplyModuleProps) {
               <SupplyDocuments projectId={projectId} toast={doToast} />
             )}
             {activeTab === "import" && hasStages && (
-              <SupplyImport projectId={projectId} stages={stages!} toast={doToast} onImportComplete={refetchItems} />
+              <SupplyImport projectId={projectId} stages={stages!} toast={doToast} onImportComplete={refetchItems} kindMappings={kindMappings || []} />
             )}
             {activeTab === "settings" && (
               <SupplySettings projectId={projectId} toast={doToast} />

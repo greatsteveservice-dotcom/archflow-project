@@ -1,9 +1,9 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { Icons } from '../Icons';
-import { useProject, useProjectRooms } from '../../lib/hooks';
-import { updateProject, createRoom, updateRoom, deleteRoom, renameRoomInSupplyItems } from '../../lib/queries';
-import type { ProjectRoom } from '../../lib/types';
+import { useProject, useProjectRooms, useKindStageMappings } from '../../lib/hooks';
+import { updateProject, createRoom, updateRoom, deleteRoom, renameRoomInSupplyItems, upsertKindStageMapping, deleteKindStageMapping } from '../../lib/queries';
+import type { ProjectRoom, KindStageMapping } from '../../lib/types';
 
 const mono = "'IBM Plex Mono', monospace";
 const display = "'Playfair Display', serif";
@@ -16,6 +16,7 @@ interface SupplySettingsProps {
 export default function SupplySettings({ projectId, toast }: SupplySettingsProps) {
   const { data: project, refetch } = useProject(projectId);
   const { data: rooms, refetch: refetchRooms } = useProjectRooms(projectId);
+  const { data: kindMappings, refetch: refetchMappings } = useKindStageMappings();
   const [scenario, setScenario] = useState<'block' | 'gkl'>('block');
   const [startDate, setStartDate] = useState('');
   const [discount, setDiscount] = useState('0');
@@ -35,6 +36,12 @@ export default function SupplySettings({ projectId, toast }: SupplySettingsProps
   // Delete room state
   const [confirmDeleteRoomId, setConfirmDeleteRoomId] = useState<string | null>(null);
   const [deletingRoom, setDeletingRoom] = useState(false);
+
+  // Kind→Stage mapping state
+  const [newKind, setNewKind] = useState('');
+  const [newStageName, setNewStageName] = useState('');
+  const [addingMapping, setAddingMapping] = useState(false);
+  const [deletingMappingId, setDeletingMappingId] = useState<string | null>(null);
 
   // Sync form with project data
   useEffect(() => {
@@ -142,6 +149,26 @@ export default function SupplySettings({ projectId, toast }: SupplySettingsProps
       setDeletingRoom(false);
     }
   }, [deletingRoom, toast, refetchRooms]);
+
+  // Kind→Stage mapping handler
+  const handleAddMapping = useCallback(async () => {
+    if (!newKind.trim() || !newStageName.trim() || addingMapping) return;
+    setAddingMapping(true);
+    try {
+      await upsertKindStageMapping({
+        kind: newKind.trim(),
+        stage_name: newStageName.trim(),
+      });
+      toast('Маппинг сохранён');
+      setNewKind('');
+      setNewStageName('');
+      refetchMappings();
+    } catch (err: any) {
+      toast('Ошибка: ' + (err.message || 'не удалось сохранить'));
+    } finally {
+      setAddingMapping(false);
+    }
+  }, [newKind, newStageName, addingMapping, toast, refetchMappings]);
 
   return (
     <div className="animate-fade-in max-w-[500px]">
@@ -446,9 +473,166 @@ export default function SupplySettings({ projectId, toast }: SupplySettingsProps
         </div>
       </div>
 
-      {/* CSS for hover: show room action buttons */}
+      {/* Kind→Stage mapping card */}
+      <div style={{ marginTop: 16 }}>
+        <div style={{
+          background: '#fff', border: '0.5px solid #EBEBEB', padding: 24,
+        }}>
+          <div style={{
+            fontFamily: display, fontSize: 14, fontWeight: 700,
+            color: '#111', marginBottom: 4,
+          }}>
+            Словарь Вид → Этап
+          </div>
+          <div style={{
+            fontFamily: mono, fontSize: 'var(--af-fs-10)', color: '#888',
+            marginBottom: 16,
+          }}>
+            Автоматическое назначение этапа при импорте
+          </div>
+
+          {/* Mappings list */}
+          {kindMappings && kindMappings.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 16 }}>
+              {kindMappings.map((m) => (
+                <div
+                  key={m.id}
+                  className="group"
+                  style={{
+                    background: '#FAFAF8', border: '0.5px solid #EBEBEB',
+                    padding: '10px 14px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{
+                      fontFamily: mono, fontSize: 'var(--af-fs-12)',
+                      color: '#111', fontWeight: 500,
+                    }}>
+                      {m.kind}
+                    </span>
+                    <span style={{
+                      fontFamily: mono, fontSize: 'var(--af-fs-10)',
+                      color: '#888',
+                    }}>
+                      →
+                    </span>
+                    <span style={{
+                      fontFamily: mono, fontSize: 'var(--af-fs-12)',
+                      color: '#111',
+                    }}>
+                      {m.stage_name}
+                    </span>
+                  </div>
+                  <button
+                    className="mapping-actions"
+                    onClick={async () => {
+                      if (deletingMappingId) return;
+                      setDeletingMappingId(m.id);
+                      try {
+                        await deleteKindStageMapping(m.id);
+                        toast('Маппинг удалён');
+                        refetchMappings();
+                      } catch (err: any) {
+                        toast('Ошибка: ' + (err.message || 'не удалось удалить'));
+                      } finally {
+                        setDeletingMappingId(null);
+                      }
+                    }}
+                    disabled={deletingMappingId === m.id}
+                    style={{
+                      background: 'none', border: 'none', cursor: deletingMappingId === m.id ? 'wait' : 'pointer',
+                      padding: 4, display: 'flex', color: '#888',
+                      opacity: 0, transition: 'opacity 0.15s',
+                    }}
+                    title="Удалить"
+                  >
+                    <Icons.X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{
+              fontFamily: mono, fontSize: 'var(--af-fs-11)', color: '#888',
+              padding: '12px 0', marginBottom: 12,
+            }}>
+              Нет маппингов. Добавьте первый ниже.
+            </div>
+          )}
+
+          {/* Add mapping form */}
+          <div style={{
+            display: 'flex', gap: 8, alignItems: 'flex-end',
+          }}>
+            <div style={{ flex: 1 }}>
+              <label style={{ fontFamily: mono, fontSize: 'var(--af-fs-10)', color: '#888', display: 'block', marginBottom: 4 }}>
+                Вид *
+              </label>
+              <input
+                type="text"
+                value={newKind}
+                onChange={(e) => setNewKind(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && newKind.trim() && newStageName.trim()) {
+                    handleAddMapping();
+                  }
+                }}
+                placeholder="Плитка"
+                style={{
+                  width: '100%', padding: '6px 8px',
+                  border: '0.5px solid #EBEBEB',
+                  fontFamily: mono, fontSize: 'var(--af-fs-12)',
+                  color: '#111', outline: 'none', background: '#fff',
+                  boxSizing: 'border-box',
+                }}
+              />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={{ fontFamily: mono, fontSize: 'var(--af-fs-10)', color: '#888', display: 'block', marginBottom: 4 }}>
+                Этап *
+              </label>
+              <input
+                type="text"
+                value={newStageName}
+                onChange={(e) => setNewStageName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && newKind.trim() && newStageName.trim()) {
+                    handleAddMapping();
+                  }
+                }}
+                placeholder="Чистовая отделка"
+                style={{
+                  width: '100%', padding: '6px 8px',
+                  border: '0.5px solid #EBEBEB',
+                  fontFamily: mono, fontSize: 'var(--af-fs-12)',
+                  color: '#111', outline: 'none', background: '#fff',
+                  boxSizing: 'border-box',
+                }}
+              />
+            </div>
+            <button
+              onClick={handleAddMapping}
+              disabled={!newKind.trim() || !newStageName.trim() || addingMapping}
+              style={{
+                background: '#111', color: '#fff', border: 'none',
+                fontFamily: mono, fontSize: 'var(--af-fs-9)', textTransform: 'uppercase',
+                letterSpacing: '0.12em', padding: '7px 14px',
+                cursor: !newKind.trim() || !newStageName.trim() || addingMapping ? 'not-allowed' : 'pointer',
+                opacity: !newKind.trim() || !newStageName.trim() || addingMapping ? 0.4 : 1,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {addingMapping ? '...' : 'Добавить'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* CSS for hover: show action buttons */}
       <style jsx>{`
-        .group:hover .room-actions {
+        .group:hover .room-actions,
+        .group:hover .mapping-actions {
           opacity: 1 !important;
         }
       `}</style>

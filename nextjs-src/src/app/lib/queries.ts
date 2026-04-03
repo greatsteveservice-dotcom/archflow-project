@@ -24,6 +24,7 @@ import type {
   DesignFile, DesignFileWithProfile, DesignFileComment, DesignFileCommentWithProfile,
   DesignFolder, CreateDesignFileInput,
   ProjectRoom, CreateProjectRoomInput,
+  KindStageMapping, CreateKindStageMappingInput,
 } from './types';
 
 // ======================== CONSTANTS ========================
@@ -734,6 +735,69 @@ export async function renameRoomInSupplyItems(projectId: string, oldName: string
     .update({ room: sanitize(newName) })
     .eq('project_id', projectId)
     .eq('room', oldName);
+
+  if (error) throw error;
+}
+
+// ======================== KIND → STAGE MAPPING ========================
+
+/** Fetch all kind→stage mappings for current user */
+export async function fetchKindStageMappings(): Promise<KindStageMapping[]> {
+  const { data, error } = await supabase
+    .from('kind_stage_mappings')
+    .select('*')
+    .order('kind');
+
+  if (error) throw error;
+  return (data || []) as KindStageMapping[];
+}
+
+/** Upsert a kind→stage mapping (insert or update by user_id+kind) */
+export async function upsertKindStageMapping(input: CreateKindStageMappingInput): Promise<KindStageMapping> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { data, error } = await supabase
+    .from('kind_stage_mappings')
+    .upsert(
+      {
+        user_id: user.id,
+        kind: sanitize(input.kind),
+        stage_name: sanitize(input.stage_name),
+      },
+      { onConflict: 'user_id,kind' }
+    )
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as KindStageMapping;
+}
+
+/** Delete a kind→stage mapping */
+export async function deleteKindStageMapping(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('kind_stage_mappings')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw error;
+}
+
+/** Batch upsert kind→stage mappings */
+export async function batchUpsertKindStageMappings(inputs: CreateKindStageMappingInput[]): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const rows = inputs.map((input) => ({
+    user_id: user.id,
+    kind: sanitize(input.kind),
+    stage_name: sanitize(input.stage_name),
+  }));
+
+  const { error } = await supabase
+    .from('kind_stage_mappings')
+    .upsert(rows, { onConflict: 'user_id,kind' });
 
   if (error) throw error;
 }
