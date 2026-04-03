@@ -23,6 +23,7 @@ import type {
   ChatType, ChatMessage, ChatMessageWithAuthor, ChatRead, SendChatMessageInput,
   DesignFile, DesignFileWithProfile, DesignFileComment, DesignFileCommentWithProfile,
   DesignFolder, CreateDesignFileInput,
+  ProjectRoom, CreateProjectRoomInput,
 } from './types';
 
 // ======================== CONSTANTS ========================
@@ -667,6 +668,76 @@ export async function deleteStage(stageId: string): Promise<void> {
   if (error) throw error;
 }
 
+// ======================== PROJECT ROOMS ========================
+
+/** Fetch rooms for a project */
+export async function fetchProjectRooms(projectId: string): Promise<ProjectRoom[]> {
+  const { data, error } = await supabase
+    .from('project_rooms')
+    .select('*')
+    .eq('project_id', projectId)
+    .order('sort_order', { ascending: true });
+
+  if (error) throw error;
+  return (data || []) as ProjectRoom[];
+}
+
+/** Create a room */
+export async function createRoom(input: CreateProjectRoomInput): Promise<ProjectRoom> {
+  const { data, error } = await supabase
+    .from('project_rooms')
+    .insert({
+      project_id: input.project_id,
+      name: sanitize(input.name),
+      area: input.area || null,
+      sort_order: input.sort_order || 0,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as ProjectRoom;
+}
+
+/** Update a room */
+export async function updateRoom(roomId: string, updates: { name?: string; area?: number | null; sort_order?: number }): Promise<ProjectRoom> {
+  const patch: Record<string, unknown> = {};
+  if (updates.name !== undefined) patch.name = sanitize(updates.name);
+  if (updates.area !== undefined) patch.area = updates.area;
+  if (updates.sort_order !== undefined) patch.sort_order = updates.sort_order;
+
+  const { data, error } = await supabase
+    .from('project_rooms')
+    .update(patch)
+    .eq('id', roomId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as ProjectRoom;
+}
+
+/** Delete a room */
+export async function deleteRoom(roomId: string): Promise<void> {
+  const { error } = await supabase
+    .from('project_rooms')
+    .delete()
+    .eq('id', roomId);
+
+  if (error) throw error;
+}
+
+/** Rename room across supply_items (batch update when room name changes) */
+export async function renameRoomInSupplyItems(projectId: string, oldName: string, newName: string): Promise<void> {
+  const { error } = await supabase
+    .from('supply_items')
+    .update({ room: sanitize(newName) })
+    .eq('project_id', projectId)
+    .eq('room', oldName);
+
+  if (error) throw error;
+}
+
 // ======================== SUPPLY ========================
 
 /** Calculate derived supply fields (deadline, risk) */
@@ -737,6 +808,7 @@ export async function createSupplyItem(input: CreateSupplyItemInput): Promise<Su
       supplier: input.supplier ? sanitize(input.supplier) : null,
       budget: input.budget || 0,
       notes: input.notes ? sanitize(input.notes) : null,
+      room: input.room ? sanitize(input.room) : null,
       status: 'pending',
     })
     .select()
@@ -758,6 +830,7 @@ export async function createSupplyItems(items: CreateSupplyItemInput[]): Promise
     supplier: input.supplier ? sanitize(input.supplier) : null,
     budget: input.budget || 0,
     notes: input.notes ? sanitize(input.notes) : null,
+    room: input.room ? sanitize(input.room) : null,
     status: 'pending' as const,
   }));
 

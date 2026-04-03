@@ -6,7 +6,7 @@
 
 import { useState, useEffect, useCallback, useRef, useId } from 'react';
 import { supabase } from './supabase';
-import type { ProjectWithStats, VisitWithStats, PhotoRecord, Profile, Stage, SupplyItem, Invoice, Notification, ActivityItem, Document, ProjectMember, ProjectMemberWithProfile, DocumentCategory, Task, PhotoRecordWithVisit, RbacMemberWithProfile, ProjectAccessSettings, VisitReportWithStats, VisitRemarkWithDetails, ContractorTaskWithDetails, ChatMessageWithAuthor, ChatType, DesignFileWithProfile, DesignFileCommentWithProfile, DesignFolder } from './types';
+import type { ProjectWithStats, VisitWithStats, PhotoRecord, Profile, Stage, SupplyItem, Invoice, Notification, ActivityItem, Document, ProjectMember, ProjectMemberWithProfile, DocumentCategory, Task, PhotoRecordWithVisit, RbacMemberWithProfile, ProjectAccessSettings, VisitReportWithStats, VisitRemarkWithDetails, ContractorTaskWithDetails, ChatMessageWithAuthor, ChatType, DesignFileWithProfile, DesignFileCommentWithProfile, DesignFolder, ProjectRoom } from './types';
 import {
   fetchProjects,
   fetchProjectsPaginated,
@@ -42,6 +42,7 @@ import {
   fetchDesignFileCounts,
   fetchDesignFile,
   fetchDesignFileComments,
+  fetchProjectRooms,
 } from './queries';
 
 // ======================== GENERIC HOOK ========================
@@ -219,6 +220,14 @@ export function useProjectStages(projectId: string | null) {
 export function useProjectSupplyItems(projectId: string | null) {
   return useQuery<SupplyItem[]>(
     () => projectId ? fetchProjectSupplyItems(projectId) : Promise.resolve([]),
+    [projectId]
+  );
+}
+
+/** Fetch rooms for a project */
+export function useProjectRooms(projectId: string | null) {
+  return useQuery<ProjectRoom[]>(
+    () => projectId ? fetchProjectRooms(projectId) : Promise.resolve([]),
     [projectId]
   );
 }

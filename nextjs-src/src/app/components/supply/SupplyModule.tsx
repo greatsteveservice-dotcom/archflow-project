@@ -3,7 +3,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { Icons } from "../Icons";
 import Loading, { ErrorMessage } from "../Loading";
-import { useProjectStages, useProjectSupplyItems } from "../../lib/hooks";
+import { useProjectStages, useProjectSupplyItems, useProjectRooms } from "../../lib/hooks";
 import { calcSupplyItem, createStage } from "../../lib/queries";
 import type { SupplyItemWithCalc } from "../../lib/types";
 import { SupplyDashboard } from "./SupplyDashboard";
@@ -13,6 +13,7 @@ import { SupplyStages } from "./SupplyStages";
 import SupplyImport from "./SupplyImport";
 import SupplySettings from "./SupplySettings";
 import SupplyDocuments from "./SupplyDocuments";
+import SupplyPlan from "./SupplyPlan";
 
 interface SupplyModuleProps {
   projectId: string;
@@ -24,6 +25,7 @@ const TABS = [
   { id: "spec", label: "Спецификация", icon: Icons.List },
   { id: "timeline", label: "Timeline", icon: Icons.Timeline },
   { id: "stages", label: "Этапы", icon: Icons.Layers },
+  { id: "plan", label: "План", icon: Icons.Home },
   { id: "docs", label: "Документы", icon: Icons.File },
   { id: "import", label: "Импорт", icon: Icons.Upload },
   { id: "settings", label: "Настройки", icon: Icons.Settings },
@@ -48,6 +50,7 @@ export default function SupplyModule({ projectId, toast }: SupplyModuleProps) {
   const [activeTab, setActiveTab] = useState<TabId>("dashboard");
   const { data: stages, loading: loadingStages, error: errorStages, refetch: refetchStages } = useProjectStages(projectId);
   const { data: items, loading: loadingItems, error: errorItems, refetch: refetchItems } = useProjectSupplyItems(projectId);
+  const { data: rooms } = useProjectRooms(projectId);
 
   // Add stage form state
   const [showAddStage, setShowAddStage] = useState(false);
@@ -290,6 +293,9 @@ export default function SupplyModule({ projectId, toast }: SupplyModuleProps) {
             )}
             {activeTab === "stages" && hasStages && (
               <SupplyStages stages={stages!} items={calcItems} refetchStages={refetchStages} toast={doToast} />
+            )}
+            {activeTab === "plan" && hasStages && (
+              <SupplyPlan items={calcItems} rooms={rooms || []} />
             )}
             {activeTab === "docs" && (
               <SupplyDocuments projectId={projectId} toast={doToast} />

@@ -151,6 +151,7 @@ export interface SupplyItem {
   supplier: string | null;
   budget: number;
   notes: string | null;
+  room: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -288,6 +289,25 @@ export interface CreateSupplyItemInput {
   supplier?: string;
   budget?: number;
   notes?: string;
+  room?: string;
+}
+
+// ======================== PROJECT ROOMS ========================
+
+export interface ProjectRoom {
+  id: string;
+  project_id: string;
+  name: string;
+  area: number | null;
+  sort_order: number;
+  created_at: string;
+}
+
+export interface CreateProjectRoomInput {
+  project_id: string;
+  name: string;
+  area?: number;
+  sort_order?: number;
 }
 
 // ======================== RBAC (Role-Based Access) ========================

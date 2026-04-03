@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useMemo } from 'react';
 import * as XLSX from 'xlsx';
 import { Icons } from '../Icons';
 import { createSupplyItems } from '../../lib/queries';
@@ -9,6 +9,7 @@ import type { Stage, CreateSupplyItemInput } from '../../lib/types';
 const SUPPLY_FIELDS = [
   { key: 'name', label: 'Название *', required: true },
   { key: 'category', label: 'Категория', required: false },
+  { key: 'room', label: 'Помещение', required: false },
   { key: 'lead_time_days', label: 'Срок поставки (дни)', required: false },
   { key: 'quantity', label: 'Количество', required: false },
   { key: 'supplier', label: 'Поставщик', required: false },
@@ -19,15 +20,21 @@ const SUPPLY_FIELDS = [
 
 type FieldKey = typeof SUPPLY_FIELDS[number]['key'];
 
+// Fields that allow multiple columns mapped to them (values get concatenated)
+const MULTI_MAP_FIELDS: FieldKey[] = ['notes'];
+
 // Auto-detect column mapping by header names
 const AUTO_MAP: Record<string, FieldKey> = {
   'название': 'name', 'наименование': 'name', 'name': 'name', 'позиция': 'name', 'товар': 'name', 'item': 'name',
   'категория': 'category', 'category': 'category', 'группа': 'category', 'тип': 'category',
+  'вид': 'category',
+  'помещение': 'room', 'комната': 'room', 'room': 'room',
   'срок': 'lead_time_days', 'lead_time': 'lead_time_days', 'дни': 'lead_time_days', 'срок поставки': 'lead_time_days',
   'количество': 'quantity', 'кол-во': 'quantity', 'qty': 'quantity', 'quantity': 'quantity', 'шт': 'quantity',
   'поставщик': 'supplier', 'supplier': 'supplier', 'vendor': 'supplier',
   'бюджет': 'budget', 'цена': 'budget', 'стоимость': 'budget', 'price': 'budget', 'budget': 'budget', 'сумма': 'budget',
   'заметки': 'notes', 'примечание': 'notes', 'notes': 'notes', 'комментарий': 'notes',
+  'спецификация': 'notes', 'характеристики': 'notes', 'ссылка': 'notes', 'ед.из': 'notes', 'ед. изм': 'notes', 'единица': 'notes',
   'этап': 'stage', 'stage': 'stage',
 };
 
@@ -48,6 +55,7 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
   const [importedCount, setImportedCount] = useState(0);
   const [error, setError] = useState('');
   const [dragOver, setDragOver] = useState(false);
+  const [unmatchedStages, setUnmatchedStages] = useState<string[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const stepsConfig = [
@@ -97,9 +105,14 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
         hdrs.forEach((h, i) => {
           const normalized = h.toLowerCase().trim();
           const match = AUTO_MAP[normalized];
-          if (match && !usedFields.has(match)) {
-            autoMapping[i] = match;
-            usedFields.add(match);
+          if (match) {
+            // For multi-map fields (notes), allow multiple columns
+            if (MULTI_MAP_FIELDS.includes(match) && usedFields.has(match)) {
+              autoMapping[i] = match;
+            } else if (!usedFields.has(match)) {
+              autoMapping[i] = match;
+              usedFields.add(match);
+            }
           }
         });
         setMapping(autoMapping);
@@ -140,37 +153,60 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
     return partial ? partial.id : null;
   };
 
+  // Build mapped items (used for preview and import)
+  const buildItems = useCallback((): CreateSupplyItemInput[] => {
+    const items: CreateSupplyItemInput[] = [];
+    const unmatched = new Set<string>();
+
+    for (const row of rows) {
+      const item: CreateSupplyItemInput = { project_id: projectId, name: '' };
+      const notesParts: string[] = [];
+
+      for (const [colIdx, field] of Object.entries(mapping)) {
+        if (!field) continue;
+        const val = row[Number(colIdx)]?.trim() || '';
+        if (!val) continue;
+
+        switch (field) {
+          case 'name': item.name = val; break;
+          case 'category': item.category = val; break;
+          case 'room': item.room = val; break;
+          case 'lead_time_days': item.lead_time_days = parseInt(val) || 0; break;
+          case 'quantity': item.quantity = parseInt(val) || 1; break;
+          case 'supplier': item.supplier = val; break;
+          case 'budget': item.budget = parseFloat(val.replace(/[^\d.,]/g, '').replace(',', '.')) || 0; break;
+          case 'notes': notesParts.push(val); break;
+          case 'stage': {
+            const stageId = findStage(val);
+            if (stageId) {
+              item.target_stage_id = stageId;
+            } else {
+              unmatched.add(val);
+            }
+            break;
+          }
+        }
+      }
+
+      // Join multi-column notes
+      if (notesParts.length > 0) {
+        item.notes = notesParts.join('\n');
+      }
+
+      // Skip rows without name
+      if (item.name) items.push(item);
+    }
+
+    setUnmatchedStages(Array.from(unmatched));
+    return items;
+  }, [rows, mapping, projectId, stages]);
+
   const handleImport = async () => {
     setImporting(true);
     setError('');
 
     try {
-      // Build items from rows using mapping
-      const items: CreateSupplyItemInput[] = [];
-
-      for (const row of rows) {
-        const item: CreateSupplyItemInput = { project_id: projectId, name: '' };
-
-        for (const [colIdx, field] of Object.entries(mapping)) {
-          if (!field) continue;
-          const val = row[Number(colIdx)]?.trim() || '';
-          if (!val) continue;
-
-          switch (field) {
-            case 'name': item.name = val; break;
-            case 'category': item.category = val; break;
-            case 'lead_time_days': item.lead_time_days = parseInt(val) || 0; break;
-            case 'quantity': item.quantity = parseInt(val) || 1; break;
-            case 'supplier': item.supplier = val; break;
-            case 'budget': item.budget = parseFloat(val.replace(/[^\d.,]/g, '').replace(',', '.')) || 0; break;
-            case 'notes': item.notes = val; break;
-            case 'stage': item.target_stage_id = findStage(val) || undefined; break;
-          }
-        }
-
-        // Skip rows without name
-        if (item.name) items.push(item);
-      }
+      const items = buildItems();
 
       if (items.length === 0) {
         setError('Нет позиций для импорта. Проверьте маппинг колонки "Название".');
@@ -197,18 +233,36 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
     setMapping({});
     setImportedCount(0);
     setError('');
+    setUnmatchedStages([]);
   };
 
-  // Preview: mapped rows for step 3
-  const previewRows = rows.slice(0, 5).map(row => {
-    const mapped: Record<string, string> = {};
-    for (const [colIdx, field] of Object.entries(mapping)) {
-      if (field) mapped[field] = row[Number(colIdx)] || '';
+  // Preview: mapped rows for step 3, grouped by room if room is mapped
+  const previewData = useMemo(() => {
+    const allItems = buildItems();
+    const hasRoom = Object.values(mapping).includes('room');
+
+    let groups: Record<string, CreateSupplyItemInput[]> | null = null;
+    if (hasRoom) {
+      groups = {};
+      for (const item of allItems) {
+        const key = item.room || 'Без помещения';
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(item);
+      }
     }
-    return mapped;
-  });
+
+    return { groups, items: allItems.slice(0, 8), total: allItems.length };
+  }, [rows, mapping, buildItems]);
 
   const mappedFields = SUPPLY_FIELDS.filter(f => Object.values(mapping).includes(f.key));
+
+  // Check if a field is used by another column (for dedup in dropdown)
+  const isFieldUsedElsewhere = (field: FieldKey, currentColIdx: number): boolean => {
+    if (MULTI_MAP_FIELDS.includes(field)) return false; // notes can be multi-mapped
+    return Object.entries(mapping).some(
+      ([idx, val]) => val === field && Number(idx) !== currentColIdx
+    );
+  };
 
   return (
     <div className="animate-fade-in">
@@ -281,9 +335,7 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
                 >
                   <option value="">— Пропустить —</option>
                   {SUPPLY_FIELDS.map(f => {
-                    const usedElsewhere = Object.entries(mapping).some(
-                      ([idx, val]) => val === f.key && Number(idx) !== i
-                    );
+                    const usedElsewhere = isFieldUsedElsewhere(f.key, i);
                     return (
                       <option key={f.key} value={f.key} disabled={usedElsewhere}>
                         {f.label}{usedElsewhere ? ' (уже выбрано)' : ''}
@@ -307,31 +359,109 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
         <div className="card p-5">
           <h3 className="text-[14px] font-semibold mb-2">Предпросмотр</h3>
           <p className="text-[13px] text-ink-faint mb-4">
-            {rows.length <= 5
-              ? `${rows.length} строк будут импортированы`
-              : `Показаны 5 из ${rows.length} строк`}
+            {previewData.total} позиций будут импортированы
           </p>
+
+          {/* Unmatched stages warning */}
+          {unmatchedStages.length > 0 && (
+            <div style={{
+              background: '#FAFAF8', border: '0.5px solid #EBEBEB',
+              padding: '8px 12px', marginBottom: 12,
+              fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-11)',
+              color: '#111',
+            }}>
+              Не найден этап: {unmatchedStages.join(', ')}
+            </div>
+          )}
+
           <div className="overflow-x-auto">
-            <table className="w-full text-[12px]">
-              <thead>
-                <tr className="border-b border-line">
-                  {mappedFields.map(f => (
-                    <th key={f.key} className="text-left py-2 px-3 text-ink-muted font-medium">{f.label.replace(' *', '')}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {previewRows.map((row, i) => (
-                  <tr key={i} className="border-b border-line-light">
+            {previewData.groups ? (
+              // Grouped by room
+              <div>
+                {Object.entries(previewData.groups).map(([roomName, roomItems]) => (
+                  <div key={roomName} style={{ marginBottom: 16 }}>
+                    <div style={{
+                      fontFamily: "'Playfair Display', serif", fontSize: 13,
+                      fontWeight: 700, color: '#111', marginBottom: 6,
+                      display: 'flex', alignItems: 'center', gap: 8,
+                    }}>
+                      {roomName}
+                      <span style={{
+                        fontFamily: "'IBM Plex Mono', monospace",
+                        fontSize: 'var(--af-fs-10)', fontWeight: 400, color: '#888',
+                      }}>
+                        ({roomItems.length})
+                      </span>
+                    </div>
+                    <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '0.5px solid #EBEBEB' }}>
+                          {mappedFields.filter(f => f.key !== 'room').map(f => (
+                            <th key={f.key} style={{
+                              textAlign: 'left', padding: '4px 8px',
+                              fontFamily: "'IBM Plex Mono', monospace",
+                              fontSize: 'var(--af-fs-10)', color: '#888', fontWeight: 500,
+                            }}>
+                              {f.label.replace(' *', '')}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {roomItems.slice(0, 5).map((item, idx) => (
+                          <tr key={idx} style={{ borderBottom: '0.5px solid #F6F6F4' }}>
+                            {mappedFields.filter(f => f.key !== 'room').map(f => (
+                              <td key={f.key} style={{
+                                padding: '4px 8px', color: '#666',
+                                fontFamily: "'IBM Plex Mono', monospace",
+                                fontSize: 'var(--af-fs-11)',
+                                maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                              }}>
+                                {(item as any)[f.key] || '—'}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                        {roomItems.length > 5 && (
+                          <tr>
+                            <td colSpan={mappedFields.length} style={{
+                              padding: '4px 8px', color: '#888',
+                              fontFamily: "'IBM Plex Mono', monospace",
+                              fontSize: 'var(--af-fs-10)',
+                            }}>
+                              ... ещё {roomItems.length - 5}
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              // Flat list
+              <table className="w-full text-[12px]">
+                <thead>
+                  <tr className="border-b border-line">
                     {mappedFields.map(f => (
-                      <td key={f.key} className="py-2 px-3 text-ink-secondary max-w-[200px] truncate">
-                        {row[f.key] || '—'}
-                      </td>
+                      <th key={f.key} className="text-left py-2 px-3 text-ink-muted font-medium">{f.label.replace(' *', '')}</th>
                     ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {previewData.items.map((item, i) => (
+                    <tr key={i} className="border-b border-line-light">
+                      {mappedFields.map(f => (
+                        <td key={f.key} className="py-2 px-3 text-ink-secondary max-w-[200px] truncate">
+                          {(item as any)[f.key] || '—'}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       )}
@@ -363,7 +493,7 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
         )}
         {step === 3 && (
           <button className="btn btn-primary" onClick={handleImport} disabled={importing}>
-            {importing ? 'Импорт...' : `Импортировать (${rows.length})`}
+            {importing ? 'Импорт...' : `Импортировать (${previewData.total})`}
           </button>
         )}
         {step === 4 && (
