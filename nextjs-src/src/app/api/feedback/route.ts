@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
 
     // Build Telegram message
     const lines = [
-      "📩 *Новый фидбек — ArchFlow*",
+      "📩 Новый фидбек — ArchFlow",
       "",
       `От: ${userName || "Аноним"} (${userEmail || "нет email"})`,
       `Роль: ${userRole ? (ROLE_LABELS[userRole] || userRole) : "—"}`,
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, delivery: "logged" });
     }
 
-    // Send to Telegram
+    // Send to Telegram (no parse_mode to avoid Markdown escaping issues)
     const tgRes = await fetch(
       `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
       {
@@ -56,7 +56,6 @@ export async function POST(req: NextRequest) {
         body: JSON.stringify({
           chat_id: TELEGRAM_CHAT_ID,
           text: message,
-          parse_mode: "Markdown",
         }),
       }
     );

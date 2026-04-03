@@ -341,7 +341,12 @@
       "Bash(curl -s -X POST 'https://oyklaglogmaniet.beget.app/pg/query' -H 'Content-Type: application/json' -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaXNzIjoic3VwYWJhc2UiLCJpYXQiOjE3NzM3OTIwMDAsImV4cCI6MTkzMTU1ODQwMH0.XJ4jz6bkCMcgrFlPil9TCjnjzkqtFMn3ti33cljRv-0\" -d '{\"\"query\"\": \"\"ALTER TABLE notification_preferences ADD COLUMN IF NOT EXISTS max_chat_id text, ADD COLUMN IF NOT EXISTS max_link_token text;\"\"}')",
       "Bash(curl -s -X POST 'https://oyklaglogmaniet.beget.app/pg/query' -H 'Content-Type: application/json' -H \"apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzczNzkyMDAwLCJleHAiOjE5MzE1NTg0MDB9.VZKB55QLc8SNXFAI8xceYRmIhyB8ltcAMdaAtjS5QBY\" -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaXNzIjoic3VwYWJhc2UiLCJpYXQiOjE3NzM3OTIwMDAsImV4cCI6MTkzMTU1ODQwMH0.XJ4jz6bkCMcgrFlPil9TCjnjzkqtFMn3ti33cljRv-0\" -d '{\"\"query\"\": \"\"ALTER TABLE notification_preferences ADD COLUMN IF NOT EXISTS max_chat_id text, ADD COLUMN IF NOT EXISTS max_link_token text;\"\"}')",
       "Bash(curl -s -X POST 'https://oyklaglogmaniet.beget.app/rest/v1/rpc/exec_sql' -H 'Content-Type: application/json' -H \"apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzczNzkyMDAwLCJleHAiOjE5MzE1NTg0MDB9.VZKB55QLc8SNXFAI8xceYRmIhyB8ltcAMdaAtjS5QBY\" -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaXNzIjoic3VwYWJhc2UiLCJpYXQiOjE3NzM3OTIwMDAsImV4cCI6MTkzMTU1ODQwMH0.XJ4jz6bkCMcgrFlPil9TCjnjzkqtFMn3ti33cljRv-0\" -d '{\"\"sql\"\": \"\"ALTER TABLE notification_preferences ADD COLUMN IF NOT EXISTS max_chat_id text, ADD COLUMN IF NOT EXISTS max_link_token text;\"\"}')",
-      "Bash(git add -A)"
+      "Bash(git add -A)",
+      "Bash(npx supabase functions deploy send-reminders --no-verify-jwt)",
+      "Bash(git add nextjs-src/src/app/components/ProjectPage.tsx nextjs-src/src/app/components/OnboardingFlow.tsx nextjs-src/src/app/components/supply/SupplyModule.tsx nextjs-src/src/app/components/supply/SupplyDocuments.tsx nextjs-src/src/app/[...path]/page.tsx)",
+      "Bash(git add nextjs-src/src/app/components/FeedbackBar.tsx nextjs-src/src/app/api/feedback/route.ts)",
+      "Bash(git add nextjs-src/src/app/components/supply/SupplyModule.tsx nextjs-src/src/app/lib/queries.ts)",
+      "Bash(git add nextjs-src/src/app/components/LoginPage.tsx)"
     ]
   }
 }

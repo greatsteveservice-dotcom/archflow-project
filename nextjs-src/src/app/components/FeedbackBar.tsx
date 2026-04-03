@@ -10,6 +10,7 @@ export default function FeedbackBar() {
   const [text, setText] = useState("");
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -43,6 +44,7 @@ export default function FeedbackBar() {
     setOpen(false);
     setText("");
     setSent(false);
+    setError(null);
     setFile(null);
     setPreview(null);
   }, []);
@@ -105,8 +107,9 @@ export default function FeedbackBar() {
       }
     } catch {}
 
+    let success = false;
     try {
-      await fetch("/api/feedback", {
+      const res = await fetch("/api/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -118,14 +121,19 @@ export default function FeedbackBar() {
           imageUrl,
         }),
       });
+      success = res.ok;
     } catch {
-      // silently fail — don't block user
+      success = false;
     }
     setSending(false);
-    setText("");
-    setFile(null);
-    setPreview(null);
-    setSent(true);
+    if (success) {
+      setText("");
+      setFile(null);
+      setPreview(null);
+      setSent(true);
+    } else {
+      setError("Не удалось отправить. Попробуйте ещё раз.");
+    }
   };
 
   return (
@@ -394,8 +402,19 @@ export default function FeedbackBar() {
                   </div>
                 )}
 
+                {error && (
+                  <div style={{
+                    fontFamily: "'IBM Plex Mono', monospace",
+                    fontSize: 10,
+                    color: "#c00",
+                    marginTop: 8,
+                  }}>
+                    {error}
+                  </div>
+                )}
+
                 <button
-                  onClick={handleSubmit}
+                  onClick={() => { setError(null); handleSubmit(); }}
                   disabled={!text.trim() || sending}
                   style={{
                     width: "100%",

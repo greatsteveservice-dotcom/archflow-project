@@ -240,8 +240,11 @@ export default function AppShell() {
     );
   }
 
-  // Onboarding flow for new users
-  const showOnboarding = profile && profile.onboarding_completed === false;
+  // Demo users skip onboarding and welcome screens
+  const isDemoUser = ['demo@archflow.ru', 'supply-demo@archflow.ru'].includes(profile?.email || '');
+
+  // Onboarding flow for new users (demo users skip)
+  const showOnboarding = !isDemoUser && profile && profile.onboarding_completed === false;
 
   if (showOnboarding && session?.user) {
     return (
@@ -254,8 +257,8 @@ export default function AppShell() {
     );
   }
 
-  // New user welcome — only for designer/assistant/supplier
-  const showWelcome = !welcomeDismissed && !projectsLoading && projects !== null && projects.length === 0 && page === "projects" && profile?.role !== 'client' && profile?.role !== 'contractor';
+  // New user welcome — only for designer/assistant/supplier, skip for demo
+  const showWelcome = !isDemoUser && !welcomeDismissed && !projectsLoading && projects !== null && projects.length === 0 && page === "projects" && profile?.role !== 'client' && profile?.role !== 'contractor';
 
   const openSearch = () => setSearchOpen(true);
   const goHome = () => navigate("projects");
@@ -365,10 +368,10 @@ export default function AppShell() {
       <CreateProjectModal
         open={showCreateProject}
         onClose={() => setShowCreateProject(false)}
-        onSuccess={() => {
+        onSuccess={(projectId: string) => {
           refetchProjects();
           setProjectsRefreshKey(k => k + 1);
-          navigate("projects");
+          navigate("project", projectId);
           toast("Проект создан");
         }}
       />

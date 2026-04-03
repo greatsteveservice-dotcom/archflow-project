@@ -289,7 +289,7 @@ export default function SupplyModule({ projectId, toast }: SupplyModuleProps) {
               <SupplyTimeline items={calcItems} stages={stages!} />
             )}
             {activeTab === "stages" && hasStages && (
-              <SupplyStages stages={stages!} items={calcItems} />
+              <SupplyStages stages={stages!} items={calcItems} refetchStages={refetchStages} toast={doToast} />
             )}
             {activeTab === "docs" && (
               <SupplyDocuments projectId={projectId} toast={doToast} />

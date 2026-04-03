@@ -6,7 +6,7 @@ import { createProject } from "../lib/queries";
 interface CreateProjectModalProps {
   open: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (projectId: string) => void;
 }
 
 export default function CreateProjectModal({ open, onClose, onSuccess }: CreateProjectModalProps) {
@@ -25,13 +25,13 @@ export default function CreateProjectModal({ open, onClose, onSuccess }: CreateP
     setSaving(true);
     setError("");
     try {
-      await createProject({
+      const project = await createProject({
         title: title.trim(),
         address: address.trim() || undefined,
         start_date: startDate || undefined,
       });
-      onSuccess();
       handleClose();
+      onSuccess(project.id);
     } catch (err: any) {
       setError(err.message || "Ошибка создания проекта");
     } finally {

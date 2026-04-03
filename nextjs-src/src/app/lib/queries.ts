@@ -631,6 +631,42 @@ export async function createStage(input: {
   return data as Stage;
 }
 
+/** Update a stage */
+export async function updateStage(stageId: string, updates: {
+  name?: string;
+  start_date?: string | null;
+  end_date?: string | null;
+  sort_order?: number;
+  status?: string;
+}): Promise<Stage> {
+  const clean: Record<string, unknown> = {};
+  if (updates.name !== undefined) clean.name = sanitize(updates.name);
+  if (updates.start_date !== undefined) clean.start_date = updates.start_date;
+  if (updates.end_date !== undefined) clean.end_date = updates.end_date;
+  if (updates.sort_order !== undefined) clean.sort_order = updates.sort_order;
+  if (updates.status !== undefined) clean.status = updates.status;
+
+  const { data, error } = await supabase
+    .from('stages')
+    .update(clean)
+    .eq('id', stageId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as Stage;
+}
+
+/** Delete a stage */
+export async function deleteStage(stageId: string): Promise<void> {
+  const { error } = await supabase
+    .from('stages')
+    .delete()
+    .eq('id', stageId);
+
+  if (error) throw error;
+}
+
 // ======================== SUPPLY ========================
 
 /** Calculate derived supply fields (deadline, risk) */
