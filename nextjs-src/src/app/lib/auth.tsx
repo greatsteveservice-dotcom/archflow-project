@@ -58,9 +58,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (!error && data) {
       setProfile(data as Profile);
-    } else if (error && (error.code === 'PGRST301' || error.message?.includes('Invalid authentication') || error.message?.includes('JWT'))) {
-      // Token is invalid/expired — clear stale session and force re-login
-      console.warn('Auth token invalid, signing out:', error.message);
+      return;
+    }
+
+    // JWT/auth error — try refreshing the session before giving up
+    if (error && (error.code === 'PGRST301' || error.message?.includes('Invalid authentication') || error.message?.includes('JWT'))) {
+      console.warn('Auth token issue, attempting refresh:', error.message);
+      const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
+
+      if (!refreshError && refreshed.session) {
+        // Retry profile fetch with the new token
+        const { data: retryData, error: retryError } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", userId)
+          .single();
+
+        if (!retryError && retryData) {
+          setSession(refreshed.session);
+          setUser(refreshed.session.user);
+          setProfile(retryData as Profile);
+          return;
+        }
+      }
+
+      // Refresh failed or retry failed — force re-login
+      console.warn('Token refresh failed, signing out');
       await supabase.auth.signOut();
       setSession(null);
       setUser(null);
@@ -73,10 +96,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Get current session — validate it's still usable
     supabase.auth.getSession().then(async ({ data: { session }, error }) => {
       if (error || !session) {
-        // No session or error getting it — clear everything
-        setSession(null);
-        setUser(null);
-        setProfile(null);
+        // No session or error — try refreshing before giving up
+        const { data: refreshed } = await supabase.auth.refreshSession();
+        if (refreshed?.session) {
+          setSession(refreshed.session);
+          setUser(refreshed.session.user);
+          fetchProfile(refreshed.session.user.id);
+        } else {
+          setSession(null);
+          setUser(null);
+          setProfile(null);
+        }
         setLoading(false);
         return;
       }
@@ -88,7 +118,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Token expired — try refreshing
           const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
           if (refreshError || !refreshed.session) {
-            // Refresh failed — force re-login
             console.warn('Session expired, refresh failed — signing out');
             await supabase.auth.signOut();
             setSession(null);
@@ -97,7 +126,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setLoading(false);
             return;
           }
-          // Use refreshed session
           setSession(refreshed.session);
           setUser(refreshed.session.user);
           fetchProfile(refreshed.session.user.id);
@@ -105,12 +133,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
       } catch {
-        // Malformed token — sign out
-        console.warn('Malformed JWT — signing out');
-        await supabase.auth.signOut();
-        setSession(null);
-        setUser(null);
-        setProfile(null);
+        // Malformed token — try refresh
+        const { data: refreshed } = await supabase.auth.refreshSession();
+        if (refreshed?.session) {
+          setSession(refreshed.session);
+          setUser(refreshed.session.user);
+          fetchProfile(refreshed.session.user.id);
+        } else {
+          console.warn('Malformed JWT, refresh failed — signing out');
+          await supabase.auth.signOut();
+          setSession(null);
+          setUser(null);
+          setProfile(null);
+        }
         setLoading(false);
         return;
       }
