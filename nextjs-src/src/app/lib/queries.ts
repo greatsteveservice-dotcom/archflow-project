@@ -606,6 +606,31 @@ export async function fetchProjectStages(projectId: string): Promise<Stage[]> {
   return (data || []) as Stage[];
 }
 
+/** Create a new construction stage */
+export async function createStage(input: {
+  project_id: string;
+  name: string;
+  start_date?: string | null;
+  end_date?: string | null;
+  sort_order?: number;
+}): Promise<Stage> {
+  const { data, error } = await supabase
+    .from('stages')
+    .insert({
+      project_id: input.project_id,
+      name: sanitize(input.name),
+      start_date: input.start_date || null,
+      end_date: input.end_date || null,
+      sort_order: input.sort_order ?? 0,
+      status: 'pending',
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as Stage;
+}
+
 // ======================== SUPPLY ========================
 
 /** Calculate derived supply fields (deadline, risk) */
