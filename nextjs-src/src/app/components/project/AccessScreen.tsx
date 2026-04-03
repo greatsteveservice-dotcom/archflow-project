@@ -151,23 +151,23 @@ export default function AccessScreen({ projectId, projectName, toast, onBack }: 
           }}
         >
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: '#111', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            <div style={{ fontSize: 'var(--af-fs-9)', fontFamily: 'var(--font-mono)', color: '#111', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
               Ссылка-приглашение
             </div>
-            <div style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: '#111', wordBreak: 'break-all' }}>
+            <div style={{ fontSize: 'var(--af-fs-10)', fontFamily: 'var(--font-mono)', color: '#111', wordBreak: 'break-all' }}>
               {lastInviteLink}
             </div>
           </div>
           <div style={{ display: 'flex', gap: 4 }}>
             <button
               onClick={() => { navigator.clipboard.writeText(lastInviteLink); toast('Ссылка скопирована'); }}
-              style={{ fontSize: 9, fontFamily: 'var(--font-mono)', padding: '4px 10px', background: '#111', color: '#FFF', border: 'none', cursor: 'pointer' }}
+              style={{ fontSize: 'var(--af-fs-9)', fontFamily: 'var(--font-mono)', padding: '4px 10px', background: '#111', color: '#FFF', border: 'none', cursor: 'pointer' }}
             >
               Копировать
             </button>
             <button
               onClick={() => setLastInviteLink(null)}
-              style={{ fontSize: 13, color: '#EBEBEB', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' }}
+              style={{ fontSize: 'var(--af-fs-13)', color: '#EBEBEB', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' }}
             >
               ×
             </button>
@@ -222,7 +222,7 @@ export default function AccessScreen({ projectId, projectName, toast, onBack }: 
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              fontSize: 10,
+                              fontSize: 'var(--af-fs-10)',
                               fontWeight: 600,
                               fontFamily: 'var(--font-mono)',
                               color: '#111',
@@ -233,13 +233,13 @@ export default function AccessScreen({ projectId, projectName, toast, onBack }: 
                           {/* Info */}
                           <div>
                             <div
-                              style={{ fontSize: 11, color: '#111', fontFamily: 'var(--font-mono)' }}
+                              style={{ fontSize: 'var(--af-fs-11)', color: '#111', fontFamily: 'var(--font-mono)' }}
                             >
                               {getDisplayName(m)}
                             </div>
                             {getEmail(m) && getEmail(m) !== getDisplayName(m) && (
                               <div
-                                style={{ fontSize: 10, color: '#111', fontFamily: 'var(--font-mono)' }}
+                                style={{ fontSize: 'var(--af-fs-10)', color: '#111', fontFamily: 'var(--font-mono)' }}
                               >
                                 {getEmail(m)}
                               </div>
@@ -250,7 +250,7 @@ export default function AccessScreen({ projectId, projectName, toast, onBack }: 
                           {/* Status badge */}
                           <span
                             style={{
-                              fontSize: 9,
+                              fontSize: 'var(--af-fs-9)',
                               fontFamily: 'var(--font-mono)',
                               padding: '2px 6px',
                               background: m.status === 'active' ? '#111' : '#F6F6F4',
@@ -283,7 +283,7 @@ export default function AccessScreen({ projectId, projectName, toast, onBack }: 
                 ) : (
                   <div
                     style={{
-                      fontSize: 11,
+                      fontSize: 'var(--af-fs-11)',
                       color: '#111',
                       fontFamily: 'var(--font-mono)',
                       padding: '8px 12px',
@@ -323,7 +323,7 @@ export default function AccessScreen({ projectId, projectName, toast, onBack }: 
                     {formError && (
                       <div
                         style={{
-                          fontSize: 10,
+                          fontSize: 'var(--af-fs-10)',
                           color: '#111',
                           fontFamily: 'var(--font-mono)',
                           marginBottom: 6,
@@ -341,7 +341,7 @@ export default function AccessScreen({ projectId, projectName, toast, onBack }: 
                         autoFocus
                         style={{
                           flex: 1,
-                          fontSize: 11,
+                          fontSize: 'var(--af-fs-11)',
                           fontFamily: 'var(--font-mono)',
                           padding: '6px 8px',
                           border: '1px solid #EBEBEB',
@@ -356,7 +356,7 @@ export default function AccessScreen({ projectId, projectName, toast, onBack }: 
                         onClick={() => handleInvite(role)}
                         disabled={formSaving}
                         style={{
-                          fontSize: 10,
+                          fontSize: 'var(--af-fs-10)',
                           fontFamily: 'var(--font-mono)',
                           padding: '6px 12px',
                           background: '#111',
@@ -372,7 +372,7 @@ export default function AccessScreen({ projectId, projectName, toast, onBack }: 
                       <button
                         onClick={() => { setOpenForm(null); setFormEmail(''); setFormError(''); }}
                         style={{
-                          fontSize: 13,
+                          fontSize: 'var(--af-fs-13)',
                           color: '#EBEBEB',
                           background: 'none',
                           border: 'none',
@@ -392,7 +392,7 @@ export default function AccessScreen({ projectId, projectName, toast, onBack }: 
                       alignItems: 'center',
                       gap: '4px',
                       padding: '8px 12px',
-                      fontSize: 11,
+                      fontSize: 'var(--af-fs-11)',
                       fontFamily: 'var(--font-mono)',
                       color: '#111',
                       background: 'none',
@@ -438,7 +438,7 @@ function ToggleRow({
         borderBottom: '0.5px solid #EBEBEB',
       }}
     >
-      <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: '#111' }}>
+      <span style={{ fontSize: 'var(--af-fs-11)', fontFamily: 'var(--font-mono)', color: '#111' }}>
         {label}
       </span>
       <div style={{ display: 'flex', gap: '2px' }}>
@@ -467,7 +467,7 @@ function ChipToggle({
       onClick={onClick}
       disabled={disabled}
       style={{
-        fontSize: 9,
+        fontSize: 'var(--af-fs-9)',
         fontFamily: 'var(--font-mono)',
         padding: '2px 10px',
         background: active ? '#111' : 'transparent',

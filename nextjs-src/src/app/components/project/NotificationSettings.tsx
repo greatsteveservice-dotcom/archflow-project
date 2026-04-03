@@ -143,7 +143,7 @@ export default function NotificationSettings({ projectId, toast }: NotificationS
 
   if (loading) {
     return (
-      <div style={{ fontFamily: mono, fontSize: 9, color: '#111', padding: 20 }}>
+      <div style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: '#111', padding: 20 }}>
         Загрузка...
       </div>
     );
@@ -164,7 +164,7 @@ export default function NotificationSettings({ projectId, toast }: NotificationS
         padding: 20, marginBottom: 2,
       }}>
         <h4 style={{
-          fontFamily: mono, fontSize: 9, textTransform: 'uppercase',
+          fontFamily: mono, fontSize: 'var(--af-fs-9)', textTransform: 'uppercase',
           letterSpacing: '0.14em', color: 'rgb(var(--ink))', marginBottom: 16,
         }}>
           Каналы доставки
@@ -187,16 +187,16 @@ export default function NotificationSettings({ projectId, toast }: NotificationS
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <Toggle enabled={telegramEnabled} onChange={setTelegramEnabled} disabled={!telegramChatId} />
               <div>
-                <div style={{ fontFamily: mono, fontSize: 11, color: 'rgb(var(--ink))' }}>
+                <div style={{ fontFamily: mono, fontSize: 'var(--af-fs-11)', color: 'rgb(var(--ink))' }}>
                   Telegram
                 </div>
                 {telegramChatId ? (
-                  <div style={{ fontFamily: mono, fontSize: 9, color: 'rgb(var(--ink))', opacity: 0.6, marginTop: 2 }}>
+                  <div style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: 'rgb(var(--ink))', opacity: 0.6, marginTop: 2 }}>
                     Привязан · <button
                       onClick={handleUnlinkTelegram}
                       style={{
                         background: 'none', border: 'none', cursor: 'pointer',
-                        fontFamily: mono, fontSize: 9, color: 'rgb(var(--ink))',
+                        fontFamily: mono, fontSize: 'var(--af-fs-9)', color: 'rgb(var(--ink))',
                         textDecoration: 'underline', padding: 0,
                       }}
                     >
@@ -210,7 +210,7 @@ export default function NotificationSettings({ projectId, toast }: NotificationS
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{
-                        fontFamily: mono, fontSize: 9, color: 'rgb(var(--ink))',
+                        fontFamily: mono, fontSize: 'var(--af-fs-9)', color: 'rgb(var(--ink))',
                         textDecoration: 'underline',
                       }}
                     >
@@ -220,7 +220,7 @@ export default function NotificationSettings({ projectId, toast }: NotificationS
                       onClick={() => { navigator.clipboard.writeText(tgLinkUrl); toast('Ссылка скопирована'); }}
                       style={{
                         background: 'none', border: 'none', cursor: 'pointer',
-                        fontFamily: mono, fontSize: 8, color: 'rgb(var(--ink))',
+                        fontFamily: mono, fontSize: 'var(--af-fs-8)', color: 'rgb(var(--ink))',
                         opacity: 0.5, marginLeft: 8, padding: 0,
                       }}
                     >
@@ -233,7 +233,7 @@ export default function NotificationSettings({ projectId, toast }: NotificationS
                     disabled={tgLinking}
                     style={{
                       marginTop: 4, background: 'none', border: '0.5px solid rgb(var(--line))',
-                      cursor: 'pointer', fontFamily: mono, fontSize: 9,
+                      cursor: 'pointer', fontFamily: mono, fontSize: 'var(--af-fs-9)',
                       color: 'rgb(var(--ink))', padding: '2px 8px',
                     }}
                   >
@@ -252,16 +252,16 @@ export default function NotificationSettings({ projectId, toast }: NotificationS
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <Toggle enabled={maxEnabled} onChange={setMaxEnabled} disabled={!maxChatId} />
               <div>
-                <div style={{ fontFamily: mono, fontSize: 11, color: 'rgb(var(--ink))' }}>
+                <div style={{ fontFamily: mono, fontSize: 'var(--af-fs-11)', color: 'rgb(var(--ink))' }}>
                   MAX
                 </div>
                 {maxChatId ? (
-                  <div style={{ fontFamily: mono, fontSize: 9, color: 'rgb(var(--ink))', opacity: 0.6, marginTop: 2 }}>
+                  <div style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: 'rgb(var(--ink))', opacity: 0.6, marginTop: 2 }}>
                     Привязан · <button
                       onClick={handleUnlinkMax}
                       style={{
                         background: 'none', border: 'none', cursor: 'pointer',
-                        fontFamily: mono, fontSize: 9, color: 'rgb(var(--ink))',
+                        fontFamily: mono, fontSize: 'var(--af-fs-9)', color: 'rgb(var(--ink))',
                         textDecoration: 'underline', padding: 0,
                       }}
                     >
@@ -275,7 +275,7 @@ export default function NotificationSettings({ projectId, toast }: NotificationS
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{
-                        fontFamily: mono, fontSize: 9, color: 'rgb(var(--ink))',
+                        fontFamily: mono, fontSize: 'var(--af-fs-9)', color: 'rgb(var(--ink))',
                         textDecoration: 'underline',
                       }}
                     >
@@ -285,7 +285,7 @@ export default function NotificationSettings({ projectId, toast }: NotificationS
                       onClick={() => { navigator.clipboard.writeText(maxLinkUrl); toast('Ссылка скопирована'); }}
                       style={{
                         background: 'none', border: 'none', cursor: 'pointer',
-                        fontFamily: mono, fontSize: 8, color: 'rgb(var(--ink))',
+                        fontFamily: mono, fontSize: 'var(--af-fs-8)', color: 'rgb(var(--ink))',
                         opacity: 0.5, marginLeft: 8, padding: 0,
                       }}
                     >
@@ -298,7 +298,7 @@ export default function NotificationSettings({ projectId, toast }: NotificationS
                     disabled={maxLinking}
                     style={{
                       marginTop: 4, background: 'none', border: '0.5px solid rgb(var(--line))',
-                      cursor: 'pointer', fontFamily: mono, fontSize: 9,
+                      cursor: 'pointer', fontFamily: mono, fontSize: 'var(--af-fs-9)',
                       color: 'rgb(var(--ink))', padding: '2px 8px',
                     }}
                   >
@@ -328,7 +328,7 @@ export default function NotificationSettings({ projectId, toast }: NotificationS
         padding: 20, marginBottom: 2,
       }}>
         <h4 style={{
-          fontFamily: mono, fontSize: 9, textTransform: 'uppercase',
+          fontFamily: mono, fontSize: 'var(--af-fs-9)', textTransform: 'uppercase',
           letterSpacing: '0.14em', color: 'rgb(var(--ink))', marginBottom: 16,
         }}>
           Расписание
@@ -351,11 +351,11 @@ export default function NotificationSettings({ projectId, toast }: NotificationS
                 style={{ accentColor: '#111', width: 14, height: 14 }}
               />
               <div>
-                <div style={{ fontFamily: mono, fontSize: 11, color: 'rgb(var(--ink))' }}>
+                <div style={{ fontFamily: mono, fontSize: 'var(--af-fs-11)', color: 'rgb(var(--ink))' }}>
                   {opt.label}
                 </div>
                 {opt.desc && (
-                  <div style={{ fontFamily: mono, fontSize: 9, color: 'rgb(var(--ink))', opacity: 0.5 }}>
+                  <div style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: 'rgb(var(--ink))', opacity: 0.5 }}>
                     {opt.desc}
                   </div>
                 )}
@@ -373,18 +373,18 @@ export default function NotificationSettings({ projectId, toast }: NotificationS
                 value={scheduleFrom}
                 onChange={e => setScheduleFrom(e.target.value)}
                 style={{
-                  fontFamily: mono, fontSize: 11, padding: '4px 8px',
+                  fontFamily: mono, fontSize: 'var(--af-fs-11)', padding: '4px 8px',
                   border: '0.5px solid rgb(var(--line))', background: 'transparent',
                   color: 'rgb(var(--ink))', borderRadius: 0,
                 }}
               />
-              <span style={{ fontFamily: mono, fontSize: 11, color: 'rgb(var(--ink))' }}>—</span>
+              <span style={{ fontFamily: mono, fontSize: 'var(--af-fs-11)', color: 'rgb(var(--ink))' }}>—</span>
               <input
                 type="time"
                 value={scheduleTo}
                 onChange={e => setScheduleTo(e.target.value)}
                 style={{
-                  fontFamily: mono, fontSize: 11, padding: '4px 8px',
+                  fontFamily: mono, fontSize: 'var(--af-fs-11)', padding: '4px 8px',
                   border: '0.5px solid rgb(var(--line))', background: 'transparent',
                   color: 'rgb(var(--ink))', borderRadius: 0,
                 }}
@@ -400,20 +400,20 @@ export default function NotificationSettings({ projectId, toast }: NotificationS
         padding: 20, marginBottom: 24,
       }}>
         <h4 style={{
-          fontFamily: mono, fontSize: 9, textTransform: 'uppercase',
+          fontFamily: mono, fontSize: 'var(--af-fs-9)', textTransform: 'uppercase',
           letterSpacing: '0.14em', color: 'rgb(var(--ink))', marginBottom: 12,
         }}>
           Срочные уведомления
         </h4>
         <p style={{
-          fontFamily: mono, fontSize: 10, color: 'rgb(var(--ink))', opacity: 0.7,
+          fontFamily: mono, fontSize: 'var(--af-fs-10)', color: 'rgb(var(--ink))', opacity: 0.7,
           lineHeight: 1.5, marginBottom: 8,
         }}>
           Оплаты, дедлайны и согласования отправляются в любое время
         </p>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <Toggle enabled={true} onChange={() => {}} disabled={true} />
-          <span style={{ fontFamily: mono, fontSize: 9, color: 'rgb(var(--ink))', opacity: 0.5 }}>
+          <span style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: 'rgb(var(--ink))', opacity: 0.5 }}>
             Всегда включено
           </span>
         </div>
@@ -469,11 +469,11 @@ function ChannelRow({ label, sublabel, enabled, onChange }: {
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <Toggle enabled={enabled} onChange={onChange} />
         <div>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: 'rgb(var(--ink))' }}>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-11)', color: 'rgb(var(--ink))' }}>
             {label}
           </div>
           <div style={{
-            fontFamily: "'IBM Plex Mono', monospace", fontSize: 9,
+            fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-9)',
             color: 'rgb(var(--ink))', opacity: 0.5, marginTop: 2,
           }}>
             {sublabel}

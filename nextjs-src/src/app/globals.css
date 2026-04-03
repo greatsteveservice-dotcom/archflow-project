@@ -17,6 +17,15 @@
   --af-font-display: var(--font-playfair), 'Playfair Display', serif;
   --af-font-mono: var(--font-ibm-mono), 'IBM Plex Mono', monospace;
 
+  /* Responsive font sizes — override on mobile */
+  --af-fs-7: 7px;
+  --af-fs-8: 8px;
+  --af-fs-9: 9px;
+  --af-fs-10: 10px;
+  --af-fs-11: 11px;
+  --af-fs-12: 12px;
+  --af-fs-13: 13px;
+
   /* Legacy Tailwind vars → monochrome */
   --font-body: var(--af-font-mono);
   --font-mono: var(--af-font-mono);
@@ -773,6 +782,21 @@ body {
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 
 /* ═══════════════════════════════════════════════
+   MOBILE RESPONSIVE FONT SIZES
+   ═══════════════════════════════════════════════ */
+@media (max-width: 767px) {
+  :root {
+    --af-fs-7: 13px;
+    --af-fs-8: 13px;
+    --af-fs-9: 13px;
+    --af-fs-10: 14px;
+    --af-fs-11: 14px;
+    --af-fs-12: 15px;
+    --af-fs-13: 16px;
+  }
+}
+
+/* ═══════════════════════════════════════════════
    MOBILE
    ═══════════════════════════════════════════════ */
 @media (max-width: 767px) {
@@ -781,14 +805,64 @@ body {
   }
   .tn::-webkit-scrollbar, .stab::-webkit-scrollbar,
   .filter-tabs::-webkit-scrollbar, .supply-tabs::-webkit-scrollbar { display: none; }
-  .ti { padding: 10px 12px; min-height: 44px; font-size: 9px; }
-  .stb { padding: 9px 12px; min-height: 44px; }
-  .btn { min-height: 44px; }
+  .ti { padding: 10px 12px; min-height: 44px; font-size: 13px; }
+  .stb { padding: 9px 12px; min-height: 44px; font-size: 13px; }
+  .btn { min-height: 44px; font-size: 13px; }
   .modal-overlay, .af-modal-overlay { align-items: flex-end !important; }
   .modal, .af-modal { width: 100% !important; max-width: 100% !important;
     padding-bottom: calc(20px + env(safe-area-inset-bottom, 20px)) !important; }
   .supply-drawer, .drawer-box { width: 100vw !important; max-width: 100vw !important; }
   .group .opacity-0 { opacity: 1 !important; }
+
+  /* ─── Mobile readability: minimum font sizes ─── */
+
+  /* iOS zoom prevention: inputs must be >= 16px */
+  input, textarea, select { font-size: 16px !important; }
+  .af-input { font-size: 16px; }
+  .modal-field input, .modal-field textarea, .modal-field select { font-size: 16px; }
+
+  /* Labels & secondary text → 14px min */
+  .af-label { font-size: 13px; }
+  .af-input-label { font-size: 13px; }
+  .af-input-error { font-size: 13px; }
+  .af-page-subtitle { font-size: 13px; }
+  .af-metric-label { font-size: 13px; }
+  .af-status { font-size: 13px; }
+  .af-empty-label { font-size: 13px; }
+  .af-upload-label { font-size: 13px; }
+  .af-settings-heading { font-size: 14px; }
+  .af-topbar-context { font-size: 13px; }
+  .modal-field label { font-size: 13px; }
+  .sidebar-item { font-size: 14px; }
+
+  /* Navigation tabs → 13px min */
+  .af-crumb { font-size: 13px; }
+  .af-crumb-sep { font-size: 13px; }
+  .af-tab-index { font-size: 13px; }
+  .filter-tab { font-size: 13px; }
+  .supply-tab { font-size: 13px; }
+
+  /* Cards, blocks, tables → 15px min */
+  .af-table { font-size: 15px; }
+  .af-table th { font-size: 13px; }
+  .af-modal-body { font-size: 15px; }
+  .af-project-meta { font-size: 13px; }
+  .af-project-status { font-size: 13px; }
+  .af-project-index { font-size: 13px; }
+  .af-project-add-label { font-size: 14px; }
+  .af-block-index { font-size: 13px; }
+  .af-block-sub { font-size: 13px; }
+  .af-file-label { font-size: 13px; }
+  .badge { font-size: 13px; }
+  .af-btn { font-size: 12px; }
+
+  /* Buttons */
+  .af-empty-btn { font-size: 13px; }
+  .af-toggle { font-size: 13px; }
+
+  /* Timeline */
+  .timeline-bar { font-size: 14px; }
+  .timeline-today::before { font-size: 14px; }
 }
 
 .safe-top { padding-top: env(safe-area-inset-top); }

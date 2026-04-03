@@ -58,7 +58,7 @@ export default function DesignTab({ projectId, invoices, toast, refetchInvoices,
         onClick={() => setActiveSubTab(null)}
         style={{
           fontFamily: "'IBM Plex Mono', monospace",
-          fontSize: 8,
+          fontSize: 'var(--af-fs-8)',
           letterSpacing: '0.14em',
           textTransform: 'uppercase',
           color: '#111',

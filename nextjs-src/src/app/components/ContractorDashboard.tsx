@@ -126,7 +126,7 @@ export default function ContractorDashboard({ onNavigate, toast }: ContractorDas
           onClick={() => setSelectedTaskId(null)}
           style={{
             fontFamily: 'var(--font-mono)',
-            fontSize: 9,
+            fontSize: 'var(--af-fs-9)',
             textTransform: 'uppercase',
             letterSpacing: '0.12em',
             color: 'rgb(var(--ink-muted))',
@@ -155,7 +155,7 @@ export default function ContractorDashboard({ onNavigate, toast }: ContractorDas
         {/* Project name */}
         <div style={{
           fontFamily: 'var(--font-mono)',
-          fontSize: 9,
+          fontSize: 'var(--af-fs-9)',
           textTransform: 'uppercase',
           letterSpacing: '0.12em',
           color: 'rgb(var(--ink-muted))',
@@ -168,7 +168,7 @@ export default function ContractorDashboard({ onNavigate, toast }: ContractorDas
         {selectedTask.description && (
           <p style={{
             fontFamily: 'var(--font-mono)',
-            fontSize: 12,
+            fontSize: 'var(--af-fs-12)',
             color: 'rgb(var(--ink-secondary))',
             lineHeight: 1.6,
             marginBottom: 20,
@@ -199,7 +199,7 @@ export default function ContractorDashboard({ onNavigate, toast }: ContractorDas
           <div style={{ marginBottom: 24 }}>
             <div style={{
               fontFamily: 'var(--font-mono)',
-              fontSize: 8,
+              fontSize: 'var(--af-fs-8)',
               textTransform: 'uppercase',
               letterSpacing: '0.08em',
               color: 'rgb(var(--ink-faint))',
@@ -225,7 +225,7 @@ export default function ContractorDashboard({ onNavigate, toast }: ContractorDas
             style={{
               width: '100%',
               fontFamily: 'var(--font-mono)',
-              fontSize: 11,
+              fontSize: 'var(--af-fs-11)',
               textTransform: 'uppercase',
               letterSpacing: '0.1em',
               padding: '14px',
@@ -245,7 +245,7 @@ export default function ContractorDashboard({ onNavigate, toast }: ContractorDas
         {selectedTask.status === 'done' && selectedTask.completed_at && (
           <div style={{
             fontFamily: 'var(--font-mono)',
-            fontSize: 11,
+            fontSize: 'var(--af-fs-11)',
             color: 'rgb(var(--ink-muted))',
             padding: '14px',
             background: 'rgb(var(--srf-secondary))',
@@ -262,7 +262,7 @@ export default function ContractorDashboard({ onNavigate, toast }: ContractorDas
   if (loading) {
     return (
       <div className="animate-fade-in">
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.2em', color: 'rgb(var(--ink-muted))' }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--af-fs-9)', textTransform: 'uppercase', letterSpacing: '0.2em', color: 'rgb(var(--ink-muted))' }}>
           Загрузка...
         </div>
       </div>
@@ -308,7 +308,7 @@ export default function ContractorDashboard({ onNavigate, toast }: ContractorDas
       {/* Stats bar */}
       <div style={{
         fontFamily: 'var(--font-mono)',
-        fontSize: 9,
+        fontSize: 'var(--af-fs-9)',
         textTransform: 'uppercase',
         letterSpacing: '0.1em',
         color: 'rgb(var(--ink-muted))',
@@ -336,7 +336,7 @@ export default function ContractorDashboard({ onNavigate, toast }: ContractorDas
                 alignItems: 'center',
                 gap: 8,
                 fontFamily: 'var(--font-mono)',
-                fontSize: 8,
+                fontSize: 'var(--af-fs-8)',
                 textTransform: 'uppercase',
                 letterSpacing: '0.15em',
                 color: 'rgb(var(--ink-muted))',
@@ -350,13 +350,13 @@ export default function ContractorDashboard({ onNavigate, toast }: ContractorDas
               <span>{label}</span>
               <span style={{
                 fontFamily: 'var(--font-mono)',
-                fontSize: 8,
+                fontSize: 'var(--af-fs-8)',
                 color: 'rgb(var(--ink-faint))',
               }}>
                 ({sectionTasks.length})
               </span>
               {isDone && (
-                <span style={{ fontSize: 8, color: 'rgb(var(--ink-faint))' }}>
+                <span style={{ fontSize: 'var(--af-fs-8)', color: 'rgb(var(--ink-faint))' }}>
                   {isCollapsed ? '\u25B6' : '\u25BC'}
                 </span>
               )}
@@ -439,7 +439,7 @@ function TaskCard({
           {projectName && (
             <span style={{
               fontFamily: 'var(--font-mono)',
-              fontSize: 8,
+              fontSize: 'var(--af-fs-8)',
               textTransform: 'uppercase',
               letterSpacing: '0.06em',
               color: 'rgb(var(--ink-muted))',
@@ -450,7 +450,7 @@ function TaskCard({
           {task.deadline && (
             <span style={{
               fontFamily: 'var(--font-mono)',
-              fontSize: 8,
+              fontSize: 'var(--af-fs-8)',
               color: 'rgb(var(--ink-muted))',
             }}>
               до {formatDate(task.deadline)}
@@ -470,7 +470,7 @@ function TaskCard({
             disabled={completing}
             style={{
               fontFamily: 'var(--font-mono)',
-              fontSize: 9,
+              fontSize: 'var(--af-fs-9)',
               padding: '4px 10px',
               background: 'rgb(var(--ink))',
               color: 'rgb(var(--srf))',
@@ -486,7 +486,7 @@ function TaskCard({
         )}
         <span style={{
           fontFamily: 'var(--font-mono)',
-          fontSize: 9,
+          fontSize: 'var(--af-fs-9)',
           padding: '2px 8px',
           border: `1px solid ${sc.border}`,
           color: sc.color,
@@ -506,7 +506,7 @@ function MetaRow({ label, value }: { label: string; value: string }) {
     <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
       <span style={{
         fontFamily: 'var(--font-mono)',
-        fontSize: 8,
+        fontSize: 'var(--af-fs-8)',
         textTransform: 'uppercase',
         letterSpacing: '0.06em',
         color: 'rgb(var(--ink-muted))',
@@ -516,7 +516,7 @@ function MetaRow({ label, value }: { label: string; value: string }) {
       </span>
       <span style={{
         fontFamily: 'var(--font-mono)',
-        fontSize: 11,
+        fontSize: 'var(--af-fs-11)',
         color: 'rgb(var(--ink))',
       }}>
         {value}
@@ -536,7 +536,7 @@ const logoutBtnStyle: React.CSSProperties = {
   background: 'none',
   border: 'none',
   fontFamily: "'IBM Plex Mono', monospace",
-  fontSize: 7,
+  fontSize: 'var(--af-fs-7)',
   textTransform: 'uppercase',
   letterSpacing: '0.14em',
   color: '#111',

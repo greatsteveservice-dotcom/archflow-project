@@ -191,15 +191,15 @@ export default function LoginPage({ inviteHint = false }: { inviteHint?: boolean
           <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 900, color: '#111', marginBottom: 8 }}>
             Проверьте почту
           </h2>
-          <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: '#111', marginBottom: 2 }}>
+          <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-9)', color: '#111', marginBottom: 2 }}>
             Мы отправили письмо на
           </p>
-          <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: '#111', marginBottom: 16 }}>
+          <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-11)', color: '#111', marginBottom: 16 }}>
             {email}
           </p>
           <div style={{
             background: '#F6F6F4', borderLeft: '2px solid #111', padding: '12px 14px',
-            fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, color: '#111', lineHeight: 1.7,
+            fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-8)', color: '#111', lineHeight: 1.7,
           }}>
             Если письмо не пришло — проверьте папку Спам или Промоакции.
           </div>
@@ -208,7 +208,7 @@ export default function LoginPage({ inviteHint = false }: { inviteHint?: boolean
               onClick={handleResend}
               style={{
                 border: '0.5px solid #EBEBEB', color: '#111', background: 'none',
-                fontFamily: "'IBM Plex Mono', monospace", fontSize: 7,
+                fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-7)',
                 textTransform: 'uppercase', letterSpacing: '0.14em',
                 padding: '8px 16px', cursor: 'pointer',
               }}
@@ -217,13 +217,13 @@ export default function LoginPage({ inviteHint = false }: { inviteHint?: boolean
             </button>
           </div>
           <div style={{ marginTop: 'auto', paddingTop: 24 }}>
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 7, color: '#111' }}>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-7)', color: '#111' }}>
               Уже подтвердили?{' '}
               <button
                 onClick={() => switchMode('login')}
                 style={{
                   color: '#111', background: 'none', border: 'none',
-                  fontFamily: "'IBM Plex Mono', monospace", fontSize: 7,
+                  fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-7)',
                   cursor: 'pointer', textDecoration: 'underline',
                 }}
               >
@@ -242,7 +242,7 @@ export default function LoginPage({ inviteHint = false }: { inviteHint?: boolean
         {/* Logo */}
         <div className="mb-12">
           <img src="/logo.png" width="80" height="80" alt="ArchFlow" style={{ marginBottom: 12 }} />
-          <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: '#111', letterSpacing: '0.1em', marginTop: 8 }}>
+          <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-9)', color: '#111', letterSpacing: '0.1em', marginTop: 8 }}>
             ОТ ЗАМЫСЛА ДО СДАЧИ ОБЪЕКТА
           </p>
         </div>
@@ -259,7 +259,7 @@ export default function LoginPage({ inviteHint = false }: { inviteHint?: boolean
 
         {/* Invite hint */}
         {inviteHint && (
-          <div className="mb-6 p-3" style={{ background: '#F6F6F4', fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: '#111' }}>
+          <div className="mb-6 p-3" style={{ background: '#F6F6F4', fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-11)', color: '#111' }}>
             Вы получили приглашение в проект. Войдите или зарегистрируйтесь, чтобы принять его.
           </div>
         )}

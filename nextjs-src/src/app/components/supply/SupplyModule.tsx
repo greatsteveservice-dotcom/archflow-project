@@ -152,7 +152,7 @@ export default function SupplyModule({ projectId, toast }: SupplyModuleProps) {
               Нет этапов стройки
             </div>
             <div style={{
-              fontFamily: mono, fontSize: 12, color: '#888',
+              fontFamily: mono, fontSize: 'var(--af-fs-12)', color: '#888',
               marginBottom: 28, lineHeight: 1.6,
             }}>
               Добавьте этапы, чтобы начать работу с комплектацией
@@ -165,7 +165,7 @@ export default function SupplyModule({ projectId, toast }: SupplyModuleProps) {
                 disabled={creatingDefaults}
                 style={{
                   background: '#111', color: '#fff', border: 'none',
-                  fontFamily: mono, fontSize: 9, textTransform: 'uppercase',
+                  fontFamily: mono, fontSize: 'var(--af-fs-9)', textTransform: 'uppercase',
                   letterSpacing: '0.14em', padding: '12px 28px',
                   cursor: creatingDefaults ? 'wait' : 'pointer',
                   opacity: creatingDefaults ? 0.6 : 1,
@@ -178,7 +178,7 @@ export default function SupplyModule({ projectId, toast }: SupplyModuleProps) {
                 onClick={() => setShowAddStage(true)}
                 style={{
                   background: 'none', color: '#111', border: '0.5px solid #EBEBEB',
-                  fontFamily: mono, fontSize: 9, textTransform: 'uppercase',
+                  fontFamily: mono, fontSize: 'var(--af-fs-9)', textTransform: 'uppercase',
                   letterSpacing: '0.14em', padding: '10px 24px',
                   cursor: 'pointer',
                 }}
@@ -195,13 +195,13 @@ export default function SupplyModule({ projectId, toast }: SupplyModuleProps) {
                 background: '#FAFAF8',
               }}>
                 <div style={{
-                  fontFamily: mono, fontSize: 9, textTransform: 'uppercase',
+                  fontFamily: mono, fontSize: 'var(--af-fs-9)', textTransform: 'uppercase',
                   letterSpacing: '0.14em', color: '#111', marginBottom: 14,
                 }}>
                   Новый этап
                 </div>
                 <div style={{ marginBottom: 12 }}>
-                  <label style={{ fontFamily: mono, fontSize: 10, color: '#888', display: 'block', marginBottom: 4 }}>
+                  <label style={{ fontFamily: mono, fontSize: 'var(--af-fs-10)', color: '#888', display: 'block', marginBottom: 4 }}>
                     Название *
                   </label>
                   <input
@@ -211,14 +211,14 @@ export default function SupplyModule({ projectId, toast }: SupplyModuleProps) {
                     placeholder="Например: Демонтаж"
                     style={{
                       width: '100%', padding: '8px 10px', border: '0.5px solid #EBEBEB',
-                      fontFamily: mono, fontSize: 12, color: '#111',
+                      fontFamily: mono, fontSize: 'var(--af-fs-12)', color: '#111',
                       background: '#fff', outline: 'none', boxSizing: 'border-box',
                     }}
                   />
                 </div>
                 <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
                   <div style={{ flex: 1 }}>
-                    <label style={{ fontFamily: mono, fontSize: 10, color: '#888', display: 'block', marginBottom: 4 }}>
+                    <label style={{ fontFamily: mono, fontSize: 'var(--af-fs-10)', color: '#888', display: 'block', marginBottom: 4 }}>
                       Начало
                     </label>
                     <input
@@ -227,13 +227,13 @@ export default function SupplyModule({ projectId, toast }: SupplyModuleProps) {
                       onChange={(e) => setNewStageStart(e.target.value)}
                       style={{
                         width: '100%', padding: '8px 10px', border: '0.5px solid #EBEBEB',
-                        fontFamily: mono, fontSize: 11, color: '#111',
+                        fontFamily: mono, fontSize: 'var(--af-fs-11)', color: '#111',
                         background: '#fff', outline: 'none', boxSizing: 'border-box',
                       }}
                     />
                   </div>
                   <div style={{ flex: 1 }}>
-                    <label style={{ fontFamily: mono, fontSize: 10, color: '#888', display: 'block', marginBottom: 4 }}>
+                    <label style={{ fontFamily: mono, fontSize: 'var(--af-fs-10)', color: '#888', display: 'block', marginBottom: 4 }}>
                       Окончание
                     </label>
                     <input
@@ -242,7 +242,7 @@ export default function SupplyModule({ projectId, toast }: SupplyModuleProps) {
                       onChange={(e) => setNewStageEnd(e.target.value)}
                       style={{
                         width: '100%', padding: '8px 10px', border: '0.5px solid #EBEBEB',
-                        fontFamily: mono, fontSize: 11, color: '#111',
+                        fontFamily: mono, fontSize: 'var(--af-fs-11)', color: '#111',
                         background: '#fff', outline: 'none', boxSizing: 'border-box',
                       }}
                     />
@@ -254,7 +254,7 @@ export default function SupplyModule({ projectId, toast }: SupplyModuleProps) {
                     disabled={!newStageName.trim() || addingStage}
                     style={{
                       flex: 1, background: '#111', color: '#fff', border: 'none',
-                      fontFamily: mono, fontSize: 9, textTransform: 'uppercase',
+                      fontFamily: mono, fontSize: 'var(--af-fs-9)', textTransform: 'uppercase',
                       letterSpacing: '0.12em', padding: '10px 0',
                       cursor: !newStageName.trim() || addingStage ? 'not-allowed' : 'pointer',
                       opacity: !newStageName.trim() || addingStage ? 0.4 : 1,
@@ -266,7 +266,7 @@ export default function SupplyModule({ projectId, toast }: SupplyModuleProps) {
                     onClick={() => { setShowAddStage(false); setNewStageName(''); setNewStageStart(''); setNewStageEnd(''); }}
                     style={{
                       background: 'none', color: '#111', border: '0.5px solid #EBEBEB',
-                      fontFamily: mono, fontSize: 9, textTransform: 'uppercase',
+                      fontFamily: mono, fontSize: 'var(--af-fs-9)', textTransform: 'uppercase',
                       letterSpacing: '0.12em', padding: '10px 16px',
                       cursor: 'pointer',
                     }}

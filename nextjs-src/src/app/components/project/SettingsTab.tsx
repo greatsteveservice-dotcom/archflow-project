@@ -189,7 +189,7 @@ export default function SettingsTab({ project, projectId, toast, canDeleteProjec
           </div>
 
           {loading ? (
-            <div style={{ fontFamily: mono, fontSize: 9, color: '#111' }}>Загрузка...</div>
+            <div style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: '#111' }}>Загрузка...</div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 24 }}>
               {(members || []).map((m) => (
@@ -201,18 +201,18 @@ export default function SettingsTab({ project, projectId, toast, canDeleteProjec
                     <div style={{
                       width: 28, height: 28, background: '#F6F6F4',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontFamily: mono, fontSize: 9, fontWeight: 600, color: '#111',
+                      fontFamily: mono, fontSize: 'var(--af-fs-9)', fontWeight: 600, color: '#111',
                     }}>
                       {getInitials(m)}
                     </div>
                     <div>
-                      <div style={{ fontFamily: mono, fontSize: 10, color: '#111' }}>{getName(m)}</div>
-                      <div style={{ fontFamily: mono, fontSize: 9, color: '#111' }}>{ROLE_LABEL[m.role] || m.role}</div>
+                      <div style={{ fontFamily: mono, fontSize: 'var(--af-fs-10)', color: '#111' }}>{getName(m)}</div>
+                      <div style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: '#111' }}>{ROLE_LABEL[m.role] || m.role}</div>
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span style={{
-                      fontFamily: mono, fontSize: 9, width: 96, textAlign: 'center',
+                      fontFamily: mono, fontSize: 'var(--af-fs-9)', width: 96, textAlign: 'center',
                       display: 'inline-block', whiteSpace: 'nowrap', padding: '2px 0',
                       background: m.role === 'designer' ? '#111' : 'transparent',
                       color: m.role === 'designer' ? '#fff' : '#111',
@@ -234,19 +234,19 @@ export default function SettingsTab({ project, projectId, toast, canDeleteProjec
                 </div>
               ))}
               {(!members || members.length === 0) && (
-                <div style={{ fontFamily: mono, fontSize: 9, color: '#111' }}>Участников пока нет</div>
+                <div style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: '#111' }}>Участников пока нет</div>
               )}
             </div>
           )}
 
           {/* Role templates */}
           <div style={{ background: '#fff', border: '0.5px solid #EBEBEB', padding: 16 }}>
-            <h4 style={{ fontFamily: mono, fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.14em', color: '#111', marginBottom: 12 }}>Шаблоны ролей</h4>
+            <h4 style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', textTransform: 'uppercase', letterSpacing: '0.14em', color: '#111', marginBottom: 12 }}>Шаблоны ролей</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ fontFamily: mono, fontSize: 9, width: 96, display: 'inline-block', textAlign: 'center', padding: '2px 0', border: '0.5px solid #EBEBEB', color: '#111' }}>Заказчик</span><span style={{ fontFamily: mono, fontSize: 9, color: '#111' }}>Только просмотр</span></div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ fontFamily: mono, fontSize: 9, width: 96, display: 'inline-block', textAlign: 'center', padding: '2px 0', border: '0.5px solid #EBEBEB', color: '#111' }}>Подрядчик</span><span style={{ fontFamily: mono, fontSize: 9, color: '#111' }}>Просмотр + фото + комментарии</span></div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ fontFamily: mono, fontSize: 9, width: 96, display: 'inline-block', textAlign: 'center', padding: '2px 0', border: '0.5px solid #EBEBEB', color: '#111' }}>Комплектатор</span><span style={{ fontFamily: mono, fontSize: 9, color: '#111' }}>Supply + обновление статусов</span></div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ fontFamily: mono, fontSize: 9, width: 96, display: 'inline-block', textAlign: 'center', padding: '2px 0', border: '0.5px solid #EBEBEB', color: '#111' }}>Ассистент</span><span style={{ fontFamily: mono, fontSize: 9, color: '#111' }}>На усмотрение дизайнера</span></div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', width: 96, display: 'inline-block', textAlign: 'center', padding: '2px 0', border: '0.5px solid #EBEBEB', color: '#111' }}>Заказчик</span><span style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: '#111' }}>Только просмотр</span></div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', width: 96, display: 'inline-block', textAlign: 'center', padding: '2px 0', border: '0.5px solid #EBEBEB', color: '#111' }}>Подрядчик</span><span style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: '#111' }}>Просмотр + фото + комментарии</span></div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', width: 96, display: 'inline-block', textAlign: 'center', padding: '2px 0', border: '0.5px solid #EBEBEB', color: '#111' }}>Комплектатор</span><span style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: '#111' }}>Supply + обновление статусов</span></div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', width: 96, display: 'inline-block', textAlign: 'center', padding: '2px 0', border: '0.5px solid #EBEBEB', color: '#111' }}>Ассистент</span><span style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: '#111' }}>На усмотрение дизайнера</span></div>
             </div>
           </div>
         </div>
@@ -289,15 +289,15 @@ export default function SettingsTab({ project, projectId, toast, canDeleteProjec
               </button>
             </div>
           </div>
-          <p style={{ fontFamily: mono, fontSize: 9, color: '#111', marginTop: 12 }}>
+          <p style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: '#111', marginTop: 12 }}>
             Настройки комплектации — в разделе Комплектация
           </p>
 
           {/* Danger zone */}
           {canDeleteProject && (
             <div style={{ border: '0.5px solid #EBEBEB', padding: 20, marginTop: 24 }}>
-              <h4 style={{ fontFamily: mono, fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.14em', color: '#111', marginBottom: 8 }}>Опасная зона</h4>
-              <p style={{ fontFamily: mono, fontSize: 9, color: '#111', marginBottom: 16 }}>
+              <h4 style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', textTransform: 'uppercase', letterSpacing: '0.14em', color: '#111', marginBottom: 8 }}>Опасная зона</h4>
+              <p style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: '#111', marginBottom: 16 }}>
                 Удаление проекта невозможно отменить. Все визиты, фото, документы и счета будут удалены.
               </p>
               <button

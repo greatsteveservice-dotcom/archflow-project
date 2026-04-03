@@ -248,7 +248,7 @@ export default function CalendarView({ projectId, visits, toast, refetchVisits, 
         }}>
           <div style={{
             fontFamily: "'IBM Plex Mono', monospace",
-            fontSize: 7,
+            fontSize: 'var(--af-fs-7)',
             textTransform: 'uppercase',
             letterSpacing: '0.12em',
             color: '#111',
@@ -258,7 +258,7 @@ export default function CalendarView({ projectId, visits, toast, refetchVisits, 
           </div>
           <div style={{
             fontFamily: "'Playfair Display', serif",
-            fontSize: 13,
+            fontSize: 'var(--af-fs-13)',
             fontWeight: 700,
             color: '#111',
             marginBottom: 2,
@@ -267,7 +267,7 @@ export default function CalendarView({ projectId, visits, toast, refetchVisits, 
           </div>
           <div style={{
             fontFamily: "'IBM Plex Mono', monospace",
-            fontSize: 7,
+            fontSize: 'var(--af-fs-7)',
             color: '#111',
             letterSpacing: '0.05em',
           }}>
@@ -307,7 +307,7 @@ export default function CalendarView({ projectId, visits, toast, refetchVisits, 
       <div style={{ background: '#FFFFFF', padding: 16 }}>
         <div className="grid grid-cols-7 gap-0.5 mb-2">
           {DAYS_RU.map(d => (
-            <div key={d} style={{ background: '#FFFFFF', color: '#111', fontSize: 11, fontWeight: 500, textAlign: 'center', padding: '4px 0' }}>{d}</div>
+            <div key={d} style={{ background: '#FFFFFF', color: '#111', fontSize: 'var(--af-fs-11)', fontWeight: 500, textAlign: 'center', padding: '4px 0' }}>{d}</div>
           ))}
         </div>
         <div className="grid grid-cols-7 gap-0.5">
@@ -366,7 +366,7 @@ export default function CalendarView({ projectId, visits, toast, refetchVisits, 
               <VisitIcon />
               <span style={{
                 fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: 7, textTransform: 'uppercase',
+                fontSize: 'var(--af-fs-7)', textTransform: 'uppercase',
                 letterSpacing: '0.08em', color: '#111',
               }}>Визит</span>
             </div>
@@ -374,7 +374,7 @@ export default function CalendarView({ projectId, visits, toast, refetchVisits, 
               <PaymentIcon />
               <span style={{
                 fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: 7, textTransform: 'uppercase',
+                fontSize: 'var(--af-fs-7)', textTransform: 'uppercase',
                 letterSpacing: '0.08em', color: '#111',
               }}>Счёт</span>
             </div>

@@ -167,13 +167,13 @@ export default function SupplyDocuments({ projectId, toast }: SupplyDocumentsPro
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         marginBottom: 16,
       }}>
-        <div style={{ fontFamily: mono, fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'rgb(var(--ink))' }}>
+        <div style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', textTransform: 'uppercase', letterSpacing: '0.14em', color: 'rgb(var(--ink))' }}>
           Документация · {docs.length} {docs.length === 1 ? 'файл' : 'файлов'}
         </div>
         <label
           style={{
             display: 'inline-flex', alignItems: 'center', gap: 6,
-            fontFamily: mono, fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.12em',
+            fontFamily: mono, fontSize: 'var(--af-fs-9)', textTransform: 'uppercase', letterSpacing: '0.12em',
             padding: '6px 14px', border: '0.5px solid rgb(var(--line))',
             background: 'transparent', color: 'rgb(var(--ink))',
             cursor: uploading ? 'wait' : 'pointer',
@@ -198,7 +198,7 @@ export default function SupplyDocuments({ projectId, toast }: SupplyDocumentsPro
 
       {/* File list */}
       {loading ? (
-        <div style={{ fontFamily: mono, fontSize: 11, color: 'rgb(var(--ink))', opacity: 0.5, padding: 20, textAlign: 'center' }}>
+        <div style={{ fontFamily: mono, fontSize: 'var(--af-fs-11)', color: 'rgb(var(--ink))', opacity: 0.5, padding: 20, textAlign: 'center' }}>
           Загрузка...
         </div>
       ) : docs.length === 0 ? (
@@ -211,7 +211,7 @@ export default function SupplyDocuments({ projectId, toast }: SupplyDocumentsPro
           <div style={{ fontFamily: display, fontSize: 16, fontWeight: 700, color: 'rgb(var(--ink))', marginBottom: 6 }}>
             Нет документов
           </div>
-          <div style={{ fontFamily: mono, fontSize: 11, color: 'rgb(var(--ink))', opacity: 0.5 }}>
+          <div style={{ fontFamily: mono, fontSize: 'var(--af-fs-11)', color: 'rgb(var(--ink))', opacity: 0.5 }}>
             Загрузите PDF, Excel или спецификации
           </div>
         </div>
@@ -233,7 +233,7 @@ export default function SupplyDocuments({ projectId, toast }: SupplyDocumentsPro
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 flexShrink: 0,
               }}>
-                <span style={{ fontFamily: mono, fontSize: 8, color: 'rgb(var(--srf))', fontWeight: 600, letterSpacing: '0.05em' }}>
+                <span style={{ fontFamily: mono, fontSize: 'var(--af-fs-8)', color: 'rgb(var(--srf))', fontWeight: 600, letterSpacing: '0.05em' }}>
                   {getFileIcon(doc.type)}
                 </span>
               </div>
@@ -241,12 +241,12 @@ export default function SupplyDocuments({ projectId, toast }: SupplyDocumentsPro
               {/* File info */}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{
-                  fontFamily: mono, fontSize: 12, color: 'rgb(var(--ink))',
+                  fontFamily: mono, fontSize: 'var(--af-fs-12)', color: 'rgb(var(--ink))',
                   whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                 }}>
                   {doc.name}
                 </div>
-                <div style={{ fontFamily: mono, fontSize: 9, color: 'rgb(var(--ink))', opacity: 0.5, marginTop: 2 }}>
+                <div style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: 'rgb(var(--ink))', opacity: 0.5, marginTop: 2 }}>
                   {formatFileSize(doc.size)} · {formatDate(doc.created_at)}
                 </div>
               </div>

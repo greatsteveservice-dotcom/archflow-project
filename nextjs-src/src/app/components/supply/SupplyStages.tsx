@@ -120,7 +120,7 @@ export function SupplyStages({ stages, items, refetchStages, toast }: SupplyStag
                 <div style={{
                   width: 32, height: 32, background: '#F6F6F4',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontFamily: mono, fontSize: 13, fontWeight: 600, color: '#888',
+                  fontFamily: mono, fontSize: 'var(--af-fs-13)', fontWeight: 600, color: '#888',
                   flexShrink: 0,
                 }}>
                   {stage.sort_order}
@@ -140,7 +140,7 @@ export function SupplyStages({ stages, items, refetchStages, toast }: SupplyStag
                         style={{
                           flex: 1, padding: '4px 8px',
                           border: '0.5px solid #EBEBEB',
-                          fontFamily: mono, fontSize: 13,
+                          fontFamily: mono, fontSize: 'var(--af-fs-13)',
                           color: '#111', outline: 'none',
                           background: '#FAFAF8',
                         }}
@@ -175,7 +175,7 @@ export function SupplyStages({ stages, items, refetchStages, toast }: SupplyStag
                       <div style={{ fontFamily: display, fontSize: 14, fontWeight: 700, color: '#111' }}>
                         {stage.name}
                       </div>
-                      <div style={{ fontFamily: mono, fontSize: 11, color: '#888', marginTop: 2 }}>
+                      <div style={{ fontFamily: mono, fontSize: 'var(--af-fs-11)', color: '#888', marginTop: 2 }}>
                         {stage.start_date ? formatShortDate(stage.start_date) : "—"}
                         {stage.end_date ? ` → ${formatShortDate(stage.end_date)}` : ""}
                       </div>
@@ -188,7 +188,7 @@ export function SupplyStages({ stages, items, refetchStages, toast }: SupplyStag
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                 {stage.critical > 0 && (
                   <span style={{
-                    fontFamily: mono, fontSize: 10, fontWeight: 600,
+                    fontFamily: mono, fontSize: 'var(--af-fs-10)', fontWeight: 600,
                     padding: '2px 6px', background: '#F6F6F4', color: '#111',
                     display: 'flex', alignItems: 'center', gap: 4,
                   }}>
@@ -196,7 +196,7 @@ export function SupplyStages({ stages, items, refetchStages, toast }: SupplyStag
                   </span>
                 )}
                 <span style={{
-                  fontFamily: mono, fontSize: 10, fontWeight: 500,
+                  fontFamily: mono, fontSize: 'var(--af-fs-10)', fontWeight: 500,
                   padding: '2px 8px', background: stageStyle.bg, color: stageStyle.text,
                 }}>
                   {stageStyle.label}
@@ -249,7 +249,7 @@ export function SupplyStages({ stages, items, refetchStages, toast }: SupplyStag
                 padding: '10px 14px', background: '#FAFAF8',
                 border: '0.5px solid #EBEBEB', marginBottom: 12,
               }}>
-                <span style={{ fontFamily: mono, fontSize: 11, color: '#111', flex: 1 }}>
+                <span style={{ fontFamily: mono, fontSize: 'var(--af-fs-11)', color: '#111', flex: 1 }}>
                   Удалить этап?
                 </span>
                 <button
@@ -257,7 +257,7 @@ export function SupplyStages({ stages, items, refetchStages, toast }: SupplyStag
                   disabled={isDeleting}
                   style={{
                     background: '#111', color: '#fff', border: 'none',
-                    fontFamily: mono, fontSize: 9, textTransform: 'uppercase',
+                    fontFamily: mono, fontSize: 'var(--af-fs-9)', textTransform: 'uppercase',
                     letterSpacing: '0.12em', padding: '6px 14px',
                     cursor: isDeleting ? 'wait' : 'pointer',
                     opacity: isDeleting ? 0.5 : 1,
@@ -269,7 +269,7 @@ export function SupplyStages({ stages, items, refetchStages, toast }: SupplyStag
                   onClick={() => setConfirmDeleteId(null)}
                   style={{
                     background: 'none', color: '#111', border: '0.5px solid #EBEBEB',
-                    fontFamily: mono, fontSize: 9, textTransform: 'uppercase',
+                    fontFamily: mono, fontSize: 'var(--af-fs-9)', textTransform: 'uppercase',
                     letterSpacing: '0.12em', padding: '6px 14px',
                     cursor: 'pointer',
                   }}
@@ -283,10 +283,10 @@ export function SupplyStages({ stages, items, refetchStages, toast }: SupplyStag
             {stage.total > 0 && (
               <div style={{ marginBottom: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <span style={{ fontFamily: mono, fontSize: 11, color: '#888' }}>
+                  <span style={{ fontFamily: mono, fontSize: 'var(--af-fs-11)', color: '#888' }}>
                     {stage.delivered}/{stage.total} доставлено
                   </span>
-                  <span style={{ fontFamily: mono, fontSize: 11, color: '#111' }}>{progress}%</span>
+                  <span style={{ fontFamily: mono, fontSize: 'var(--af-fs-11)', color: '#111' }}>{progress}%</span>
                 </div>
                 <div style={{ height: 4, background: '#F6F6F4', overflow: 'hidden' }}>
                   <div style={{
@@ -312,20 +312,20 @@ export function SupplyStages({ stages, items, refetchStages, toast }: SupplyStag
                       }}
                     >
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <span style={{ fontFamily: mono, fontSize: 13, color: '#111' }}>{item.name}</span>
+                        <span style={{ fontFamily: mono, fontSize: 'var(--af-fs-13)', color: '#111' }}>{item.name}</span>
                         {item.supplier && (
-                          <span style={{ fontFamily: mono, fontSize: 11, color: '#888', marginLeft: 8 }}>{item.supplier}</span>
+                          <span style={{ fontFamily: mono, fontSize: 'var(--af-fs-11)', color: '#888', marginLeft: 8 }}>{item.supplier}</span>
                         )}
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 12 }}>
                         <span style={{
-                          fontFamily: mono, fontSize: 10, fontWeight: 500,
+                          fontFamily: mono, fontSize: 'var(--af-fs-10)', fontWeight: 500,
                           padding: '1px 6px', background: riskCfg.bg, color: riskCfg.text,
                         }}>
                           {riskCfg.label}
                         </span>
                         <span style={{
-                          fontFamily: mono, fontSize: 10, fontWeight: 500,
+                          fontFamily: mono, fontSize: 'var(--af-fs-10)', fontWeight: 500,
                           padding: '1px 6px', background: statusCfg.bg, color: statusCfg.text,
                         }}>
                           {statusCfg.label}
@@ -336,7 +336,7 @@ export function SupplyStages({ stages, items, refetchStages, toast }: SupplyStag
                 })}
               </div>
             ) : (
-              <div style={{ fontFamily: mono, fontSize: 12, color: '#888', padding: '8px 0' }}>
+              <div style={{ fontFamily: mono, fontSize: 'var(--af-fs-12)', color: '#888', padding: '8px 0' }}>
                 Нет позиций для этого этапа
               </div>
             )}

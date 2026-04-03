@@ -179,7 +179,7 @@ export default function FeedbackBar() {
               style={{
                 fontFamily: "'IBM Plex Mono', monospace",
                 fontWeight: 400,
-                fontSize: 7,
+                fontSize: 'var(--af-fs-7)',
                 textTransform: "uppercase" as const,
                 letterSpacing: "0.14em",
                 color: "#111",
@@ -198,7 +198,7 @@ export default function FeedbackBar() {
               color: "#fff",
               fontFamily: "'IBM Plex Mono', monospace",
               fontWeight: 400,
-              fontSize: 7,
+              fontSize: 'var(--af-fs-7)',
               textTransform: "uppercase" as const,
               letterSpacing: "0.18em",
               padding: "7px 12px",
@@ -252,7 +252,7 @@ export default function FeedbackBar() {
                 background: "none",
                 border: "none",
                 fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: 8,
+                fontSize: 'var(--af-fs-8)',
                 textTransform: "uppercase" as const,
                 letterSpacing: "0.12em",
                 color: "#111",
@@ -283,7 +283,7 @@ export default function FeedbackBar() {
                 <div
                   style={{
                     fontFamily: "'IBM Plex Mono', monospace",
-                    fontSize: 9,
+                    fontSize: 'var(--af-fs-9)',
                     textTransform: "uppercase" as const,
                     letterSpacing: "0.2em",
                     color: "#111",
@@ -311,7 +311,7 @@ export default function FeedbackBar() {
                 <div
                   style={{
                     fontFamily: "'IBM Plex Mono', monospace",
-                    fontSize: 9,
+                    fontSize: 'var(--af-fs-9)',
                     textTransform: "uppercase" as const,
                     letterSpacing: "0.18em",
                     color: "#111",
@@ -330,7 +330,7 @@ export default function FeedbackBar() {
                     border: "0.5px solid #EBEBEB",
                     padding: 12,
                     fontFamily: "'IBM Plex Mono', monospace",
-                    fontSize: 11,
+                    fontSize: 'var(--af-fs-11)',
                     fontWeight: 300,
                     color: "#111",
                     background: "#F6F6F4",
@@ -354,7 +354,7 @@ export default function FeedbackBar() {
                     onClick={() => fileInputRef.current?.click()}
                     style={{
                       fontFamily: "'IBM Plex Mono', monospace",
-                      fontSize: 7,
+                      fontSize: 'var(--af-fs-7)',
                       textTransform: "uppercase" as const,
                       letterSpacing: "0.14em",
                       color: "#111",
@@ -372,7 +372,7 @@ export default function FeedbackBar() {
                       onClick={removeFile}
                       style={{
                         fontFamily: "'IBM Plex Mono', monospace",
-                        fontSize: 7,
+                        fontSize: 'var(--af-fs-7)',
                         color: "#EBEBEB",
                         background: "none",
                         border: "none",
@@ -393,7 +393,7 @@ export default function FeedbackBar() {
                     />
                     <span style={{
                       fontFamily: "'IBM Plex Mono', monospace",
-                      fontSize: 7,
+                      fontSize: 'var(--af-fs-7)',
                       color: "#111",
                       letterSpacing: "0.08em",
                     }}>
@@ -424,7 +424,7 @@ export default function FeedbackBar() {
                     color: "#fff",
                     border: "none",
                     fontFamily: "'IBM Plex Mono', monospace",
-                    fontSize: 9,
+                    fontSize: 'var(--af-fs-9)',
                     fontWeight: 400,
                     textTransform: "uppercase" as const,
                     letterSpacing: "0.2em",

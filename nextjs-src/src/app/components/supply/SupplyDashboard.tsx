@@ -60,7 +60,7 @@ export function SupplyDashboard({ items, stages }: SupplyDashboardProps) {
         <div style={{ background: '#F6F6F4', padding: 20, border: '0.5px solid #EBEBEB' }}>
           <h3 style={{
             fontFamily: "'IBM Plex Mono', monospace",
-            fontSize: 9,
+            fontSize: 'var(--af-fs-9)',
             letterSpacing: '0.16em',
             textTransform: 'uppercase',
             color: '#111',
@@ -108,7 +108,7 @@ export function SupplyDashboard({ items, stages }: SupplyDashboardProps) {
         <div style={{ background: '#F6F6F4', padding: 20, border: '0.5px solid #EBEBEB' }}>
           <h3 style={{
             fontFamily: "'IBM Plex Mono', monospace",
-            fontSize: 9,
+            fontSize: 'var(--af-fs-9)',
             letterSpacing: '0.16em',
             textTransform: 'uppercase',
             color: '#111',

@@ -58,7 +58,7 @@ function RefBadge({ refType, refPreview }: { refType: string; refPreview: string
     <div style={{
       display: 'inline-flex', alignItems: 'center', gap: 4,
       padding: '2px 6px', background: '#F6F6F4', border: '0.5px solid #EBEBEB',
-      fontFamily: "'IBM Plex Mono', monospace", fontSize: 8,
+      fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-8)',
       letterSpacing: '0.08em', textTransform: 'uppercase', color: '#111',
       marginBottom: 4,
     }}>
@@ -82,7 +82,7 @@ function VoiceBubble({ msg, isOwn }: { msg: ChatMessageWithAuthor; isOwn: boolea
       border: isOwn ? 'none' : '0.5px solid #EBEBEB',
       padding: '8px 12px',
       fontFamily: "'IBM Plex Mono', monospace",
-      fontSize: 12,
+      fontSize: 'var(--af-fs-12)',
       lineHeight: '1.5',
       wordBreak: 'break-word',
       whiteSpace: 'pre-wrap',
@@ -91,7 +91,7 @@ function VoiceBubble({ msg, isOwn }: { msg: ChatMessageWithAuthor; isOwn: boolea
         <div style={{
           display: 'flex', alignItems: 'center', gap: 6,
           marginBottom: 4,
-          fontSize: 9,
+          fontSize: 'var(--af-fs-9)',
           letterSpacing: '0.08em',
           textTransform: 'uppercase',
           opacity: 0.6,
@@ -114,7 +114,7 @@ function VoiceBubble({ msg, isOwn }: { msg: ChatMessageWithAuthor; isOwn: boolea
             border: 'none',
             cursor: 'pointer',
             fontFamily: "'IBM Plex Mono', monospace",
-            fontSize: 8,
+            fontSize: 'var(--af-fs-8)',
             letterSpacing: '0.1em',
             textTransform: 'uppercase',
             color: isOwn ? '#EBEBEB' : '#111',
@@ -129,7 +129,7 @@ function VoiceBubble({ msg, isOwn }: { msg: ChatMessageWithAuthor; isOwn: boolea
         <div style={{
           marginTop: 4, paddingTop: 4,
           borderTop: `0.5px solid ${isOwn ? 'rgba(255,255,255,0.2)' : '#EBEBEB'}`,
-          fontSize: 10,
+          fontSize: 'var(--af-fs-10)',
           opacity: 0.6,
           fontStyle: 'italic',
         }}>
@@ -139,7 +139,7 @@ function VoiceBubble({ msg, isOwn }: { msg: ChatMessageWithAuthor; isOwn: boolea
 
       <span style={{
         display: 'inline-block', marginLeft: 8,
-        fontSize: 8, color: isOwn ? '#EBEBEB' : '#111',
+        fontSize: 'var(--af-fs-8)', color: isOwn ? '#EBEBEB' : '#111',
         verticalAlign: 'bottom',
       }}>
         {formatTime(msg.created_at)}
@@ -191,7 +191,7 @@ function MessageBubble({ msg, isOwn, showAvatar, onDelete }: MessageBubbleProps)
             <div style={{
               width: 28, height: 28, background: '#111', color: '#fff',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, fontWeight: 600,
+              fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-9)', fontWeight: 600,
             }}>
               {getInitials(name)}
             </div>
@@ -212,7 +212,7 @@ function MessageBubble({ msg, isOwn, showAvatar, onDelete }: MessageBubbleProps)
         {/* Author name (first in group) */}
         {showAvatar && !isOwn && (
           <div style={{
-            fontFamily: "'IBM Plex Mono', monospace", fontSize: 8,
+            fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-8)',
             letterSpacing: '0.12em', textTransform: 'uppercase',
             color: '#111', marginBottom: 2,
           }}>
@@ -239,7 +239,7 @@ function MessageBubble({ msg, isOwn, showAvatar, onDelete }: MessageBubbleProps)
               onClick={() => { onDelete(msg.id); setShowMenu(false); }}
               style={{
                 display: 'block', width: '100%', padding: '6px 16px',
-                fontFamily: "'IBM Plex Mono', monospace", fontSize: 10,
+                fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-10)',
                 color: '#111', background: 'none', border: 'none', cursor: 'pointer',
                 textAlign: 'left',
               }}
@@ -269,7 +269,7 @@ function MemberPills({ members }: { members: Profile[] }) {
           display: 'inline-flex', alignItems: 'center', gap: 4,
           padding: '2px 8px',
           background: '#F6F6F4', border: '0.5px solid #EBEBEB',
-          fontFamily: "'IBM Plex Mono', monospace", fontSize: 8,
+          fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-8)',
           letterSpacing: '0.06em', color: '#111',
         }}>
           {m.avatar_url ? (
@@ -505,7 +505,7 @@ function VoiceRecorder({ projectId, userId, chatType, profile, appendMessage, re
             background: 'transparent',
             border: '0.5px solid #EBEBEB',
             fontFamily: "'IBM Plex Mono', monospace",
-            fontSize: 12,
+            fontSize: 'var(--af-fs-12)',
             cursor: 'pointer',
             color: '#111',
             minHeight: 40,
@@ -527,7 +527,7 @@ function VoiceRecorder({ projectId, userId, chatType, profile, appendMessage, re
           background: '#111',
           color: '#fff',
           fontFamily: "'IBM Plex Mono', monospace",
-          fontSize: 12,
+          fontSize: 'var(--af-fs-12)',
           minHeight: 40,
           animation: 'af-voice-pulse 1.5s ease-in-out infinite',
         }}>
@@ -540,7 +540,7 @@ function VoiceRecorder({ projectId, userId, chatType, profile, appendMessage, re
           <span style={{ letterSpacing: '0.05em' }}>
             {formatDuration(duration)}
           </span>
-          <span style={{ fontSize: 9, opacity: 0.6, marginLeft: 4 }}>
+          <span style={{ fontSize: 'var(--af-fs-9)', opacity: 0.6, marginLeft: 4 }}>
             ЗАПИСЬ
           </span>
         </div>
@@ -554,7 +554,7 @@ function VoiceRecorder({ projectId, userId, chatType, profile, appendMessage, re
             color: '#fff',
             border: 'none',
             fontFamily: "'IBM Plex Mono', monospace",
-            fontSize: 10,
+            fontSize: 'var(--af-fs-10)',
             fontWeight: 600,
             cursor: 'pointer',
             textTransform: 'uppercase',
@@ -578,7 +578,7 @@ function VoiceRecorder({ projectId, userId, chatType, profile, appendMessage, re
         color: '#111',
         border: '0.5px solid #EBEBEB',
         fontFamily: "'IBM Plex Mono', monospace",
-        fontSize: 10,
+        fontSize: 'var(--af-fs-10)',
         fontWeight: 600,
         cursor: 'pointer',
         minHeight: 40,
@@ -755,7 +755,7 @@ function ChatTabPanel({ projectId, chatType, userId, profile, toast, isActive }:
         {loading && messages.length === 0 && (
           <div style={{
             textAlign: 'center', padding: 40,
-            fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: '#111',
+            fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-11)', color: '#111',
           }}>
             Загрузка сообщений...
           </div>
@@ -764,7 +764,7 @@ function ChatTabPanel({ projectId, chatType, userId, profile, toast, isActive }:
         {!loading && messages.length === 0 && (
           <div style={{
             textAlign: 'center', padding: 40,
-            fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: '#111',
+            fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-11)', color: '#111',
           }}>
             Чат пуст. Напишите первое сообщение.
           </div>
@@ -776,7 +776,7 @@ function ChatTabPanel({ projectId, chatType, userId, profile, toast, isActive }:
             style={{
               display: 'block', margin: '0 auto 16px', padding: '6px 16px',
               background: 'transparent', border: '0.5px solid #EBEBEB',
-              fontFamily: "'IBM Plex Mono', monospace", fontSize: 9,
+              fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-9)',
               cursor: 'pointer', color: '#111',
               textTransform: 'uppercase', letterSpacing: '0.12em',
             }}
@@ -789,7 +789,7 @@ function ChatTabPanel({ projectId, chatType, userId, profile, toast, isActive }:
           <div key={group.date}>
             <div style={{
               textAlign: 'center', margin: '16px 0 12px',
-              fontFamily: "'IBM Plex Mono', monospace", fontSize: 8,
+              fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-8)',
               letterSpacing: '0.16em', textTransform: 'uppercase', color: '#111',
             }}>
               {group.date}
@@ -816,14 +816,14 @@ function ChatTabPanel({ projectId, chatType, userId, profile, toast, isActive }:
           borderTop: '0.5px solid #333',
         }}>
           <div style={{
-            fontFamily: "'IBM Plex Mono', monospace", fontSize: 7,
+            fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-7)',
             textTransform: 'uppercase', letterSpacing: '0.14em',
             opacity: 0.6, marginBottom: 6,
           }}>
             Ассистент
           </div>
           <div style={{
-            fontFamily: "'IBM Plex Mono', monospace", fontSize: 10,
+            fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-10)',
             lineHeight: 1.5, marginBottom: 10,
           }}>
             {suggestion.reminder_text || suggestion.action}
@@ -858,7 +858,7 @@ function ChatTabPanel({ projectId, chatType, userId, profile, toast, isActive }:
                   style={{
                     padding: '4px 10px', background: '#fff', color: '#111',
                     border: 'none', cursor: 'pointer',
-                    fontFamily: "'IBM Plex Mono', monospace", fontSize: 8,
+                    fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-8)',
                     fontWeight: 600, textTransform: 'uppercase',
                     letterSpacing: '0.08em',
                   }}
@@ -874,7 +874,7 @@ function ChatTabPanel({ projectId, chatType, userId, profile, toast, isActive }:
                 style={{
                   padding: '5px 12px', background: '#fff', color: '#111',
                   border: 'none', cursor: 'pointer',
-                  fontFamily: "'IBM Plex Mono', monospace", fontSize: 8,
+                  fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-8)',
                   fontWeight: 600, textTransform: 'uppercase',
                   letterSpacing: '0.1em',
                 }}
@@ -886,7 +886,7 @@ function ChatTabPanel({ projectId, chatType, userId, profile, toast, isActive }:
                 style={{
                   padding: '5px 12px', background: 'transparent', color: '#fff',
                   border: '0.5px solid #555', cursor: 'pointer',
-                  fontFamily: "'IBM Plex Mono', monospace", fontSize: 8,
+                  fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-8)',
                   textTransform: 'uppercase', letterSpacing: '0.1em',
                 }}
               >
@@ -931,7 +931,7 @@ function ChatTabPanel({ projectId, chatType, userId, profile, toast, isActive }:
                 flex: 1, resize: 'none',
                 padding: '10px 12px',
                 border: '0.5px solid #EBEBEB',
-                fontFamily: "'IBM Plex Mono', monospace", fontSize: 12,
+                fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-12)',
                 lineHeight: '1.4', outline: 'none',
                 minHeight: 40, maxHeight: 120,
                 background: '#F6F6F4',
@@ -951,7 +951,7 @@ function ChatTabPanel({ projectId, chatType, userId, profile, toast, isActive }:
                 background: text.trim() ? '#111' : '#EBEBEB',
                 color: text.trim() ? '#fff' : '#EBEBEB',
                 border: 'none',
-                fontFamily: "'IBM Plex Mono', monospace", fontSize: 10,
+                fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-10)',
                 fontWeight: 600, cursor: text.trim() ? 'pointer' : 'default',
                 textTransform: 'uppercase', letterSpacing: '0.12em',
                 minHeight: 40, transition: 'background 0.15s',
@@ -1073,7 +1073,7 @@ export default function ChatView({ projectId, toast }: ChatViewProps) {
                 flex: 1,
                 padding: '10px 0',
                 textAlign: 'center' as const,
-                fontSize: 7,
+                fontSize: 'var(--af-fs-7)',
                 letterSpacing: '0.16em',
                 textTransform: 'uppercase' as const,
                 fontFamily: 'var(--font-ibm-mono), monospace',

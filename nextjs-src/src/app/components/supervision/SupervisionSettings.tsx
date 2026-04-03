@@ -98,7 +98,7 @@ export default function SupervisionSettings({ projectId, toast }: SupervisionSet
               ))}
             </div>
             {error && (
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 7, color: '#111111', marginTop: 6, letterSpacing: '0.05em' }}>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-7)', color: '#111111', marginTop: 6, letterSpacing: '0.05em' }}>
                 {error}
               </div>
             )}
@@ -188,7 +188,7 @@ export default function SupervisionSettings({ projectId, toast }: SupervisionSet
           />
           <span style={{
             position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
-            fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: '#EBEBEB',
+            fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-11)', color: '#EBEBEB',
           }}>₽</span>
         </div>
         <div style={helperStyle}>заполните если визит сверх договора</div>
@@ -202,7 +202,7 @@ export default function SupervisionSettings({ projectId, toast }: SupervisionSet
           style={{
             width: '100%', height: 44,
             background: '#111', color: '#FFF', border: 'none',
-            fontFamily: "'IBM Plex Mono', monospace", fontSize: 10,
+            fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-10)',
             fontWeight: 400, letterSpacing: '0.15em', textTransform: 'uppercase' as const,
             cursor: 'pointer', transition: 'opacity 0.15s ease',
           }}
@@ -226,7 +226,7 @@ const sectionStyle: React.CSSProperties = {
 const labelStyle: React.CSSProperties = {
   display: 'block',
   fontFamily: "'IBM Plex Mono', monospace",
-  fontSize: 8,
+  fontSize: 'var(--af-fs-8)',
   fontWeight: 400,
   textTransform: 'uppercase',
   letterSpacing: '0.15em',
@@ -236,7 +236,7 @@ const labelStyle: React.CSSProperties = {
 
 const chipStyle = (active: boolean): React.CSSProperties => ({
   fontFamily: "'IBM Plex Mono', monospace",
-  fontSize: 8,
+  fontSize: 'var(--af-fs-8)',
   fontWeight: 400,
   textTransform: 'uppercase',
   letterSpacing: '0.08em',
@@ -250,7 +250,7 @@ const chipStyle = (active: boolean): React.CSSProperties => ({
 
 const inputStyle: React.CSSProperties = {
   fontFamily: "'IBM Plex Mono', monospace",
-  fontSize: 11,
+  fontSize: 'var(--af-fs-11)',
   fontWeight: 300,
   width: '100%',
   height: 40,
@@ -264,7 +264,7 @@ const inputStyle: React.CSSProperties = {
 
 const helperStyle: React.CSSProperties = {
   fontFamily: "'IBM Plex Mono', monospace",
-  fontSize: 7,
+  fontSize: 'var(--af-fs-7)',
   color: '#111',
   marginTop: 6,
   letterSpacing: '0.05em',

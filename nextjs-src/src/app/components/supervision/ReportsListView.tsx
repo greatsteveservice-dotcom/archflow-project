@@ -122,12 +122,12 @@ export default function ReportsListView({ projectId, toast, onSelectReport }: Re
       </div>
 
       {loading ? (
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#111' }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--af-fs-11)', color: '#111' }}>
           Загрузка...
         </div>
       ) : displayReports.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '48px 0' }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#111' }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--af-fs-11)', color: '#111' }}>
             Отчётов пока нет
           </div>
         </div>
@@ -162,7 +162,7 @@ export default function ReportsListView({ projectId, toast, onSelectReport }: Re
                   {today && (
                     <div style={{
                       fontFamily: 'var(--font-mono)',
-                      fontSize: 7,
+                      fontSize: 'var(--af-fs-7)',
                       textTransform: 'uppercase',
                       letterSpacing: '0.08em',
                       color: '#111',
@@ -181,7 +181,7 @@ export default function ReportsListView({ projectId, toast, onSelectReport }: Re
                   </div>
                   <div style={{
                     fontFamily: 'var(--font-mono)',
-                    fontSize: 7,
+                    fontSize: 'var(--af-fs-7)',
                     textTransform: 'uppercase',
                     letterSpacing: '0.06em',
                     color: '#111',
@@ -196,7 +196,7 @@ export default function ReportsListView({ projectId, toast, onSelectReport }: Re
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <span style={{
                     fontFamily: 'var(--font-mono)',
-                    fontSize: 9,
+                    fontSize: 'var(--af-fs-9)',
                     padding: '2px 8px',
                     border: `1px solid ${st.border}`,
                     color: st.color,

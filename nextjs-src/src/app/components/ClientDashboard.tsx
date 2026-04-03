@@ -63,7 +63,7 @@ export default function ClientDashboard({ onNavigate, toast }: ClientDashboardPr
             background: 'none',
             border: 'none',
             fontFamily: "var(--af-font-mono)",
-            fontSize: 7,
+            fontSize: 'var(--af-fs-7)',
             textTransform: 'uppercase',
             letterSpacing: '0.14em',
             color: '#111',
@@ -112,7 +112,7 @@ export default function ClientDashboard({ onNavigate, toast }: ClientDashboardPr
           <p
             style={{
               fontFamily: "var(--af-font-mono)",
-              fontSize: 10,
+              fontSize: 'var(--af-fs-10)',
               color: '#111',
               marginTop: 8,
               textTransform: 'uppercase',

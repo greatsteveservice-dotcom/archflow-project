@@ -63,7 +63,7 @@ export default function CreateProjectModal({ open, onClose, onSuccess }: CreateP
           onClick={handleClose}
           style={{
             background: 'none', border: 'none', cursor: 'pointer',
-            fontFamily: mono, fontSize: 9, color: '#111',
+            fontFamily: mono, fontSize: 'var(--af-fs-9)', color: '#111',
             textTransform: 'uppercase', letterSpacing: '0.12em',
             padding: 0,
           }}
@@ -84,7 +84,7 @@ export default function CreateProjectModal({ open, onClose, onSuccess }: CreateP
         {error && (
           <div style={{
             border: '0.5px solid #111', padding: '10px 14px', marginBottom: 20,
-            fontFamily: mono, fontSize: 11, color: '#111',
+            fontFamily: mono, fontSize: 'var(--af-fs-11)', color: '#111',
           }}>
             {error}
           </div>
@@ -93,7 +93,7 @@ export default function CreateProjectModal({ open, onClose, onSuccess }: CreateP
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: 20 }}>
             <label style={{
-              display: 'block', fontFamily: mono, fontSize: 9,
+              display: 'block', fontFamily: mono, fontSize: 'var(--af-fs-9)',
               color: '#111', textTransform: 'uppercase', letterSpacing: '0.12em',
               marginBottom: 8,
             }}>
@@ -112,7 +112,7 @@ export default function CreateProjectModal({ open, onClose, onSuccess }: CreateP
 
           <div style={{ marginBottom: 20 }}>
             <label style={{
-              display: 'block', fontFamily: mono, fontSize: 9,
+              display: 'block', fontFamily: mono, fontSize: 'var(--af-fs-9)',
               color: '#111', textTransform: 'uppercase', letterSpacing: '0.12em',
               marginBottom: 8,
             }}>
@@ -130,7 +130,7 @@ export default function CreateProjectModal({ open, onClose, onSuccess }: CreateP
 
           <div style={{ marginBottom: 32 }}>
             <label style={{
-              display: 'block', fontFamily: mono, fontSize: 9,
+              display: 'block', fontFamily: mono, fontSize: 'var(--af-fs-9)',
               color: '#111', textTransform: 'uppercase', letterSpacing: '0.12em',
               marginBottom: 8,
             }}>
