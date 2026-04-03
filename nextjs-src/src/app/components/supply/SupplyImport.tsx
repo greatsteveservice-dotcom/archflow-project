@@ -291,19 +291,29 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
 
       {/* Step 1: Upload */}
       {step === 1 && (
-        <div className="card p-8 text-center">
+        <div style={{ background: '#fff', border: '0.5px solid #EBEBEB', padding: 32, textAlign: 'center' }}>
           <div
-            className={`border-2 border-dashed rounded-xl p-12 transition-colors cursor-pointer ${
-              dragOver ? 'border-ink bg-srf-raised' : 'border-line hover:border-ink-ghost'
-            }`}
+            style={{
+              border: dragOver ? '2px dashed #111' : '1px dashed #EBEBEB',
+              background: dragOver ? '#F6F6F4' : '#FAFAF8',
+              padding: 48,
+              cursor: 'pointer',
+              transition: 'background 0.15s, border-color 0.15s',
+            }}
             onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
             onDragLeave={() => setDragOver(false)}
             onDrop={handleDrop}
             onClick={() => fileRef.current?.click()}
           >
-            <Icons.Upload className="w-10 h-10 text-ink-ghost mx-auto mb-3" />
-            <div className="text-[14px] font-medium mb-1">Перетащите файл Excel сюда</div>
-            <div className="text-[12px] text-ink-faint">или нажмите для выбора (.xlsx, .xls)</div>
+            <div style={{ color: '#888', display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
+              <Icons.Upload className="w-10 h-10" />
+            </div>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-13)', fontWeight: 500, color: '#111', marginBottom: 4 }}>
+              Перетащите файл Excel сюда
+            </div>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-11)', color: '#888' }}>
+              или нажмите для выбора (.xlsx, .xls)
+            </div>
           </div>
           <input
             ref={fileRef}
