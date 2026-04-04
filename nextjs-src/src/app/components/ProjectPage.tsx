@@ -30,12 +30,9 @@ interface ProjectPageProps {
   onSearchOpen?: () => void;
 }
 
-/** Demo emails that get full Supply access */
-const SUPPLY_DEMO_EMAILS = ['supply-demo@archflow.ru', 'demo@archflow.ru'];
-
-const SECTION_CONFIG: { id: ProjectTab; label: string; permKey: keyof ProjectPermissions; index: string; disabled?: boolean }[] = [
+const SECTION_CONFIG: { id: ProjectTab; label: string; permKey: keyof ProjectPermissions; index: string }[] = [
   { id: "design", label: "Дизайн", permKey: "canViewDesign", index: "01" },
-  { id: "supply", label: "Комплектация", permKey: "canViewSupply", index: "02", disabled: true },
+  { id: "supply", label: "Комплектация", permKey: "canViewSupply", index: "02" },
   { id: "supervision", label: "Авторский надзор", permKey: "canViewSupervision", index: "03" },
 ];
 
@@ -57,10 +54,7 @@ export default function ProjectPage({ projectId, initialTab, onNavigate, toast, 
 
   useProjectRealtime(projectId, { refetchProject, refetchVisits, refetchInvoices });
 
-  const isDemoSupply = SUPPLY_DEMO_EMAILS.includes(profile?.email || '');
-  const visibleSections = SECTION_CONFIG.filter(t => permissions[t.permKey]).map(s =>
-    s.id === 'supply' && isDemoSupply ? { ...s, disabled: false } : s
-  );
+  const visibleSections = SECTION_CONFIG.filter(t => permissions[t.permKey]);
   // activeTab derived from URL (initialTab prop) — null = Level 2 (section list), string = Level 3 (section content)
   const validTabs: string[] = ['design', 'supervision', 'supply', 'chat', 'settings', 'assistant'];
   const isDesigner = profile?.role === 'designer';
@@ -212,24 +206,7 @@ export default function ProjectPage({ projectId, initialTab, onNavigate, toast, 
           <div style={{ padding: 0 }}>
             {visibleSections.map((section) => {
               const displayLabel = getSectionLabel(section.id);
-              return section.disabled ? (
-                <div
-                  key={section.id}
-                  className="af-block af-block-disabled"
-                  style={{ cursor: 'default' }}
-                >
-                  <div className="af-block-inner">
-                    <span className="af-block-index">{section.index}</span>
-                    <span
-                      className={`af-block-name ${isShortName(displayLabel) ? 'af-block-name-short' : 'af-block-name-long'}`}
-                    >
-                      {displayLabel}
-                    </span>
-                    <span className="af-block-sub">Скоро</span>
-                  </div>
-                  <span className="af-block-arrow">→</span>
-                </div>
-              ) : (
+              return (
                 <button
                   key={section.id}
                   className="af-block"

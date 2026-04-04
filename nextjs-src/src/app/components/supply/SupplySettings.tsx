@@ -4,7 +4,7 @@ import { Icons } from '../Icons';
 import { useProject, useProjectRooms, useKindStageMappings } from '../../lib/hooks';
 import {
   updateProject, createRoom, updateRoom, deleteRoom, renameRoomInSupplyItems,
-  upsertKindStageMapping, deleteKindStageMapping,
+  upsertKindStageMapping, deleteKindStageMapping, batchUpsertKindStageMappings,
   createStage, updateStage, deleteStage,
 } from '../../lib/queries';
 import type { ProjectRoom, KindStageMapping, Stage, SupplyItemWithCalc } from '../../lib/types';
@@ -71,6 +71,28 @@ export default function SupplySettings({ projectId, toast, stages, items, refetc
     setStartDate(project.start_date || '');
     setDiscount(String(project.supply_discount || 0));
   }, [project]);
+
+  // Auto-seed default Kind→Stage mappings when list is empty and stages exist
+  const [seeded, setSeeded] = useState(false);
+  useEffect(() => {
+    if (seeded || !kindMappings || kindMappings.length > 0 || !stages || stages.length === 0) return;
+    setSeeded(true);
+    const DEFAULT_KIND_MAPPINGS: { kind: string; stagePattern: string }[] = [
+      { kind: 'Мебель', stagePattern: 'мебель' },
+      { kind: 'Освещение', stagePattern: 'чистов' },
+      { kind: 'Сантехника', stagePattern: 'электрик' },
+      { kind: 'Декор', stagePattern: 'мебель' },
+      { kind: 'Бытовая техника', stagePattern: 'мебель' },
+    ];
+    const inputs = DEFAULT_KIND_MAPPINGS
+      .map(({ kind, stagePattern }) => {
+        const matched = stages.find(s => s.name.toLowerCase().includes(stagePattern));
+        return matched ? { kind, stage_name: matched.name } : null;
+      })
+      .filter(Boolean) as { kind: string; stage_name: string }[];
+    if (inputs.length === 0) return;
+    batchUpsertKindStageMappings(inputs).then(() => refetchMappings()).catch(() => {});
+  }, [kindMappings, stages, seeded, refetchMappings]);
 
   const hasChanges = project && (
     scenario !== (project.scenario_type || 'block') ||
