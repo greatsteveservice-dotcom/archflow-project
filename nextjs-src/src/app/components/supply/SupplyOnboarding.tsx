@@ -200,6 +200,9 @@ export default function SupplyOnboarding({
                 placeholder="м²" min="0" step="0.1"
                 style={inputStyle}
               />
+              <span style={{ fontFamily: mono, fontSize: 11, color: 'rgb(var(--ink))', opacity: 0.4, marginTop: 3, display: 'block' }}>
+                можно примерно
+              </span>
             </div>
             <button
               onClick={addRoom}
