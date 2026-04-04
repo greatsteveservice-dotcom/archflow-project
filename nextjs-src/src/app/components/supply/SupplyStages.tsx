@@ -17,9 +17,9 @@ const mono = "'IBM Plex Mono', monospace";
 const display = "'Playfair Display', serif";
 
 const STAGE_STATUS_STYLE: Record<StageStatus, { label: string; bg: string; text: string }> = {
-  pending: { label: "Ожидает", bg: "#F6F6F4", text: "#111111" },
-  in_progress: { label: "В работе", bg: "#EBEBEB", text: "#111111" },
-  done: { label: "Завершён", bg: "#F6F6F4", text: "#111111" },
+  pending: { label: "Ожидает", bg: "rgb(var(--line), 0.3)", text: "rgb(var(--ink))" },
+  in_progress: { label: "В работе", bg: "rgb(var(--line))", text: "rgb(var(--ink))" },
+  done: { label: "Завершён", bg: "rgb(var(--line), 0.3)", text: "rgb(var(--ink))" },
 };
 
 export function SupplyStages({ stages, items, refetchStages, toast }: SupplyStagesProps) {
@@ -109,8 +109,8 @@ export function SupplyStages({ stages, items, refetchStages, toast }: SupplyStag
             key={stage.id}
             className="group"
             style={{
-              background: '#fff',
-              border: '0.5px solid #EBEBEB',
+              background: 'rgb(var(--srf))',
+              border: '0.5px solid rgb(var(--line))',
               padding: 20,
             }}
           >
@@ -118,9 +118,9 @@ export function SupplyStages({ stages, items, refetchStages, toast }: SupplyStag
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
                 <div style={{
-                  width: 32, height: 32, background: '#F6F6F4',
+                  width: 32, height: 32, background: 'rgb(var(--line), 0.3)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontFamily: mono, fontSize: 'var(--af-fs-13)', fontWeight: 600, color: '#888',
+                  fontFamily: mono, fontSize: 'var(--af-fs-13)', fontWeight: 600, color: 'rgb(var(--ink))', opacity: 0.5,
                   flexShrink: 0,
                 }}>
                   {stage.sort_order}
@@ -139,10 +139,10 @@ export function SupplyStages({ stages, items, refetchStages, toast }: SupplyStag
                         autoFocus
                         style={{
                           flex: 1, padding: '4px 8px',
-                          border: '0.5px solid #EBEBEB',
+                          border: '0.5px solid rgb(var(--line))',
                           fontFamily: mono, fontSize: 'var(--af-fs-13)',
-                          color: '#111', outline: 'none',
-                          background: '#FAFAF8',
+                          color: 'rgb(var(--ink))', outline: 'none',
+                          background: 'rgb(var(--line), 0.15)',
                         }}
                       />
                       <button
@@ -152,7 +152,7 @@ export function SupplyStages({ stages, items, refetchStages, toast }: SupplyStag
                           background: 'none', border: 'none',
                           cursor: !editName.trim() || isSaving ? 'not-allowed' : 'pointer',
                           padding: 2, display: 'flex',
-                          color: '#111', opacity: !editName.trim() || isSaving ? 0.3 : 1,
+                          color: 'rgb(var(--ink))', opacity: !editName.trim() || isSaving ? 0.3 : 1,
                         }}
                         title="Сохранить"
                       >
@@ -163,7 +163,7 @@ export function SupplyStages({ stages, items, refetchStages, toast }: SupplyStag
                         style={{
                           background: 'none', border: 'none',
                           cursor: 'pointer', padding: 2,
-                          display: 'flex', color: '#888',
+                          display: 'flex', color: 'rgb(var(--ink))', opacity: 0.5,
                         }}
                         title="Отменить"
                       >
@@ -172,10 +172,10 @@ export function SupplyStages({ stages, items, refetchStages, toast }: SupplyStag
                     </div>
                   ) : (
                     <>
-                      <div style={{ fontFamily: display, fontSize: 14, fontWeight: 700, color: '#111' }}>
+                      <div style={{ fontFamily: display, fontSize: 14, fontWeight: 700, color: 'rgb(var(--ink))' }}>
                         {stage.name}
                       </div>
-                      <div style={{ fontFamily: mono, fontSize: 'var(--af-fs-11)', color: '#888', marginTop: 2 }}>
+                      <div style={{ fontFamily: mono, fontSize: 'var(--af-fs-11)', color: 'rgb(var(--ink))', opacity: 0.5, marginTop: 2 }}>
                         {stage.start_date ? formatShortDate(stage.start_date) : "—"}
                         {stage.end_date ? ` → ${formatShortDate(stage.end_date)}` : ""}
                       </div>
@@ -189,7 +189,7 @@ export function SupplyStages({ stages, items, refetchStages, toast }: SupplyStag
                 {stage.critical > 0 && (
                   <span style={{
                     fontFamily: mono, fontSize: 'var(--af-fs-10)', fontWeight: 600,
-                    padding: '2px 6px', background: '#F6F6F4', color: '#111',
+                    padding: '2px 6px', background: 'rgb(var(--line), 0.3)', color: 'rgb(var(--ink))',
                     display: 'flex', alignItems: 'center', gap: 4,
                   }}>
                     <Icons.Alert className="w-3 h-3" /> {stage.critical}
@@ -215,11 +215,11 @@ export function SupplyStages({ stages, items, refetchStages, toast }: SupplyStag
                       onClick={() => startEdit(stage)}
                       style={{
                         background: 'none', border: 'none', cursor: 'pointer',
-                        padding: 4, display: 'flex', color: '#888',
-                        transition: 'color 0.15s',
+                        padding: 4, display: 'flex', color: 'rgb(var(--ink))', opacity: 0.5,
+                        transition: 'opacity 0.15s',
                       }}
-                      onMouseEnter={(e) => (e.currentTarget.style.color = '#111')}
-                      onMouseLeave={(e) => (e.currentTarget.style.color = '#888')}
+                      onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+                      onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.5')}
                       title="Редактировать"
                     >
                       <Icons.Edit className="w-4 h-4" />
@@ -228,11 +228,11 @@ export function SupplyStages({ stages, items, refetchStages, toast }: SupplyStag
                       onClick={() => setConfirmDeleteId(stage.id)}
                       style={{
                         background: 'none', border: 'none', cursor: 'pointer',
-                        padding: 4, display: 'flex', color: '#888',
-                        transition: 'color 0.15s',
+                        padding: 4, display: 'flex', color: 'rgb(var(--ink))', opacity: 0.5,
+                        transition: 'opacity 0.15s',
                       }}
-                      onMouseEnter={(e) => (e.currentTarget.style.color = '#111')}
-                      onMouseLeave={(e) => (e.currentTarget.style.color = '#888')}
+                      onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+                      onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.5')}
                       title="Удалить"
                     >
                       <Icons.Trash className="w-4 h-4" />
@@ -246,17 +246,17 @@ export function SupplyStages({ stages, items, refetchStages, toast }: SupplyStag
             {isConfirmingDelete && (
               <div style={{
                 display: 'flex', alignItems: 'center', gap: 12,
-                padding: '10px 14px', background: '#FAFAF8',
-                border: '0.5px solid #EBEBEB', marginBottom: 12,
+                padding: '10px 14px', background: 'rgb(var(--line), 0.15)',
+                border: '0.5px solid rgb(var(--line))', marginBottom: 12,
               }}>
-                <span style={{ fontFamily: mono, fontSize: 'var(--af-fs-11)', color: '#111', flex: 1 }}>
+                <span style={{ fontFamily: mono, fontSize: 'var(--af-fs-11)', color: 'rgb(var(--ink))', flex: 1 }}>
                   Удалить этап?
                 </span>
                 <button
                   onClick={() => handleDelete(stage.id)}
                   disabled={isDeleting}
                   style={{
-                    background: '#111', color: '#fff', border: 'none',
+                    background: 'rgb(var(--ink))', color: 'rgb(var(--srf))', border: 'none',
                     fontFamily: mono, fontSize: 'var(--af-fs-9)', textTransform: 'uppercase',
                     letterSpacing: '0.12em', padding: '6px 14px',
                     cursor: isDeleting ? 'wait' : 'pointer',
@@ -268,7 +268,7 @@ export function SupplyStages({ stages, items, refetchStages, toast }: SupplyStag
                 <button
                   onClick={() => setConfirmDeleteId(null)}
                   style={{
-                    background: 'none', color: '#111', border: '0.5px solid #EBEBEB',
+                    background: 'none', color: 'rgb(var(--ink))', border: '0.5px solid rgb(var(--line))',
                     fontFamily: mono, fontSize: 'var(--af-fs-9)', textTransform: 'uppercase',
                     letterSpacing: '0.12em', padding: '6px 14px',
                     cursor: 'pointer',
@@ -283,14 +283,14 @@ export function SupplyStages({ stages, items, refetchStages, toast }: SupplyStag
             {stage.total > 0 && (
               <div style={{ marginBottom: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <span style={{ fontFamily: mono, fontSize: 'var(--af-fs-11)', color: '#888' }}>
+                  <span style={{ fontFamily: mono, fontSize: 'var(--af-fs-11)', color: 'rgb(var(--ink))', opacity: 0.5 }}>
                     {stage.delivered}/{stage.total} доставлено
                   </span>
-                  <span style={{ fontFamily: mono, fontSize: 'var(--af-fs-11)', color: '#111' }}>{progress}%</span>
+                  <span style={{ fontFamily: mono, fontSize: 'var(--af-fs-11)', color: 'rgb(var(--ink))' }}>{progress}%</span>
                 </div>
-                <div style={{ height: 4, background: '#F6F6F4', overflow: 'hidden' }}>
+                <div style={{ height: 4, background: 'rgb(var(--line), 0.3)', overflow: 'hidden' }}>
                   <div style={{
-                    height: '100%', background: '#111',
+                    height: '100%', background: 'rgb(var(--ink))',
                     width: `${progress}%`, transition: 'width 0.5s',
                   }} />
                 </div>
@@ -308,13 +308,13 @@ export function SupplyStages({ stages, items, refetchStages, toast }: SupplyStag
                       key={item.id}
                       style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                        padding: '8px 0', borderBottom: '0.5px solid #F6F6F4',
+                        padding: '8px 0', borderBottom: '0.5px solid rgb(var(--line), 0.3)',
                       }}
                     >
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <span style={{ fontFamily: mono, fontSize: 'var(--af-fs-13)', color: '#111' }}>{item.name}</span>
+                        <span style={{ fontFamily: mono, fontSize: 'var(--af-fs-13)', color: 'rgb(var(--ink))' }}>{item.name}</span>
                         {item.supplier && (
-                          <span style={{ fontFamily: mono, fontSize: 'var(--af-fs-11)', color: '#888', marginLeft: 8 }}>{item.supplier}</span>
+                          <span style={{ fontFamily: mono, fontSize: 'var(--af-fs-11)', color: 'rgb(var(--ink))', opacity: 0.5, marginLeft: 8 }}>{item.supplier}</span>
                         )}
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 12 }}>
@@ -336,7 +336,7 @@ export function SupplyStages({ stages, items, refetchStages, toast }: SupplyStag
                 })}
               </div>
             ) : (
-              <div style={{ fontFamily: mono, fontSize: 'var(--af-fs-12)', color: '#888', padding: '8px 0' }}>
+              <div style={{ fontFamily: mono, fontSize: 'var(--af-fs-12)', color: 'rgb(var(--ink))', opacity: 0.5, padding: '8px 0' }}>
                 Нет позиций для этого этапа
               </div>
             )}

@@ -55,8 +55,8 @@ export default function KindStageReconciliation({
 
   return (
     <div style={{
-      background: '#FAFAF8',
-      border: '0.5px solid #EBEBEB',
+      background: 'rgb(var(--line), 0.15)',
+      border: '0.5px solid rgb(var(--line))',
       padding: expanded ? 16 : '10px 16px',
       marginBottom: 16,
     }}>
@@ -68,7 +68,7 @@ export default function KindStageReconciliation({
         }}>
           <div style={{ flexShrink: 0 }}><Icons.Info className="w-4 h-4" /></div>
           <span style={{
-            fontFamily: mono, fontSize: 'var(--af-fs-12)', color: '#111',
+            fontFamily: mono, fontSize: 'var(--af-fs-12)', color: 'rgb(var(--ink))',
           }}>
             {unmappedKinds.length} {unmappedKinds.length === 1 ? 'вид' : unmappedKinds.length < 5 ? 'вида' : 'видов'} без привязки к этапу
           </span>
@@ -77,7 +77,7 @@ export default function KindStageReconciliation({
           <button
             onClick={() => setExpanded(!expanded)}
             style={{
-              background: '#111', color: '#fff', border: 'none',
+              background: 'rgb(var(--ink))', color: 'rgb(var(--srf))', border: 'none',
               fontFamily: mono, fontSize: 'var(--af-fs-9)', textTransform: 'uppercase',
               letterSpacing: '0.12em', padding: '5px 14px',
               cursor: 'pointer',
@@ -90,7 +90,7 @@ export default function KindStageReconciliation({
               onClick={() => setDismissed(true)}
               style={{
                 background: 'none', border: 'none', cursor: 'pointer',
-                padding: 4, display: 'flex', color: '#888',
+                padding: 4, display: 'flex', color: 'rgb(var(--ink))', opacity: 0.5,
               }}
             >
               <Icons.X className="w-3.5 h-3.5" />
@@ -103,11 +103,11 @@ export default function KindStageReconciliation({
         <div style={{ marginTop: 14 }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr style={{ borderBottom: '0.5px solid #EBEBEB' }}>
+              <tr style={{ borderBottom: '0.5px solid rgb(var(--line))' }}>
                 <th style={{
                   fontFamily: mono, fontSize: 'var(--af-fs-10)',
                   textTransform: 'uppercase', letterSpacing: '0.12em',
-                  color: '#888', fontWeight: 500,
+                  color: 'rgb(var(--ink))', opacity: 0.5, fontWeight: 500,
                   textAlign: 'left', padding: '6px 8px',
                 }}>
                   Вид
@@ -115,7 +115,7 @@ export default function KindStageReconciliation({
                 <th style={{
                   fontFamily: mono, fontSize: 'var(--af-fs-10)',
                   textTransform: 'uppercase', letterSpacing: '0.12em',
-                  color: '#888', fontWeight: 500,
+                  color: 'rgb(var(--ink))', opacity: 0.5, fontWeight: 500,
                   textAlign: 'left', padding: '6px 8px',
                 }}>
                   Этап
@@ -124,10 +124,10 @@ export default function KindStageReconciliation({
             </thead>
             <tbody>
               {unmappedKinds.map((kind) => (
-                <tr key={kind} style={{ borderBottom: '0.5px solid #F6F6F4' }}>
+                <tr key={kind} style={{ borderBottom: '0.5px solid rgb(var(--line), 0.3)' }}>
                   <td style={{
                     padding: '8px 8px', fontFamily: mono,
-                    fontSize: 'var(--af-fs-12)', color: '#111',
+                    fontSize: 'var(--af-fs-12)', color: 'rgb(var(--ink))',
                   }}>
                     {kind}
                   </td>
@@ -137,9 +137,9 @@ export default function KindStageReconciliation({
                       onChange={(e) => handleSelect(kind, e.target.value)}
                       style={{
                         width: '100%', padding: '4px 8px',
-                        border: '0.5px solid #EBEBEB',
+                        border: '0.5px solid rgb(var(--line))',
                         fontFamily: mono, fontSize: 'var(--af-fs-11)',
-                        color: '#111', outline: 'none', background: '#fff',
+                        color: 'rgb(var(--ink))', outline: 'none', background: 'rgb(var(--srf))',
                       }}
                     >
                       <option value="">— Выберите этап —</option>
@@ -157,7 +157,7 @@ export default function KindStageReconciliation({
             <button
               onClick={() => { setExpanded(false); setDismissed(true); }}
               style={{
-                background: 'none', color: '#111', border: '0.5px solid #EBEBEB',
+                background: 'none', color: 'rgb(var(--ink))', border: '0.5px solid rgb(var(--line))',
                 fontFamily: mono, fontSize: 'var(--af-fs-9)', textTransform: 'uppercase',
                 letterSpacing: '0.12em', padding: '7px 14px',
                 cursor: 'pointer',
@@ -169,7 +169,7 @@ export default function KindStageReconciliation({
               onClick={handleSaveAll}
               disabled={filledCount === 0 || saving}
               style={{
-                background: '#111', color: '#fff', border: 'none',
+                background: 'rgb(var(--ink))', color: 'rgb(var(--srf))', border: 'none',
                 fontFamily: mono, fontSize: 'var(--af-fs-9)', textTransform: 'uppercase',
                 letterSpacing: '0.12em', padding: '7px 14px',
                 cursor: filledCount === 0 || saving ? 'not-allowed' : 'pointer',

@@ -4,63 +4,51 @@ import { useState, useMemo, useCallback } from "react";
 import { Icons } from "../Icons";
 import Loading, { ErrorMessage } from "../Loading";
 import { useProjectStages, useProjectSupplyItems, useProjectRooms, useKindStageMappings } from "../../lib/hooks";
-import { calcSupplyItem, createStage } from "../../lib/queries";
+import { calcSupplyItem } from "../../lib/queries";
 import type { SupplyItemWithCalc } from "../../lib/types";
-import { SupplyDashboard } from "./SupplyDashboard";
 import { SupplySpec } from "./SupplySpec";
 import { SupplyTimeline } from "./SupplyTimeline";
-import { SupplyStages } from "./SupplyStages";
 import SupplyImport from "./SupplyImport";
 import SupplySettings from "./SupplySettings";
 import SupplyDocuments from "./SupplyDocuments";
 import SupplyPlan from "./SupplyPlan";
 import KindStageReconciliation from "./KindStageReconciliation";
+import SupplyOnboarding from "./SupplyOnboarding";
 
 interface SupplyModuleProps {
   projectId: string;
   toast?: (msg: string) => void;
 }
 
-const TABS = [
-  { id: "dashboard", label: "Обзор", icon: Icons.Grid },
-  { id: "spec", label: "Спецификация", icon: Icons.List },
-  { id: "timeline", label: "Timeline", icon: Icons.Timeline },
-  { id: "stages", label: "Этапы", icon: Icons.Layers },
-  { id: "plan", label: "План", icon: Icons.Home },
-  { id: "docs", label: "Документы", icon: Icons.File },
-  { id: "import", label: "Импорт", icon: Icons.Upload },
-  { id: "settings", label: "Настройки", icon: Icons.Settings },
+/* ── Top-level sections ── */
+const SECTIONS = [
+  { id: "items", label: "Позиции" },
+  { id: "plan", label: "План" },
+  { id: "settings", label: "Настройки" },
 ] as const;
 
-type TabId = (typeof TABS)[number]["id"];
+type SectionId = (typeof SECTIONS)[number]["id"];
+
+/* ── Sub-tabs inside "Позиции" ── */
+const ITEM_TABS = [
+  { id: "spec", label: "Спецификация" },
+  { id: "timeline", label: "Timeline" },
+  { id: "docs", label: "Документы" },
+] as const;
+
+type ItemTabId = (typeof ITEM_TABS)[number]["id"];
 
 const mono = "'IBM Plex Mono', monospace";
-const display = "'Playfair Display', serif";
-
-/** Default stages for interior design projects */
-const DEFAULT_STAGES = [
-  "Демонтаж",
-  "Черновые работы",
-  "Электрика и сантехника",
-  "Стяжка и штукатурка",
-  "Чистовая отделка",
-  "Мебель и декор",
-];
 
 export default function SupplyModule({ projectId, toast }: SupplyModuleProps) {
-  const [activeTab, setActiveTab] = useState<TabId>("dashboard");
+  const [activeSection, setActiveSection] = useState<SectionId>("items");
+  const [activeItemTab, setActiveItemTab] = useState<ItemTabId>("spec");
+  const [showImport, setShowImport] = useState(false);
+
   const { data: stages, loading: loadingStages, error: errorStages, refetch: refetchStages } = useProjectStages(projectId);
   const { data: items, loading: loadingItems, error: errorItems, refetch: refetchItems } = useProjectSupplyItems(projectId);
-  const { data: rooms } = useProjectRooms(projectId);
+  const { data: rooms, refetch: refetchRooms } = useProjectRooms(projectId);
   const { data: kindMappings, refetch: refetchMappings } = useKindStageMappings();
-
-  // Add stage form state
-  const [showAddStage, setShowAddStage] = useState(false);
-  const [newStageName, setNewStageName] = useState("");
-  const [newStageStart, setNewStageStart] = useState("");
-  const [newStageEnd, setNewStageEnd] = useState("");
-  const [addingStage, setAddingStage] = useState(false);
-  const [creatingDefaults, setCreatingDefaults] = useState(false);
 
   const doToast = toast || (() => {});
 
@@ -70,7 +58,7 @@ export default function SupplyModule({ projectId, toast }: SupplyModuleProps) {
     return items.map((item) => calcSupplyItem(item, stages));
   }, [items, stages]);
 
-  // Find unmapped kinds (categories without kind→stage mapping)
+  // Find unmapped kinds
   const unmappedKinds = useMemo(() => {
     if (!calcItems.length || !kindMappings) return [];
     const mappedKindsLower = new Set((kindMappings || []).map(m => m.kind.toLowerCase().trim()));
@@ -83,80 +71,57 @@ export default function SupplyModule({ projectId, toast }: SupplyModuleProps) {
     return Array.from(categories).sort();
   }, [calcItems, kindMappings]);
 
-  const handleAddStage = useCallback(async () => {
-    if (!newStageName.trim() || addingStage) return;
-    setAddingStage(true);
-    try {
-      await createStage({
-        project_id: projectId,
-        name: newStageName.trim(),
-        start_date: newStageStart || null,
-        end_date: newStageEnd || null,
-        sort_order: (stages?.length || 0) + 1,
-      });
-      doToast("Этап добавлен");
-      setNewStageName("");
-      setNewStageStart("");
-      setNewStageEnd("");
-      setShowAddStage(false);
-      refetchStages();
-    } catch (err: any) {
-      doToast("Ошибка: " + (err.message || "не удалось создать этап"));
-    } finally {
-      setAddingStage(false);
-    }
-  }, [projectId, newStageName, newStageStart, newStageEnd, addingStage, stages, doToast, refetchStages]);
-
-  const handleCreateDefaults = useCallback(async () => {
-    if (creatingDefaults) return;
-    setCreatingDefaults(true);
-    try {
-      for (let i = 0; i < DEFAULT_STAGES.length; i++) {
-        await createStage({
-          project_id: projectId,
-          name: DEFAULT_STAGES[i],
-          sort_order: i + 1,
-        });
-      }
-      doToast(`Создано ${DEFAULT_STAGES.length} этапов`);
-      refetchStages();
-    } catch (err: any) {
-      doToast("Ошибка: " + (err.message || "не удалось создать этапы"));
-    } finally {
-      setCreatingDefaults(false);
-    }
-  }, [projectId, creatingDefaults, doToast, refetchStages]);
+  // Navigate from Plan to Spec with room filter
+  const navigateToSpecWithRoom = useCallback((_roomName: string) => {
+    setActiveSection("items");
+    setActiveItemTab("spec");
+  }, []);
 
   if (loadingStages || loadingItems) return <Loading />;
   if (errorStages) return <ErrorMessage message={errorStages} />;
   if (errorItems) return <ErrorMessage message={errorItems} />;
 
   const hasStages = stages && stages.length > 0;
+  const hasItems = items && items.length > 0;
+  const hasRooms = rooms && rooms.length > 0;
 
-  // Tabs that work without stages
-  const noStagesTabs: TabId[] = ["docs", "settings"];
+  // Show onboarding if no supply items AND no rooms
+  if (!hasItems && !hasRooms) {
+    return (
+      <SupplyOnboarding
+        projectId={projectId}
+        stages={stages || []}
+        toast={doToast}
+        refetchRooms={refetchRooms}
+        refetchItems={refetchItems}
+        refetchStages={refetchStages}
+        kindMappings={kindMappings || []}
+        onComplete={() => {
+          refetchRooms();
+          refetchItems();
+          refetchStages();
+        }}
+      />
+    );
+  }
 
   return (
     <div>
-      {/* Sub-tabs — always visible */}
+      {/* ── Section tabs ── */}
       <div className="stab mb-5 w-fit">
-        {TABS.map((tab) => {
-          const Icon = tab.icon;
-          return (
-            <button
-              key={tab.id}
-              className={`stb ${activeTab === tab.id ? "active" : ""}`}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              <Icon className="w-3.5 h-3.5" />
-              {tab.label}
-            </button>
-          );
-        })}
+        {SECTIONS.map((section) => (
+          <button
+            key={section.id}
+            className={`stb ${activeSection === section.id ? "active" : ""}`}
+            onClick={() => setActiveSection(section.id)}
+          >
+            {section.label}
+          </button>
+        ))}
       </div>
 
-      {/* Kind→Stage reconciliation banner */}
-      {hasStages && unmappedKinds.length > 0 && (
+      {/* ── Kind→Stage reconciliation banner ── */}
+      {hasStages && unmappedKinds.length > 0 && activeSection === "items" && (
         <KindStageReconciliation
           unmappedKinds={unmappedKinds}
           stages={stages!}
@@ -165,174 +130,144 @@ export default function SupplyModule({ projectId, toast }: SupplyModuleProps) {
         />
       )}
 
-      {/* Tab content */}
+      {/* ── Section content ── */}
       <div className="animate-fade-in">
-        {/* Tabs that need stages — show empty state if none */}
-        {!hasStages && !noStagesTabs.includes(activeTab) ? (
-          <div style={{ padding: '40px 0', textAlign: 'center' }}>
-            <div style={{ marginBottom: 16, color: '#999', display: 'flex', justifyContent: 'center' }}>
-              <Icons.Layers className="w-10 h-10" />
-            </div>
+        {/* ═══ ПОЗИЦИИ ═══ */}
+        {activeSection === "items" && (
+          <div>
+            {/* Sub-header: tabs + import button */}
             <div style={{
-              fontFamily: display, fontSize: 18, fontWeight: 700,
-              color: '#111', marginBottom: 8,
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              marginBottom: 16, flexWrap: "wrap", gap: 8,
             }}>
-              Нет этапов стройки
-            </div>
-            <div style={{
-              fontFamily: mono, fontSize: 'var(--af-fs-12)', color: '#888',
-              marginBottom: 28, lineHeight: 1.6,
-            }}>
-              Добавьте этапы, чтобы начать работу с комплектацией
-            </div>
+              <div className="stab w-fit" style={{ marginBottom: 0 }}>
+                {ITEM_TABS.map((tab) => (
+                  <button
+                    key={tab.id}
+                    className={`stb ${activeItemTab === tab.id ? "active" : ""}`}
+                    onClick={() => setActiveItemTab(tab.id)}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
 
-            {/* CTA buttons */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-              <button
-                onClick={handleCreateDefaults}
-                disabled={creatingDefaults}
-                style={{
-                  background: '#111', color: '#fff', border: 'none',
-                  fontFamily: mono, fontSize: 'var(--af-fs-9)', textTransform: 'uppercase',
-                  letterSpacing: '0.14em', padding: '12px 28px',
-                  cursor: creatingDefaults ? 'wait' : 'pointer',
-                  opacity: creatingDefaults ? 0.6 : 1,
-                }}
-              >
-                {creatingDefaults ? 'Создаём...' : 'Создать стандартные этапы'}
-              </button>
-
-              <button
-                onClick={() => setShowAddStage(true)}
-                style={{
-                  background: 'none', color: '#111', border: '0.5px solid #EBEBEB',
-                  fontFamily: mono, fontSize: 'var(--af-fs-9)', textTransform: 'uppercase',
-                  letterSpacing: '0.14em', padding: '10px 24px',
-                  cursor: 'pointer',
-                }}
-              >
-                Добавить свой этап
-              </button>
+              {hasStages && (
+                <button
+                  onClick={() => setShowImport(!showImport)}
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 6,
+                    fontFamily: mono, fontSize: "var(--af-fs-9)", textTransform: "uppercase",
+                    letterSpacing: "0.12em", padding: "6px 14px",
+                    border: "0.5px solid rgb(var(--line))", background: "transparent",
+                    color: "rgb(var(--ink))", cursor: "pointer", transition: "all 0.15s",
+                  }}
+                  className="af-btn-hover"
+                >
+                  <Icons.Upload className="w-3.5 h-3.5" />
+                  Импортировать Excel
+                </button>
+              )}
             </div>
 
-            {/* Inline add stage form */}
-            {showAddStage && (
-              <div style={{
-                maxWidth: 400, margin: '20px auto 0', textAlign: 'left',
-                border: '0.5px solid #EBEBEB', padding: 20,
-                background: '#FAFAF8',
-              }}>
+            {/* Import overlay */}
+            {showImport && hasStages && (
+              <div style={{ marginBottom: 20 }}>
                 <div style={{
-                  fontFamily: mono, fontSize: 'var(--af-fs-9)', textTransform: 'uppercase',
-                  letterSpacing: '0.14em', color: '#111', marginBottom: 14,
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                  marginBottom: 12,
                 }}>
-                  Новый этап
-                </div>
-                <div style={{ marginBottom: 12 }}>
-                  <label style={{ fontFamily: mono, fontSize: 'var(--af-fs-10)', color: '#888', display: 'block', marginBottom: 4 }}>
-                    Название *
-                  </label>
-                  <input
-                    type="text"
-                    value={newStageName}
-                    onChange={(e) => setNewStageName(e.target.value)}
-                    placeholder="Например: Демонтаж"
-                    style={{
-                      width: '100%', padding: '8px 10px', border: '0.5px solid #EBEBEB',
-                      fontFamily: mono, fontSize: 'var(--af-fs-12)', color: '#111',
-                      background: '#fff', outline: 'none', boxSizing: 'border-box',
-                    }}
-                  />
-                </div>
-                <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-                  <div style={{ flex: 1 }}>
-                    <label style={{ fontFamily: mono, fontSize: 'var(--af-fs-10)', color: '#888', display: 'block', marginBottom: 4 }}>
-                      Начало
-                    </label>
-                    <input
-                      type="date"
-                      value={newStageStart}
-                      onChange={(e) => setNewStageStart(e.target.value)}
-                      style={{
-                        width: '100%', padding: '8px 10px', border: '0.5px solid #EBEBEB',
-                        fontFamily: mono, fontSize: 'var(--af-fs-11)', color: '#111',
-                        background: '#fff', outline: 'none', boxSizing: 'border-box',
-                      }}
-                    />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <label style={{ fontFamily: mono, fontSize: 'var(--af-fs-10)', color: '#888', display: 'block', marginBottom: 4 }}>
-                      Окончание
-                    </label>
-                    <input
-                      type="date"
-                      value={newStageEnd}
-                      onChange={(e) => setNewStageEnd(e.target.value)}
-                      style={{
-                        width: '100%', padding: '8px 10px', border: '0.5px solid #EBEBEB',
-                        fontFamily: mono, fontSize: 'var(--af-fs-11)', color: '#111',
-                        background: '#fff', outline: 'none', boxSizing: 'border-box',
-                      }}
-                    />
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: 8 }}>
+                  <span style={{
+                    fontFamily: mono, fontSize: "var(--af-fs-9)", textTransform: "uppercase",
+                    letterSpacing: "0.14em", color: "rgb(var(--ink))",
+                  }}>
+                    Импорт из Excel
+                  </span>
                   <button
-                    onClick={handleAddStage}
-                    disabled={!newStageName.trim() || addingStage}
+                    onClick={() => setShowImport(false)}
                     style={{
-                      flex: 1, background: '#111', color: '#fff', border: 'none',
-                      fontFamily: mono, fontSize: 'var(--af-fs-9)', textTransform: 'uppercase',
-                      letterSpacing: '0.12em', padding: '10px 0',
-                      cursor: !newStageName.trim() || addingStage ? 'not-allowed' : 'pointer',
-                      opacity: !newStageName.trim() || addingStage ? 0.4 : 1,
+                      background: "none", border: "none", cursor: "pointer",
+                      padding: 4, display: "flex", color: "rgb(var(--ink))", opacity: 0.5,
                     }}
                   >
-                    {addingStage ? 'Создаём...' : 'Создать'}
-                  </button>
-                  <button
-                    onClick={() => { setShowAddStage(false); setNewStageName(''); setNewStageStart(''); setNewStageEnd(''); }}
-                    style={{
-                      background: 'none', color: '#111', border: '0.5px solid #EBEBEB',
-                      fontFamily: mono, fontSize: 'var(--af-fs-9)', textTransform: 'uppercase',
-                      letterSpacing: '0.12em', padding: '10px 16px',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Отмена
+                    <Icons.X className="w-4 h-4" />
                   </button>
                 </div>
+                <SupplyImport
+                  projectId={projectId}
+                  stages={stages!}
+                  toast={doToast}
+                  onImportComplete={() => { refetchItems(); setShowImport(false); }}
+                  kindMappings={kindMappings || []}
+                />
               </div>
             )}
+
+            {/* Tab content */}
+            {!hasStages && activeItemTab !== "docs" ? (
+              <EmptyStagesMessage />
+            ) : (
+              <>
+                {activeItemTab === "spec" && hasStages && (
+                  <SupplySpec items={calcItems} stages={stages!} projectId={projectId} refetchItems={refetchItems} toast={doToast} />
+                )}
+                {activeItemTab === "timeline" && hasStages && (
+                  <SupplyTimeline items={calcItems} stages={stages!} />
+                )}
+                {activeItemTab === "docs" && (
+                  <SupplyDocuments projectId={projectId} toast={doToast} />
+                )}
+              </>
+            )}
           </div>
-        ) : (
-          <>
-            {activeTab === "dashboard" && hasStages && (
-              <SupplyDashboard items={calcItems} stages={stages!} />
-            )}
-            {activeTab === "spec" && hasStages && (
-              <SupplySpec items={calcItems} stages={stages!} projectId={projectId} refetchItems={refetchItems} toast={doToast} />
-            )}
-            {activeTab === "timeline" && hasStages && (
-              <SupplyTimeline items={calcItems} stages={stages!} />
-            )}
-            {activeTab === "stages" && hasStages && (
-              <SupplyStages stages={stages!} items={calcItems} refetchStages={refetchStages} toast={doToast} />
-            )}
-            {activeTab === "plan" && hasStages && (
-              <SupplyPlan items={calcItems} rooms={rooms || []} />
-            )}
-            {activeTab === "docs" && (
-              <SupplyDocuments projectId={projectId} toast={doToast} />
-            )}
-            {activeTab === "import" && hasStages && (
-              <SupplyImport projectId={projectId} stages={stages!} toast={doToast} onImportComplete={refetchItems} kindMappings={kindMappings || []} />
-            )}
-            {activeTab === "settings" && (
-              <SupplySettings projectId={projectId} toast={doToast} />
-            )}
-          </>
         )}
+
+        {/* ═══ ПЛАН ═══ */}
+        {activeSection === "plan" && (
+          hasStages ? (
+            <SupplyPlan
+              items={calcItems}
+              rooms={rooms || []}
+              onNavigateToSpec={navigateToSpecWithRoom}
+            />
+          ) : (
+            <EmptyStagesMessage />
+          )
+        )}
+
+        {/* ═══ НАСТРОЙКИ ═══ */}
+        {activeSection === "settings" && (
+          <SupplySettings
+            projectId={projectId}
+            toast={doToast}
+            stages={stages || []}
+            items={calcItems}
+            refetchStages={refetchStages}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Placeholder when no stages exist */
+function EmptyStagesMessage() {
+  return (
+    <div style={{ padding: "40px 0", textAlign: "center" }}>
+      <div style={{ marginBottom: 16, color: "rgb(var(--ink))", opacity: 0.3, display: "flex", justifyContent: "center" }}>
+        <Icons.Layers className="w-10 h-10" />
+      </div>
+      <div style={{
+        fontFamily: "'Playfair Display', serif", fontSize: 18, fontWeight: 700,
+        color: "rgb(var(--ink))", marginBottom: 8,
+      }}>
+        Нет этапов стройки
+      </div>
+      <div style={{
+        fontFamily: "'IBM Plex Mono', monospace", fontSize: "var(--af-fs-12)",
+        color: "rgb(var(--ink))", opacity: 0.5, lineHeight: 1.6,
+      }}>
+        Добавьте этапы в разделе Настройки
       </div>
     </div>
   );

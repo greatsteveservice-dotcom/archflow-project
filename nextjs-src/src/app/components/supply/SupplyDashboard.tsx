@@ -57,13 +57,13 @@ export function SupplyDashboard({ items, stages }: SupplyDashboardProps) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         {/* Critical warnings */}
-        <div style={{ background: '#F6F6F4', padding: 20, border: '0.5px solid #EBEBEB' }}>
+        <div style={{ background: 'rgb(var(--line), 0.3)', padding: 20, border: '0.5px solid rgb(var(--line))' }}>
           <h3 style={{
             fontFamily: "'IBM Plex Mono', monospace",
             fontSize: 'var(--af-fs-9)',
             letterSpacing: '0.16em',
             textTransform: 'uppercase',
-            color: '#111',
+            color: 'rgb(var(--ink))',
             marginBottom: 16,
           }}>
             Критические позиции
@@ -105,13 +105,13 @@ export function SupplyDashboard({ items, stages }: SupplyDashboardProps) {
         </div>
 
         {/* Upcoming stages */}
-        <div style={{ background: '#F6F6F4', padding: 20, border: '0.5px solid #EBEBEB' }}>
+        <div style={{ background: 'rgb(var(--line), 0.3)', padding: 20, border: '0.5px solid rgb(var(--line))' }}>
           <h3 style={{
             fontFamily: "'IBM Plex Mono', monospace",
             fontSize: 'var(--af-fs-9)',
             letterSpacing: '0.16em',
             textTransform: 'uppercase',
-            color: '#111',
+            color: 'rgb(var(--ink))',
             marginBottom: 16,
           }}>
             Ближайшие этапы
@@ -138,9 +138,9 @@ export function SupplyDashboard({ items, stages }: SupplyDashboardProps) {
                     </div>
                     <div className="text-[11px] text-ink-faint">
                       {stageItems.length} позиций · {pending > 0 ? (
-                        <span style={{ color: '#111', fontWeight: 500 }}>{pending} не заказано</span>
+                        <span style={{ color: 'rgb(var(--ink))', fontWeight: 500 }}>{pending} не заказано</span>
                       ) : (
-                        <span style={{ color: '#111' }}>всё заказано</span>
+                        <span style={{ color: 'rgb(var(--ink))' }}>всё заказано</span>
                       )}
                     </div>
                   </div>

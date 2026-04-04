@@ -444,10 +444,10 @@ export const SUPPLY_STATUS_CONFIG: Record<SupplyStatus, { label: string; bg: str
   delivered:     { label: 'Доставлено',      bg: '#F6F6F4', text: '#111111' },
 };
 
-// Risk keeps subtle semantic hint: dark=critical, medium gray=medium, light=low
+// Risk uses grayscale gradient: darker gray = higher risk, no black backgrounds
 export const RISK_CONFIG: Record<RiskLevel, { label: string; bg: string; text: string }> = {
-  critical: { label: 'Критично',  bg: '#111111', text: '#FFFFFF' },
-  high:     { label: 'Высокий',   bg: '#111111', text: '#FFFFFF' },
+  critical: { label: 'Критично',  bg: '#D0D0D0', text: '#111111' },
+  high:     { label: 'Высокий',   bg: '#DCDCDC', text: '#111111' },
   medium:   { label: 'Средний',   bg: '#EBEBEB', text: '#111111' },
   low:      { label: 'Низкий',    bg: '#F6F6F4', text: '#111111' },
 };

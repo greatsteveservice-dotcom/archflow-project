@@ -331,11 +331,11 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
 
       {/* Step 1: Upload */}
       {step === 1 && (
-        <div style={{ background: '#fff', border: '0.5px solid #EBEBEB', padding: 32, textAlign: 'center' }}>
+        <div style={{ background: 'rgb(var(--srf))', border: '0.5px solid rgb(var(--line))', padding: 32, textAlign: 'center' }}>
           <div
             style={{
-              border: dragOver ? '2px dashed #111' : '1px dashed #EBEBEB',
-              background: dragOver ? '#F6F6F4' : '#FAFAF8',
+              border: dragOver ? '2px dashed rgb(var(--ink))' : '1px dashed rgb(var(--line))',
+              background: dragOver ? 'rgb(var(--line), 0.3)' : 'rgb(var(--line), 0.15)',
               padding: 48,
               cursor: 'pointer',
               transition: 'background 0.15s, border-color 0.15s',
@@ -345,13 +345,13 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
             onDrop={handleDrop}
             onClick={() => fileRef.current?.click()}
           >
-            <div style={{ color: '#888', display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
+            <div style={{ color: 'rgb(var(--ink))', opacity: 0.5, display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
               <Icons.Upload className="w-10 h-10" />
             </div>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-13)', fontWeight: 500, color: '#111', marginBottom: 4 }}>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-13)', fontWeight: 500, color: 'rgb(var(--ink))', marginBottom: 4 }}>
               Перетащите файл Excel сюда
             </div>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-11)', color: '#888' }}>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-11)', color: 'rgb(var(--ink))', opacity: 0.5 }}>
               или нажмите для выбора (.xlsx, .xls)
             </div>
           </div>
@@ -415,10 +415,10 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
           {/* Unmatched stages warning */}
           {unmatchedStages.length > 0 && (
             <div style={{
-              background: '#FAFAF8', border: '0.5px solid #EBEBEB',
+              background: 'rgb(var(--line), 0.15)', border: '0.5px solid rgb(var(--line))',
               padding: '8px 12px', marginBottom: 12,
               fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-11)',
-              color: '#111',
+              color: 'rgb(var(--ink))',
             }}>
               Не найден этап: {unmatchedStages.join(', ')}
             </div>
@@ -432,25 +432,25 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
                   <div key={roomName} style={{ marginBottom: 16 }}>
                     <div style={{
                       fontFamily: "'Playfair Display', serif", fontSize: 13,
-                      fontWeight: 700, color: '#111', marginBottom: 6,
+                      fontWeight: 700, color: 'rgb(var(--ink))', marginBottom: 6,
                       display: 'flex', alignItems: 'center', gap: 8,
                     }}>
                       {roomName}
                       <span style={{
                         fontFamily: "'IBM Plex Mono', monospace",
-                        fontSize: 'var(--af-fs-10)', fontWeight: 400, color: '#888',
+                        fontSize: 'var(--af-fs-10)', fontWeight: 400, color: 'rgb(var(--ink))', opacity: 0.5,
                       }}>
                         ({roomItems.length})
                       </span>
                     </div>
                     <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
                       <thead>
-                        <tr style={{ borderBottom: '0.5px solid #EBEBEB' }}>
+                        <tr style={{ borderBottom: '0.5px solid rgb(var(--line))' }}>
                           {mappedFields.filter(f => f.key !== 'room').map(f => (
                             <th key={f.key} style={{
                               textAlign: 'left', padding: '4px 8px',
                               fontFamily: "'IBM Plex Mono', monospace",
-                              fontSize: 'var(--af-fs-10)', color: '#888', fontWeight: 500,
+                              fontSize: 'var(--af-fs-10)', color: 'rgb(var(--ink))', opacity: 0.5, fontWeight: 500,
                             }}>
                               {f.label.replace(' *', '')}
                             </th>
@@ -459,7 +459,7 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
                       </thead>
                       <tbody>
                         {roomItems.slice(0, 5).map((item, idx) => (
-                          <tr key={idx} style={{ borderBottom: '0.5px solid #F6F6F4' }}>
+                          <tr key={idx} style={{ borderBottom: '0.5px solid rgb(var(--line), 0.3)' }}>
                             {mappedFields.filter(f => f.key !== 'room').map(f => (
                               <td key={f.key} style={{
                                 padding: '4px 8px', color: '#666',
@@ -470,7 +470,7 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
                               }}>
                                 {cellValue(item, f.key)}
                                 {f.key === 'stage' && isAutoStage(item) && (
-                                  <span style={{ color: '#888', fontSize: 'var(--af-fs-9)', marginLeft: 4 }}>(авто)</span>
+                                  <span style={{ color: 'rgb(var(--ink))', opacity: 0.5, fontSize: 'var(--af-fs-9)', marginLeft: 4 }}>(авто)</span>
                                 )}
                               </td>
                             ))}
@@ -479,7 +479,7 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
                         {roomItems.length > 5 && (
                           <tr>
                             <td colSpan={mappedFields.length} style={{
-                              padding: '4px 8px', color: '#888',
+                              padding: '4px 8px', color: 'rgb(var(--ink))', opacity: 0.5,
                               fontFamily: "'IBM Plex Mono', monospace",
                               fontSize: 'var(--af-fs-10)',
                             }}>
@@ -509,7 +509,7 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
                         <td key={f.key} className="py-2 px-3 text-ink-secondary max-w-[200px] truncate">
                           {cellValue(item, f.key)}
                           {f.key === 'stage' && isAutoStage(item) && (
-                            <span style={{ color: '#888', fontSize: 'var(--af-fs-9)', marginLeft: 4 }}>(авто)</span>
+                            <span style={{ color: 'rgb(var(--ink))', opacity: 0.5, fontSize: 'var(--af-fs-9)', marginLeft: 4 }}>(авто)</span>
                           )}
                         </td>
                       ))}
