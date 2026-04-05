@@ -134,7 +134,6 @@ export default function ProjectPage({ projectId, initialTab, onNavigate, toast, 
         { label: project.title },
       ];
 
-  const isShortName = (name: string) => name.length <= 12;
 
   return (
     <div className="animate-fade-in">
@@ -214,7 +213,7 @@ export default function ProjectPage({ projectId, initialTab, onNavigate, toast, 
                 >
                   <div className="af-block-inner">
                     <span className="af-block-index">{section.index}</span>
-                    <span className={`af-block-name ${isShortName(displayLabel) ? 'af-block-name-short' : 'af-block-name-long'}`}>
+                    <span className="af-block-name">
                       {displayLabel}
                     </span>
                     <span className="af-block-sub">

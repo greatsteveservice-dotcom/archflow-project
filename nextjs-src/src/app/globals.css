@@ -228,14 +228,13 @@ body {
   transition: color 0.2s ease;
 }
 .af-block-name {
-  font-family: var(--af-font-display); font-weight: 900;
+  font-family: var(--af-font-display); font-weight: 700;
+  font-size: 36px;
   color: var(--af-black); display: block; line-height: 1.0;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   text-transform: uppercase;
   transition: color 0.2s ease;
 }
-.af-block-name-short { font-size: 44px; }
-.af-block-name-long { font-size: 36px; }
 .af-block-sub {
   font-family: var(--af-font-mono); font-size: 9px;
   text-transform: uppercase; letter-spacing: 0.2em;
@@ -265,13 +264,11 @@ body {
 .af-block-settings:hover .af-block-arrow { color: #EBEBEB; }
 @media (min-width: 768px) and (max-width: 1023px) {
   .af-block { min-height: 130px; padding: 24px; }
-  .af-block-name-short { font-size: 36px; }
-  .af-block-name-long { font-size: 28px; }
+  .af-block-name { font-size: 28px; }
 }
 @media (max-width: 767px) {
   .af-block { min-height: 110px; padding: 20px 20px; }
-  .af-block-name-short { font-size: 28px; }
-  .af-block-name-long { font-size: 22px; }
+  .af-block-name { font-size: 22px; }
   .af-block-settings { min-height: 52px; padding: 16px 20px; }
   .af-block-settings .af-block-name { font-size: 11px; }
   .af-block-arrow { font-size: 18px; }
