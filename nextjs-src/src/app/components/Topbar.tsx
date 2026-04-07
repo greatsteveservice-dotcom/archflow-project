@@ -36,7 +36,7 @@ export default function Topbar({ title, breadcrumbs, actions, depth = 1, context
       {/* Top bar: logo + context */}
       <div className="af-topbar">
         <span className="af-topbar-logo" onClick={onLogoClick}>
-          <img src="/logo.svg" alt="ArchFlow" style={{ height: 22, width: 'auto' }} />
+          <img src="/icon-192.png" alt="ArchFlow" style={{ height: 20, width: 'auto' }} />
         </span>
         <div className="af-topbar-right">
           {onSearchOpen && (
