@@ -55,20 +55,29 @@ interface UseQueryResult<T> {
   refetch: () => void;
 }
 
+/** Simple module-level cache to prevent skeleton flash on re-mounts (e.g. tab switches) */
+const _queryCache = new Map<string, unknown>();
+
 function useQuery<T>(fetcher: () => Promise<T>, deps: unknown[] = []): UseQueryResult<T> {
-  const [data, setData] = useState<T | null>(null);
-  const [loading, setLoading] = useState(true);
+  const cacheKey = JSON.stringify(deps);
+  const cached = _queryCache.get(cacheKey) as T | undefined;
+  const [data, setData] = useState<T | null>(cached ?? null);
+  const [loading, setLoading] = useState(!cached);
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
+    // Don't show loading if we have cached data — show stale data while refreshing
+    if (!_queryCache.has(cacheKey)) {
+      setLoading(true);
+    }
     setError(null);
 
     fetcher()
       .then(result => {
         if (!cancelled) {
+          _queryCache.set(cacheKey, result);
           setData(result);
           setLoading(false);
         }

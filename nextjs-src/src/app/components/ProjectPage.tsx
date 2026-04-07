@@ -83,7 +83,9 @@ export default function ProjectPage({ projectId, initialTab, onNavigate, toast, 
     if (activeTab === 'supply') metrikaGoal('supply_opened', { projectId });
   }, [activeTab, projectId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (loadingProject || loadingVisits) return <ProjectPageSkeleton />;
+  // Show skeleton only on initial load (no data yet). During tab switches
+  // within the same project, data persists so we skip the skeleton flash.
+  if (!project && (loadingProject || loadingVisits)) return <ProjectPageSkeleton />;
   if (errorProject) return <ErrorMessage message={errorProject} />;
   if (!project) return <ErrorMessage message="Проект не найден" />;
 
