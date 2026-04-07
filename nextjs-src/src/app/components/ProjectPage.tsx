@@ -10,6 +10,7 @@ import { useAuth } from "../lib/auth";
 import { updateProject } from "../lib/queries";
 import type { ProjectPermissions } from "../lib/types";
 import { exportVisitsCsv, exportInvoicesCsv } from "../lib/export";
+import { metrikaGoal } from "../lib/metrika";
 import dynamic from "next/dynamic";
 import SupplyModule from "./supply/SupplyModule";
 import DesignSection from "./project/DesignSection";
@@ -72,6 +73,15 @@ export default function ProjectPage({ projectId, initialTab, onNavigate, toast, 
       titleInputRef.current.select();
     }
   }, [isEditingTitle]);
+
+  // Metrika goals
+  useEffect(() => {
+    if (project) metrikaGoal('project_opened', { projectId });
+  }, [projectId, project?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (activeTab === 'supply') metrikaGoal('supply_opened', { projectId });
+  }, [activeTab, projectId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loadingProject || loadingVisits) return <ProjectPageSkeleton />;
   if (errorProject) return <ErrorMessage message={errorProject} />;

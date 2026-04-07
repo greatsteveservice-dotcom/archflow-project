@@ -126,7 +126,7 @@ Fixed bottom bar on all screens except login: "Что-то не так?" → fee
 ```
 NEXT_PUBLIC_SUPABASE_URL     — Supabase instance URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY — Supabase public anon key
-NEXT_PUBLIC_YM_ID            — Yandex Metrika ID
+NEXT_PUBLIC_METRIKA_ID       — Yandex Metrika counter ID (fallback: NEXT_PUBLIC_YM_ID)
 RESEND_API_KEY               — Email service (Resend)
 TELEGRAM_BOT_TOKEN           — Feedback bot token
 TELEGRAM_CHAT_ID             — Feedback chat ID

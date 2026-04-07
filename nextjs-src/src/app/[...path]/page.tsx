@@ -21,6 +21,7 @@ import ContractorDashboard from "../components/ContractorDashboard";
 import { useProjects } from "../lib/hooks";
 import { useAuth } from "../lib/auth";
 import { acceptProjectInvitation, acceptRbacInvite } from "../lib/queries";
+import { metrikaGoal } from "../lib/metrika";
 
 // ======================== URL ROUTING ========================
 
@@ -137,6 +138,7 @@ export default function AppShell() {
           refetchProjects();
           navigate('project', result.project_id);
           setToastMsg('Вы добавлены в проект');
+          metrikaGoal('invite_accepted', { type: 'project' });
         }
       })
       .catch((err) => {
@@ -171,8 +173,10 @@ export default function AppShell() {
           refetchProjects();
           navigate('project', result.project_id);
           setToastMsg('Вы добавлены в проект');
+          metrikaGoal('invite_accepted', { type: 'rbac' });
         } else {
           setToastMsg('Приглашение принято');
+          metrikaGoal('invite_accepted', { type: 'rbac' });
         }
       })
       .catch((err) => {

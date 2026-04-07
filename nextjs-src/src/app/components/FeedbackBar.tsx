@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "../lib/auth";
 import { supabase } from "../lib/supabase";
+import { metrikaGoal } from "../lib/metrika";
 
 export default function FeedbackBar() {
   const { profile } = useAuth();
@@ -131,6 +132,7 @@ export default function FeedbackBar() {
       setFile(null);
       setPreview(null);
       setSent(true);
+      metrikaGoal('feedback_sent');
     } else {
       setError("Не удалось отправить. Попробуйте ещё раз.");
     }

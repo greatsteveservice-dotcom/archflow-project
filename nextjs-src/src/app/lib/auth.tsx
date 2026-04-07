@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState, useCallback, type React
 import { supabase } from "./supabase";
 import type { Session, User } from "@supabase/supabase-js";
 import type { Profile } from "./types";
+import { metrikaSetUser } from "./metrika";
 
 // ======================== TYPES ========================
 
@@ -164,6 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(session?.user ?? null);
       if (session?.user) {
         fetchProfile(session.user.id);
+        metrikaSetUser(session.user.id);
       } else {
         setProfile(null);
       }

@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import { Icons } from '../Icons';
 import { createRoom, createStage } from '../../lib/queries';
+import { metrikaGoal } from '../../lib/metrika';
 import SupplyImport from './SupplyImport';
 import type { Stage, KindStageMapping } from '../../lib/types';
 
@@ -98,6 +99,7 @@ export default function SupplyOnboarding({
   const handleImportComplete = useCallback(() => {
     setImported(true);
     refetchItems();
+    metrikaGoal('excel_imported', { source: 'onboarding' });
     setStep(3);
   }, [refetchItems]);
 
@@ -327,7 +329,7 @@ export default function SupplyOnboarding({
           )}
 
           <button
-            onClick={onComplete}
+            onClick={() => { metrikaGoal('onboarding_completed'); onComplete(); }}
             style={{
               padding: '12px 32px',
               fontFamily: mono, fontSize: 'var(--af-fs-10)', textTransform: 'uppercase',

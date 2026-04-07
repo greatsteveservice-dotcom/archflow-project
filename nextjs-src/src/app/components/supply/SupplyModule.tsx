@@ -5,6 +5,7 @@ import { Icons } from "../Icons";
 import Loading, { ErrorMessage } from "../Loading";
 import { useProjectStages, useProjectSupplyItems, useProjectRooms, useKindStageMappings } from "../../lib/hooks";
 import { calcSupplyItem } from "../../lib/queries";
+import { metrikaGoal } from "../../lib/metrika";
 import type { SupplyItemWithCalc } from "../../lib/types";
 import { SupplySpec } from "./SupplySpec";
 import { SupplyTimeline } from "./SupplyTimeline";
@@ -197,7 +198,7 @@ export default function SupplyModule({ projectId, toast }: SupplyModuleProps) {
                   projectId={projectId}
                   stages={stages!}
                   toast={doToast}
-                  onImportComplete={() => { refetchItems(); setShowImport(false); }}
+                  onImportComplete={() => { metrikaGoal('excel_imported', { source: 'supply' }); refetchItems(); setShowImport(false); }}
                   kindMappings={kindMappings || []}
                 />
               </div>
