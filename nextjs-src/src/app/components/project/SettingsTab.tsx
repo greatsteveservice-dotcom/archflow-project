@@ -26,7 +26,7 @@ const ACCESS_OPTIONS: { value: AccessLevel; label: string }[] = [
   { value: 'view', label: 'Только просмотр' },
   { value: 'view_comment', label: 'Просмотр + комментарии' },
   { value: 'view_comment_photo', label: 'Просмотр + фото + комментарии' },
-  { value: 'view_supply', label: 'Supply-операции' },
+  { value: 'view_supply', label: 'Комплектация' },
   { value: 'full', label: 'Полный доступ' },
 ];
 
@@ -39,7 +39,7 @@ interface SettingsTabProps {
 }
 
 export default function SettingsTab({ project, projectId, toast, canDeleteProject = false, onDeleteProject }: SettingsTabProps) {
-  const [sub, setSub] = useState<'roles' | 'details' | 'access' | 'notifications'>('roles');
+  const [sub, setSub] = useState<'roles' | 'details' | 'notifications'>('roles');
   const { data: members, loading, refetch: refetchMembers } = useProjectMembersWithProfiles(projectId);
   const { profile } = useAuth();
 
@@ -162,15 +162,12 @@ export default function SettingsTab({ project, projectId, toast, canDeleteProjec
 
   return (
     <div className="animate-fade-in">
-      <div className="stab mb-6 w-fit">
+      <div className="stab mb-6">
         <button className={`stb ${sub === 'roles' ? 'active' : ''}`} onClick={() => setSub('roles')}>
           <Icons.Users className="w-3.5 h-3.5" /> Роли и доступ
         </button>
         <button className={`stb ${sub === 'details' ? 'active' : ''}`} onClick={() => setSub('details')}>
           <Icons.Settings className="w-3.5 h-3.5" /> Детали проекта
-        </button>
-        <button className={`stb ${sub === 'access' ? 'active' : ''}`} onClick={() => setSub('access')}>
-          <Icons.Users className="w-3.5 h-3.5" /> Доступ
         </button>
         {showNotifications && (
           <button className={`stb ${sub === 'notifications' ? 'active' : ''}`} onClick={() => setSub('notifications')}>
@@ -245,9 +242,14 @@ export default function SettingsTab({ project, projectId, toast, canDeleteProjec
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', width: 96, display: 'inline-block', textAlign: 'center', padding: '2px 0', border: '0.5px solid #EBEBEB', color: '#111' }}>Заказчик</span><span style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: '#111' }}>Только просмотр</span></div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', width: 96, display: 'inline-block', textAlign: 'center', padding: '2px 0', border: '0.5px solid #EBEBEB', color: '#111' }}>Подрядчик</span><span style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: '#111' }}>Просмотр + фото + комментарии</span></div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', width: 96, display: 'inline-block', textAlign: 'center', padding: '2px 0', border: '0.5px solid #EBEBEB', color: '#111' }}>Комплектатор</span><span style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: '#111' }}>Supply + обновление статусов</span></div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', width: 96, display: 'inline-block', textAlign: 'center', padding: '2px 0', border: '0.5px solid #EBEBEB', color: '#111' }}>Комплектатор</span><span style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: '#111' }}>Комплектация + обновление статусов</span></div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', width: 96, display: 'inline-block', textAlign: 'center', padding: '2px 0', border: '0.5px solid #EBEBEB', color: '#111' }}>Ассистент</span><span style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: '#111' }}>На усмотрение дизайнера</span></div>
             </div>
+          </div>
+
+          {/* Access management (merged from separate tab) */}
+          <div style={{ marginTop: 24 }}>
+            <AccessScreen projectId={projectId} projectName={project?.title} toast={toast} onBack={() => {}} embedded />
           </div>
         </div>
       )}
@@ -310,10 +312,6 @@ export default function SettingsTab({ project, projectId, toast, canDeleteProjec
             </div>
           )}
         </div>
-      )}
-
-      {sub === 'access' && (
-        <AccessScreen projectId={projectId} projectName={project?.title} toast={toast} onBack={() => setSub('roles')} />
       )}
 
       {sub === 'notifications' && (

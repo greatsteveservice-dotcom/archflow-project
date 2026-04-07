@@ -35,9 +35,11 @@ interface AccessScreenProps {
   projectName?: string;
   toast: (msg: string) => void;
   onBack: () => void;
+  /** When true, hides back button and title (used inline in SettingsTab) */
+  embedded?: boolean;
 }
 
-export default function AccessScreen({ projectId, projectName, toast, onBack }: AccessScreenProps) {
+export default function AccessScreen({ projectId, projectName, toast, onBack, embedded }: AccessScreenProps) {
   const { data: members, loading, refetch: refetchMembers } = useRbacMembers(projectId);
   const { data: accessSettings, refetch: refetchSettings } = useAccessSettings(projectId);
 
@@ -120,22 +122,24 @@ export default function AccessScreen({ projectId, projectName, toast, onBack }: 
 
   // ─── Render ────────────────────────────────────────────
   return (
-    <div className="animate-fade-in">
-      {/* Header with back */}
-      <button
-        className="flex items-center gap-1 text-[11px] text-ink-muted mb-4 hover:text-ink transition-colors"
-        style={{ fontFamily: 'var(--font-mono)' }}
-        onClick={onBack}
-      >
-        ← Назад
-      </button>
-
-      <h2
-        className="text-[18px] mb-6"
-        style={{ fontFamily: 'var(--font-heading)', fontWeight: 700 }}
-      >
-        Доступ
-      </h2>
+    <div className={embedded ? '' : 'animate-fade-in'}>
+      {!embedded && (
+        <>
+          <button
+            className="flex items-center gap-1 text-[11px] text-ink-muted mb-4 hover:text-ink transition-colors"
+            style={{ fontFamily: 'var(--font-mono)' }}
+            onClick={onBack}
+          >
+            ← Назад
+          </button>
+          <h2
+            className="text-[18px] mb-6"
+            style={{ fontFamily: 'var(--font-heading)', fontWeight: 700 }}
+          >
+            Доступ
+          </h2>
+        </>
+      )}
 
       {/* Invite link banner */}
       {lastInviteLink && (
