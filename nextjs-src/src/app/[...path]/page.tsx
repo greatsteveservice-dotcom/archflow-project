@@ -193,8 +193,8 @@ export default function AppShell() {
   // Auth loading state — editorial
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-srf flex items-center justify-center">
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.2em', color: 'rgb(var(--ink))', opacity: 0.4 }}>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.2em', color: '#AAA' }}>
           Загрузка...
         </div>
       </div>
@@ -209,12 +209,12 @@ export default function AppShell() {
   // RBAC invite accepting screen
   if (inviteAccepting) {
     return (
-      <div className="min-h-screen bg-srf flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, fontWeight: 700, color: 'rgb(var(--ink))', marginBottom: 12 }}>
+          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, fontWeight: 700, color: '#111', marginBottom: 12 }}>
             Принимаем приглашение
           </h1>
-          <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: 'rgb(var(--ink))', opacity: 0.4 }}>
+          <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: '#AAA' }}>
             Подождите...
           </p>
         </div>
@@ -225,12 +225,12 @@ export default function AppShell() {
   // RBAC invite error screen
   if (inviteError) {
     return (
-      <div className="min-h-screen bg-srf flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center" style={{ maxWidth: 400 }}>
-          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, fontWeight: 700, color: 'rgb(var(--ink))', marginBottom: 12 }}>
+          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, fontWeight: 700, color: '#111', marginBottom: 12 }}>
             Ссылка недействительна
           </h1>
-          <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: 'rgb(var(--ink))', opacity: 0.4, marginBottom: 24 }}>
+          <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: '#999', marginBottom: 24 }}>
             {inviteError}
           </p>
           <button
@@ -354,7 +354,7 @@ export default function AppShell() {
   };
 
   return (
-    <div className="min-h-screen bg-srf">
+    <div className="min-h-screen bg-white">
       {/* Sidebar kept as no-op for compat */}
       <Sidebar currentPage={page} onNavigate={navigate} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 

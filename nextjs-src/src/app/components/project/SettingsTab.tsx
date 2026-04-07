@@ -179,41 +179,41 @@ export default function SettingsTab({ project, projectId, toast, canDeleteProjec
       {sub === 'roles' && (
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h3 style={{ fontFamily: display, fontSize: 16, fontWeight: 700, color: 'var(--af-black)' }}>Участники проекта</h3>
+            <h3 style={{ fontFamily: display, fontSize: 16, fontWeight: 700, color: '#111' }}>Участники проекта</h3>
             <button className="af-btn" onClick={() => setShowInvite(true)}>
               + Пригласить
             </button>
           </div>
 
           {loading ? (
-            <div style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: 'var(--af-black)' }}>Загрузка...</div>
+            <div style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: '#111' }}>Загрузка...</div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 24 }}>
               {(Array.isArray(members) ? members : []).map((m) => (
                 <div key={m.id} className="group" style={{
-                  background: 'var(--af-white)', border: '0.5px solid var(--af-border)', padding: 16,
+                  background: '#fff', border: '0.5px solid #EBEBEB', padding: 16,
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <div style={{
-                      width: 28, height: 28, background: 'var(--af-offwhite)',
+                      width: 28, height: 28, background: '#F6F6F4',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontFamily: mono, fontSize: 'var(--af-fs-9)', fontWeight: 600, color: 'var(--af-black)',
+                      fontFamily: mono, fontSize: 'var(--af-fs-9)', fontWeight: 600, color: '#111',
                     }}>
                       {getInitials(m)}
                     </div>
                     <div>
-                      <div style={{ fontFamily: mono, fontSize: 'var(--af-fs-10)', color: 'var(--af-black)' }}>{getName(m)}</div>
-                      <div style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: 'var(--af-black)' }}>{ROLE_LABEL[m.role] || m.role}</div>
+                      <div style={{ fontFamily: mono, fontSize: 'var(--af-fs-10)', color: '#111' }}>{getName(m)}</div>
+                      <div style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: '#111' }}>{ROLE_LABEL[m.role] || m.role}</div>
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span style={{
                       fontFamily: mono, fontSize: 'var(--af-fs-9)', width: 96, textAlign: 'center',
                       display: 'inline-block', whiteSpace: 'nowrap', padding: '2px 0',
-                      background: m.role === 'designer' ? 'var(--af-black)' : 'transparent',
-                      color: m.role === 'designer' ? 'var(--af-white)' : 'var(--af-black)',
-                      border: m.role === 'designer' ? 'none' : '0.5px solid var(--af-border)',
+                      background: m.role === 'designer' ? '#111' : 'transparent',
+                      color: m.role === 'designer' ? '#fff' : '#111',
+                      border: m.role === 'designer' ? 'none' : '0.5px solid #EBEBEB',
                     }}>
                       {m.role === 'designer' ? 'Владелец' : m.access_level === 'full' ? 'Полный' : 'Ограничен'}
                     </span>
@@ -222,7 +222,7 @@ export default function SettingsTab({ project, projectId, toast, canDeleteProjec
                         className="opacity-0 group-hover:opacity-100 transition-opacity"
                         onClick={() => setMemberToDelete(m)}
                         title="Удалить участника"
-                        style={{ padding: 4, color: 'var(--af-border)' }}
+                        style={{ padding: 4, color: '#EBEBEB' }}
                       >
                         <Icons.Trash className="w-3.5 h-3.5" />
                       </button>
@@ -231,19 +231,19 @@ export default function SettingsTab({ project, projectId, toast, canDeleteProjec
                 </div>
               ))}
               {(!members || members.length === 0) && (
-                <div style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: 'var(--af-black)' }}>Участников пока нет</div>
+                <div style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: '#111' }}>Участников пока нет</div>
               )}
             </div>
           )}
 
           {/* Role templates */}
-          <div style={{ background: 'var(--af-white)', border: '0.5px solid var(--af-border)', padding: 16 }}>
-            <h4 style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--af-black)', marginBottom: 12 }}>Шаблоны ролей</h4>
+          <div style={{ background: '#fff', border: '0.5px solid #EBEBEB', padding: 16 }}>
+            <h4 style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', textTransform: 'uppercase', letterSpacing: '0.14em', color: '#111', marginBottom: 12 }}>Шаблоны ролей</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', width: 96, display: 'inline-block', textAlign: 'center', padding: '2px 0', border: '0.5px solid var(--af-border)', color: 'var(--af-black)' }}>Заказчик</span><span style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: 'var(--af-black)' }}>Только просмотр</span></div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', width: 96, display: 'inline-block', textAlign: 'center', padding: '2px 0', border: '0.5px solid var(--af-border)', color: 'var(--af-black)' }}>Подрядчик</span><span style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: 'var(--af-black)' }}>Просмотр + фото + комментарии</span></div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', width: 96, display: 'inline-block', textAlign: 'center', padding: '2px 0', border: '0.5px solid var(--af-border)', color: 'var(--af-black)' }}>Комплектатор</span><span style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: 'var(--af-black)' }}>Комплектация + обновление статусов</span></div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', width: 96, display: 'inline-block', textAlign: 'center', padding: '2px 0', border: '0.5px solid var(--af-border)', color: 'var(--af-black)' }}>Ассистент</span><span style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: 'var(--af-black)' }}>На усмотрение дизайнера</span></div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', width: 96, display: 'inline-block', textAlign: 'center', padding: '2px 0', border: '0.5px solid #EBEBEB', color: '#111' }}>Заказчик</span><span style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: '#111' }}>Только просмотр</span></div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', width: 96, display: 'inline-block', textAlign: 'center', padding: '2px 0', border: '0.5px solid #EBEBEB', color: '#111' }}>Подрядчик</span><span style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: '#111' }}>Просмотр + фото + комментарии</span></div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', width: 96, display: 'inline-block', textAlign: 'center', padding: '2px 0', border: '0.5px solid #EBEBEB', color: '#111' }}>Комплектатор</span><span style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: '#111' }}>Комплектация + обновление статусов</span></div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', width: 96, display: 'inline-block', textAlign: 'center', padding: '2px 0', border: '0.5px solid #EBEBEB', color: '#111' }}>Ассистент</span><span style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: '#111' }}>На усмотрение дизайнера</span></div>
             </div>
           </div>
 
@@ -257,8 +257,8 @@ export default function SettingsTab({ project, projectId, toast, canDeleteProjec
       {sub === 'details' && (
         <div>
           <div className="grid gap-4 mb-8" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 2 }}>
-            <div style={{ background: 'var(--af-white)', border: '0.5px solid var(--af-border)', padding: 20 }}>
-              <h4 style={{ fontFamily: display, fontSize: 16, fontWeight: 700, color: 'var(--af-black)', marginBottom: 16 }}>Даты и визиты</h4>
+            <div style={{ background: '#fff', border: '0.5px solid #EBEBEB', padding: 20 }}>
+              <h4 style={{ fontFamily: display, fontSize: 16, fontWeight: 700, color: '#111', marginBottom: 16 }}>Даты и визиты</h4>
               <div className="space-y-3">
                 <div className="modal-field">
                   <label style={{ fontFamily: mono, fontSize: 9 }}>Дата старта</label>
@@ -271,8 +271,8 @@ export default function SettingsTab({ project, projectId, toast, canDeleteProjec
               </div>
             </div>
 
-            <div style={{ background: 'var(--af-white)', border: '0.5px solid var(--af-border)', padding: 20 }}>
-              <h4 style={{ fontFamily: display, fontSize: 16, fontWeight: 700, color: 'var(--af-black)', marginBottom: 16 }}>Платежи</h4>
+            <div style={{ background: '#fff', border: '0.5px solid #EBEBEB', padding: 20 }}>
+              <h4 style={{ fontFamily: display, fontSize: 16, fontWeight: 700, color: '#111', marginBottom: 16 }}>Платежи</h4>
               <div className="space-y-3">
                 <div className="modal-field">
                   <label style={{ fontFamily: mono, fontSize: 9 }}>Авторский надзор (₽/мес)</label>
@@ -291,21 +291,21 @@ export default function SettingsTab({ project, projectId, toast, canDeleteProjec
               </button>
             </div>
           </div>
-          <p style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: 'var(--af-black)', marginTop: 12 }}>
+          <p style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: '#111', marginTop: 12 }}>
             Настройки комплектации — в разделе Комплектация
           </p>
 
           {/* Danger zone */}
           {canDeleteProject && (
-            <div style={{ border: '0.5px solid var(--af-border)', padding: 20, marginTop: 24 }}>
-              <h4 style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--af-black)', marginBottom: 8 }}>Опасная зона</h4>
-              <p style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: 'var(--af-black)', marginBottom: 16 }}>
+            <div style={{ border: '0.5px solid #EBEBEB', padding: 20, marginTop: 24 }}>
+              <h4 style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', textTransform: 'uppercase', letterSpacing: '0.14em', color: '#111', marginBottom: 8 }}>Опасная зона</h4>
+              <p style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: '#111', marginBottom: 16 }}>
                 Удаление проекта невозможно отменить. Все визиты, фото, документы и счета будут удалены.
               </p>
               <button
                 className="af-btn"
                 onClick={() => setShowDeleteProject(true)}
-                style={{ color: 'var(--af-black)', borderColor: 'var(--af-black)' }}
+                style={{ color: '#111', borderColor: '#111' }}
               >
                 Удалить проект
               </button>

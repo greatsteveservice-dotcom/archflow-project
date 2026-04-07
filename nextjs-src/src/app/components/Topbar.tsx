@@ -32,7 +32,7 @@ export default function Topbar({ title, breadcrumbs, actions, depth = 1, context
   const ctx = contextLabel || roleLabel[profile?.role || ''] || '';
 
   return (
-    <div className="bg-srf">
+    <div className="bg-white">
       {/* Top bar: logo + context */}
       <div className="af-topbar">
         <span className="af-topbar-logo" onClick={onLogoClick}>

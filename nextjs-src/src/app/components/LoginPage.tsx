@@ -52,7 +52,7 @@ function PasswordInput({ value, onChange, placeholder = "•••••••�
         style={{
           position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
           background: 'none', border: 'none', cursor: 'pointer',
-          color: 'rgb(var(--ink))', opacity: 0.4, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: '#888', display: 'flex', alignItems: 'center', justifyContent: 'center',
           padding: 4,
         }}
         tabIndex={-1}
@@ -181,25 +181,25 @@ export default function LoginPage({ inviteHint = false }: { inviteHint?: boolean
   // Email confirmation screen
   if (mode === "confirm") {
     return (
-      <div style={{ minHeight: '100vh', background: 'var(--af-white)', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ background: 'var(--af-black)', padding: 32 }}>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, fontWeight: 900, color: 'var(--af-white)' }}>
+      <div style={{ minHeight: '100vh', background: '#fff', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ background: '#111', padding: 32 }}>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, fontWeight: 900, color: '#fff' }}>
             ArchFlow
           </div>
         </div>
         <div style={{ padding: '32px 24px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-          <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 900, color: 'var(--af-black)', marginBottom: 8 }}>
+          <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 900, color: '#111', marginBottom: 8 }}>
             Проверьте почту
           </h2>
-          <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-9)', color: 'var(--af-black)', marginBottom: 2 }}>
+          <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-9)', color: '#111', marginBottom: 2 }}>
             Мы отправили письмо на
           </p>
-          <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-11)', color: 'var(--af-black)', marginBottom: 16 }}>
+          <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-11)', color: '#111', marginBottom: 16 }}>
             {email}
           </p>
           <div style={{
-            background: 'var(--af-offwhite)', borderLeft: '2px solid var(--af-black)', padding: '12px 14px',
-            fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-8)', color: 'var(--af-black)', lineHeight: 1.7,
+            background: '#F6F6F4', borderLeft: '2px solid #111', padding: '12px 14px',
+            fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-8)', color: '#111', lineHeight: 1.7,
           }}>
             Если письмо не пришло — проверьте папку Спам или Промоакции.
           </div>
@@ -207,7 +207,7 @@ export default function LoginPage({ inviteHint = false }: { inviteHint?: boolean
             <button
               onClick={handleResend}
               style={{
-                border: '0.5px solid var(--af-border)', color: 'var(--af-black)', background: 'none',
+                border: '0.5px solid #EBEBEB', color: '#111', background: 'none',
                 fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-7)',
                 textTransform: 'uppercase', letterSpacing: '0.14em',
                 padding: '8px 16px', cursor: 'pointer',
@@ -217,12 +217,12 @@ export default function LoginPage({ inviteHint = false }: { inviteHint?: boolean
             </button>
           </div>
           <div style={{ marginTop: 'auto', paddingTop: 24 }}>
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-7)', color: 'var(--af-black)' }}>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-7)', color: '#111' }}>
               Уже подтвердили?{' '}
               <button
                 onClick={() => switchMode('login')}
                 style={{
-                  color: 'var(--af-black)', background: 'none', border: 'none',
+                  color: '#111', background: 'none', border: 'none',
                   fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-7)',
                   cursor: 'pointer', textDecoration: 'underline',
                 }}
@@ -237,12 +237,12 @@ export default function LoginPage({ inviteHint = false }: { inviteHint?: boolean
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-srf">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-white">
       <div className="w-full max-w-[400px] animate-slide-up">
         {/* Logo */}
         <div className="mb-12">
           <img src="/logo.png" width="80" height="80" alt="ArchFlow" style={{ marginBottom: 12 }} />
-          <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-9)', color: 'var(--af-black)', letterSpacing: '0.1em', marginTop: 8 }}>
+          <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-9)', color: '#111', letterSpacing: '0.1em', marginTop: 8 }}>
             ОТ ЗАМЫСЛА ДО СДАЧИ ОБЪЕКТА
           </p>
         </div>
@@ -250,7 +250,7 @@ export default function LoginPage({ inviteHint = false }: { inviteHint?: boolean
         {/* Heading — only for non-login modes */}
         {mode !== 'login' && titles[mode].sub && (
           <div className="mb-8">
-            <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, fontWeight: 700, color: 'var(--af-black)' }}>
+            <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, fontWeight: 700, color: '#111' }}>
               {titles[mode].heading}
             </h2>
             <p className="af-label mt-1">{titles[mode].sub}</p>
@@ -259,21 +259,21 @@ export default function LoginPage({ inviteHint = false }: { inviteHint?: boolean
 
         {/* Invite hint */}
         {inviteHint && (
-          <div className="mb-6 p-3" style={{ background: 'var(--af-offwhite)', fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-11)', color: 'var(--af-black)' }}>
+          <div className="mb-6 p-3" style={{ background: '#F6F6F4', fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-11)', color: '#111' }}>
             Вы получили приглашение в проект. Войдите или зарегистрируйтесь, чтобы принять его.
           </div>
         )}
 
         {/* Error */}
         {error && (
-          <div className="mb-4 p-3" style={{ border: '0.5px solid var(--af-black)', fontFamily: "'IBM Plex Mono', monospace", fontSize: 11 }}>
+          <div className="mb-4 p-3" style={{ border: '0.5px solid #111', fontFamily: "'IBM Plex Mono', monospace", fontSize: 11 }}>
             {error}
           </div>
         )}
 
         {/* Success */}
         {success && (
-          <div className="mb-4 p-3" style={{ background: 'var(--af-offwhite)', fontFamily: "'IBM Plex Mono', monospace", fontSize: 11 }}>
+          <div className="mb-4 p-3" style={{ background: '#F6F6F4', fontFamily: "'IBM Plex Mono', monospace", fontSize: 11 }}>
             {success}
           </div>
         )}
@@ -381,10 +381,10 @@ export default function LoginPage({ inviteHint = false }: { inviteHint?: boolean
         </form>
 
         {/* Mode switches */}
-        <div className="mt-8 pt-6" style={{ borderTop: '0.5px solid var(--af-border)' }}>
+        <div className="mt-8 pt-6" style={{ borderTop: '0.5px solid #EBEBEB' }}>
           {mode === "login" && (
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11 }}>
-              <span style={{ color: 'var(--af-black)' }}>Нет аккаунта? </span>
+              <span style={{ color: '#111' }}>Нет аккаунта? </span>
               <button onClick={() => switchMode("register")} className="af-crumb active" style={{ fontSize: 11 }}>
                 Регистрация
               </button>
@@ -392,7 +392,7 @@ export default function LoginPage({ inviteHint = false }: { inviteHint?: boolean
           )}
           {mode === "register" && (
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11 }}>
-              <span style={{ color: 'var(--af-black)' }}>Уже есть аккаунт? </span>
+              <span style={{ color: '#111' }}>Уже есть аккаунт? </span>
               <button onClick={() => switchMode("login")} className="af-crumb active" style={{ fontSize: 11 }}>
                 Вход
               </button>

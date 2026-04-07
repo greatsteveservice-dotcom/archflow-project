@@ -190,7 +190,7 @@ export default function ProjectPage({ projectId, initialTab, onNavigate, toast, 
 
       {/* Inline title editing */}
       {isEditingTitle && (
-        <div className="af-content" style={{ background: 'var(--af-offwhite)', borderBottom: '0.5px solid var(--af-border)', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 24px' }}>
+        <div className="af-content" style={{ background: '#F6F6F4', borderBottom: '0.5px solid #EBEBEB', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 24px' }}>
           <input
             ref={titleInputRef}
             type="text"

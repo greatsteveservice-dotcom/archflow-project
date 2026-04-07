@@ -94,7 +94,7 @@ export default function ProjectsPage({ onNavigate, onCreateProject, refreshKey =
             fontSize: 'var(--af-fs-7)',
             textTransform: 'uppercase',
             letterSpacing: '0.14em',
-            color: 'var(--af-black)',
+            color: '#111',
             cursor: 'pointer',
             padding: '4px 0',
             marginTop: 4,
@@ -119,7 +119,7 @@ export default function ProjectsPage({ onNavigate, onCreateProject, refreshKey =
             <button
               className="absolute right-3 top-1/2 -translate-y-1/2"
               onClick={() => setSearch("")}
-              style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-10)', color: 'var(--af-border)' }}
+              style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-10)', color: '#EBEBEB' }}
             >
               ✕
             </button>

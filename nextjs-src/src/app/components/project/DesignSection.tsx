@@ -78,7 +78,7 @@ export default function DesignSection({ projectId, toast, canUpload = true, canD
                 fontSize: 8,
                 textTransform: 'uppercase',
                 letterSpacing: '0.16em',
-                color: 'var(--af-black)',
+                color: '#111',
                 marginTop: 6,
               }}>
                 {pluralFiles(count)}

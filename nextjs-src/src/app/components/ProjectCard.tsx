@@ -43,7 +43,7 @@ const ProjectCard = memo(function ProjectCard({ project, onClick, onHover, index
             <span style={{
               width: 6,
               height: 6,
-              background: 'var(--af-black)',
+              background: '#111',
               display: 'inline-block',
               flexShrink: 0,
             }} />
@@ -52,7 +52,7 @@ const ProjectCard = memo(function ProjectCard({ project, onClick, onHover, index
             <span style={{
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
               minWidth: 16, height: 16, padding: '0 4px',
-              background: 'var(--af-black)', color: 'var(--af-white)',
+              background: '#111', color: '#fff',
               fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, fontWeight: 600,
               flexShrink: 0,
             }}>

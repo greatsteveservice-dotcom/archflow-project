@@ -148,8 +148,8 @@ export default function FeedbackBar() {
           left: 0,
           right: 0,
           zIndex: 40,
-          background: "var(--af-offwhite)",
-          borderTop: "0.5px solid var(--af-border)",
+          background: "#F6F6F4",
+          borderTop: "0.5px solid #EBEBEB",
           paddingBottom: "env(safe-area-inset-bottom, 0px)",
         }}
       >
@@ -170,7 +170,7 @@ export default function FeedbackBar() {
                 fontFamily: "'Playfair Display', serif",
                 fontWeight: 700,
                 fontSize: 13,
-                color: "var(--af-black)",
+                color: "#111",
                 lineHeight: 1,
               }}
               className="feedback-bar-title"
@@ -184,7 +184,7 @@ export default function FeedbackBar() {
                 fontSize: 'var(--af-fs-7)',
                 textTransform: "uppercase" as const,
                 letterSpacing: "0.14em",
-                color: "var(--af-black)",
+                color: "#111",
                 lineHeight: 1,
               }}
             >
@@ -196,8 +196,8 @@ export default function FeedbackBar() {
           <button
             onClick={() => setOpen(true)}
             style={{
-              background: "var(--af-black)",
-              color: "var(--af-white)",
+              background: "#111",
+              color: "#fff",
               fontFamily: "'IBM Plex Mono', monospace",
               fontWeight: 400,
               fontSize: 'var(--af-fs-7)',
@@ -233,7 +233,7 @@ export default function FeedbackBar() {
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
-              background: "var(--af-white)",
+              background: "#fff",
               padding: 28,
               width: 480,
               maxWidth: "92vw",
@@ -257,7 +257,7 @@ export default function FeedbackBar() {
                 fontSize: 'var(--af-fs-8)',
                 textTransform: "uppercase" as const,
                 letterSpacing: "0.12em",
-                color: "var(--af-black)",
+                color: "#111",
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
@@ -276,7 +276,7 @@ export default function FeedbackBar() {
                     fontFamily: "'Playfair Display', serif",
                     fontWeight: 900,
                     fontSize: 32,
-                    color: "var(--af-black)",
+                    color: "#111",
                     marginBottom: 8,
                   }}
                 >
@@ -288,7 +288,7 @@ export default function FeedbackBar() {
                     fontSize: 'var(--af-fs-9)',
                     textTransform: "uppercase" as const,
                     letterSpacing: "0.2em",
-                    color: "var(--af-black)",
+                    color: "#111",
                   }}
                 >
                   Мы учтём ваш отзыв
@@ -302,7 +302,7 @@ export default function FeedbackBar() {
                     fontFamily: "'Playfair Display', serif",
                     fontWeight: 900,
                     fontSize: 24,
-                    color: "var(--af-black)",
+                    color: "#111",
                     marginBottom: 4,
                     lineHeight: 1.1,
                   }}
@@ -316,7 +316,7 @@ export default function FeedbackBar() {
                     fontSize: 'var(--af-fs-9)',
                     textTransform: "uppercase" as const,
                     letterSpacing: "0.18em",
-                    color: "var(--af-black)",
+                    color: "#111",
                     marginBottom: 16,
                   }}
                 >
@@ -329,13 +329,13 @@ export default function FeedbackBar() {
                   style={{
                     width: "100%",
                     minHeight: 100,
-                    border: "0.5px solid var(--af-border)",
+                    border: "0.5px solid #EBEBEB",
                     padding: 12,
                     fontFamily: "'IBM Plex Mono', monospace",
                     fontSize: 'var(--af-fs-11)',
                     fontWeight: 300,
-                    color: "var(--af-black)",
-                    background: "var(--af-offwhite)",
+                    color: "#111",
+                    background: "#F6F6F4",
                     outline: "none",
                     resize: "vertical",
                     display: "block",
@@ -359,8 +359,8 @@ export default function FeedbackBar() {
                       fontSize: 'var(--af-fs-7)',
                       textTransform: "uppercase" as const,
                       letterSpacing: "0.14em",
-                      color: "var(--af-black)",
-                      border: "0.5px solid var(--af-border)",
+                      color: "#111",
+                      border: "0.5px solid #EBEBEB",
                       background: "none",
                       padding: "3px 8px",
                       cursor: "pointer",
@@ -375,7 +375,7 @@ export default function FeedbackBar() {
                       style={{
                         fontFamily: "'IBM Plex Mono', monospace",
                         fontSize: 'var(--af-fs-7)',
-                        color: "var(--af-border)",
+                        color: "#EBEBEB",
                         background: "none",
                         border: "none",
                         cursor: "pointer",
@@ -391,12 +391,12 @@ export default function FeedbackBar() {
                     <img
                       src={preview}
                       alt=""
-                      style={{ height: 40, objectFit: "cover", border: "0.5px solid var(--af-border)" }}
+                      style={{ height: 40, objectFit: "cover", border: "0.5px solid #EBEBEB" }}
                     />
                     <span style={{
                       fontFamily: "'IBM Plex Mono', monospace",
                       fontSize: 'var(--af-fs-7)',
-                      color: "var(--af-black)",
+                      color: "#111",
                       letterSpacing: "0.08em",
                     }}>
                       {file.name.length > 30 ? file.name.slice(0, 27) + '...' : file.name}
@@ -422,8 +422,8 @@ export default function FeedbackBar() {
                     width: "100%",
                     height: 48,
                     marginTop: 12,
-                    background: !text.trim() ? "var(--af-border)" : "var(--af-black)",
-                    color: "var(--af-white)",
+                    background: !text.trim() ? "#EBEBEB" : "#111",
+                    color: "#fff",
                     border: "none",
                     fontFamily: "'IBM Plex Mono', monospace",
                     fontSize: 'var(--af-fs-9)',

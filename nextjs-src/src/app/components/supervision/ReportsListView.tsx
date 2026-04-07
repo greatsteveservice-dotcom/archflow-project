@@ -14,9 +14,9 @@ const STATUS_LABEL: Record<ReportStatus, string> = {
 };
 
 const STATUS_STYLE: Record<ReportStatus, { border: string; color: string }> = {
-  draft: { border: 'var(--af-border)', color: 'var(--af-black)' },
-  filled: { border: 'var(--af-border)', color: 'var(--af-black)' },
-  published: { border: 'var(--af-black)', color: 'var(--af-black)' },
+  draft: { border: '#EBEBEB', color: '#111' },
+  filled: { border: '#EBEBEB', color: '#111' },
+  published: { border: '#111', color: '#111' },
 };
 
 // ─── Date formatting ─────────────────────────────────────
@@ -97,7 +97,7 @@ export default function ReportsListView({ projectId, toast, onSelectReport }: Re
     <div className="animate-fade-in">
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-        <h2 style={{ fontFamily: 'var(--font-heading)', fontWeight: 900, fontSize: 24, color: 'var(--af-black)', margin: 0 }}>
+        <h2 style={{ fontFamily: 'var(--font-heading)', fontWeight: 900, fontSize: 24, color: '#111', margin: 0 }}>
           Отчёты
         </h2>
         <button
@@ -109,25 +109,25 @@ export default function ReportsListView({ projectId, toast, onSelectReport }: Re
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            border: '1px solid var(--af-border)',
-            background: 'var(--af-white)',
+            border: '1px solid #EBEBEB',
+            background: '#FFF',
             cursor: creating ? 'wait' : 'pointer',
             transition: 'all 0.12s',
           }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'var(--af-black)'; e.currentTarget.style.color = 'var(--af-white)'; e.currentTarget.style.borderColor = 'var(--af-black)'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'var(--af-white)'; e.currentTarget.style.color = 'var(--af-black)'; e.currentTarget.style.borderColor = 'var(--af-border)'; }}
+          onMouseEnter={e => { e.currentTarget.style.background = '#111'; e.currentTarget.style.color = '#FFF'; e.currentTarget.style.borderColor = '#111'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = '#FFF'; e.currentTarget.style.color = '#111'; e.currentTarget.style.borderColor = '#EBEBEB'; }}
         >
           <Icons.Plus className="w-4 h-4" />
         </button>
       </div>
 
       {loading ? (
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--af-fs-11)', color: 'var(--af-black)' }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--af-fs-11)', color: '#111' }}>
           Загрузка...
         </div>
       ) : displayReports.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '48px 0' }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--af-fs-11)', color: 'var(--af-black)' }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--af-fs-11)', color: '#111' }}>
             Отчётов пока нет
           </div>
         </div>
@@ -148,14 +148,14 @@ export default function ReportsListView({ projectId, toast, onSelectReport }: Re
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   padding: '0 16px',
-                  background: 'var(--af-white)',
-                  borderBottom: '0.5px solid var(--af-border)',
-                  borderLeft: today ? '2px solid var(--af-black)' : '2px solid transparent',
+                  background: '#FFF',
+                  borderBottom: '0.5px solid #EBEBEB',
+                  borderLeft: today ? '2px solid #111' : '2px solid transparent',
                   cursor: 'pointer',
                   transition: 'background 0.12s',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'var(--af-offwhite)'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'var(--af-white)'; }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#F6F6F4'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = '#FFF'; }}
               >
                 {/* Left */}
                 <div>
@@ -165,7 +165,7 @@ export default function ReportsListView({ projectId, toast, onSelectReport }: Re
                       fontSize: 'var(--af-fs-7)',
                       textTransform: 'uppercase',
                       letterSpacing: '0.08em',
-                      color: 'var(--af-black)',
+                      color: '#111',
                       marginBottom: 2,
                     }}>
                       Сегодня
@@ -175,7 +175,7 @@ export default function ReportsListView({ projectId, toast, onSelectReport }: Re
                     fontFamily: 'var(--font-heading)',
                     fontSize: 14,
                     fontWeight: 700,
-                    color: 'var(--af-black)',
+                    color: '#111',
                   }}>
                     {formatReportDate(report.visit_date)}
                   </div>
@@ -184,7 +184,7 @@ export default function ReportsListView({ projectId, toast, onSelectReport }: Re
                     fontSize: 'var(--af-fs-7)',
                     textTransform: 'uppercase',
                     letterSpacing: '0.06em',
-                    color: 'var(--af-black)',
+                    color: '#111',
                     marginTop: 2,
                   }}>
                     {getWeekdayName(report.visit_date)} · Визит {visitNum}
@@ -203,7 +203,7 @@ export default function ReportsListView({ projectId, toast, onSelectReport }: Re
                   }}>
                     {STATUS_LABEL[report.status]}
                   </span>
-                  <span style={{ color: 'var(--af-border)', fontSize: 14 }}>→</span>
+                  <span style={{ color: '#EBEBEB', fontSize: 14 }}>→</span>
                 </div>
               </div>
             );

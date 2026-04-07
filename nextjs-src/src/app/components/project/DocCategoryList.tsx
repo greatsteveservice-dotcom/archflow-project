@@ -9,10 +9,10 @@ import { useDocumentsByCategory } from '../../lib/hooks';
 import { formatDate, uploadDocument, createDocument, deleteDocument } from '../../lib/queries';
 
 const FORMAT_COLORS: Record<string, { bg: string; text: string }> = {
-  PDF:  { bg: 'var(--af-black)', text: 'var(--af-white)' },
-  DWG:  { bg: 'var(--af-black)', text: 'var(--af-white)' },
-  XLSX: { bg: 'var(--af-offwhite)', text: 'var(--af-black)' },
-  PNG:  { bg: 'var(--af-offwhite)', text: 'var(--af-black)' },
+  PDF:  { bg: '#111111', text: '#FFFFFF' },
+  DWG:  { bg: '#111111', text: '#FFFFFF' },
+  XLSX: { bg: '#F6F6F4', text: '#111111' },
+  PNG:  { bg: '#F6F6F4', text: '#111111' },
 };
 
 const EXT_TO_FORMAT: Record<string, DocumentFormat> = {
@@ -130,7 +130,7 @@ export default function DocCategoryList({ projectId, category, toast, canUpload 
 
       <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}>
         {(docs || []).map((doc: Document) => {
-          const fmt = FORMAT_COLORS[doc.format?.toUpperCase() || ''] || { bg: 'var(--af-offwhite)', text: 'var(--af-black)' };
+          const fmt = FORMAT_COLORS[doc.format?.toUpperCase() || ''] || { bg: '#F6F6F4', text: '#111111' };
           const hasFile = !!doc.file_url;
           return (
             <div

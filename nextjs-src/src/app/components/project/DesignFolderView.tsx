@@ -42,12 +42,12 @@ function getFileTypeLabel(mimeType: string | null, name: string): string {
 function FileTypeIcon({ type }: { type: string }) {
   return (
     <div style={{
-      width: 40, height: 48, border: '0.5px solid var(--af-border)', display: 'flex',
-      alignItems: 'center', justifyContent: 'center', flexShrink: 0, background: 'var(--af-offwhite)',
+      width: 40, height: 48, border: '0.5px solid #EBEBEB', display: 'flex',
+      alignItems: 'center', justifyContent: 'center', flexShrink: 0, background: '#F6F6F4',
     }}>
       <span style={{
         fontFamily: "'IBM Plex Mono', monospace", fontSize: 8,
-        fontWeight: 600, color: 'var(--af-black)', textTransform: 'uppercase', letterSpacing: '0.05em',
+        fontWeight: 600, color: '#111', textTransform: 'uppercase', letterSpacing: '0.05em',
       }}>{type}</span>
     </div>
   );
@@ -122,7 +122,7 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
         onClick={onBack}
         style={{
           fontFamily: "'IBM Plex Mono', monospace", fontSize: 8,
-          letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--af-black)',
+          letterSpacing: '0.14em', textTransform: 'uppercase', color: '#111',
           background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: 16,
         }}
       >
@@ -131,7 +131,7 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
 
       {/* Header row */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 18, fontWeight: 900, color: 'var(--af-black)', margin: 0 }}>
+        <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 18, fontWeight: 900, color: '#111', margin: 0 }}>
           {folderLabel}
         </h3>
         {canUpload && (
@@ -141,7 +141,7 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
             style={{
               fontFamily: "'IBM Plex Mono', monospace", fontSize: 8,
               textTransform: 'uppercase', letterSpacing: '0.14em',
-              color: 'var(--af-black)', background: 'none', border: '0.5px solid var(--af-border)',
+              color: '#111', background: 'none', border: '0.5px solid #EBEBEB',
               padding: '6px 12px', cursor: 'pointer',
             }}
           >
@@ -160,10 +160,10 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
       {/* Upload progress */}
       {uploading && (
         <div style={{ marginBottom: 12 }}>
-          <div style={{ height: 2, background: 'var(--af-border)', width: '100%' }}>
-            <div style={{ height: 2, background: 'var(--af-black)', width: `${uploadProgress}%`, transition: 'width 0.3s ease' }} />
+          <div style={{ height: 2, background: '#EBEBEB', width: '100%' }}>
+            <div style={{ height: 2, background: '#111', width: `${uploadProgress}%`, transition: 'width 0.3s ease' }} />
           </div>
-          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, color: 'var(--af-black)', marginTop: 4, display: 'block' }}>
+          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, color: '#111', marginTop: 4, display: 'block' }}>
             Загрузка... {uploadProgress}%
           </span>
         </div>
@@ -172,8 +172,8 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
       {/* Upload error */}
       {uploadError && (
         <div style={{
-          fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, color: 'var(--af-black)',
-          marginBottom: 12, padding: '8px 12px', border: '0.5px solid var(--af-border)',
+          fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, color: '#111',
+          marginBottom: 12, padding: '8px 12px', border: '0.5px solid #EBEBEB',
         }}>
           {uploadError}
         </div>
@@ -181,7 +181,7 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
 
       {/* Loading */}
       {loading && (
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: 'var(--af-black)', textAlign: 'center', padding: '40px 0', textTransform: 'uppercase', letterSpacing: '0.2em' }}>
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: '#111', textAlign: 'center', padding: '40px 0', textTransform: 'uppercase', letterSpacing: '0.2em' }}>
           Загрузка...
         </div>
       )}
@@ -189,8 +189,8 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
       {/* Empty state */}
       {!loading && (!files || files.length === 0) && (
         <div style={{ textAlign: 'center', padding: '48px 0' }}>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 48, fontWeight: 900, color: 'var(--af-border)', marginBottom: 8 }}>—</div>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, textTransform: 'uppercase', letterSpacing: '0.16em', color: 'var(--af-black)' }}>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 48, fontWeight: 900, color: '#EBEBEB', marginBottom: 8 }}>—</div>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, textTransform: 'uppercase', letterSpacing: '0.16em', color: '#111' }}>
             Файлов пока нет
           </div>
           {canUpload && (
@@ -199,7 +199,7 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
               style={{
                 fontFamily: "'IBM Plex Mono', monospace", fontSize: 8,
                 textTransform: 'uppercase', letterSpacing: '0.14em',
-                color: 'var(--af-black)', background: 'none', border: '0.5px solid var(--af-border)',
+                color: '#111', background: 'none', border: '0.5px solid #EBEBEB',
                 padding: '8px 16px', cursor: 'pointer', marginTop: 16,
               }}
             >
@@ -230,22 +230,22 @@ function FileRow({ file, onClick }: { file: DesignFileWithProfile; onClick: () =
       onClick={onClick}
       style={{
         display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0',
-        borderBottom: '0.5px solid var(--af-border)', cursor: 'pointer',
+        borderBottom: '0.5px solid #EBEBEB', cursor: 'pointer',
       }}
     >
       <FileTypeIcon type={typeLabel} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{
-          fontFamily: "'Playfair Display', serif", fontSize: 14, fontWeight: 700, color: 'var(--af-black)',
+          fontFamily: "'Playfair Display', serif", fontSize: 14, fontWeight: 700, color: '#111',
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         }}>
           {file.name}
         </div>
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 7, color: 'var(--af-black)', marginTop: 2 }}>
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 7, color: '#111', marginTop: 2 }}>
           {formatSize(file.file_size)} · {formatDate(file.created_at)} · {uploaderName}
         </div>
       </div>
-      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: 'var(--af-border)', flexShrink: 0 }}>→</span>
+      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: '#EBEBEB', flexShrink: 0 }}>→</span>
     </div>
   );
 }

@@ -143,7 +143,7 @@ export default function NotificationSettings({ projectId, toast }: NotificationS
 
   if (loading) {
     return (
-      <div style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: 'var(--af-black)', padding: 20 }}>
+      <div style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: '#111', padding: 20 }}>
         Загрузка...
       </div>
     );
@@ -348,7 +348,7 @@ export default function NotificationSettings({ projectId, toast }: NotificationS
                 name="schedule"
                 checked={scheduleType === opt.value}
                 onChange={() => setScheduleType(opt.value)}
-                style={{ accentColor: 'var(--af-black)', width: 14, height: 14 }}
+                style={{ accentColor: '#111', width: 14, height: 14 }}
               />
               <div>
                 <div style={{ fontFamily: mono, fontSize: 'var(--af-fs-11)', color: 'rgb(var(--ink))' }}>
@@ -440,7 +440,7 @@ function Toggle({ enabled, onChange, disabled }: { enabled: boolean; onChange: (
       onClick={() => !disabled && onChange(!enabled)}
       style={{
         width: 36, height: 20, padding: 2,
-        background: enabled ? 'var(--af-black)' : 'rgb(var(--line))',
+        background: enabled ? '#111' : 'rgb(var(--line))',
         border: 'none', cursor: disabled ? 'default' : 'pointer',
         display: 'flex', alignItems: 'center',
         justifyContent: enabled ? 'flex-end' : 'flex-start',
@@ -451,7 +451,7 @@ function Toggle({ enabled, onChange, disabled }: { enabled: boolean; onChange: (
     >
       <div style={{
         width: 14, height: 14,
-        background: enabled ? 'var(--af-white)' : 'rgb(var(--srf))',
+        background: enabled ? '#fff' : 'rgb(var(--srf))',
         transition: 'all 0.15s',
       }} />
     </button>

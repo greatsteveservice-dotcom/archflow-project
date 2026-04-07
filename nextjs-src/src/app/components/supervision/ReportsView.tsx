@@ -48,7 +48,7 @@ export default function ReportsView({ visits, onSelectVisit }: ReportsViewProps)
                     {v.issue_count > 0 && (
                       <>
                         <span>·</span>
-                        <span style={{ color: 'var(--af-black)', fontWeight: 500 }}>{v.issue_count} замеч.</span>
+                        <span style={{ color: '#111', fontWeight: 500 }}>{v.issue_count} замеч.</span>
                       </>
                     )}
                   </div>

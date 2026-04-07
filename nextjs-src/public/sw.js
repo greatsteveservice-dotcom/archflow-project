@@ -1,6 +1,6 @@
 // Archflow Service Worker — offline caching
-// Version is injected at build time by scripts/stamp-sw.js
-const SW_VERSION = '1775593524331';
+// Bump version to invalidate all caches on deploy
+const SW_VERSION = '4';
 const CACHE_NAME = 'archflow-v' + SW_VERSION;
 const STATIC_CACHE = 'archflow-static-v' + SW_VERSION;
 const API_CACHE = 'archflow-api-v' + SW_VERSION;
@@ -8,7 +8,6 @@ const API_CACHE = 'archflow-api-v' + SW_VERSION;
 // Static assets to precache
 const PRECACHE_URLS = [
   '/',
-  '/offline.html',
   '/favicon.svg',
   '/icon-192.png',
   '/icon-512.png',
@@ -16,12 +15,12 @@ const PRECACHE_URLS = [
   '/manifest.json',
 ];
 
-// Install — precache static assets (don't auto-skipWaiting; wait for user confirmation)
+// Install — precache static assets
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(STATIC_CACHE).then((cache) => {
       return cache.addAll(PRECACHE_URLS);
-    })
+    }).then(() => self.skipWaiting())
   );
 });
 
@@ -114,9 +113,9 @@ async function networkFirst(request, cacheName) {
     const cached = await caches.match(request);
     if (cached) return cached;
 
-    // For HTML requests, return offline page as fallback
+    // For HTML requests, return the cached home page as fallback
     if (request.headers.get('accept')?.includes('text/html')) {
-      const fallback = await caches.match('/offline.html');
+      const fallback = await caches.match('/');
       if (fallback) return fallback;
     }
 
@@ -129,14 +128,6 @@ function isStaticAsset(pathname) {
   return /\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|webp)(\?.*)?$/.test(pathname) ||
     pathname.startsWith('/_next/static/');
 }
-
-// ======================== UPDATE MESSAGING ========================
-
-self.addEventListener('message', (event) => {
-  if (event.data?.type === 'SKIP_WAITING') {
-    self.skipWaiting();
-  }
-});
 
 // ======================== PUSH NOTIFICATIONS ========================
 

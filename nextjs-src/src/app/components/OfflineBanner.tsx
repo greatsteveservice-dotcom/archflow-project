@@ -23,7 +23,7 @@ export default function OfflineBanner() {
   if (!offline) return null;
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[60] bg-[var(--af-black)] text-[var(--af-white)] text-center py-2 text-[13px] font-medium animate-slide-down">
+    <div className="fixed top-0 left-0 right-0 z-[60] bg-[#111827] text-white text-center py-2 text-[13px] font-medium animate-slide-down">
       Нет подключения к интернету
     </div>
   );

@@ -126,7 +126,7 @@ export default function TasksView({ projectId, toast, canManageTasks = true, mem
     <div className="flex-1 min-w-[240px]">
       <div className="flex items-center gap-2 mb-3">
         <div className="w-2 h-2"
-          style={{ backgroundColor: status === 'open' ? 'var(--af-black)' : status === 'in_progress' ? 'var(--af-border)' : 'var(--af-border)' }} />
+          style={{ backgroundColor: status === 'open' ? '#111' : status === 'in_progress' ? '#EBEBEB' : '#EBEBEB' }} />
         <h4 className="text-[13px] font-semibold">{title}</h4>
         <span className="text-[11px] text-ink-faint">({items.length})</span>
       </div>

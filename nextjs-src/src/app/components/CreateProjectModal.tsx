@@ -54,7 +54,7 @@ export default function CreateProjectModal({ open, onClose, onSuccess }: CreateP
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, background: 'var(--af-white)', zIndex: 9999,
+      position: 'fixed', inset: 0, background: '#fff', zIndex: 9999,
       display: 'flex', flexDirection: 'column', overflow: 'auto',
     }}>
       {/* Header */}
@@ -63,7 +63,7 @@ export default function CreateProjectModal({ open, onClose, onSuccess }: CreateP
           onClick={handleClose}
           style={{
             background: 'none', border: 'none', cursor: 'pointer',
-            fontFamily: mono, fontSize: 'var(--af-fs-9)', color: 'var(--af-black)',
+            fontFamily: mono, fontSize: 'var(--af-fs-9)', color: '#111',
             textTransform: 'uppercase', letterSpacing: '0.12em',
             padding: 0,
           }}
@@ -76,15 +76,15 @@ export default function CreateProjectModal({ open, onClose, onSuccess }: CreateP
       <div style={{ padding: '0 24px 40px', flex: 1 }}>
         <h1 style={{
           fontFamily: display, fontSize: 32, fontWeight: 900,
-          color: 'var(--af-black)', marginBottom: 24,
+          color: '#111', marginBottom: 24,
         }}>
           Новый проект
         </h1>
 
         {error && (
           <div style={{
-            border: '0.5px solid var(--af-black)', padding: '10px 14px', marginBottom: 20,
-            fontFamily: mono, fontSize: 'var(--af-fs-11)', color: 'var(--af-black)',
+            border: '0.5px solid #111', padding: '10px 14px', marginBottom: 20,
+            fontFamily: mono, fontSize: 'var(--af-fs-11)', color: '#111',
           }}>
             {error}
           </div>
@@ -94,7 +94,7 @@ export default function CreateProjectModal({ open, onClose, onSuccess }: CreateP
           <div style={{ marginBottom: 20 }}>
             <label style={{
               display: 'block', fontFamily: mono, fontSize: 'var(--af-fs-9)',
-              color: 'var(--af-black)', textTransform: 'uppercase', letterSpacing: '0.12em',
+              color: '#111', textTransform: 'uppercase', letterSpacing: '0.12em',
               marginBottom: 8,
             }}>
               Название проекта *
@@ -113,7 +113,7 @@ export default function CreateProjectModal({ open, onClose, onSuccess }: CreateP
           <div style={{ marginBottom: 20 }}>
             <label style={{
               display: 'block', fontFamily: mono, fontSize: 'var(--af-fs-9)',
-              color: 'var(--af-black)', textTransform: 'uppercase', letterSpacing: '0.12em',
+              color: '#111', textTransform: 'uppercase', letterSpacing: '0.12em',
               marginBottom: 8,
             }}>
               Адрес
@@ -131,7 +131,7 @@ export default function CreateProjectModal({ open, onClose, onSuccess }: CreateP
           <div style={{ marginBottom: 32 }}>
             <label style={{
               display: 'block', fontFamily: mono, fontSize: 'var(--af-fs-9)',
-              color: 'var(--af-black)', textTransform: 'uppercase', letterSpacing: '0.12em',
+              color: '#111', textTransform: 'uppercase', letterSpacing: '0.12em',
               marginBottom: 8,
             }}>
               Дата начала
