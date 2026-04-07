@@ -45,7 +45,7 @@ export default function ClientDashboard({ onNavigate, toast }: ClientDashboardPr
                 fontFamily: "var(--af-font-display)",
                 fontSize: 32,
                 fontWeight: 900,
-                color: '#111',
+                color: 'var(--af-black)',
                 lineHeight: 1.0,
                 marginTop: 4,
               }}
@@ -66,7 +66,7 @@ export default function ClientDashboard({ onNavigate, toast }: ClientDashboardPr
             fontSize: 'var(--af-fs-7)',
             textTransform: 'uppercase',
             letterSpacing: '0.14em',
-            color: '#111',
+            color: 'var(--af-black)',
             cursor: 'pointer',
             padding: '4px 0',
             marginTop: 4,
@@ -113,7 +113,7 @@ export default function ClientDashboard({ onNavigate, toast }: ClientDashboardPr
             style={{
               fontFamily: "var(--af-font-mono)",
               fontSize: 'var(--af-fs-10)',
-              color: '#111',
+              color: 'var(--af-black)',
               marginTop: 8,
               textTransform: 'uppercase',
               letterSpacing: '0.12em',

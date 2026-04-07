@@ -204,7 +204,7 @@ export default function VisitPage({ projectId, visitId, onNavigate, toast, onMen
                   {photo.photo_url ? (
                     <Image src={photo.photo_url} alt={photo.comment || 'Фото'} fill sizes="33vw" style={{ objectFit: 'cover' }} />
                   ) : (
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', color: '#EBEBEB' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', color: 'var(--af-border)' }}>
                       —
                     </div>
                   )}
@@ -216,7 +216,7 @@ export default function VisitPage({ projectId, visitId, onNavigate, toast, onMen
                     fontFamily: "'IBM Plex Mono', monospace", fontSize: 8,
                     textTransform: 'uppercase', letterSpacing: '0.1em',
                     background: 'rgba(255,255,255,0.9)', padding: '2px 6px',
-                    color: '#111',
+                    color: 'var(--af-black)',
                   }}>
                     {status.label}
                   </div>
@@ -232,7 +232,7 @@ export default function VisitPage({ projectId, visitId, onNavigate, toast, onMen
                         style={{
                           fontFamily: "'IBM Plex Mono', monospace", fontSize: 8,
                           textTransform: 'uppercase', background: 'rgba(255,255,255,0.9)',
-                          border: '0.5px solid #EBEBEB', padding: '2px 4px', cursor: 'pointer',
+                          border: '0.5px solid var(--af-border)', padding: '2px 4px', cursor: 'pointer',
                         }}
                       >
                         {Object.entries(PHOTO_STATUS_CONFIG).map(([key, cfg]) => (
@@ -244,7 +244,7 @@ export default function VisitPage({ projectId, visitId, onNavigate, toast, onMen
                         style={{
                           fontFamily: "'IBM Plex Mono', monospace", fontSize: 8,
                           background: 'rgba(255,255,255,0.9)',
-                          border: '0.5px solid #EBEBEB', padding: '2px 6px', cursor: 'pointer',
+                          border: '0.5px solid var(--af-border)', padding: '2px 6px', cursor: 'pointer',
                         }}
                         title="Удалить"
                       >
@@ -259,7 +259,7 @@ export default function VisitPage({ projectId, visitId, onNavigate, toast, onMen
                       background: 'linear-gradient(transparent, rgba(0,0,0,0.7))',
                       padding: '24px 8px 8px',
                       fontFamily: "'IBM Plex Mono', monospace", fontSize: 10,
-                      color: '#fff', lineHeight: 1.4,
+                      color: 'var(--af-white)', lineHeight: 1.4,
                     }}>
                       {photo.comment}
                     </div>
@@ -284,7 +284,7 @@ export default function VisitPage({ projectId, visitId, onNavigate, toast, onMen
               <div className="af-modal" onClick={(e) => e.stopPropagation()}>
                 <h2 className="af-modal-title">Добавить фото</h2>
                 {photoError && (
-                  <div style={{ border: '0.5px solid #111', padding: 12, marginBottom: 16, fontFamily: "'IBM Plex Mono', monospace", fontSize: 11 }}>
+                  <div style={{ border: '0.5px solid var(--af-black)', padding: 12, marginBottom: 16, fontFamily: "'IBM Plex Mono', monospace", fontSize: 11 }}>
                     {photoError}
                   </div>
                 )}
@@ -330,8 +330,8 @@ export default function VisitPage({ projectId, visitId, onNavigate, toast, onMen
                       <div className="af-label" style={{ marginBottom: 8 }}>
                         {uploadStep === 'uploading' ? 'Загрузка файла...' : 'Сохранение...'}
                       </div>
-                      <div style={{ width: '100%', height: 2, background: '#EBEBEB', overflow: 'hidden' }}>
-                        <div style={{ height: '100%', background: '#111' }} className="animate-progress-indeterminate" />
+                      <div style={{ width: '100%', height: 2, background: 'var(--af-border)', overflow: 'hidden' }}>
+                        <div style={{ height: '100%', background: 'var(--af-black)' }} className="animate-progress-indeterminate" />
                       </div>
                     </div>
                   )}

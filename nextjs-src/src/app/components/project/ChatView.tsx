@@ -57,13 +57,13 @@ function RefBadge({ refType, refPreview }: { refType: string; refPreview: string
   return (
     <div style={{
       display: 'inline-flex', alignItems: 'center', gap: 4,
-      padding: '2px 6px', background: '#F6F6F4', border: '0.5px solid #EBEBEB',
+      padding: '2px 6px', background: 'var(--af-offwhite)', border: '0.5px solid var(--af-border)',
       fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-8)',
-      letterSpacing: '0.08em', textTransform: 'uppercase', color: '#111',
+      letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--af-black)',
       marginBottom: 4,
     }}>
       <span>{labels[refType] || refType}</span>
-      {refPreview && <span style={{ color: '#111', textTransform: 'none' }}>· {refPreview}</span>}
+      {refPreview && <span style={{ color: 'var(--af-black)', textTransform: 'none' }}>· {refPreview}</span>}
     </div>
   );
 }
@@ -77,9 +77,9 @@ function VoiceBubble({ msg, isOwn }: { msg: ChatMessageWithAuthor; isOwn: boolea
 
   return (
     <div style={{
-      background: isOwn ? '#111' : '#FFFFFF',
-      color: isOwn ? '#fff' : '#111',
-      border: isOwn ? 'none' : '0.5px solid #EBEBEB',
+      background: isOwn ? 'var(--af-black)' : 'var(--af-white)',
+      color: isOwn ? 'var(--af-white)' : 'var(--af-black)',
+      border: isOwn ? 'none' : '0.5px solid var(--af-border)',
       padding: '8px 12px',
       fontFamily: "'IBM Plex Mono', monospace",
       fontSize: 'var(--af-fs-12)',
@@ -117,7 +117,7 @@ function VoiceBubble({ msg, isOwn }: { msg: ChatMessageWithAuthor; isOwn: boolea
             fontSize: 'var(--af-fs-8)',
             letterSpacing: '0.1em',
             textTransform: 'uppercase',
-            color: isOwn ? '#EBEBEB' : '#111',
+            color: isOwn ? 'var(--af-border)' : 'var(--af-black)',
             opacity: 0.5,
           }}
         >
@@ -128,7 +128,7 @@ function VoiceBubble({ msg, isOwn }: { msg: ChatMessageWithAuthor; isOwn: boolea
       {showOriginal && msg.voice_original && (
         <div style={{
           marginTop: 4, paddingTop: 4,
-          borderTop: `0.5px solid ${isOwn ? 'rgba(255,255,255,0.2)' : '#EBEBEB'}`,
+          borderTop: `0.5px solid ${isOwn ? 'rgba(255,255,255,0.2)' : 'var(--af-border)'}`,
           fontSize: 'var(--af-fs-10)',
           opacity: 0.6,
           fontStyle: 'italic',
@@ -139,7 +139,7 @@ function VoiceBubble({ msg, isOwn }: { msg: ChatMessageWithAuthor; isOwn: boolea
 
       <span style={{
         display: 'inline-block', marginLeft: 8,
-        fontSize: 'var(--af-fs-8)', color: isOwn ? '#EBEBEB' : '#111',
+        fontSize: 'var(--af-fs-8)', color: isOwn ? 'var(--af-border)' : 'var(--af-black)',
         verticalAlign: 'bottom',
       }}>
         {formatTime(msg.created_at)}
@@ -189,7 +189,7 @@ function MessageBubble({ msg, isOwn, showAvatar, onDelete }: MessageBubbleProps)
             />
           ) : (
             <div style={{
-              width: 28, height: 28, background: '#111', color: '#fff',
+              width: 28, height: 28, background: 'var(--af-black)', color: 'var(--af-white)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-9)', fontWeight: 600,
             }}>
@@ -214,7 +214,7 @@ function MessageBubble({ msg, isOwn, showAvatar, onDelete }: MessageBubbleProps)
           <div style={{
             fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-8)',
             letterSpacing: '0.12em', textTransform: 'uppercase',
-            color: '#111', marginBottom: 2,
+            color: 'var(--af-black)', marginBottom: 2,
           }}>
             {name}
           </div>
@@ -231,7 +231,7 @@ function MessageBubble({ msg, isOwn, showAvatar, onDelete }: MessageBubbleProps)
           <div
             style={{
               position: 'absolute', top: -4, right: 0, zIndex: 10,
-              background: '#fff', border: '0.5px solid #EBEBEB',
+              background: 'var(--af-white)', border: '0.5px solid var(--af-border)',
               boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
             }}
           >
@@ -240,10 +240,10 @@ function MessageBubble({ msg, isOwn, showAvatar, onDelete }: MessageBubbleProps)
               style={{
                 display: 'block', width: '100%', padding: '6px 16px',
                 fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-10)',
-                color: '#111', background: 'none', border: 'none', cursor: 'pointer',
+                color: 'var(--af-black)', background: 'none', border: 'none', cursor: 'pointer',
                 textAlign: 'left',
               }}
-              onMouseEnter={e => { (e.target as HTMLElement).style.background = '#F6F6F4'; }}
+              onMouseEnter={e => { (e.target as HTMLElement).style.background = 'var(--af-offwhite)'; }}
               onMouseLeave={e => { (e.target as HTMLElement).style.background = 'transparent'; }}
             >
               Удалить
@@ -268,14 +268,14 @@ function MemberPills({ members }: { members: Profile[] }) {
         <div key={m.id} style={{
           display: 'inline-flex', alignItems: 'center', gap: 4,
           padding: '2px 8px',
-          background: '#F6F6F4', border: '0.5px solid #EBEBEB',
+          background: 'var(--af-offwhite)', border: '0.5px solid var(--af-border)',
           fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-8)',
-          letterSpacing: '0.06em', color: '#111',
+          letterSpacing: '0.06em', color: 'var(--af-black)',
         }}>
           {m.avatar_url ? (
             <Image src={m.avatar_url} alt="" width={14} height={14} style={{ objectFit: 'cover', borderRadius: 0 }} />
           ) : (
-            <span style={{ fontWeight: 600, color: '#111' }}>{getInitials(m.full_name)}</span>
+            <span style={{ fontWeight: 600, color: 'var(--af-black)' }}>{getInitials(m.full_name)}</span>
           )}
           <span>{m.full_name}</span>
         </div>
@@ -503,11 +503,11 @@ function VoiceRecorder({ projectId, userId, chatType, profile, appendMessage, re
           style={{
             padding: '10px 12px',
             background: 'transparent',
-            border: '0.5px solid #EBEBEB',
+            border: '0.5px solid var(--af-border)',
             fontFamily: "'IBM Plex Mono', monospace",
             fontSize: 'var(--af-fs-12)',
             cursor: 'pointer',
-            color: '#111',
+            color: 'var(--af-black)',
             minHeight: 40,
             display: 'flex',
             alignItems: 'center',
@@ -524,8 +524,8 @@ function VoiceRecorder({ projectId, userId, chatType, profile, appendMessage, re
           alignItems: 'center',
           gap: 8,
           padding: '10px 12px',
-          background: '#111',
-          color: '#fff',
+          background: 'var(--af-black)',
+          color: 'var(--af-white)',
           fontFamily: "'IBM Plex Mono', monospace",
           fontSize: 'var(--af-fs-12)',
           minHeight: 40,
@@ -550,8 +550,8 @@ function VoiceRecorder({ projectId, userId, chatType, profile, appendMessage, re
           onClick={stopAndSend}
           style={{
             padding: '10px 20px',
-            background: '#111',
-            color: '#fff',
+            background: 'var(--af-black)',
+            color: 'var(--af-white)',
             border: 'none',
             fontFamily: "'IBM Plex Mono', monospace",
             fontSize: 'var(--af-fs-10)',
@@ -575,8 +575,8 @@ function VoiceRecorder({ projectId, userId, chatType, profile, appendMessage, re
       style={{
         padding: '10px 14px',
         background: 'transparent',
-        color: '#111',
-        border: '0.5px solid #EBEBEB',
+        color: 'var(--af-black)',
+        border: '0.5px solid var(--af-border)',
         fontFamily: "'IBM Plex Mono', monospace",
         fontSize: 'var(--af-fs-10)',
         fontWeight: 600,
@@ -749,13 +749,13 @@ function ChatTabPanel({ projectId, chatType, userId, profile, toast, isActive }:
         onScroll={handleScroll}
         style={{
           flex: 1, overflowY: 'auto', padding: '16px 16px 8px',
-          background: '#FFFFFF',
+          background: 'var(--af-white)',
         }}
       >
         {loading && messages.length === 0 && (
           <div style={{
             textAlign: 'center', padding: 40,
-            fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-11)', color: '#111',
+            fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-11)', color: 'var(--af-black)',
           }}>
             Загрузка сообщений...
           </div>
@@ -764,7 +764,7 @@ function ChatTabPanel({ projectId, chatType, userId, profile, toast, isActive }:
         {!loading && messages.length === 0 && (
           <div style={{
             textAlign: 'center', padding: 40,
-            fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-11)', color: '#111',
+            fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-11)', color: 'var(--af-black)',
           }}>
             Чат пуст. Напишите первое сообщение.
           </div>
@@ -775,9 +775,9 @@ function ChatTabPanel({ projectId, chatType, userId, profile, toast, isActive }:
             onClick={loadMore}
             style={{
               display: 'block', margin: '0 auto 16px', padding: '6px 16px',
-              background: 'transparent', border: '0.5px solid #EBEBEB',
+              background: 'transparent', border: '0.5px solid var(--af-border)',
               fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-9)',
-              cursor: 'pointer', color: '#111',
+              cursor: 'pointer', color: 'var(--af-black)',
               textTransform: 'uppercase', letterSpacing: '0.12em',
             }}
           >
@@ -790,7 +790,7 @@ function ChatTabPanel({ projectId, chatType, userId, profile, toast, isActive }:
             <div style={{
               textAlign: 'center', margin: '16px 0 12px',
               fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-8)',
-              letterSpacing: '0.16em', textTransform: 'uppercase', color: '#111',
+              letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--af-black)',
             }}>
               {group.date}
             </div>
@@ -812,8 +812,8 @@ function ChatTabPanel({ projectId, chatType, userId, profile, toast, isActive }:
       {/* Assistant suggestion */}
       {suggestion && suggestion.found && (
         <div style={{
-          padding: '12px 16px', background: '#111', color: '#fff',
-          borderTop: '0.5px solid #333',
+          padding: '12px 16px', background: 'var(--af-black)', color: 'var(--af-white)',
+          borderTop: '0.5px solid rgb(var(--line))',
         }}>
           <div style={{
             fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-7)',
@@ -856,7 +856,7 @@ function ChatTabPanel({ projectId, chatType, userId, profile, toast, isActive }:
                     setCreatingSuggestion(false);
                   }}
                   style={{
-                    padding: '4px 10px', background: '#fff', color: '#111',
+                    padding: '4px 10px', background: 'var(--af-white)', color: 'var(--af-black)',
                     border: 'none', cursor: 'pointer',
                     fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-8)',
                     fontWeight: 600, textTransform: 'uppercase',
@@ -872,7 +872,7 @@ function ChatTabPanel({ projectId, chatType, userId, profile, toast, isActive }:
               <button
                 onClick={() => setShowTimePicker(true)}
                 style={{
-                  padding: '5px 12px', background: '#fff', color: '#111',
+                  padding: '5px 12px', background: 'var(--af-white)', color: 'var(--af-black)',
                   border: 'none', cursor: 'pointer',
                   fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-8)',
                   fontWeight: 600, textTransform: 'uppercase',
@@ -884,8 +884,8 @@ function ChatTabPanel({ projectId, chatType, userId, profile, toast, isActive }:
               <button
                 onClick={() => setSuggestion(null)}
                 style={{
-                  padding: '5px 12px', background: 'transparent', color: '#fff',
-                  border: '0.5px solid #555', cursor: 'pointer',
+                  padding: '5px 12px', background: 'transparent', color: 'var(--af-white)',
+                  border: '0.5px solid rgb(var(--line))', cursor: 'pointer',
                   fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-8)',
                   textTransform: 'uppercase', letterSpacing: '0.1em',
                 }}
@@ -901,8 +901,8 @@ function ChatTabPanel({ projectId, chatType, userId, profile, toast, isActive }:
       <div style={{
         padding: '8px 16px',
         paddingBottom: 'calc(8px + env(safe-area-inset-bottom, 0px))',
-        background: '#FFFFFF',
-        borderTop: '0.5px solid #EBEBEB',
+        background: 'var(--af-white)',
+        borderTop: '0.5px solid var(--af-border)',
         display: 'flex', gap: 8, alignItems: 'flex-end',
         flexShrink: 0,
       }}>
@@ -930,11 +930,11 @@ function ChatTabPanel({ projectId, chatType, userId, profile, toast, isActive }:
               style={{
                 flex: 1, resize: 'none',
                 padding: '10px 12px',
-                border: '0.5px solid #EBEBEB',
+                border: '0.5px solid var(--af-border)',
                 fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-12)',
                 lineHeight: '1.4', outline: 'none',
                 minHeight: 40, maxHeight: 120,
-                background: '#F6F6F4',
+                background: 'var(--af-offwhite)',
                 borderRadius: 0,
               }}
               onInput={(e) => {
@@ -948,8 +948,8 @@ function ChatTabPanel({ projectId, chatType, userId, profile, toast, isActive }:
               disabled={sending || !text.trim()}
               style={{
                 padding: '10px 20px',
-                background: text.trim() ? '#111' : '#EBEBEB',
-                color: text.trim() ? '#fff' : '#EBEBEB',
+                background: text.trim() ? 'var(--af-black)' : 'var(--af-border)',
+                color: text.trim() ? 'var(--af-white)' : 'var(--af-border)',
                 border: 'none',
                 fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-10)',
                 fontWeight: 600, cursor: text.trim() ? 'pointer' : 'default',
@@ -1045,7 +1045,7 @@ export default function ChatView({ projectId, toast }: ChatViewProps) {
 
   return (
     <div style={{
-      background: '#FFFFFF',
+      background: 'var(--af-white)',
       display: 'flex',
       flexDirection: 'column',
       height: 'calc(100dvh - 140px)',
@@ -1058,8 +1058,8 @@ export default function ChatView({ projectId, toast }: ChatViewProps) {
       {/* Tab bar */}
       <div style={{
         display: 'flex',
-        borderBottom: '0.5px solid #EBEBEB',
-        background: '#FFFFFF',
+        borderBottom: '0.5px solid var(--af-border)',
+        background: 'var(--af-white)',
         flexShrink: 0,
       }}>
         {availableTabs.map(tab => {
@@ -1077,12 +1077,12 @@ export default function ChatView({ projectId, toast }: ChatViewProps) {
                 letterSpacing: '0.16em',
                 textTransform: 'uppercase' as const,
                 fontFamily: 'var(--font-ibm-mono), monospace',
-                color: isActive ? '#111' : '#111',
+                color: isActive ? 'var(--af-black)' : 'var(--af-black)',
                 fontWeight: isActive ? 600 : 400,
                 borderTop: 'none',
                 borderLeft: 'none',
                 borderRight: 'none',
-                borderBottom: isActive ? '2px solid #111' : '2px solid transparent',
+                borderBottom: isActive ? '2px solid var(--af-black)' : '2px solid transparent',
                 background: 'none',
                 cursor: 'pointer',
               }}
@@ -1092,7 +1092,7 @@ export default function ChatView({ projectId, toast }: ChatViewProps) {
                 <span style={{
                   display: 'inline-block',
                   width: 5, height: 5,
-                  background: '#111',
+                  background: 'var(--af-black)',
                   borderRadius: '50%',
                   marginLeft: 6,
                   verticalAlign: 'middle',

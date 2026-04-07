@@ -93,8 +93,8 @@ export default function PushPermissionBanner({ onSubscribed }: PushPermissionBan
       justifyContent: 'space-between',
       gap: 12,
       padding: '8px 16px',
-      background: '#111',
-      color: '#fff',
+      background: 'var(--af-black)',
+      color: 'var(--af-white)',
       fontFamily: "'IBM Plex Mono', monospace",
       fontSize: 10,
       letterSpacing: '0.04em',
@@ -108,8 +108,8 @@ export default function PushPermissionBanner({ onSubscribed }: PushPermissionBan
           disabled={subscribing}
           style={{
             padding: '4px 12px',
-            background: '#fff',
-            color: '#111',
+            background: 'var(--af-white)',
+            color: 'var(--af-black)',
             border: 'none',
             fontFamily: "'IBM Plex Mono', monospace",
             fontSize: 9,
@@ -126,8 +126,8 @@ export default function PushPermissionBanner({ onSubscribed }: PushPermissionBan
           style={{
             padding: '4px 12px',
             background: 'transparent',
-            color: '#EBEBEB',
-            border: '0.5px solid #EBEBEB',
+            color: 'var(--af-border)',
+            border: '0.5px solid var(--af-border)',
             fontFamily: "'IBM Plex Mono', monospace",
             fontSize: 9,
             cursor: 'pointer',

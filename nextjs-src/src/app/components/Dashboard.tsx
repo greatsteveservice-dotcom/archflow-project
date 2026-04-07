@@ -62,7 +62,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
         <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, fontWeight: 900, marginBottom: 16 }}>
           Активность
         </h2>
-        <div style={{ background: '#F6F6F4' }}>
+        <div style={{ background: 'var(--af-offwhite)' }}>
           {activityLoading ? (
             <div className="af-label" style={{ padding: 24, textAlign: 'center' }}>Загрузка...</div>
           ) : visibleActivity.length > 0 ? (
@@ -75,15 +75,15 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                     alignItems: 'flex-start',
                     gap: 12,
                     padding: '12px 20px',
-                    borderBottom: '0.5px solid #EBEBEB',
+                    borderBottom: '0.5px solid var(--af-border)',
                   }}
                 >
                   <div style={{
                     width: 6, height: 6, marginTop: 5, flexShrink: 0,
-                    background: '#111',
+                    background: 'var(--af-black)',
                   }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: '#111', lineHeight: 1.5 }}>
+                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: 'var(--af-black)', lineHeight: 1.5 }}>
                       {item.text}
                     </div>
                     <div className="af-label" style={{ marginTop: 2, fontSize: 8 }}>
@@ -93,7 +93,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                 </div>
               ))}
               {hasMoreActivity && (
-                <div style={{ padding: '12px 20px', textAlign: 'center', borderTop: '0.5px solid #EBEBEB' }}>
+                <div style={{ padding: '12px 20px', textAlign: 'center', borderTop: '0.5px solid var(--af-border)' }}>
                   <button
                     className="af-crumb"
                     onClick={() => setActivityLimit(l => l + LOAD_MORE_STEP)}

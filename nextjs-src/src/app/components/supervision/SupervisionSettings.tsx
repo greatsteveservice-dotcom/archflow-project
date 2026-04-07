@@ -98,7 +98,7 @@ export default function SupervisionSettings({ projectId, toast }: SupervisionSet
               ))}
             </div>
             {error && (
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-7)', color: '#111111', marginTop: 6, letterSpacing: '0.05em' }}>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-7)', color: 'var(--af-black)', marginTop: 6, letterSpacing: '0.05em' }}>
                 {error}
               </div>
             )}
@@ -188,7 +188,7 @@ export default function SupervisionSettings({ projectId, toast }: SupervisionSet
           />
           <span style={{
             position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
-            fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-11)', color: '#EBEBEB',
+            fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-11)', color: 'var(--af-border)',
           }}>₽</span>
         </div>
         <div style={helperStyle}>заполните если визит сверх договора</div>
@@ -201,7 +201,7 @@ export default function SupervisionSettings({ projectId, toast }: SupervisionSet
           onClick={handleSave}
           style={{
             width: '100%', height: 44,
-            background: '#111', color: '#FFF', border: 'none',
+            background: 'var(--af-black)', color: 'var(--af-white)', border: 'none',
             fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-10)',
             fontWeight: 400, letterSpacing: '0.15em', textTransform: 'uppercase' as const,
             cursor: 'pointer', transition: 'opacity 0.15s ease',
@@ -220,7 +220,7 @@ export default function SupervisionSettings({ projectId, toast }: SupervisionSet
 
 const sectionStyle: React.CSSProperties = {
   padding: '10px 14px',
-  borderBottom: '0.5px solid #EBEBEB',
+  borderBottom: '0.5px solid var(--af-border)',
 };
 
 const labelStyle: React.CSSProperties = {
@@ -230,7 +230,7 @@ const labelStyle: React.CSSProperties = {
   fontWeight: 400,
   textTransform: 'uppercase',
   letterSpacing: '0.15em',
-  color: '#111',
+  color: 'var(--af-black)',
   marginBottom: 8,
 };
 
@@ -241,9 +241,9 @@ const chipStyle = (active: boolean): React.CSSProperties => ({
   textTransform: 'uppercase',
   letterSpacing: '0.08em',
   padding: '4px 8px',
-  border: active ? '0.5px solid #111' : '0.5px solid #EBEBEB',
-  background: active ? '#111' : '#FFF',
-  color: active ? '#FFF' : '#111',
+  border: active ? '0.5px solid var(--af-black)' : '0.5px solid var(--af-border)',
+  background: active ? 'var(--af-black)' : 'var(--af-white)',
+  color: active ? 'var(--af-white)' : 'var(--af-black)',
   cursor: 'pointer',
   transition: 'background 0.12s ease',
 });
@@ -255,9 +255,9 @@ const inputStyle: React.CSSProperties = {
   width: '100%',
   height: 40,
   padding: '0 10px',
-  border: '0.5px solid #EBEBEB',
-  background: '#FFF',
-  color: '#111',
+  border: '0.5px solid var(--af-border)',
+  background: 'var(--af-white)',
+  color: 'var(--af-black)',
   outline: 'none',
   borderRadius: 0,
 };
@@ -265,7 +265,7 @@ const inputStyle: React.CSSProperties = {
 const helperStyle: React.CSSProperties = {
   fontFamily: "'IBM Plex Mono', monospace",
   fontSize: 'var(--af-fs-7)',
-  color: '#111',
+  color: 'var(--af-black)',
   marginTop: 6,
   letterSpacing: '0.05em',
 };

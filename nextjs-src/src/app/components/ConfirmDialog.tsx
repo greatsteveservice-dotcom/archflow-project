@@ -67,7 +67,7 @@ export default function ConfirmDialog({
           <button
             className={`text-[13px] py-2 px-4 font-medium transition-all ${
               danger
-                ? "bg-[#111] text-white hover:bg-[#111]"
+                ? "bg-[var(--af-black)] text-white hover:bg-[var(--af-black)]"
                 : "bg-ink text-srf hover:bg-ink-hover"
             } ${loading ? "opacity-60 cursor-not-allowed" : ""}`}
             onClick={onConfirm}

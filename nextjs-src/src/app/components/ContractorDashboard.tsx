@@ -16,15 +16,15 @@ const STATUS_LABEL: Record<TaskStatus, string> = {
 };
 
 const STATUS_BORDER: Record<TaskStatus, string> = {
-  open: '#EBEBEB',
-  in_progress: '#EBEBEB',
-  done: '#111',
+  open: 'var(--af-border)',
+  in_progress: 'var(--af-border)',
+  done: 'var(--af-black)',
 };
 
 const STATUS_CHIP: Record<TaskStatus, { border: string; color: string }> = {
-  open: { border: '#EBEBEB', color: '#111' },
-  in_progress: { border: '#EBEBEB', color: '#111' },
-  done: { border: '#111', color: '#111' },
+  open: { border: 'var(--af-border)', color: 'var(--af-black)' },
+  in_progress: { border: 'var(--af-border)', color: 'var(--af-black)' },
+  done: { border: 'var(--af-black)', color: 'var(--af-black)' },
 };
 
 const SECTION_CONFIG: { status: TaskStatus; label: string }[] = [
@@ -539,7 +539,7 @@ const logoutBtnStyle: React.CSSProperties = {
   fontSize: 'var(--af-fs-7)',
   textTransform: 'uppercase',
   letterSpacing: '0.14em',
-  color: '#111',
+  color: 'var(--af-black)',
   cursor: 'pointer',
   padding: '4px 0',
   marginTop: 4,

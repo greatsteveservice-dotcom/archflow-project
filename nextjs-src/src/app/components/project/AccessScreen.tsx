@@ -146,7 +146,7 @@ export default function AccessScreen({ projectId, projectName, toast, onBack, em
         <div
           style={{
             padding: '10px 12px',
-            background: '#F6F6F4',
+            background: 'var(--af-offwhite)',
             marginBottom: 16,
             display: 'flex',
             alignItems: 'center',
@@ -155,23 +155,23 @@ export default function AccessScreen({ projectId, projectName, toast, onBack, em
           }}
         >
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 'var(--af-fs-9)', fontFamily: 'var(--font-mono)', color: '#111', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            <div style={{ fontSize: 'var(--af-fs-9)', fontFamily: 'var(--font-mono)', color: 'var(--af-black)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
               Ссылка-приглашение
             </div>
-            <div style={{ fontSize: 'var(--af-fs-10)', fontFamily: 'var(--font-mono)', color: '#111', wordBreak: 'break-all' }}>
+            <div style={{ fontSize: 'var(--af-fs-10)', fontFamily: 'var(--font-mono)', color: 'var(--af-black)', wordBreak: 'break-all' }}>
               {lastInviteLink}
             </div>
           </div>
           <div style={{ display: 'flex', gap: 4 }}>
             <button
               onClick={() => { navigator.clipboard.writeText(lastInviteLink); toast('Ссылка скопирована'); }}
-              style={{ fontSize: 'var(--af-fs-9)', fontFamily: 'var(--font-mono)', padding: '4px 10px', background: '#111', color: '#FFF', border: 'none', cursor: 'pointer' }}
+              style={{ fontSize: 'var(--af-fs-9)', fontFamily: 'var(--font-mono)', padding: '4px 10px', background: 'var(--af-black)', color: 'var(--af-white)', border: 'none', cursor: 'pointer' }}
             >
               Копировать
             </button>
             <button
               onClick={() => setLastInviteLink(null)}
-              style={{ fontSize: 'var(--af-fs-13)', color: '#EBEBEB', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' }}
+              style={{ fontSize: 'var(--af-fs-13)', color: 'var(--af-border)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' }}
             >
               ×
             </button>
@@ -195,7 +195,7 @@ export default function AccessScreen({ projectId, projectName, toast, onBack, em
                 {/* Section header */}
                 <div
                   className="text-[8px] uppercase tracking-[0.08em] mb-2 mt-6"
-                  style={{ fontFamily: 'var(--font-mono)', color: '#111' }}
+                  style={{ fontFamily: 'var(--font-mono)', color: 'var(--af-black)' }}
                 >
                   {label}
                 </div>
@@ -212,8 +212,8 @@ export default function AccessScreen({ projectId, projectName, toast, onBack, em
                           alignItems: 'center',
                           justifyContent: 'space-between',
                           padding: '8px 12px',
-                          background: '#FFFFFF',
-                          borderBottom: '0.5px solid #EBEBEB',
+                          background: 'var(--af-white)',
+                          borderBottom: '0.5px solid var(--af-border)',
                         }}
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -222,14 +222,14 @@ export default function AccessScreen({ projectId, projectName, toast, onBack, em
                             style={{
                               width: 28,
                               height: 28,
-                              background: '#F6F6F4',
+                              background: 'var(--af-offwhite)',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
                               fontSize: 'var(--af-fs-10)',
                               fontWeight: 600,
                               fontFamily: 'var(--font-mono)',
-                              color: '#111',
+                              color: 'var(--af-black)',
                             }}
                           >
                             {getInitials(m)}
@@ -237,13 +237,13 @@ export default function AccessScreen({ projectId, projectName, toast, onBack, em
                           {/* Info */}
                           <div>
                             <div
-                              style={{ fontSize: 'var(--af-fs-11)', color: '#111', fontFamily: 'var(--font-mono)' }}
+                              style={{ fontSize: 'var(--af-fs-11)', color: 'var(--af-black)', fontFamily: 'var(--font-mono)' }}
                             >
                               {getDisplayName(m)}
                             </div>
                             {getEmail(m) && getEmail(m) !== getDisplayName(m) && (
                               <div
-                                style={{ fontSize: 'var(--af-fs-10)', color: '#111', fontFamily: 'var(--font-mono)' }}
+                                style={{ fontSize: 'var(--af-fs-10)', color: 'var(--af-black)', fontFamily: 'var(--font-mono)' }}
                               >
                                 {getEmail(m)}
                               </div>
@@ -257,8 +257,8 @@ export default function AccessScreen({ projectId, projectName, toast, onBack, em
                               fontSize: 'var(--af-fs-9)',
                               fontFamily: 'var(--font-mono)',
                               padding: '2px 6px',
-                              background: m.status === 'active' ? '#111' : '#F6F6F4',
-                              color: m.status === 'active' ? '#FFF' : '#111',
+                              background: m.status === 'active' ? 'var(--af-black)' : 'var(--af-offwhite)',
+                              color: m.status === 'active' ? 'var(--af-white)' : 'var(--af-black)',
                             }}
                           >
                             {m.status === 'active' ? 'Активен' : 'Ожидает'}
@@ -268,7 +268,7 @@ export default function AccessScreen({ projectId, projectName, toast, onBack, em
                             className="opacity-0 group-hover:opacity-100 transition-opacity"
                             style={{
                               fontSize: 14,
-                              color: '#EBEBEB',
+                              color: 'var(--af-border)',
                               background: 'none',
                               border: 'none',
                               cursor: 'pointer',
@@ -288,7 +288,7 @@ export default function AccessScreen({ projectId, projectName, toast, onBack, em
                   <div
                     style={{
                       fontSize: 'var(--af-fs-11)',
-                      color: '#111',
+                      color: 'var(--af-black)',
                       fontFamily: 'var(--font-mono)',
                       padding: '8px 12px',
                     }}
@@ -320,15 +320,15 @@ export default function AccessScreen({ projectId, projectName, toast, onBack, em
                   <div
                     style={{
                       padding: '10px 12px',
-                      background: '#FFFFFF',
-                      borderBottom: '0.5px solid #EBEBEB',
+                      background: 'var(--af-white)',
+                      borderBottom: '0.5px solid var(--af-border)',
                     }}
                   >
                     {formError && (
                       <div
                         style={{
                           fontSize: 'var(--af-fs-10)',
-                          color: '#111',
+                          color: 'var(--af-black)',
                           fontFamily: 'var(--font-mono)',
                           marginBottom: 6,
                         }}
@@ -348,11 +348,11 @@ export default function AccessScreen({ projectId, projectName, toast, onBack, em
                           fontSize: 'var(--af-fs-11)',
                           fontFamily: 'var(--font-mono)',
                           padding: '6px 8px',
-                          border: '1px solid #EBEBEB',
-                          background: '#F6F6F4',
+                          border: '1px solid var(--af-border)',
+                          background: 'var(--af-offwhite)',
                           outline: 'none',
                           borderRadius: 0,
-                          color: '#111',
+                          color: 'var(--af-black)',
                         }}
                         onKeyDown={e => { if (e.key === 'Enter') handleInvite(role); if (e.key === 'Escape') { setOpenForm(null); setFormEmail(''); setFormError(''); } }}
                       />
@@ -363,8 +363,8 @@ export default function AccessScreen({ projectId, projectName, toast, onBack, em
                           fontSize: 'var(--af-fs-10)',
                           fontFamily: 'var(--font-mono)',
                           padding: '6px 12px',
-                          background: '#111',
-                          color: '#FFF',
+                          background: 'var(--af-black)',
+                          color: 'var(--af-white)',
                           border: 'none',
                           cursor: formSaving ? 'wait' : 'pointer',
                           whiteSpace: 'nowrap',
@@ -377,7 +377,7 @@ export default function AccessScreen({ projectId, projectName, toast, onBack, em
                         onClick={() => { setOpenForm(null); setFormEmail(''); setFormError(''); }}
                         style={{
                           fontSize: 'var(--af-fs-13)',
-                          color: '#EBEBEB',
+                          color: 'var(--af-border)',
                           background: 'none',
                           border: 'none',
                           cursor: 'pointer',
@@ -398,7 +398,7 @@ export default function AccessScreen({ projectId, projectName, toast, onBack, em
                       padding: '8px 12px',
                       fontSize: 'var(--af-fs-11)',
                       fontFamily: 'var(--font-mono)',
-                      color: '#111',
+                      color: 'var(--af-black)',
                       background: 'none',
                       border: 'none',
                       cursor: 'pointer',
@@ -438,11 +438,11 @@ function ToggleRow({
         alignItems: 'center',
         justifyContent: 'space-between',
         padding: '8px 12px',
-        background: '#FFFFFF',
-        borderBottom: '0.5px solid #EBEBEB',
+        background: 'var(--af-white)',
+        borderBottom: '0.5px solid var(--af-border)',
       }}
     >
-      <span style={{ fontSize: 'var(--af-fs-11)', fontFamily: 'var(--font-mono)', color: '#111' }}>
+      <span style={{ fontSize: 'var(--af-fs-11)', fontFamily: 'var(--font-mono)', color: 'var(--af-black)' }}>
         {label}
       </span>
       <div style={{ display: 'flex', gap: '2px' }}>
@@ -474,9 +474,9 @@ function ChipToggle({
         fontSize: 'var(--af-fs-9)',
         fontFamily: 'var(--font-mono)',
         padding: '2px 10px',
-        background: active ? '#111' : 'transparent',
-        color: active ? '#FFF' : '#111',
-        border: active ? '1px solid #111' : '1px solid #111',
+        background: active ? 'var(--af-black)' : 'transparent',
+        color: active ? 'var(--af-white)' : 'var(--af-black)',
+        border: active ? '1px solid var(--af-black)' : '1px solid var(--af-black)',
         cursor: disabled ? 'wait' : 'pointer',
         transition: 'all 0.12s',
         opacity: disabled ? 0.5 : 1,

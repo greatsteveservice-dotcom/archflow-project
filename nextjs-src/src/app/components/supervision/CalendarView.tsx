@@ -29,7 +29,7 @@ function getFirstDayOfMonth(year: number, month: number) {
 // ── Icon SVGs ────────────────────────────────────────────────
 
 /** Notebook icon (7×7, rectangle with 2 lines) */
-function VisitIcon({ color = '#111' }: { color?: string }) {
+function VisitIcon({ color = 'var(--af-black)' }: { color?: string }) {
   return (
     <svg width="7" height="7" viewBox="0 0 7 7" fill="none" style={{ display: 'block' }}>
       <rect x="0.5" y="1.5" width="6" height="4" rx="0.5" stroke={color} strokeWidth="0.8" />
@@ -42,9 +42,9 @@ function VisitIcon({ color = '#111' }: { color?: string }) {
 function PaymentIcon() {
   return (
     <svg width="7" height="7" viewBox="0 0 7 7" fill="none" style={{ display: 'block' }}>
-      <circle cx="3.5" cy="3.5" r="3.5" fill="#111" />
+      <circle cx="3.5" cy="3.5" r="3.5" fill="var(--af-black)" />
       <text x="3.5" y="5.2" textAnchor="middle"
-        style={{ fontSize: 5, fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, fill: '#fff' }}>
+        style={{ fontSize: 5, fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, fill: 'var(--af-white)' }}>
         ₽
       </text>
     </svg>
@@ -241,8 +241,8 @@ export default function CalendarView({ projectId, visits, toast, refetchVisits, 
       {/* Task Reminder Block (only when reminder condition is active) */}
       {taskReminder && (
         <div style={{
-          background: '#F6F6F4',
-          borderLeft: '2px solid #111',
+          background: 'var(--af-offwhite)',
+          borderLeft: '2px solid var(--af-black)',
           padding: '10px 12px',
           marginBottom: 16,
         }}>
@@ -251,7 +251,7 @@ export default function CalendarView({ projectId, visits, toast, refetchVisits, 
             fontSize: 'var(--af-fs-7)',
             textTransform: 'uppercase',
             letterSpacing: '0.12em',
-            color: '#111',
+            color: 'var(--af-black)',
             marginBottom: 4,
           }}>
             Задача
@@ -260,7 +260,7 @@ export default function CalendarView({ projectId, visits, toast, refetchVisits, 
             fontFamily: "'Playfair Display', serif",
             fontSize: 'var(--af-fs-13)',
             fontWeight: 700,
-            color: '#111',
+            color: 'var(--af-black)',
             marginBottom: 2,
           }}>
             Выставить счёт
@@ -268,7 +268,7 @@ export default function CalendarView({ projectId, visits, toast, refetchVisits, 
           <div style={{
             fontFamily: "'IBM Plex Mono', monospace",
             fontSize: 'var(--af-fs-7)',
-            color: '#111',
+            color: 'var(--af-black)',
             letterSpacing: '0.05em',
           }}>
             до {fmtDMY(taskReminder.billingDate)} · осталось {taskReminder.daysLeft} р.д.
@@ -288,7 +288,7 @@ export default function CalendarView({ projectId, visits, toast, refetchVisits, 
             fontWeight: 700,
             minWidth: 140,
             textAlign: 'center',
-            color: '#111',
+            color: 'var(--af-black)',
           }}>
             {MONTHS_RU[currentMonth]} {currentYear}
           </h3>
@@ -304,15 +304,15 @@ export default function CalendarView({ projectId, visits, toast, refetchVisits, 
       </div>
 
       {/* Calendar grid */}
-      <div style={{ background: '#FFFFFF', padding: 16 }}>
+      <div style={{ background: 'var(--af-white)', padding: 16 }}>
         <div className="grid grid-cols-7 gap-0.5 mb-2">
           {DAYS_RU.map(d => (
-            <div key={d} style={{ background: '#FFFFFF', color: '#111', fontSize: 'var(--af-fs-11)', fontWeight: 500, textAlign: 'center', padding: '4px 0' }}>{d}</div>
+            <div key={d} style={{ background: 'var(--af-white)', color: 'var(--af-black)', fontSize: 'var(--af-fs-11)', fontWeight: 500, textAlign: 'center', padding: '4px 0' }}>{d}</div>
           ))}
         </div>
         <div className="grid grid-cols-7 gap-0.5">
           {Array.from({ length: firstDay }).map((_, i) => (
-            <div key={`empty-${i}`} className="aspect-square md:aspect-auto md:h-[52px]" style={{ background: '#FFFFFF' }} />
+            <div key={`empty-${i}`} className="aspect-square md:aspect-auto md:h-[52px]" style={{ background: 'var(--af-white)' }} />
           ))}
           {Array.from({ length: daysInMonth }).map((_, i) => {
             const day = i + 1;
@@ -329,8 +329,8 @@ export default function CalendarView({ projectId, visits, toast, refetchVisits, 
                 key={day}
                 className="aspect-square md:aspect-auto md:h-[52px] flex flex-col items-center justify-center cursor-pointer transition-all text-[13px]"
                 style={{
-                  background: (isToday || isSelected) ? '#111111' : '#FFFFFF',
-                  color: (isToday || isSelected) ? '#FFFFFF' : '#111111',
+                  background: (isToday || isSelected) ? 'var(--af-black)' : 'var(--af-white)',
+                  color: (isToday || isSelected) ? 'var(--af-white)' : 'var(--af-black)',
                   fontWeight: isToday ? 600 : 400,
                 }}
                 onClick={() => handleDayClick(day)}
@@ -339,7 +339,7 @@ export default function CalendarView({ projectId, visits, toast, refetchVisits, 
                 {/* Icons row */}
                 {hasIcons && (
                   <div style={{ display: 'flex', gap: 2, marginTop: 1, alignItems: 'center' }}>
-                    {hasScheduledVisit && <VisitIcon color={(isToday || isSelected) ? '#FFF' : '#111'} />}
+                    {hasScheduledVisit && <VisitIcon color={(isToday || isSelected) ? 'var(--af-white)' : 'var(--af-black)'} />}
                     {hasPaymentReminder && <PaymentIcon />}
                   </div>
                 )}
@@ -347,7 +347,7 @@ export default function CalendarView({ projectId, visits, toast, refetchVisits, 
                 {!hasIcons && dayVisits.length > 0 && (
                   <div className="flex gap-0.5 mt-0.5">
                     {dayVisits.slice(0, 3).map((_, idx) => (
-                      <div key={idx} style={{ width: 5, height: 5, background: (isToday || isSelected) ? '#FFFFFF' : '#111111' }} />
+                      <div key={idx} style={{ width: 5, height: 5, background: (isToday || isSelected) ? 'var(--af-white)' : 'var(--af-black)' }} />
                     ))}
                   </div>
                 )}
@@ -367,7 +367,7 @@ export default function CalendarView({ projectId, visits, toast, refetchVisits, 
               <span style={{
                 fontFamily: "'IBM Plex Mono', monospace",
                 fontSize: 'var(--af-fs-7)', textTransform: 'uppercase',
-                letterSpacing: '0.08em', color: '#111',
+                letterSpacing: '0.08em', color: 'var(--af-black)',
               }}>Визит</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -375,7 +375,7 @@ export default function CalendarView({ projectId, visits, toast, refetchVisits, 
               <span style={{
                 fontFamily: "'IBM Plex Mono', monospace",
                 fontSize: 'var(--af-fs-7)', textTransform: 'uppercase',
-                letterSpacing: '0.08em', color: '#111',
+                letterSpacing: '0.08em', color: 'var(--af-black)',
               }}>Счёт</span>
             </div>
           </div>

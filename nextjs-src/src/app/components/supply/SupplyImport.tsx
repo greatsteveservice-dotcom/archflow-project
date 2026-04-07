@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef, useCallback, useMemo } from 'react';
+import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import { Icons } from '../Icons';
 import { createSupplyItems } from '../../lib/queries';
@@ -7,21 +7,21 @@ import type { Stage, CreateSupplyItemInput, KindStageMapping } from '../../lib/t
 
 // Fields available for mapping
 const SUPPLY_FIELDS = [
-  { key: 'name', label: 'Название *', required: true },
-  { key: 'category', label: 'Категория', required: false },
+  { key: 'name', label: 'Наименование', required: true },
   { key: 'room', label: 'Помещение', required: false },
-  { key: 'lead_time_days', label: 'Срок поставки (дни)', required: false },
+  { key: 'category', label: 'Вид', required: false },
   { key: 'quantity', label: 'Количество', required: false },
-  { key: 'supplier', label: 'Поставщик', required: false },
-  { key: 'budget', label: 'Бюджет', required: false },
-  { key: 'notes', label: 'Заметки', required: false },
+  { key: 'unit', label: 'Единица измерения', required: false },
+  { key: 'budget', label: 'Стоимость', required: false },
+  { key: 'link', label: 'Ссылка', required: false },
+  { key: 'specs', label: 'Характеристики', required: false },
   { key: 'stage', label: 'Этап', required: false },
 ] as const;
 
 type FieldKey = typeof SUPPLY_FIELDS[number]['key'];
 
-// Fields that allow multiple columns mapped to them (values get concatenated)
-const MULTI_MAP_FIELDS: FieldKey[] = ['notes'];
+// Fields that allow multiple columns mapped to them (values get concatenated into notes)
+const MULTI_MAP_FIELDS: FieldKey[] = ['unit', 'link', 'specs'];
 
 // Auto-detect column mapping by header names
 const AUTO_MAP: Record<string, FieldKey> = {
@@ -29,12 +29,12 @@ const AUTO_MAP: Record<string, FieldKey> = {
   'категория': 'category', 'category': 'category', 'группа': 'category', 'тип': 'category',
   'вид': 'category',
   'помещение': 'room', 'комната': 'room', 'room': 'room',
-  'срок': 'lead_time_days', 'lead_time': 'lead_time_days', 'дни': 'lead_time_days', 'срок поставки': 'lead_time_days',
   'количество': 'quantity', 'кол-во': 'quantity', 'qty': 'quantity', 'quantity': 'quantity', 'шт': 'quantity',
-  'поставщик': 'supplier', 'supplier': 'supplier', 'vendor': 'supplier',
-  'бюджет': 'budget', 'цена': 'budget', 'стоимость': 'budget', 'price': 'budget', 'budget': 'budget', 'сумма': 'budget',
-  'заметки': 'notes', 'примечание': 'notes', 'notes': 'notes', 'комментарий': 'notes',
-  'спецификация': 'notes', 'характеристики': 'notes', 'ссылка': 'notes', 'ед.из': 'notes', 'ед. изм': 'notes', 'единица': 'notes',
+  'стоимость': 'budget', 'цена': 'budget', 'бюджет': 'budget', 'price': 'budget', 'budget': 'budget', 'сумма': 'budget',
+  'ед. изм': 'unit', 'ед.изм': 'unit', 'ед.из': 'unit', 'единица измерения': 'unit', 'единица': 'unit', 'unit': 'unit',
+  'ссылка': 'link', 'link': 'link', 'url': 'link',
+  'характеристики': 'specs', 'спецификация': 'specs', 'описание': 'specs', 'specs': 'specs',
+  'заметки': 'specs', 'примечание': 'specs', 'notes': 'specs', 'комментарий': 'specs',
   'этап': 'stage', 'stage': 'stage',
 };
 
@@ -90,7 +90,15 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
           return;
         }
 
-        const hdrs = json[0].map(h => String(h).trim());
+        // Compute max column count across all rows (XLSX trims trailing empty cells)
+        const maxCols = Math.max(...json.map(r => r.length), 0);
+        const pad = (arr: unknown[]) => {
+          const result = arr.slice();
+          while (result.length < maxCols) result.push('');
+          return result;
+        };
+
+        const hdrs = pad(json[0]).map(h => String(h).trim());
         const dataRows = json.slice(1).filter(row => row.some(cell => String(cell).trim() !== ''));
 
         if (dataRows.length === 0) {
@@ -99,7 +107,7 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
         }
 
         setHeaders(hdrs);
-        setRows(dataRows.map(row => row.map(cell => String(cell))));
+        setRows(dataRows.map(row => pad(row).map(cell => String(cell))));
 
         // Auto-map columns
         const autoMapping: Record<number, FieldKey | ''> = {};
@@ -155,8 +163,8 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
     return partial ? partial.id : null;
   };
 
-  // Build mapped items (used for preview and import)
-  const buildItems = useCallback((): CreateSupplyItemInput[] => {
+  // Build mapped items (used for preview and import) — pure function, no setState
+  const buildItems = useCallback((): { items: CreateSupplyItemInput[]; unmatched: string[]; autoFilled: Set<string> } => {
     const items: CreateSupplyItemInput[] = [];
     const unmatched = new Set<string>();
     const autoFilled = new Set<string>();
@@ -174,11 +182,11 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
           case 'name': item.name = val; break;
           case 'category': item.category = val; break;
           case 'room': item.room = val; break;
-          case 'lead_time_days': item.lead_time_days = parseInt(val) || 0; break;
           case 'quantity': item.quantity = parseInt(val) || 1; break;
-          case 'supplier': item.supplier = val; break;
           case 'budget': item.budget = parseFloat(val.replace(/[^\d.,]/g, '').replace(',', '.')) || 0; break;
-          case 'notes': notesParts.push(val); break;
+          case 'unit': notesParts.push('Ед. изм.: ' + val); break;
+          case 'link': notesParts.push('Ссылка: ' + val); break;
+          case 'specs': notesParts.push(val); break;
           case 'stage': {
             const stageId = findStage(val);
             if (stageId) {
@@ -213,9 +221,7 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
       if (item.name) items.push(item);
     }
 
-    setUnmatchedStages(Array.from(unmatched));
-    setAutoFilledStageItems(autoFilled);
-    return items;
+    return { items, unmatched: Array.from(unmatched), autoFilled };
   }, [rows, mapping, projectId, stages, kindMappings]);
 
   const handleImport = async () => {
@@ -223,10 +229,10 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
     setError('');
 
     try {
-      const items = buildItems();
+      const { items } = buildItems();
 
       if (items.length === 0) {
-        setError('Нет позиций для импорта. Проверьте маппинг колонки "Название".');
+        setError('Нет позиций для импорта. Проверьте маппинг колонки «Наименование».');
         setImporting(false);
         return;
       }
@@ -254,26 +260,44 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
   };
 
   // Preview: mapped rows for step 3, grouped by room if room is mapped
-  const previewData = useMemo(() => {
-    const allItems = buildItems();
+  const computed = useMemo(() => {
+    const result = buildItems();
     const hasRoom = Object.values(mapping).includes('room');
 
     let groups: Record<string, CreateSupplyItemInput[]> | null = null;
     if (hasRoom) {
       groups = {};
-      for (const item of allItems) {
+      for (const item of result.items) {
         const key = item.room || 'Без помещения';
         if (!groups[key]) groups[key] = [];
         groups[key].push(item);
       }
     }
 
-    return { groups, items: allItems.slice(0, 8), total: allItems.length };
+    return {
+      preview: { groups, items: result.items.slice(0, 8), total: result.items.length },
+      unmatched: result.unmatched,
+      autoFilled: result.autoFilled,
+    };
   }, [rows, mapping, buildItems]);
 
-  const mappedFieldsBase = SUPPLY_FIELDS.filter(f => Object.values(mapping).includes(f.key));
+  const previewData = computed.preview;
+
+  // Sync derived data to state (outside render)
+  useEffect(() => {
+    setUnmatchedStages(computed.unmatched);
+    setAutoFilledStageItems(computed.autoFilled);
+  }, [computed.unmatched, computed.autoFilled]);
+
+  const mappedValues = Object.values(mapping);
+  // Show real DB fields + a single "Заметки" column if any virtual note field is mapped
+  const hasNoteFields = mappedValues.some(v => v === 'unit' || v === 'link' || v === 'specs');
+  const mappedFieldsBase = [
+    ...SUPPLY_FIELDS.filter(f => mappedValues.includes(f.key) && f.key !== 'unit' && f.key !== 'link' && f.key !== 'specs'),
+    ...(hasNoteFields ? [{ key: 'notes' as const, label: 'Заметки', required: false }] : []),
+  ];
   // Include stage column in preview when kind mappings auto-filled stages even if no explicit stage column was mapped
-  const hasStageColumn = Object.values(mapping).includes('stage');
+  const hasStageColumn = mappedValues.includes('stage');
   const mappedFields = (!hasStageColumn && autoFilledStageItems.size > 0)
     ? [...mappedFieldsBase, { key: 'stage' as FieldKey, label: 'Этап', required: false }]
     : mappedFieldsBase;
@@ -285,9 +309,10 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
     return s ? s.name : '—';
   };
 
-  // Helper: get cell value for preview, resolving stage names
+  // Helper: get cell value for preview, resolving stage names and notes
   const cellValue = (item: CreateSupplyItemInput, fieldKey: string): string => {
     if (fieldKey === 'stage') return stageName(item.target_stage_id);
+    if (fieldKey === 'notes') return item.notes || '—';
     return String((item as any)[fieldKey] || '—');
   };
 
@@ -372,6 +397,9 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
             <h3 className="text-[14px] font-semibold">Сопоставление колонок</h3>
             <span className="text-[12px] text-ink-faint">{fileName}</span>
           </div>
+          <p className="text-[12px] text-ink-faint mb-4">
+            Сопоставьте колонки из вашего файла с полями ArchFlow. Колонки, которые не нужны — оставьте «Пропустить».
+          </p>
           <div className="space-y-3">
             {headers.map((header, i) => (
               <div key={i} className="flex items-center gap-4">
@@ -383,7 +411,7 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
                   value={mapping[i] || ''}
                   onChange={(e) => updateMapping(i, e.target.value as FieldKey | '')}
                 >
-                  <option value="">— Пропустить —</option>
+                  <option value="">Пропустить колонку</option>
                   {SUPPLY_FIELDS.map(f => {
                     const usedElsewhere = isFieldUsedElsewhere(f.key, i);
                     return (
@@ -398,7 +426,7 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
           </div>
           {!hasNameMapping && (
             <div className="mt-3 text-[12px] text-warn">
-              Укажите колонку для поля "Название" — это обязательное поле
+              Укажите колонку для поля «Наименование» — это обязательное поле
             </div>
           )}
         </div>
@@ -462,7 +490,7 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
                           <tr key={idx} style={{ borderBottom: '0.5px solid rgb(var(--line), 0.3)' }}>
                             {mappedFields.filter(f => f.key !== 'room').map(f => (
                               <td key={f.key} style={{
-                                padding: '4px 8px', color: '#666',
+                                padding: '4px 8px', color: 'rgb(var(--ink))', opacity: 0.6,
                                 fontFamily: "'IBM Plex Mono', monospace",
                                 fontSize: 'var(--af-fs-11)',
                                 maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis',

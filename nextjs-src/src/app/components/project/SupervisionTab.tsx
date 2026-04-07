@@ -84,7 +84,7 @@ export default function SupervisionTab({
           fontSize: 8,
           letterSpacing: '0.14em',
           textTransform: 'uppercase',
-          color: '#111',
+          color: 'var(--af-black)',
           background: 'none',
           border: 'none',
           cursor: 'pointer',

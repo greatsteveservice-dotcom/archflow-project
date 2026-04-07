@@ -20,7 +20,7 @@ export default function EmptyState({ title, description, action }: EmptyStatePro
         <p style={{
           fontFamily: "'IBM Plex Mono', monospace",
           fontSize: 11,
-          color: '#111',
+          color: 'var(--af-black)',
           marginTop: 8,
           maxWidth: 320,
         }}>
