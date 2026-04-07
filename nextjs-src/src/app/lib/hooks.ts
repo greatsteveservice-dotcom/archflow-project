@@ -59,7 +59,8 @@ interface UseQueryResult<T> {
 const _queryCache = new Map<string, unknown>();
 
 function useQuery<T>(fetcher: () => Promise<T>, deps: unknown[] = []): UseQueryResult<T> {
-  const cacheKey = JSON.stringify(deps);
+  // Include fetcher source to distinguish hooks with same deps (e.g. useProject vs useProjectVisits)
+  const cacheKey = fetcher.toString().slice(0, 80) + '::' + JSON.stringify(deps);
   const cached = _queryCache.get(cacheKey) as T | undefined;
   const [data, setData] = useState<T | null>(cached ?? null);
   const [loading, setLoading] = useState(!cached);

@@ -189,7 +189,7 @@ export default function SettingsTab({ project, projectId, toast, canDeleteProjec
             <div style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: '#111' }}>Загрузка...</div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 24 }}>
-              {(members || []).map((m) => (
+              {(Array.isArray(members) ? members : []).map((m) => (
                 <div key={m.id} className="group" style={{
                   background: '#fff', border: '0.5px solid #EBEBEB', padding: 16,
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
