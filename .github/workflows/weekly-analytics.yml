@@ -1,0 +1,25 @@
+name: Weekly Analytics Report
+
+on:
+  schedule:
+    # Mon & Thu at 06:00 UTC (09:00 MSK)
+    - cron: '0 6 * * 1'
+    - cron: '0 6 * * 4'
+  workflow_dispatch: {} # manual trigger
+
+jobs:
+  send-report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger analytics report
+        run: |
+          response=$(curl -s -w "\n%{http_code}" \
+            "https://archflow.ru/api/cron/analytics?secret=${{ secrets.CRON_SECRET }}")
+          http_code=$(echo "$response" | tail -1)
+          body=$(echo "$response" | head -1)
+          echo "Status: $http_code"
+          echo "Response: $body"
+          if [ "$http_code" != "200" ]; then
+            echo "::error::Analytics report failed with status $http_code"
+            exit 1
+          fi
