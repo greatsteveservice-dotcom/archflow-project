@@ -274,8 +274,8 @@ export default function AppShell() {
     );
   }
 
-  // New user welcome — only for designer/assistant/supplier, skip for demo
-  const showWelcome = !isDemoUser && !welcomeDismissed && !projectsLoading && projects !== null && projects.length === 0 && page === "projects" && profile?.role !== 'client' && profile?.role !== 'contractor';
+  // Welcome screen disabled — causes false positives due to RLS race condition
+  const showWelcome = false;
 
   const openSearch = () => setSearchOpen(true);
   const goHome = () => navigate("projects");
