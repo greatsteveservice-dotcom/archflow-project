@@ -12,9 +12,10 @@ interface PhotoGalleryProps {
   projectId: string;
   toast: (msg: string) => void;
   canChangePhotoStatus?: boolean;
+  onAddPhoto?: () => void;
 }
 
-export default function PhotoGallery({ projectId, toast, canChangePhotoStatus = true }: PhotoGalleryProps) {
+export default function PhotoGallery({ projectId, toast, canChangePhotoStatus = true, onAddPhoto }: PhotoGalleryProps) {
   const { data: photos, loading, refetch } = useProjectPhotos(projectId);
   const [filter, setFilter] = useState<'all' | 'issue' | 'approved' | 'in_progress'>('all');
   const [selectedPhoto, setSelectedPhoto] = useState<PhotoRecordWithVisit | null>(null);
@@ -52,8 +53,8 @@ export default function PhotoGallery({ projectId, toast, canChangePhotoStatus = 
 
   return (
     <div className="animate-fade-in">
-      {/* Filters */}
-      <div className="flex items-center gap-2 mb-5">
+      {/* Filters + Add photo */}
+      <div className="flex items-center gap-2 mb-5 flex-wrap">
         {([
           { key: 'all', label: 'Все' },
           { key: 'issue', label: 'Замечания' },
@@ -70,6 +71,25 @@ export default function PhotoGallery({ projectId, toast, canChangePhotoStatus = 
             {f.label} <span className="ml-0.5 opacity-60">{statusCounts[f.key]}</span>
           </button>
         ))}
+        {onAddPhoto && (
+          <button
+            onClick={onAddPhoto}
+            style={{
+              marginLeft: 'auto',
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: 9,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              color: '#111',
+              background: 'none',
+              border: '0.5px solid #EBEBEB',
+              padding: '4px 12px',
+              cursor: 'pointer',
+            }}
+          >
+            + Добавить фото
+          </button>
+        )}
       </div>
 
       {/* Gallery grid */}
@@ -110,9 +130,27 @@ export default function PhotoGallery({ projectId, toast, canChangePhotoStatus = 
       ) : (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <Icons.Camera className="w-8 h-8 text-ink-ghost mb-2" />
-          <div className="text-[13px] text-ink-faint">
+          <div className="text-[13px] text-ink-faint" style={{ marginBottom: onAddPhoto ? 12 : 0 }}>
             {filter !== 'all' ? 'Нет фото с таким статусом' : 'Фотографий пока нет'}
           </div>
+          {onAddPhoto && filter === 'all' && (
+            <button
+              onClick={onAddPhoto}
+              style={{
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: 10,
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                color: '#fff',
+                background: '#111',
+                border: 'none',
+                padding: '10px 24px',
+                cursor: 'pointer',
+              }}
+            >
+              + Добавить фото
+            </button>
+          )}
         </div>
       )}
 

@@ -117,6 +117,7 @@ export default function SupervisionTab({
             projectId={projectId}
             toast={toast}
             canChangePhotoStatus={canChangePhotoStatus}
+            onAddPhoto={() => setActiveSubTab('calendar')}
           />
         )}
         {activeSubTab === 'reports' && !selectedReportId && (

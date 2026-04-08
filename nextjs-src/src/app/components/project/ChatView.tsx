@@ -1048,8 +1048,8 @@ export default function ChatView({ projectId, toast }: ChatViewProps) {
       background: '#FFFFFF',
       display: 'flex',
       flexDirection: 'column',
-      height: 'calc(100dvh - 140px)',
-      maxHeight: 'calc(100dvh - 140px)',
+      height: 'calc(100dvh - 180px)',
+      maxHeight: 'calc(100dvh - 180px)',
       overflow: 'hidden',
     }}>
       {/* Push notification permission banner */}

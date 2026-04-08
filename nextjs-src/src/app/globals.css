@@ -105,12 +105,15 @@ body {
 /* ═══════════════════════════════════════════════
    TOP BAR
    ═══════════════════════════════════════════════ */
+.af-topbar-wrapper {
+  position: sticky; top: 0; z-index: 20;
+  background: var(--af-white);
+}
 .af-topbar {
   display: flex; align-items: center; justify-content: space-between;
   padding: 16px 24px;
   background: var(--af-white);
   border-bottom: 0.5px solid var(--af-border);
-  position: sticky; top: 0; z-index: 20;
 }
 .af-topbar-logo {
   font-family: var(--af-font-display);

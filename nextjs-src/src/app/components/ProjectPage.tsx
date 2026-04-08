@@ -277,64 +277,61 @@ export default function ProjectPage({ projectId, initialTab, onNavigate, toast, 
         {/* ═══ LEVEL 3: Section content ═══ */}
         {activeTab !== null && (
           <div>
-            {/* Section hero */}
-            {activeTab !== 'settings' && activeTab !== 'chat' && (
-              <div className="af-section-hero">
-                <h2 className="af-section-hero-title">{sectionLabel}</h2>
-              </div>
+            {/* Chat renders edge-to-edge (no af-content padding) for proper viewport fill */}
+            {activeTab === "chat" && (
+              <ChatView projectId={projectId} toast={toast} />
             )}
 
-            {/* Content */}
-            <div className="af-content">
-              {activeTab === "design" && permissions.canViewDesign && (
-                <DesignSection
-                  projectId={projectId}
-                  toast={toast}
-                  canUpload={permissions.canUploadDocument}
-                  canDelete={permissions.canUploadDocument}
-                  canComment={true}
-                />
-              )}
-              {activeTab === "supervision" && permissions.canViewSupervision && (
-                <SupervisionTab
-                  project={project}
-                  projectId={projectId}
-                  visits={projectVisits}
-                  toast={toast}
-                  refetchVisits={() => { refetchVisits(); refetchProject(); }}
-                  refetchProject={refetchProject}
-                  onSelectVisit={handleSelectVisit}
-                  canCreateVisit={permissions.canCreateVisit}
-                  canUploadPhoto={permissions.canUploadPhoto}
-                  canChangePhotoStatus={permissions.canChangePhotoStatus}
-                  canManageTasks={permissions.canManageTasks}
-                  canEditProjectSettings={permissions.canEditProjectSettings}
-                  members={membersWithProfiles || []}
-                />
-              )}
-              {activeTab === "supply" && permissions.canViewSupply && (
-                <SupplyModule projectId={projectId} toast={toast} />
-              )}
-              {activeTab === "chat" && (
-                <ChatView projectId={projectId} toast={toast} />
-              )}
-              {activeTab === "assistant" && isDesigner && (
-                <AssistantView
-                  projectId={projectId}
-                  toast={toast}
-                  onNavigate={onNavigate}
-                />
-              )}
-              {activeTab === "settings" && permissions.canViewSettings && (
-                <SettingsTab
-                  project={project}
-                  projectId={projectId}
-                  toast={toast}
-                  canDeleteProject={permissions.canDeleteProject}
-                  onDeleteProject={() => onNavigate('projects')}
-                />
-              )}
-            </div>
+            {/* All other tabs render inside af-content with standard padding */}
+            {activeTab !== "chat" && (
+              <div className="af-content">
+                {activeTab === "design" && permissions.canViewDesign && (
+                  <DesignSection
+                    projectId={projectId}
+                    toast={toast}
+                    canUpload={permissions.canUploadDocument}
+                    canDelete={permissions.canUploadDocument}
+                    canComment={true}
+                  />
+                )}
+                {activeTab === "supervision" && permissions.canViewSupervision && (
+                  <SupervisionTab
+                    project={project}
+                    projectId={projectId}
+                    visits={projectVisits}
+                    toast={toast}
+                    refetchVisits={() => { refetchVisits(); refetchProject(); }}
+                    refetchProject={refetchProject}
+                    onSelectVisit={handleSelectVisit}
+                    canCreateVisit={permissions.canCreateVisit}
+                    canUploadPhoto={permissions.canUploadPhoto}
+                    canChangePhotoStatus={permissions.canChangePhotoStatus}
+                    canManageTasks={permissions.canManageTasks}
+                    canEditProjectSettings={permissions.canEditProjectSettings}
+                    members={membersWithProfiles || []}
+                  />
+                )}
+                {activeTab === "supply" && permissions.canViewSupply && (
+                  <SupplyModule projectId={projectId} toast={toast} />
+                )}
+                {activeTab === "assistant" && isDesigner && (
+                  <AssistantView
+                    projectId={projectId}
+                    toast={toast}
+                    onNavigate={onNavigate}
+                  />
+                )}
+                {activeTab === "settings" && permissions.canViewSettings && (
+                  <SettingsTab
+                    project={project}
+                    projectId={projectId}
+                    toast={toast}
+                    canDeleteProject={permissions.canDeleteProject}
+                    onDeleteProject={() => onNavigate('projects')}
+                  />
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
