@@ -8,6 +8,7 @@ const API_CACHE = 'archflow-api-v' + SW_VERSION;
 // Static assets to precache
 const PRECACHE_URLS = [
   '/',
+  '/offline.html',
   '/favicon.svg',
   '/icon-192.png',
   '/icon-512.png',
@@ -20,7 +21,7 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(STATIC_CACHE).then((cache) => {
       return cache.addAll(PRECACHE_URLS);
-    }).then(() => self.skipWaiting())
+    })
   );
 });
 
@@ -113,8 +114,10 @@ async function networkFirst(request, cacheName) {
     const cached = await caches.match(request);
     if (cached) return cached;
 
-    // For HTML requests, return the cached home page as fallback
+    // For HTML requests, show offline page
     if (request.headers.get('accept')?.includes('text/html')) {
+      const offline = await caches.match('/offline.html');
+      if (offline) return offline;
       const fallback = await caches.match('/');
       if (fallback) return fallback;
     }
@@ -153,6 +156,11 @@ self.addEventListener('push', (event) => {
       renotify: true,
     })
   );
+});
+
+// Skip waiting when told by the client
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 // Click on notification — open or focus the app

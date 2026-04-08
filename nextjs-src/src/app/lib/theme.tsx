@@ -13,13 +13,10 @@ const ThemeContext = createContext<ThemeContextValue>({ theme: 'light', toggleTh
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>('light');
 
-  // Read saved theme on mount
+  // Force light mode — dark mode disabled
   useEffect(() => {
-    const saved = localStorage.getItem('archflow-theme') as Theme | null;
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const initial = saved || (prefersDark ? 'dark' : 'light');
-    setTheme(initial);
-    document.documentElement.classList.toggle('dark', initial === 'dark');
+    document.documentElement.classList.remove('dark');
+    localStorage.setItem('archflow-theme', 'light');
   }, []);
 
   const toggleTheme = useCallback(() => {

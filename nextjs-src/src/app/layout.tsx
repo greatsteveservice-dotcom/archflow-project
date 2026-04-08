@@ -79,7 +79,7 @@ export default function RootLayout({
   return (
     <html lang="ru" className={`${playfair.variable} ${ibmPlexMono.variable}`} suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem('archflow-theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.classList.add('dark')}catch(e){}})()` }} />
+        {/* Dark mode disabled — always light */}
       </head>
       <body className="antialiased">
         <ThemeProvider>
