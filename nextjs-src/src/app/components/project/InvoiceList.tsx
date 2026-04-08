@@ -110,7 +110,7 @@ export default function InvoiceList({ projectId, invoices, toast, refetchInvoice
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Icons.Receipt className="w-4 h-4 text-ink-muted" />
-          <h3 className="text-[14px] font-semibold">Счета</h3>
+          <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700, textTransform: 'uppercase' as const }}>Счета</h3>
           {pendingInv.length > 0 && (
             <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-warn-bg text-warn">
               {pendingInv.length} ожидает

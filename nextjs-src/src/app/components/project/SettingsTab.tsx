@@ -179,7 +179,7 @@ export default function SettingsTab({ project, projectId, toast, canDeleteProjec
       {sub === 'roles' && (
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h3 style={{ fontFamily: display, fontSize: 16, fontWeight: 700, color: '#111' }}>Участники проекта</h3>
+            <h3 style={{ fontFamily: display, fontSize: 20, fontWeight: 700, color: '#111', textTransform: 'uppercase' }}>Участники проекта</h3>
             <button className="af-btn" onClick={() => setShowInvite(true)}>
               + Пригласить
             </button>
@@ -258,7 +258,7 @@ export default function SettingsTab({ project, projectId, toast, canDeleteProjec
         <div>
           <div className="grid gap-4 mb-8" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 2 }}>
             <div style={{ background: '#fff', border: '0.5px solid #EBEBEB', padding: 20 }}>
-              <h4 style={{ fontFamily: display, fontSize: 16, fontWeight: 700, color: '#111', marginBottom: 16 }}>Даты и визиты</h4>
+              <h4 style={{ fontFamily: display, fontSize: 20, fontWeight: 700, color: '#111', marginBottom: 16, textTransform: 'uppercase' }}>Даты и визиты</h4>
               <div className="space-y-3">
                 <div className="modal-field">
                   <label style={{ fontFamily: mono, fontSize: 9 }}>Дата старта</label>
@@ -272,7 +272,7 @@ export default function SettingsTab({ project, projectId, toast, canDeleteProjec
             </div>
 
             <div style={{ background: '#fff', border: '0.5px solid #EBEBEB', padding: 20 }}>
-              <h4 style={{ fontFamily: display, fontSize: 16, fontWeight: 700, color: '#111', marginBottom: 16 }}>Платежи</h4>
+              <h4 style={{ fontFamily: display, fontSize: 20, fontWeight: 700, color: '#111', marginBottom: 16, textTransform: 'uppercase' }}>Платежи</h4>
               <div className="space-y-3">
                 <div className="modal-field">
                   <label style={{ fontFamily: mono, fontSize: 9 }}>Авторский надзор (₽/мес)</label>

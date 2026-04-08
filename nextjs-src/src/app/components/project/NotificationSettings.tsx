@@ -152,8 +152,8 @@ export default function NotificationSettings({ projectId, toast }: NotificationS
   return (
     <div className="animate-fade-in">
       <h3 style={{
-        fontFamily: display, fontSize: 18, fontWeight: 700,
-        color: 'rgb(var(--ink))', marginBottom: 24,
+        fontFamily: display, fontSize: 20, fontWeight: 700,
+        color: 'rgb(var(--ink))', marginBottom: 24, textTransform: 'uppercase' as const,
       }}>
         Уведомления заказчика
       </h3>

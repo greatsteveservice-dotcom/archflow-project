@@ -44,10 +44,11 @@ export default function ClientDashboard({ onNavigate, toast }: ClientDashboardPr
               style={{
                 fontFamily: "var(--af-font-display)",
                 fontSize: 32,
-                fontWeight: 900,
+                fontWeight: 700,
                 color: '#111',
                 lineHeight: 1.0,
                 marginTop: 4,
+                textTransform: 'uppercase' as const,
               }}
             >
               ваши проекты

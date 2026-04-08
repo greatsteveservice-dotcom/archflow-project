@@ -90,7 +90,12 @@ export default function AppShell() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const { data: projects, loading: projectsLoading, refetch: refetchProjects } = useProjects();
-  const [welcomeDismissed, setWelcomeDismissed] = useState(false);
+  const [welcomeDismissed, setWelcomeDismissed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('archflow-welcome-seen') === '1';
+    }
+    return false;
+  });
   const [projectsRefreshKey, setProjectsRefreshKey] = useState(0);
 
   // RBAC invite token from /invite/TOKEN path
@@ -122,6 +127,14 @@ export default function AppShell() {
     document.addEventListener('keydown', handleKey);
     return () => document.removeEventListener('keydown', handleKey);
   }, []);
+
+  // Auto-dismiss welcome screen when user has projects (persist across reloads)
+  useEffect(() => {
+    if (projects && projects.length > 0 && !welcomeDismissed) {
+      localStorage.setItem('archflow-welcome-seen', '1');
+      setWelcomeDismissed(true);
+    }
+  }, [projects, welcomeDismissed]);
 
   // Handle invite token from URL query
   useEffect(() => {
@@ -361,8 +374,8 @@ export default function AppShell() {
       <div className="overflow-x-hidden" style={{ paddingBottom: 56 }}>
         {showWelcome ? (
           <WelcomeScreen
-            onCreateProject={() => { setWelcomeDismissed(true); setShowCreateProject(true); }}
-            onNavigate={(p: string) => { setWelcomeDismissed(true); navigate(p); }}
+            onCreateProject={() => { localStorage.setItem('archflow-welcome-seen', '1'); setWelcomeDismissed(true); setShowCreateProject(true); }}
+            onNavigate={(p: string) => { localStorage.setItem('archflow-welcome-seen', '1'); setWelcomeDismissed(true); navigate(p); }}
           />
         ) : (
           renderPage()

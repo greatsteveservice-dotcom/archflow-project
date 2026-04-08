@@ -394,7 +394,7 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
       {step === 2 && (
         <div className="card p-5">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-[14px] font-semibold">Сопоставление колонок</h3>
+            <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700, textTransform: 'uppercase' }}>Сопоставление колонок</h3>
             <span className="text-[12px] text-ink-faint">{fileName}</span>
           </div>
           <p className="text-[12px] text-ink-faint mb-4">
@@ -435,7 +435,7 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
       {/* Step 3: Preview */}
       {step === 3 && (
         <div className="card p-5">
-          <h3 className="text-[14px] font-semibold mb-2">Предпросмотр</h3>
+          <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700, textTransform: 'uppercase', marginBottom: 8 }}>Предпросмотр</h3>
           <p className="text-[13px] text-ink-faint mb-4">
             {previewData.total} позиций будут импортированы
           </p>

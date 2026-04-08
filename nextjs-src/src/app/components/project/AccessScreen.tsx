@@ -133,8 +133,8 @@ export default function AccessScreen({ projectId, projectName, toast, onBack, em
             ← Назад
           </button>
           <h2
-            className="text-[18px] mb-6"
-            style={{ fontFamily: 'var(--font-heading)', fontWeight: 700 }}
+            className="mb-6"
+            style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700, textTransform: 'uppercase' }}
           >
             Доступ
           </h2>

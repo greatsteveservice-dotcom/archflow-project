@@ -97,7 +97,7 @@ export default function ReportsListView({ projectId, toast, onSelectReport }: Re
     <div className="animate-fade-in">
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-        <h2 style={{ fontFamily: 'var(--font-heading)', fontWeight: 900, fontSize: 24, color: '#111', margin: 0 }}>
+        <h2 style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 20, color: '#111', margin: 0, textTransform: 'uppercase' as const }}>
           Отчёты
         </h2>
         <button

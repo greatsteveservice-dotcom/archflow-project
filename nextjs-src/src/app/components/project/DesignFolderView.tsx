@@ -131,7 +131,7 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
 
       {/* Header row */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 18, fontWeight: 900, color: '#111', margin: 0 }}>
+        <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700, color: '#111', margin: 0, textTransform: 'uppercase' }}>
           {folderLabel}
         </h3>
         {canUpload && (

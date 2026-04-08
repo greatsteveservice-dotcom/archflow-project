@@ -79,7 +79,7 @@ export default function AssistantView({ projectId, toast, onNavigate }: Assistan
       {/* Header */}
       <h3 style={{
         fontFamily: display, fontSize: 20, fontWeight: 700,
-        color: 'rgb(var(--ink))', marginBottom: 4,
+        color: 'rgb(var(--ink))', marginBottom: 4, textTransform: 'uppercase' as const,
       }}>
         Ассистент
       </h3>

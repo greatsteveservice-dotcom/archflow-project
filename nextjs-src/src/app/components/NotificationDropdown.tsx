@@ -86,7 +86,7 @@ export default function NotificationDropdown() {
         <div className="absolute right-0 top-[calc(100%+6px)] w-[360px] max-h-[440px] bg-srf border border-line overflow-hidden z-50 animate-slide-up max-sm:fixed max-sm:left-3 max-sm:right-3 max-sm:w-auto max-sm:top-16">
           {/* Header */}
           <div className="px-4 py-3 border-b border-line-light flex items-center justify-between">
-            <h3 className="text-[13px] font-semibold">Уведомления</h3>
+            <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 14, fontWeight: 700, textTransform: 'uppercase' as const }}>Уведомления</h3>
             <div className="flex items-center gap-2">
               {unreadCount > 0 && (
                 <>

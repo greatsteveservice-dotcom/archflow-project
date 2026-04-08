@@ -63,11 +63,11 @@ export const metadata: Metadata = {
     icon: "/favicon.svg",
     apple: "/apple-touch-icon.png",
   },
-  manifest: "/manifest.json",
   other: {
     "apple-mobile-web-app-capable": "yes",
     "apple-mobile-web-app-status-bar-style": "black-translucent",
     "apple-mobile-web-app-title": "ArchFlow",
+    "mobile-web-app-capable": "yes",
   },
 };
 
@@ -79,7 +79,9 @@ export default function RootLayout({
   return (
     <html lang="ru" className={`${playfair.variable} ${ibmPlexMono.variable}`} suppressHydrationWarning>
       <head>
-        {/* Dark mode disabled — always light */}
+        {/* Manifest without crossOrigin for Safari PWA compatibility */}
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
       </head>
       <body className="antialiased">
         <ThemeProvider>

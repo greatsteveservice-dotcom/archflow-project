@@ -119,7 +119,7 @@ export default function ContractorTasksView({
   if (showCreate) {
     return (
       <div className="animate-fade-in">
-        <h2 style={{ fontFamily: 'var(--font-heading)', fontWeight: 900, fontSize: 24, color: '#111', marginBottom: 20 }}>
+        <h2 style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 20, color: '#111', marginBottom: 20, textTransform: 'uppercase' as const }}>
           Новая задача
         </h2>
 
@@ -183,7 +183,7 @@ export default function ContractorTasksView({
   return (
     <div className="animate-fade-in">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-        <h2 style={{ fontFamily: 'var(--font-heading)', fontWeight: 900, fontSize: 24, color: '#111', margin: 0 }}>
+        <h2 style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 20, color: '#111', margin: 0, textTransform: 'uppercase' as const }}>
           Задачи
         </h2>
         {canManageTasks && !isContractor && (

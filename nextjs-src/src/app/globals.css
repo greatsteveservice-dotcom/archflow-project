@@ -229,7 +229,7 @@ body {
 }
 .af-block-name {
   font-family: var(--af-font-display); font-weight: 700;
-  font-size: 36px;
+  font-size: 32px;
   color: var(--af-black); display: block; line-height: 1.0;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   text-transform: uppercase;
@@ -264,7 +264,7 @@ body {
 .af-block-settings:hover .af-block-arrow { color: #EBEBEB; }
 @media (min-width: 768px) and (max-width: 1023px) {
   .af-block { min-height: 130px; padding: 24px; }
-  .af-block-name { font-size: 28px; }
+  .af-block-name { font-size: 26px; }
 }
 @media (max-width: 767px) {
   .af-block { min-height: 110px; padding: 20px 20px; }
@@ -366,8 +366,9 @@ body {
 }
 .af-section-hero-title {
   font-family: var(--af-font-display);
-  font-size: 40px; font-weight: 900;
+  font-size: 32px; font-weight: 900;
   color: var(--af-black); line-height: 1.0;
+  text-transform: uppercase;
 }
 @media (max-width: 767px) {
   .af-section-hero { padding: 16px; padding-bottom: 14px; }
@@ -401,6 +402,7 @@ body {
   font-weight: 700; letter-spacing: -0.01em;
   color: var(--af-black); transition: color 0.2s ease;
   line-height: 1.1;
+  text-transform: uppercase;
 }
 .af-tab-index {
   font-family: var(--af-font-mono); font-size: 8px;
