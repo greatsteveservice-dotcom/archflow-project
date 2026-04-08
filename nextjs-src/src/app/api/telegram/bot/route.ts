@@ -380,96 +380,77 @@ async function transcribe(fileId: string): Promise<string | null> {
   }
 }
 
-// --- AI: clean transcript (remove filler words, make concise) ---
-async function cleanTranscript(transcript: string): Promise<string> {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+// --- OpenAI Chat helper ---
+async function chatGPT(
+  system: string,
+  messages: { role: string; content: string }[],
+  maxTokens = 600
+): Promise<string> {
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': process.env.ANTHROPIC_API_KEY!,
-      'anthropic-version': '2023-06-01',
+      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-5-20250514',
-      max_tokens: 300,
+      model: 'gpt-4o-mini',
+      max_tokens: maxTokens,
       temperature: 0,
-      system: `Сожми расшифровку голосового в 2-4 предложения. Только суть: факты, предложения, вопросы. Убери всё лишнее. Не пересказывай — переформулируй. Без маркдауна.`,
       messages: [
-        {
-          role: 'user',
-          content: 'Ну смотри, я тут подумал, что нам надо, наверное, вот эти вот плитки, которые мы заказывали, ну помнишь, керамогранит 60 на 60, вот их надо бы перезаказать, потому что там пришло 8 коробок, а нам надо 12, и ещё там цвет немного отличается от образца, ну не сильно, но заметно, вот.',
-        },
-        {
-          role: 'assistant',
-          content: 'Нужно перезаказать керамогранит 60x60 — пришло 8 коробок вместо 12, плюс цвет отличается от образца.',
-        },
-        {
-          role: 'user',
-          content: 'Ну вот смотри, а вообще зачем нам допустим именно антихелпер для телеков Samsung, вот если по сути чтобы на телеке работал у тебя ютуб и всё такое и чтобы это было преимуществом тебе достаточно там просто иметь VPN, вот может там будет голосовой помощник не будет это ну типа не факт, а найти ребят которые делают VPN для телеков которые возможно даже есть в магазине приложений Samsung вот и русскоговорящие и просто предложить им как бы я понимаю что возможно Samsung банит VPN но я думаю вряд ли вот и предложить им такую продажу просто-напросто не антихелпер туда засунуть а другую программу которая уже скорее всего есть оптимизированная.',
-        },
-        {
-          role: 'assistant',
-          content: 'Предлагает вместо антихелпера для Samsung использовать готовый VPN — этого достаточно для работы YouTube. Идея: найти русскоговорящих разработчиков VPN для телевизоров (возможно уже есть в магазине Samsung) и предложить им продажу через нас.',
-        },
-        { role: 'user', content: transcript },
+        { role: 'system', content: system },
+        ...messages,
       ],
     }),
   });
 
   const data = await res.json();
-  if (!data.content?.[0]?.text) {
-    console.error('[cleanTranscript] API response:', JSON.stringify(data).slice(0, 500));
-    return transcript;
+  if (!data.choices?.[0]?.message?.content) {
+    console.error('[chatGPT] API error:', JSON.stringify(data).slice(0, 500));
+    return '';
   }
-  return data.content[0].text;
+  return data.choices[0].message.content;
+}
+
+// --- AI: clean transcript (remove filler words, make concise) ---
+async function cleanTranscript(transcript: string): Promise<string> {
+  const result = await chatGPT(
+    'Сожми расшифровку голосового в 2-4 предложения. Только суть: факты, предложения, вопросы. Убери всё лишнее. Не пересказывай — переформулируй. Без маркдауна.',
+    [
+      {
+        role: 'user',
+        content: 'Ну смотри, я тут подумал, что нам надо, наверное, вот эти вот плитки, которые мы заказывали, ну помнишь, керамогранит 60 на 60, вот их надо бы перезаказать, потому что там пришло 8 коробок, а нам надо 12, и ещё там цвет немного отличается от образца, ну не сильно, но заметно, вот.',
+      },
+      {
+        role: 'assistant',
+        content: 'Нужно перезаказать керамогранит 60x60 — пришло 8 коробок вместо 12, плюс цвет отличается от образца.',
+      },
+      { role: 'user', content: transcript },
+    ],
+    300
+  );
+  return result || transcript;
 }
 
 // --- AI: format for recipient ---
 async function formatForRecipient(transcript: string, tone: string): Promise<string> {
   const systemPrompt = TONE_PROMPTS[tone] || TONE_PROMPTS.team;
-
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': process.env.ANTHROPIC_API_KEY!,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 600,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: transcript }],
-    }),
-  });
-
-  const data = await res.json();
-  return data.content?.[0]?.text || transcript;
+  const result = await chatGPT(systemPrompt, [{ role: 'user', content: transcript }]);
+  return result || transcript;
 }
 
 // --- AI: summarize long transcript ---
 async function summarize(transcript: string): Promise<string> {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': process.env.ANTHROPIC_API_KEY!,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 400,
-      messages: [
-        {
-          role: 'user',
-          content: `Сделай краткое резюме этого монолога. Выдели отдельно: что хочет изменить, что спрашивает, что сообщает. Только факты, без воды.\n\n${transcript}`,
-        },
-      ],
-    }),
-  });
-
-  const data = await res.json();
-  return data.content?.[0]?.text || transcript;
+  const result = await chatGPT(
+    'Ты редактор. Делай краткие резюме голосовых сообщений.',
+    [
+      {
+        role: 'user',
+        content: `Сделай краткое резюме этого монолога. Выдели отдельно: что хочет изменить, что спрашивает, что сообщает. Только факты, без воды.\n\n${transcript}`,
+      },
+    ],
+    400
+  );
+  return result || transcript;
 }
 
 // --- AI: apply edit ---
@@ -480,27 +461,11 @@ async function applyEdit(
   editInstruction: string
 ): Promise<string> {
   const systemPrompt = TONE_PROMPTS[tone] || TONE_PROMPTS.team;
-
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': process.env.ANTHROPIC_API_KEY!,
-      'anthropic-version': '2023-06-01',
+  const result = await chatGPT(systemPrompt, [
+    {
+      role: 'user',
+      content: `Оригинальная заметка:\n${originalTranscript}\n\nТекущий текст:\n${currentResult}\n\nПравка от пользователя:\n${editInstruction}\n\nПримени правку, верни обновлённый текст.`,
     },
-    body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 600,
-      system: systemPrompt,
-      messages: [
-        {
-          role: 'user',
-          content: `Оригинальная заметка:\n${originalTranscript}\n\nТекущий текст:\n${currentResult}\n\nПравка от пользователя:\n${editInstruction}\n\nПрименя правку, верни обновлённый текст.`,
-        },
-      ],
-    }),
-  });
-
-  const data = await res.json();
-  return data.content?.[0]?.text || currentResult;
+  ]);
+  return result || currentResult;
 }
