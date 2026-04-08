@@ -171,7 +171,8 @@ async function handleForwardedVoice(
 }
 
 async function sendShortTranscript(chatId: number, senderName: string, transcript: string) {
-  const text = `*${senderName} говорит:*\n\n${transcript}`;
+  const cleaned = await cleanTranscript(transcript);
+  const text = `*${senderName} говорит:*\n\n${cleaned}`;
   await sendInlineButtons(chatId, text, [
     [{ text: 'Скопировать', callback_data: 'copy_plain:done' }],
   ]);
@@ -367,6 +368,27 @@ async function transcribe(fileId: string): Promise<string | null> {
     console.error('[transcribe] error:', err);
     return null;
   }
+}
+
+// --- AI: clean transcript (remove filler words, make concise) ---
+async function cleanTranscript(transcript: string): Promise<string> {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': process.env.ANTHROPIC_API_KEY!,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 600,
+      system: `Очисти расшифровку голосового сообщения. Убери ВСЕ слова-паразиты (короче, в общем, ну, типа, как бы, вот, значит, то есть, собственно, слушай, смотри). Убери повторы, самокоррекции, незаконченные мысли. Переформулируй кратко и чётко своими словами, сохраняя ВСЕ факты, имена, даты, числа и суть. Результат должен быть лаконичным — в 2-3 раза короче оригинала. Не добавляй ничего от себя. Не используй маркдаун.`,
+      messages: [{ role: 'user', content: transcript }],
+    }),
+  });
+
+  const data = await res.json();
+  return data.content?.[0]?.text || transcript;
 }
 
 // --- AI: format for recipient ---
