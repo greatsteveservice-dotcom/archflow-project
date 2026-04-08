@@ -212,74 +212,64 @@ export default function ProjectPage({ projectId, initialTab, onNavigate, toast, 
       )}
 
       <div className="af-layout">
-        {/* ═══ LEVEL 2: Section blocks ═══ */}
+        {/* ═══ LEVEL 2: Section grid (2×3 like Design sub-sections) ═══ */}
         {activeTab === null && (
-          <div style={{ padding: 0 }}>
+          <div className="af-tab-list">
             {visibleSections.map((section) => {
               const displayLabel = getSectionLabel(section.id);
               return (
-                <button
+                <div
                   key={section.id}
-                  className="af-block"
+                  className="af-tab-row"
                   onClick={() => onNavigate("project", { id: projectId, tab: section.id })}
                 >
-                  <div className="af-block-inner">
-                    <span className="af-block-index">{section.index}</span>
-                    <span className="af-block-name">
-                      {displayLabel}
-                    </span>
-                    <span className="af-block-sub">
-                      {section.id === 'design' && (designCounts ? `${Object.values(designCounts).reduce((a, b) => a + b, 0)} файлов` : '—')}
-                      {section.id === 'supply' && 'Позиции и документация'}
-                      {section.id === 'supervision' && `${projectVisits.length} ${isClient ? 'отчётов' : 'визитов'}`}
-                    </span>
-                  </div>
-                  <span className="af-block-arrow">→</span>
-                </button>
+                  <span className="af-tab-index">{section.index}</span>
+                  <span className="af-tab-name">{displayLabel}</span>
+                  <span className="af-tab-sub">
+                    {section.id === 'design' && (designCounts ? `${Object.values(designCounts).reduce((a, b) => a + b, 0)} файлов` : '—')}
+                    {section.id === 'supply' && 'Позиции и документация'}
+                    {section.id === 'supervision' && `${projectVisits.length} ${isClient ? 'отчётов' : 'визитов'}`}
+                  </span>
+                  <span className="af-tab-arrow">→</span>
+                </div>
               );
             })}
 
-            {/* Chat block — hidden for contractors */}
+            {/* Chat — hidden for contractors */}
             {!isContractor && (
-              <button
-                className="af-block"
+              <div
+                className="af-tab-row"
                 onClick={() => onNavigate("project", { id: projectId, tab: "chat" })}
               >
-                <div className="af-block-inner">
-                  <span className="af-block-index">04</span>
-                  <span className="af-block-name af-block-name-short">Чат</span>
-                  <span className="af-block-sub">{isClient ? 'Связь с дизайнером' : 'Обсуждение проекта'}</span>
-                </div>
-                <span className="af-block-arrow">→</span>
-              </button>
+                <span className="af-tab-index">04</span>
+                <span className="af-tab-name">Чат</span>
+                <span className="af-tab-sub">{isClient ? 'Связь с дизайнером' : 'Обсуждение проекта'}</span>
+                <span className="af-tab-arrow">→</span>
+              </div>
             )}
 
-            {/* Assistant — only for designer */}
+            {/* Assistant — designer only */}
             {isDesigner && (
-              <button
-                className="af-block"
+              <div
+                className="af-tab-row"
                 onClick={() => onNavigate("project", { id: projectId, tab: "assistant" })}
               >
-                <div className="af-block-inner">
-                  <span className="af-block-index">05</span>
-                  <span className="af-block-name af-block-name-short">Ассистент</span>
-                  <span className="af-block-sub">Анализ и напоминания</span>
-                </div>
-                <span className="af-block-arrow">→</span>
-              </button>
+                <span className="af-tab-index">05</span>
+                <span className="af-tab-name">Ассистент</span>
+                <span className="af-tab-sub">Анализ и напоминания</span>
+                <span className="af-tab-arrow">→</span>
+              </div>
             )}
 
             {/* Settings — dark block */}
             {permissions.canViewSettings && (
-              <button
-                className="af-block af-block-settings"
+              <div
+                className="af-tab-row af-tab-row-dark"
                 onClick={() => onNavigate("project", { id: projectId, tab: "settings" })}
               >
-                <div className="af-block-inner">
-                  <span className="af-block-name">Настройки</span>
-                </div>
-                <span className="af-block-arrow">→</span>
-              </button>
+                <span className="af-tab-name">Настройки</span>
+                <span className="af-tab-arrow">→</span>
+              </div>
             )}
           </div>
         )}

@@ -416,10 +416,32 @@ body {
   font-weight: 300; color: #EBEBEB;
   transition: color 0.2s ease;
 }
+.af-tab-sub {
+  font-family: var(--af-font-mono); font-size: 8px;
+  text-transform: uppercase; letter-spacing: 0.16em;
+  color: #EBEBEB; margin-top: 6px;
+  transition: color 0.2s ease;
+}
+/* Settings row (dark variant) */
+.af-tab-row-dark {
+  background: var(--af-black); min-height: 64px;
+  justify-content: center;
+}
+.af-tab-row-dark .af-tab-name {
+  font-family: var(--af-font-mono); font-size: 13px;
+  font-weight: 400; letter-spacing: 0.18em;
+  color: var(--af-white); text-transform: uppercase;
+}
+.af-tab-row-dark .af-tab-arrow { color: #EBEBEB; }
+.af-tab-row-dark:hover { background: var(--af-offwhite); }
+.af-tab-row-dark:hover .af-tab-name { color: var(--af-black); }
+.af-tab-row-dark:hover .af-tab-arrow { color: #EBEBEB; }
 @media (max-width: 767px) {
   .af-tab-list { grid-template-columns: 1fr; }
   .af-tab-row { min-height: 88px; padding: 16px 20px; }
   .af-tab-name { font-size: 17px; }
+  .af-tab-row-dark { min-height: 52px; padding: 16px 20px; }
+  .af-tab-row-dark .af-tab-name { font-size: 11px; }
 }
 
 /* ═══════════════════════════════════════════════
