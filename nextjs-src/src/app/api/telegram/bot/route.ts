@@ -81,7 +81,9 @@ export async function POST(req: NextRequest) {
     // Voice message
     const voice = message.voice || message.audio;
     if (voice) {
+      // Bot API 7.0+: forward_origin replaces forward_from/forward_sender_name/forward_date
       const isForwarded =
+        !!message.forward_origin ||
         !!message.forward_from ||
         !!message.forward_sender_name ||
         !!message.forward_date;
@@ -147,10 +149,18 @@ async function handleOwnVoice(chatId: number, voice: { file_id: string }) {
 // --- Mode 2: forwarded voice ---
 async function handleForwardedVoice(
   chatId: number,
-  message: { forward_from?: { first_name?: string }; forward_sender_name?: string },
+  message: {
+    forward_origin?: { type: string; sender_user?: { first_name?: string }; sender_user_name?: string; sender_name?: string };
+    forward_from?: { first_name?: string };
+    forward_sender_name?: string;
+  },
   voice: { file_id: string; duration: number }
 ) {
+  // Bot API 7.0+: extract name from forward_origin
+  const origin = message.forward_origin;
   const senderName =
+    origin?.sender_user?.first_name ||
+    origin?.sender_name ||
     message.forward_from?.first_name ||
     message.forward_sender_name ||
     'собеседник';
@@ -407,7 +417,11 @@ async function cleanTranscript(transcript: string): Promise<string> {
   });
 
   const data = await res.json();
-  return data.content?.[0]?.text || transcript;
+  if (!data.content?.[0]?.text) {
+    console.error('[cleanTranscript] API response:', JSON.stringify(data).slice(0, 500));
+    return transcript;
+  }
+  return data.content[0].text;
 }
 
 // --- AI: format for recipient ---
