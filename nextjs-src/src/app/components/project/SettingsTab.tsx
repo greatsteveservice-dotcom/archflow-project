@@ -16,6 +16,7 @@ const ROLE_LABEL: Record<string, string> = {
 };
 
 const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
+  { value: 'designer', label: 'Дизайнер' },
   { value: 'client', label: 'Заказчик' },
   { value: 'contractor', label: 'Подрядчик' },
   { value: 'supplier', label: 'Комплектатор' },
