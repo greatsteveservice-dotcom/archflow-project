@@ -146,7 +146,15 @@ export default function AppShell() {
     window.history.replaceState({}, '', window.location.pathname);
 
     acceptProjectInvitation(inviteToken)
-      .then((result) => {
+      .then(async (result) => {
+        // Update profile role to match the invite
+        if (result?.role && result.role !== 'designer' && session?.user?.id) {
+          try {
+            const { supabase } = await import('../lib/supabase');
+            await supabase.from('profiles').update({ role: result.role }).eq('id', session.user.id);
+            refreshProfile();
+          } catch {}
+        }
         if (result?.project_id) {
           refetchProjects();
           navigate('project', result.project_id);
@@ -173,11 +181,11 @@ export default function AppShell() {
         router.replace('/projects');
         setRbacInviteToken(null);
 
-        // Update profile role for clients so onboarding and UI adapt
-        if (result?.role === 'client' && session?.user?.id) {
+        // Update profile role to match the invite so permissions and UI adapt
+        if (result?.role && result.role !== 'designer' && session?.user?.id) {
           try {
             const { supabase } = await import('../lib/supabase');
-            await supabase.from('profiles').update({ role: 'client' }).eq('id', session.user.id);
+            await supabase.from('profiles').update({ role: result.role }).eq('id', session.user.id);
             refreshProfile();
           } catch {}
         }
