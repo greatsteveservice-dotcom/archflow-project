@@ -9,7 +9,7 @@ import NotificationSettings from './NotificationSettings';
 import type { ProjectWithStats, ProjectMemberWithProfile, UserRole, AccessLevel } from '../../lib/types';
 import { useProjectMembersWithProfiles } from '../../lib/hooks';
 import { useAuth } from '../../lib/auth';
-import { inviteProjectMember, createProjectInvitation, removeProjectMember, deleteProject } from '../../lib/queries';
+import { inviteProjectMember, createProjectInvitation, removeProjectMember, deleteProject, updateProjectMemberAccess } from '../../lib/queries';
 
 const ROLE_LABEL: Record<string, string> = {
   client: 'Заказчик', contractor: 'Подрядчик', supplier: 'Комплектатор', assistant: 'Ассистент', designer: 'Дизайнер',
@@ -83,7 +83,11 @@ export default function SettingsTab({ project, projectId, toast, canDeleteProjec
       refetchMembers();
       closeInviteModal();
     } catch (err: any) {
-      setInvError(err.message || 'Ошибка приглашения');
+      const msg = err.message || 'Ошибка приглашения';
+      setInvError(msg);
+      if (msg.includes('не зарегистрирован')) {
+        setInviteTab('link');
+      }
     } finally {
       setSaving(false);
     }
@@ -209,15 +213,38 @@ export default function SettingsTab({ project, projectId, toast, canDeleteProjec
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{
-                      fontFamily: mono, fontSize: 'var(--af-fs-9)', width: 96, textAlign: 'center',
-                      display: 'inline-block', whiteSpace: 'nowrap', padding: '2px 0',
-                      background: m.role === 'designer' ? '#111' : 'transparent',
-                      color: m.role === 'designer' ? '#fff' : '#111',
-                      border: m.role === 'designer' ? 'none' : '0.5px solid #EBEBEB',
-                    }}>
-                      {m.role === 'designer' ? 'Владелец' : m.access_level === 'full' ? 'Полный' : 'Ограничен'}
-                    </span>
+                    {m.role === 'designer' ? (
+                      <span style={{
+                        fontFamily: mono, fontSize: 'var(--af-fs-9)', width: 96, textAlign: 'center',
+                        display: 'inline-block', whiteSpace: 'nowrap', padding: '2px 0',
+                        background: '#111', color: '#fff',
+                      }}>
+                        Владелец
+                      </span>
+                    ) : (
+                      <select
+                        value={m.access_level || 'view'}
+                        onChange={async (e) => {
+                          try {
+                            await updateProjectMemberAccess(m.id, e.target.value);
+                            toast('Доступ обновлён');
+                            refetchMembers();
+                          } catch (err: any) {
+                            toast(err.message || 'Ошибка обновления доступа');
+                          }
+                        }}
+                        style={{
+                          fontFamily: mono, fontSize: 'var(--af-fs-9)',
+                          padding: '2px 4px', border: '0.5px solid #EBEBEB',
+                          background: 'transparent', color: '#111', cursor: 'pointer',
+                          borderRadius: 0,
+                        }}
+                      >
+                        {ACCESS_OPTIONS.map(o => (
+                          <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                      </select>
+                    )}
                     {m.role !== 'designer' && (
                       <button
                         className="opacity-0 group-hover:opacity-100 transition-opacity"

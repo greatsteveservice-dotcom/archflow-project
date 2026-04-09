@@ -552,7 +552,7 @@ export async function inviteProjectMember(input: CreateProjectMemberInput): Prom
     .rpc('lookup_profile_by_email', { target_email: input.email });
 
   if (profileErr || !profileData || profileData.length === 0) {
-    throw new Error('Пользователь с таким email не найден');
+    throw new Error('Пользователь с таким email не зарегистрирован. Используйте приглашение по ссылке — участник зарегистрируется при переходе.');
   }
 
   const { data, error } = await supabase
@@ -573,6 +573,18 @@ export async function inviteProjectMember(input: CreateProjectMemberInput): Prom
     throw error;
   }
   return data as ProjectMember;
+}
+
+/** Update access level for an existing project member */
+export async function updateProjectMemberAccess(
+  memberId: string,
+  accessLevel: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from('project_members')
+    .update({ access_level: accessLevel })
+    .eq('id', memberId);
+  if (error) throw error;
 }
 
 /** Create an invoice */
@@ -2682,7 +2694,10 @@ export async function generateTelegramLinkToken(
       telegram_link_token: token,
     }, { onConflict: 'user_id,project_id' });
 
-  if (error) throw error;
+  if (error) {
+    console.error('Telegram link token error:', error);
+    throw new Error('Не удалось сгенерировать токен для Telegram. Попробуйте перезайти в аккаунт.');
+  }
   return token;
 }
 

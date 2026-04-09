@@ -94,7 +94,7 @@ export default function NotificationSettings({ projectId, toast }: NotificationS
       const token = await generateTelegramLinkToken(userId, projectId);
       setTgLinkUrl(`https://t.me/archflow_bot?start=${token}`);
     } catch (err: any) {
-      toast('Ошибка: ' + (err.message || ''));
+      toast(err.message || 'Не удалось привязать Telegram. Попробуйте позже.');
     } finally {
       setTgLinking(false);
     }
