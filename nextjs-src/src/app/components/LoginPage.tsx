@@ -112,7 +112,11 @@ export default function LoginPage({ inviteHint = false }: { inviteHint?: boolean
       if (result.error) {
         setError(result.error);
       } else {
-        setMode("confirm");
+        // Auto-login is attempted inside signUp(). If session is established,
+        // the parent component will re-render and unmount LoginPage.
+        // As a fallback (e.g. network hiccup on auto-login), show login form.
+        setSuccess("Аккаунт создан! Войдите с вашими данными.");
+        setMode("login");
       }
     } else if (mode === "forgot") {
       if (!email.trim()) {
