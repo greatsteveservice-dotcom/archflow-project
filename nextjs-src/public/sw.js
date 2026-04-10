@@ -1,6 +1,6 @@
 // Archflow Service Worker — offline caching
 // Bump version to invalidate all caches on deploy
-const SW_VERSION = '4';
+const SW_VERSION = '1775827871722';
 const CACHE_NAME = 'archflow-v' + SW_VERSION;
 const STATIC_CACHE = 'archflow-static-v' + SW_VERSION;
 const API_CACHE = 'archflow-api-v' + SW_VERSION;
@@ -16,12 +16,15 @@ const PRECACHE_URLS = [
   '/manifest.json',
 ];
 
-// Install — precache static assets
+// Install — precache static assets, then immediately skip waiting
+// so the new SW takes over from any stale old SW without requiring
+// the user to close all tabs or click an update button.
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(STATIC_CACHE).then((cache) => {
-      return cache.addAll(PRECACHE_URLS);
-    })
+    caches.open(STATIC_CACHE)
+      .then((cache) => cache.addAll(PRECACHE_URLS))
+      .catch(() => {}) // don't block install if precache fails
+      .then(() => self.skipWaiting())
   );
 });
 
@@ -48,6 +51,15 @@ self.addEventListener('fetch', (event) => {
 
   // Skip Supabase realtime WebSocket connections
   if (url.pathname.includes('/realtime/')) return;
+
+  // Bypass SW entirely for invite links — these must always be fresh
+  // and never be served from any cache. Stale SW caches were causing
+  // white-screen issues for invited users.
+  if (url.pathname.startsWith('/invite/')) return;
+
+  // Bypass SW entirely for the reset page — it's the recovery tool
+  // for users stuck on a broken cache and must never be intercepted.
+  if (url.pathname === '/reset' || url.pathname === '/reset.html') return;
 
   // Skip cross-origin requests except for fonts and Supabase storage
   const isFont = url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com';

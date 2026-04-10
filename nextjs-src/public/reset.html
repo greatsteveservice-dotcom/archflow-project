@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>ArchFlow — Сброс кеша</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%;
+      background: #F6F6F4;
+      color: #111;
+      font-family: 'IBM Plex Mono', monospace;
+      -webkit-font-smoothing: antialiased;
+    }
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      background: #FFFFFF;
+      border: 1px solid #EBEBEB;
+      max-width: 480px;
+      width: 100%;
+      padding: 48px 40px;
+      text-align: center;
+    }
+    h1 {
+      font-family: 'Playfair Display', serif;
+      font-weight: 700;
+      font-size: 28px;
+      line-height: 1.2;
+      color: #111;
+      margin-bottom: 16px;
+    }
+    p {
+      font-size: 13px;
+      line-height: 1.6;
+      color: #666;
+      margin-bottom: 8px;
+    }
+    .status {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: #999;
+      margin-top: 24px;
+      min-height: 16px;
+    }
+    .ok { color: #111; }
+    .err { color: #c00; }
+    .btn {
+      display: inline-block;
+      margin-top: 24px;
+      padding: 10px 24px;
+      border: 1px solid #111;
+      background: transparent;
+      color: #111;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      font-weight: 500;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .btn:hover {
+      background: #111;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Сброс кеша</h1>
+    <p>Очищаем сохранённые данные браузера для archflow.ru.</p>
+    <p>После завершения откроется главная страница.</p>
+    <div class="status" id="status">Подождите…</div>
+    <a href="/" class="btn" id="manual" style="display:none">Открыть archflow.ru</a>
+  </div>
+
+  <script>
+    (function () {
+      var statusEl = document.getElementById('status');
+      var manualBtn = document.getElementById('manual');
+
+      function setStatus(text, cls) {
+        statusEl.textContent = text;
+        statusEl.className = 'status' + (cls ? ' ' + cls : '');
+      }
+
+      function showManual() {
+        manualBtn.style.display = 'inline-block';
+      }
+
+      function done() {
+        setStatus('Готово. Перенаправление…', 'ok');
+        setTimeout(function () {
+          // Use replace so the user can't "back" into this page
+          window.location.replace('/');
+        }, 600);
+      }
+
+      function fail(err) {
+        console.error('[reset] failed:', err);
+        setStatus('Не удалось очистить автоматически. Откройте вручную.', 'err');
+        showManual();
+      }
+
+      try {
+        var tasks = [];
+
+        // 1. Unregister all Service Workers for this origin
+        if ('serviceWorker' in navigator && navigator.serviceWorker.getRegistrations) {
+          tasks.push(
+            navigator.serviceWorker.getRegistrations().then(function (regs) {
+              return Promise.all(regs.map(function (r) {
+                return r.unregister().catch(function () {});
+              }));
+            }).catch(function () {})
+          );
+        }
+
+        // 2. Delete all CacheStorage entries
+        if ('caches' in window) {
+          tasks.push(
+            caches.keys().then(function (keys) {
+              return Promise.all(keys.map(function (k) {
+                return caches.delete(k).catch(function () {});
+              }));
+            }).catch(function () {})
+          );
+        }
+
+        // 3. Clear localStorage / sessionStorage (but keep auth out of harm —
+        //    we want the user to re-login cleanly anyway)
+        try { localStorage.clear(); } catch (e) {}
+        try { sessionStorage.clear(); } catch (e) {}
+
+        // Always finish in <3s, even if SW APIs hang
+        var safety = setTimeout(done, 3000);
+
+        Promise.all(tasks).then(function () {
+          clearTimeout(safety);
+          done();
+        }).catch(function (err) {
+          clearTimeout(safety);
+          fail(err);
+        });
+      } catch (err) {
+        fail(err);
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -1,86 +1,66 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 
+// Auto-update Service Worker registration.
+//
+// Previously this component showed a "Доступно обновление" banner that the
+// user had to click. Most users never clicked it, so they kept running stale
+// SW builds — which caused white-screen issues on /invite/* links because
+// the old SW intercepted the request and served broken cached HTML.
+//
+// New behavior:
+// - Register /sw.js
+// - Whenever a new SW is found (install or future updatefound), immediately
+//   post SKIP_WAITING so it activates without waiting for tabs to close
+// - On controllerchange (new SW took over), reload once to pick up new code
+// - Poll for updates every 30 minutes
 export default function ServiceWorkerRegistration() {
-  const [showUpdate, setShowUpdate] = useState(false);
-  const [waitingWorker, setWaitingWorker] = useState<ServiceWorker | null>(null);
-
   useEffect(() => {
     if (!('serviceWorker' in navigator) || process.env.NODE_ENV !== 'production') return;
+
+    const promoteWaiting = (worker: ServiceWorker | null) => {
+      if (!worker) return;
+      if (worker.state === 'installed') {
+        worker.postMessage({ type: 'SKIP_WAITING' });
+        return;
+      }
+      worker.addEventListener('statechange', () => {
+        if (worker.state === 'installed') {
+          worker.postMessage({ type: 'SKIP_WAITING' });
+        }
+      });
+    };
 
     navigator.serviceWorker
       .register('/sw.js')
       .then((reg) => {
-        // Check for updates every 30 minutes
-        setInterval(() => reg.update(), 30 * 60 * 1000);
+        // If a SW is already waiting on first load, activate it immediately
+        if (reg.waiting) promoteWaiting(reg.waiting);
 
-        // Detect new SW waiting
+        // Detect new SW installs and auto-promote them
         reg.addEventListener('updatefound', () => {
-          const newWorker = reg.installing;
-          if (!newWorker) return;
-          newWorker.addEventListener('statechange', () => {
-            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              setWaitingWorker(newWorker);
-              setShowUpdate(true);
-            }
-          });
+          promoteWaiting(reg.installing);
         });
+
+        // Periodic update check
+        setInterval(() => {
+          reg.update().catch(() => {});
+        }, 30 * 60 * 1000);
+
+        // Trigger an immediate update check on load
+        reg.update().catch(() => {});
       })
       .catch(() => {});
 
-    // Reload when new SW takes over
+    // Reload once when a new SW takes control
     let refreshing = false;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (!refreshing) {
-        refreshing = true;
-        window.location.reload();
-      }
+      if (refreshing) return;
+      refreshing = true;
+      window.location.reload();
     });
   }, []);
 
-  const handleUpdate = () => {
-    waitingWorker?.postMessage({ type: 'SKIP_WAITING' });
-    setShowUpdate(false);
-  };
-
-  if (!showUpdate) return null;
-
-  return (
-    <div style={{
-      position: 'fixed',
-      bottom: 48,
-      left: '50%',
-      transform: 'translateX(-50%)',
-      zIndex: 9999,
-      background: '#111',
-      color: '#fff',
-      fontFamily: "'IBM Plex Mono', monospace",
-      fontSize: 13,
-      padding: '10px 16px',
-      display: 'flex',
-      alignItems: 'center',
-      gap: 12,
-      border: '1px solid #333',
-      maxWidth: 'calc(100vw - 32px)',
-    }}>
-      <span>Доступно обновление</span>
-      <button
-        onClick={handleUpdate}
-        style={{
-          fontFamily: "'IBM Plex Mono', monospace",
-          fontSize: 12,
-          fontWeight: 500,
-          padding: '4px 12px',
-          border: '1px solid #fff',
-          background: 'transparent',
-          color: '#fff',
-          cursor: 'pointer',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        Обновить
-      </button>
-    </div>
-  );
+  return null;
 }

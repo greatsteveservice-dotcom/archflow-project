@@ -25,6 +25,14 @@
   status = 301
   force = true
 
+# /reset → /reset.html (recovery page for users stuck on a broken SW cache)
+# force=true ensures this beats the Next.js catch-all route
+[[redirects]]
+  from = "/reset"
+  to = "/reset.html"
+  status = 200
+  force = true
+
 [[headers]]
   for = "/*"
   [headers.values]

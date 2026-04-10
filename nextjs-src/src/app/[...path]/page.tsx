@@ -74,6 +74,50 @@ function buildUrl(target: string, ctx?: any): string {
   }
 }
 
+// ======================== HELPERS ========================
+
+// Valid values for profiles.role (user_role enum)
+const VALID_USER_ROLES = new Set(['designer', 'client', 'contractor', 'supplier', 'assistant']);
+
+/**
+ * Sync the profile.role column from an invite acceptance result.
+ *
+ * Important: accept_member_invite RPC returns member_role
+ * ('team' | 'client' | 'contractor'), which is a different enum from
+ * profiles.role (user_role). Trying to set role='team' on profiles
+ * results in a 400 error and used to silently break the invite flow.
+ *
+ * Strategy: only update profiles.role when the returned value is also
+ * a valid user_role. For 'team' (RBAC-only role) we leave profiles.role
+ * untouched.
+ */
+async function syncProfileRoleFromInvite(
+  inviteRole: string | undefined,
+  userId: string | undefined,
+  refreshProfile: () => void,
+): Promise<void> {
+  if (!inviteRole || !userId) return;
+  if (inviteRole === 'designer') return; // never demote designers
+  if (!VALID_USER_ROLES.has(inviteRole)) {
+    // RBAC-only role like 'team' — don't touch profile.role
+    return;
+  }
+  try {
+    const { supabase } = await import('../lib/supabase');
+    const { error } = await supabase
+      .from('profiles')
+      .update({ role: inviteRole })
+      .eq('id', userId);
+    if (error) {
+      console.error('[invite] profile role sync failed:', error);
+      return;
+    }
+    refreshProfile();
+  } catch (e) {
+    console.error('[invite] profile role sync exception:', e);
+  }
+}
+
 // ======================== APP SHELL ========================
 
 export default function AppShell() {
@@ -148,13 +192,7 @@ export default function AppShell() {
     acceptProjectInvitation(inviteToken)
       .then(async (result) => {
         // Update profile role to match the invite
-        if (result?.role && result.role !== 'designer' && session?.user?.id) {
-          try {
-            const { supabase } = await import('../lib/supabase');
-            await supabase.from('profiles').update({ role: result.role }).eq('id', session.user.id);
-            refreshProfile();
-          } catch {}
-        }
+        await syncProfileRoleFromInvite(result?.role, session?.user?.id, refreshProfile);
         if (result?.project_id) {
           refetchProjects();
           navigate('project', result.project_id);
@@ -163,6 +201,7 @@ export default function AppShell() {
         }
       })
       .catch((err) => {
+        console.error('[invite] project invitation failed:', err);
         setToastMsg(err.message || 'Ошибка принятия приглашения');
       });
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -181,14 +220,11 @@ export default function AppShell() {
         router.replace('/projects');
         setRbacInviteToken(null);
 
-        // Update profile role to match the invite so permissions and UI adapt
-        if (result?.role && result.role !== 'designer' && session?.user?.id) {
-          try {
-            const { supabase } = await import('../lib/supabase');
-            await supabase.from('profiles').update({ role: result.role }).eq('id', session.user.id);
-            refreshProfile();
-          } catch {}
-        }
+        // Update profile role to match the invite so permissions and UI adapt.
+        // Note: accept_member_invite returns member_role ('team'|'client'|'contractor'),
+        // but profiles.role is user_role ('designer'|'client'|'contractor'|'supplier'|'assistant').
+        // syncProfileRoleFromInvite handles the mapping/skipping safely.
+        await syncProfileRoleFromInvite(result?.role, session?.user?.id, refreshProfile);
 
         if (result?.project_id) {
           refetchProjects();
@@ -201,9 +237,10 @@ export default function AppShell() {
         }
       })
       .catch((err) => {
+        console.error('[invite] rbac invite failed:', err);
         router.replace('/projects');
         setRbacInviteToken(null);
-        setInviteError(err.message || 'Ссылка недействительна или уже использована');
+        setInviteError(err?.message || 'Ссылка недействительна или уже использована');
       })
       .finally(() => {
         setInviteAccepting(false);
