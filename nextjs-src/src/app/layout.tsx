@@ -5,6 +5,7 @@ import { AuthProvider } from "./lib/auth";
 import { ThemeProvider } from "./lib/theme";
 import YandexMetrika from "./components/YandexMetrika";
 import ServiceWorkerRegistration from "./components/ServiceWorkerRegistration";
+import HydrationGate from "./components/HydrationGate";
 
 const playfair = Playfair_Display({
   subsets: ['latin', 'cyrillic'],
@@ -84,11 +85,108 @@ export default function RootLayout({
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
       </head>
       <body className="antialiased">
+        {/*
+          Server-rendered fallback screen. Visible on initial HTML load;
+          HydrationGate hides it once React successfully hydrates.
+          If JS fails to run at all (stale cache, blocked chunks, disabled
+          JS, antivirus filter, etc.), this stays visible so the user sees
+          a helpful message + a link to /reset instead of a silent white page.
+        */}
+        <div
+          id="af-fallback-screen"
+          suppressHydrationWarning
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "#F6F6F4",
+            color: "#111",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 24,
+            zIndex: 9999,
+            fontFamily: "'IBM Plex Mono', monospace",
+            textAlign: "center",
+          }}
+        >
+          <div style={{ maxWidth: 480, width: "100%" }}>
+            <h1
+              style={{
+                fontFamily: "'Playfair Display', serif",
+                fontSize: 32,
+                fontWeight: 700,
+                margin: 0,
+                marginBottom: 12,
+                letterSpacing: "-0.01em",
+              }}
+            >
+              Archflow
+            </h1>
+            <p style={{ fontSize: 12, color: "#666", margin: 0, marginBottom: 24 }}>
+              Платформа для управления дизайн-проектами
+            </p>
+            <p
+              style={{
+                fontSize: 11,
+                textTransform: "uppercase",
+                letterSpacing: "0.15em",
+                color: "#999",
+                margin: 0,
+              }}
+            >
+              Загрузка приложения…
+            </p>
+            <noscript>
+              <p
+                style={{
+                  fontSize: 12,
+                  color: "#c00",
+                  marginTop: 24,
+                  lineHeight: 1.6,
+                }}
+              >
+                Для работы сервиса необходим JavaScript. Включите его в
+                настройках браузера и обновите страницу.
+              </p>
+            </noscript>
+            <div style={{ marginTop: 32, fontSize: 11, color: "#999", lineHeight: 1.6 }}>
+              Если эта страница висит больше 10 секунд:
+              <div style={{ marginTop: 12 }}>
+                <a
+                  href="/reset"
+                  style={{
+                    display: "inline-block",
+                    padding: "8px 16px",
+                    border: "1px solid #111",
+                    color: "#111",
+                    textDecoration: "none",
+                    fontSize: 11,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.1em",
+                  }}
+                >
+                  Сбросить кеш
+                </a>
+              </div>
+              <div style={{ marginTop: 16, fontSize: 10, color: "#aaa" }}>
+                Или напишите нам:{" "}
+                <a
+                  href="mailto:hello@archflow.ru"
+                  style={{ color: "#666", textDecoration: "underline" }}
+                >
+                  hello@archflow.ru
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <ThemeProvider>
           <AuthProvider>{children}</AuthProvider>
         </ThemeProvider>
         <YandexMetrika />
         <ServiceWorkerRegistration />
+        <HydrationGate />
       </body>
     </html>
   );
