@@ -1,6 +1,6 @@
 // Archflow Service Worker — offline caching
 // Bump version to invalidate all caches on deploy
-const SW_VERSION = '1775910701450';
+const SW_VERSION = '1775918507359';
 const CACHE_NAME = 'archflow-v' + SW_VERSION;
 const STATIC_CACHE = 'archflow-static-v' + SW_VERSION;
 const API_CACHE = 'archflow-api-v' + SW_VERSION;
@@ -16,14 +16,51 @@ const PRECACHE_URLS = [
   '/manifest.json',
 ];
 
-// Install — precache static assets, then immediately skip waiting
-// so the new SW takes over from any stale old SW without requiring
-// the user to close all tabs or click an update button.
+// Inline HTML fallback — used when /offline.html is not in cache
+// (e.g. precache failed at install time because the origin was unreachable).
+// Keep this in sync with /offline.html styling.
+const OFFLINE_HTML = `<!DOCTYPE html>
+<html lang="ru"><head><meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Archflow — Нет подключения</title>
+<style>
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
+    font-family:'IBM Plex Mono',ui-monospace,monospace;background:#F6F6F4;color:#111;padding:24px;}
+  .c{max-width:420px;text-align:center;}
+  h1{font-family:'Playfair Display',Georgia,serif;font-size:28px;margin:0 0 12px;font-weight:900;}
+  p{font-size:11px;letter-spacing:.12em;text-transform:uppercase;line-height:1.6;margin:0 0 8px;color:#111;}
+  .hint{font-size:10px;letter-spacing:.08em;text-transform:none;opacity:.6;margin:20px 0 28px;line-height:1.6;}
+  button{font-family:inherit;font-size:10px;text-transform:uppercase;letter-spacing:.15em;
+    padding:14px 28px;background:#111;color:#fff;border:0.5px solid #111;cursor:pointer;margin:4px;}
+  button.ghost{background:none;color:#111;}
+  button:hover{background:#fff;color:#111;}
+</style></head>
+<body><div class="c">
+  <h1>Нет связи с сервером</h1>
+  <p>Archflow временно недоступен</p>
+  <div class="hint">Проверьте подключение к интернету.<br/>Если сайт не открывается — попробуйте VPN или мобильный интернет, возможно ваш провайдер блокирует доступ.</div>
+  <button onclick="location.reload()">Обновить</button>
+  <button class="ghost" onclick="location.href='/reset'">Сбросить кэш</button>
+</div></body></html>`;
+
+// Install — precache each URL individually (best-effort) so a single
+// bad URL doesn't break the whole install. Previously cache.addAll was
+// all-or-nothing, and if ANY asset failed the offline fallback page
+// never got cached, leaving users with raw "Offline" text on failures.
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(STATIC_CACHE)
-      .then((cache) => cache.addAll(PRECACHE_URLS))
-      .catch(() => {}) // don't block install if precache fails
+      .then(async (cache) => {
+        await Promise.all(
+          PRECACHE_URLS.map((u) =>
+            cache.add(u).catch((err) => {
+              // Best-effort: log and continue so the rest still caches.
+              console.warn('[SW] precache failed for', u, err);
+            })
+          )
+        );
+      })
+      .catch(() => {}) // never block install
       .then(() => self.skipWaiting())
   );
 });
@@ -94,6 +131,23 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(networkFirst(request, CACHE_NAME));
 });
 
+// Build an HTML Response from the offline fallback. Tries cached
+// /offline.html first, then falls back to inline OFFLINE_HTML.
+async function offlineResponse() {
+  const offline = await caches.match('/offline.html');
+  if (offline) return offline;
+  return new Response(OFFLINE_HTML, {
+    status: 503,
+    statusText: 'Offline',
+    headers: { 'Content-Type': 'text/html; charset=utf-8' },
+  });
+}
+
+// Check if a request is for an HTML document
+function isHtmlRequest(request) {
+  return request.mode === 'navigate' || (request.headers.get('accept') || '').includes('text/html');
+}
+
 // Cache-first strategy
 async function cacheFirst(request, cacheName) {
   const cached = await caches.match(request);
@@ -107,7 +161,8 @@ async function cacheFirst(request, cacheName) {
     }
     return response;
   } catch {
-    return new Response('Offline', { status: 503, statusText: 'Offline' });
+    if (isHtmlRequest(request)) return offlineResponse();
+    return new Response('', { status: 503, statusText: 'Offline' });
   }
 }
 
@@ -124,15 +179,10 @@ async function networkFirst(request, cacheName) {
     const cached = await caches.match(request);
     if (cached) return cached;
 
-    // For HTML requests, show offline page
-    if (request.headers.get('accept')?.includes('text/html')) {
-      const offline = await caches.match('/offline.html');
-      if (offline) return offline;
-      const fallback = await caches.match('/');
-      if (fallback) return fallback;
-    }
+    // For HTML requests, always show offline page (cached or inline)
+    if (isHtmlRequest(request)) return offlineResponse();
 
-    return new Response('Offline', { status: 503, statusText: 'Offline' });
+    return new Response('', { status: 503, statusText: 'Offline' });
   }
 }
 
