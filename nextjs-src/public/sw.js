@@ -1,6 +1,6 @@
 // Archflow Service Worker — offline caching
 // Bump version to invalidate all caches on deploy
-const SW_VERSION = '1775899531622';
+const SW_VERSION = '1775910701450';
 const CACHE_NAME = 'archflow-v' + SW_VERSION;
 const STATIC_CACHE = 'archflow-static-v' + SW_VERSION;
 const API_CACHE = 'archflow-api-v' + SW_VERSION;
@@ -61,12 +61,16 @@ self.addEventListener('fetch', (event) => {
   // for users stuck on a broken cache and must never be intercepted.
   if (url.pathname === '/reset' || url.pathname === '/reset.html') return;
 
-  // Skip cross-origin requests except for fonts and Supabase storage
+  // Bypass SW entirely for Supabase Storage (photos, PDFs, avatars).
+  // The browser already caches them by HTTP headers. SW caching here
+  // caused broken images when a transient fetch error got persisted.
+  if (url.hostname.includes('supabase') && url.pathname.includes('/storage/')) return;
+
+  // Skip cross-origin requests except for fonts
   const isFont = url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com';
-  const isStorage = url.hostname.includes('supabase') && url.pathname.includes('/storage/');
   const isSameOrigin = url.origin === self.location.origin;
 
-  if (!isSameOrigin && !isFont && !isStorage) return;
+  if (!isSameOrigin && !isFont) return;
 
   // Supabase API calls (rest/v1) — Network first, fallback to cache
   if (url.pathname.includes('/rest/v1/') || url.pathname.includes('/auth/')) {
@@ -76,12 +80,6 @@ self.addEventListener('fetch', (event) => {
 
   // Static assets (JS, CSS, images, fonts) — Cache first
   if (isStaticAsset(url.pathname) || isFont) {
-    event.respondWith(cacheFirst(request, STATIC_CACHE));
-    return;
-  }
-
-  // Supabase storage (photos, avatars) — Cache first
-  if (isStorage) {
     event.respondWith(cacheFirst(request, STATIC_CACHE));
     return;
   }
