@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useDesignFiles } from '../../lib/hooks';
-import { createDesignFile } from '../../lib/queries';
+import { createDesignFile, updateDesignFileName } from '../../lib/queries';
 import { supabase } from '../../lib/supabase';
 import { DESIGN_FOLDERS } from '../../lib/types';
 import type { DesignFolder, DesignFileWithProfile } from '../../lib/types';
@@ -20,15 +20,18 @@ const MAX_SIZE = 50 * 1024 * 1024; // 50MB
 
 const ACCEPT = '.pdf,.jpg,.jpeg,.png,.webp,.ppt,.pptx,.doc,.docx';
 
+const IMAGE_EXT_RE = /\.(jpe?g|png|webp|gif)$/i;
+
+function isImageFile(file: DesignFileWithProfile): boolean {
+  if (file.file_type && file.file_type.startsWith('image/')) return true;
+  return IMAGE_EXT_RE.test(file.name);
+}
+
 function formatSize(bytes: number | null): string {
   if (!bytes) return '—';
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 function getFileTypeLabel(mimeType: string | null, name: string): string {
@@ -42,59 +45,87 @@ function getFileTypeLabel(mimeType: string | null, name: string): string {
 function FileTypeIcon({ type }: { type: string }) {
   return (
     <div style={{
-      width: 40, height: 48, border: '0.5px solid #EBEBEB', display: 'flex',
-      alignItems: 'center', justifyContent: 'center', flexShrink: 0, background: '#F6F6F4',
+      width: 56, height: 68, border: '0.5px solid #EBEBEB', display: 'flex',
+      alignItems: 'center', justifyContent: 'center', flexShrink: 0, background: '#fff',
     }}>
       <span style={{
-        fontFamily: "'IBM Plex Mono', monospace", fontSize: 8,
-        fontWeight: 600, color: '#111', textTransform: 'uppercase', letterSpacing: '0.05em',
+        fontFamily: "'IBM Plex Mono', monospace", fontSize: 10,
+        fontWeight: 600, color: '#111', textTransform: 'uppercase', letterSpacing: '0.08em',
       }}>{type}</span>
     </div>
   );
 }
 
+// Split filename into base + extension for editing
+function splitName(fullName: string): { base: string; ext: string } {
+  const dot = fullName.lastIndexOf('.');
+  if (dot <= 0 || dot === fullName.length - 1) return { base: fullName, ext: '' };
+  return { base: fullName.slice(0, dot), ext: fullName.slice(dot) };
+}
+
+// ============================================================================
+// Uploading tiles state — for optimistic UI
+// ============================================================================
+interface PendingUpload {
+  id: string;
+  name: string;
+  blobUrl: string;
+  progress: number; // 0-100
+  error?: string;
+}
+
 export default function DesignFolderView({ projectId, folder, toast, canUpload = true, onBack, onSelectFile }: DesignFolderViewProps) {
   const { data: files, loading, refetch } = useDesignFiles(projectId, folder);
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const [pending, setPending] = useState<PendingUpload[]>([]);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [renameDialog, setRenameDialog] = useState<{
+    fileId: string;
+    currentName: string;
+    suggestedName?: string;
+    loading?: boolean;
+  } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const folderConfig = DESIGN_FOLDERS.find(f => f.id === folder);
   const folderLabel = folderConfig?.label || folder;
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (fileInputRef.current) fileInputRef.current.value = '';
+  const imageFiles: DesignFileWithProfile[] = useMemo(
+    () => (files ?? []).filter(isImageFile),
+    [files]
+  );
 
-    if (file.size > MAX_SIZE) {
-      setUploadError('Файл слишком большой. Максимум 50 МБ.');
-      return;
+  const handleFileClick = (file: DesignFileWithProfile) => {
+    if (isImageFile(file)) {
+      const idx = imageFiles.findIndex(f => f.id === file.id);
+      if (idx >= 0) setLightboxIndex(idx);
+    } else {
+      onSelectFile(file.id);
     }
+  };
 
-    setUploadError(null);
-    setUploading(true);
-    setUploadProgress(10);
+  // ---- UPLOAD ----
+  const uploadOne = useCallback(async (file: File, pendingId: string) => {
+    const updateOne = (patch: Partial<PendingUpload>) => {
+      setPending(prev => prev.map(p => p.id === pendingId ? { ...p, ...patch } : p));
+    };
 
     try {
-      const timestamp = Date.now();
+      updateOne({ progress: 15 });
+      const timestamp = Date.now() + Math.floor(Math.random() * 1000);
       const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
       const path = `design/${projectId}/${folder}/${timestamp}_${safeName}`;
-
-      setUploadProgress(30);
 
       const { error: storageError } = await supabase.storage
         .from('design-files')
         .upload(path, file, { contentType: file.type });
 
       if (storageError) throw storageError;
-
-      setUploadProgress(70);
+      updateOne({ progress: 70 });
 
       const { data: urlData } = supabase.storage.from('design-files').getPublicUrl(path);
 
-      await createDesignFile({
+      const created = await createDesignFile({
         project_id: projectId,
         folder,
         name: file.name,
@@ -104,14 +135,116 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
         file_type: file.type,
       });
 
-      setUploadProgress(100);
-      refetch();
-      toast('Файл загружен');
+      updateOne({ progress: 100 });
+      await refetch();
+
+      // Remove the pending tile
+      setPending(prev => prev.filter(p => p.id !== pendingId));
+
+      // For images: kick off auto-classification in background and offer rename
+      if (file.type.startsWith('image/')) {
+        fetch('/api/classify-room', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageUrl: urlData.publicUrl }),
+        })
+          .then(r => r.ok ? r.json() : null)
+          .then((result: { suggestedName?: string; confidence?: number } | null) => {
+            if (result && result.suggestedName && (result.confidence ?? 0) >= 0.55) {
+              // Only open rename dialog if we're not already showing one
+              setRenameDialog(prev => prev ?? {
+                fileId: created.id,
+                currentName: file.name,
+                suggestedName: result.suggestedName,
+              });
+            }
+          })
+          .catch(() => {}); // silent fail — classification is non-critical
+      }
     } catch (err: any) {
-      setUploadError(err.message || 'Ошибка загрузки');
-    } finally {
-      setUploading(false);
-      setUploadProgress(0);
+      console.error('Upload failed:', err);
+      updateOne({ error: err?.message || 'Ошибка загрузки', progress: 0 });
+      // Keep failed pending on screen for 5s, then remove
+      setTimeout(() => {
+        setPending(prev => prev.filter(p => p.id !== pendingId));
+      }, 5000);
+    }
+  }, [projectId, folder, refetch]);
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const fileList = e.target.files;
+    if (!fileList || fileList.length === 0) return;
+
+    // Reset input
+    if (fileInputRef.current) fileInputRef.current.value = '';
+
+    setUploadError(null);
+
+    const filesArr = Array.from(fileList);
+    // Validate sizes
+    const tooLarge = filesArr.filter(f => f.size > MAX_SIZE);
+    if (tooLarge.length > 0) {
+      setUploadError(`Файлы слишком большие (${tooLarge.map(f => f.name).join(', ')}). Максимум 50 МБ.`);
+      return;
+    }
+
+    // Create pending tiles
+    const pendingItems: PendingUpload[] = filesArr.map(f => ({
+      id: `pending-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      name: f.name,
+      blobUrl: f.type.startsWith('image/') ? URL.createObjectURL(f) : '',
+      progress: 5,
+    }));
+
+    setPending(prev => [...pendingItems, ...prev]);
+
+    // Simulate smooth progress while actual upload runs
+    pendingItems.forEach((item, idx) => {
+      const start = Date.now();
+      const interval = setInterval(() => {
+        setPending(prev => {
+          const target = prev.find(p => p.id === item.id);
+          if (!target || target.progress >= 90 || target.error) {
+            clearInterval(interval);
+            return prev;
+          }
+          const elapsed = Date.now() - start;
+          // Sigmoid-ish ramp up: fast at first, slow near 90
+          const nextProgress = Math.min(88, 5 + (elapsed / 100));
+          return prev.map(p => p.id === item.id ? { ...p, progress: Math.max(p.progress, nextProgress) } : p);
+        });
+      }, 100);
+
+      // Kick off actual upload (staggered slightly to avoid race on timestamps)
+      setTimeout(() => uploadOne(filesArr[idx], item.id), idx * 50);
+    });
+  };
+
+  // Clean up blob URLs on unmount
+  useEffect(() => {
+    return () => {
+      pending.forEach(p => { if (p.blobUrl) URL.revokeObjectURL(p.blobUrl); });
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ---- RENAME ----
+  const handleRenameConfirm = async (newName: string) => {
+    if (!renameDialog) return;
+    const name = newName.trim();
+    if (!name || name === renameDialog.currentName) {
+      setRenameDialog(null);
+      return;
+    }
+    setRenameDialog({ ...renameDialog, loading: true });
+    try {
+      await updateDesignFileName(renameDialog.fileId, name);
+      await refetch();
+      toast('Файл переименован');
+      setRenameDialog(null);
+    } catch (err: any) {
+      toast(err?.message || 'Ошибка переименования');
+      setRenameDialog({ ...renameDialog, loading: false });
     }
   };
 
@@ -137,7 +270,6 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
         {canUpload && (
           <button
             onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
             style={{
               fontFamily: "'IBM Plex Mono', monospace", fontSize: 8,
               textTransform: 'uppercase', letterSpacing: '0.14em',
@@ -152,42 +284,31 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
           ref={fileInputRef}
           type="file"
           accept={ACCEPT}
+          multiple
           onChange={handleUpload}
           style={{ display: 'none' }}
         />
       </div>
 
-      {/* Upload progress */}
-      {uploading && (
-        <div style={{ marginBottom: 12 }}>
-          <div style={{ height: 2, background: '#EBEBEB', width: '100%' }}>
-            <div style={{ height: 2, background: '#111', width: `${uploadProgress}%`, transition: 'width 0.3s ease' }} />
-          </div>
-          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, color: '#111', marginTop: 4, display: 'block' }}>
-            Загрузка... {uploadProgress}%
-          </span>
-        </div>
-      )}
-
       {/* Upload error */}
       {uploadError && (
         <div style={{
-          fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, color: '#111',
-          marginBottom: 12, padding: '8px 12px', border: '0.5px solid #EBEBEB',
+          fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: '#111',
+          marginBottom: 12, padding: '10px 12px', border: '0.5px solid #111', background: '#FFF8E1',
         }}>
           {uploadError}
         </div>
       )}
 
-      {/* Loading */}
-      {loading && (
+      {/* Loading initial */}
+      {loading && !files && (
         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: '#111', textAlign: 'center', padding: '40px 0', textTransform: 'uppercase', letterSpacing: '0.2em' }}>
           Загрузка...
         </div>
       )}
 
       {/* Empty state */}
-      {!loading && (!files || files.length === 0) && (
+      {!loading && pending.length === 0 && (!files || files.length === 0) && (
         <div style={{ textAlign: 'center', padding: '48px 0' }}>
           <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 48, fontWeight: 900, color: '#EBEBEB', marginBottom: 8 }}>—</div>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, textTransform: 'uppercase', letterSpacing: '0.16em', color: '#111' }}>
@@ -209,43 +330,776 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
         </div>
       )}
 
-      {/* File list */}
-      {files && files.length > 0 && (
-        <div>
-          {files.map((file) => (
-            <FileRow key={file.id} file={file} onClick={() => onSelectFile(file.id)} />
+      {/* File grid (pending tiles first, then actual files) */}
+      {(pending.length > 0 || (files && files.length > 0)) && (
+        <div className="af-file-grid">
+          {pending.map((p) => (
+            <PendingTile key={p.id} pending={p} />
+          ))}
+          {files?.map((file) => (
+            <FileTile key={file.id} file={file} onClick={() => handleFileClick(file)} />
           ))}
         </div>
+      )}
+
+      {/* Lightbox overlay */}
+      {lightboxIndex !== null && imageFiles.length > 0 && (
+        <Lightbox
+          images={imageFiles}
+          index={Math.min(lightboxIndex, imageFiles.length - 1)}
+          onClose={() => setLightboxIndex(null)}
+          onIndexChange={setLightboxIndex}
+          onOpenDetail={(id) => {
+            setLightboxIndex(null);
+            onSelectFile(id);
+          }}
+          canRename={canUpload}
+          onRequestRename={(fileId, currentName) => {
+            setLightboxIndex(null);
+            setRenameDialog({ fileId, currentName });
+          }}
+        />
+      )}
+
+      {/* Rename dialog */}
+      {renameDialog && (
+        <RenameDialog
+          currentName={renameDialog.currentName}
+          suggestedName={renameDialog.suggestedName}
+          loading={renameDialog.loading}
+          onCancel={() => setRenameDialog(null)}
+          onConfirm={handleRenameConfirm}
+        />
       )}
     </div>
   );
 }
 
-function FileRow({ file, onClick }: { file: DesignFileWithProfile; onClick: () => void }) {
+// ============================================================================
+// FileTile — one cell in the grid (uploaded file)
+// ============================================================================
+
+function FileTile({ file, onClick }: { file: DesignFileWithProfile; onClick: () => void }) {
+  const [imgError, setImgError] = useState(false);
+  const image = isImageFile(file) && !imgError;
   const typeLabel = getFileTypeLabel(file.file_type, file.name);
-  const uploaderName = file.uploader?.full_name || '—';
+
+  return (
+    <div className="af-file-tile" onClick={onClick}>
+      {image ? (
+        <img
+          src={file.file_url}
+          alt={file.name}
+          loading="lazy"
+          draggable={false}
+          onError={() => setImgError(true)}
+        />
+      ) : (
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100%',
+          padding: 12,
+          gap: 10,
+          textAlign: 'center',
+        }}>
+          <FileTypeIcon type={typeLabel} />
+          <div style={{
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: 9,
+            color: '#111',
+            lineHeight: 1.3,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            wordBreak: 'break-word',
+          }}>
+            {file.name}
+          </div>
+          <div style={{
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: 8,
+            color: '#888',
+          }}>
+            {formatSize(file.file_size)}
+          </div>
+        </div>
+      )}
+
+      {image && (
+        <div className="af-file-tile-name">{file.name}</div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================================
+// PendingTile — upload in progress (optimistic)
+// ============================================================================
+
+function PendingTile({ pending }: { pending: PendingUpload }) {
+  return (
+    <div className="af-file-tile" style={{ cursor: 'default', opacity: pending.error ? 0.6 : 0.85 }}>
+      {pending.blobUrl ? (
+        <img src={pending.blobUrl} alt={pending.name} draggable={false} />
+      ) : (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100%',
+        }}>
+          <FileTypeIcon type="..." />
+        </div>
+      )}
+
+      {/* Progress bar overlay */}
+      {!pending.error && (
+        <div style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: 3,
+          background: 'rgba(255,255,255,0.3)',
+        }}>
+          <div style={{
+            height: '100%',
+            width: `${pending.progress}%`,
+            background: '#fff',
+            transition: 'width 0.2s ease',
+          }} />
+        </div>
+      )}
+
+      {/* Label */}
+      <div style={{
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        top: 0,
+        padding: '6px 8px',
+        background: 'rgba(0,0,0,0.55)',
+        color: '#fff',
+        fontFamily: "'IBM Plex Mono', monospace",
+        fontSize: 9,
+        textTransform: 'uppercase',
+        letterSpacing: '0.1em',
+        textAlign: 'center',
+      }}>
+        {pending.error ? 'Ошибка' : `Загрузка ${Math.round(pending.progress)}%`}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// RenameDialog — prompts user for new file name
+// ============================================================================
+
+function RenameDialog({
+  currentName,
+  suggestedName,
+  loading,
+  onCancel,
+  onConfirm,
+}: {
+  currentName: string;
+  suggestedName?: string;
+  loading?: boolean;
+  onCancel: () => void;
+  onConfirm: (newName: string) => void;
+}) {
+  const { ext } = splitName(currentName);
+  const initialBase = suggestedName
+    ? suggestedName
+    : splitName(currentName).base;
+  const [baseName, setBaseName] = useState(initialBase);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+    inputRef.current?.select();
+  }, []);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onCancel();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onCancel]);
+
+  const handleSubmit = () => {
+    const fullName = baseName.trim() + ext;
+    onConfirm(fullName);
+  };
 
   return (
     <div
-      onClick={onClick}
+      onClick={onCancel}
       style={{
-        display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0',
-        borderBottom: '0.5px solid #EBEBEB', cursor: 'pointer',
+        position: 'fixed', inset: 0,
+        background: 'rgba(0,0,0,0.5)',
+        zIndex: 1100,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: 16,
       }}
     >
-      <FileTypeIcon type={typeLabel} />
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: '#fff',
+          border: '0.5px solid #111',
+          padding: 24,
+          maxWidth: 420,
+          width: '100%',
+        }}
+      >
         <div style={{
-          fontFamily: "'Playfair Display', serif", fontSize: 14, fontWeight: 700, color: '#111',
-          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          fontFamily: "'Playfair Display', serif",
+          fontSize: 20, fontWeight: 700, color: '#111',
+          marginBottom: 4,
         }}>
-          {file.name}
+          Переименовать
         </div>
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 7, color: '#111', marginTop: 2 }}>
-          {formatSize(file.file_size)} · {formatDate(file.created_at)} · {uploaderName}
+        {suggestedName && (
+          <div style={{
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: 9, color: '#666', marginBottom: 16,
+            textTransform: 'uppercase', letterSpacing: '0.08em',
+          }}>
+            ArchFlow распознал помещение
+          </div>
+        )}
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 0, marginBottom: 16 }}>
+          <input
+            ref={inputRef}
+            type="text"
+            value={baseName}
+            onChange={(e) => setBaseName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleSubmit();
+            }}
+            disabled={loading}
+            style={{
+              flex: 1,
+              fontFamily: "'IBM Plex Mono', monospace", fontSize: 13,
+              color: '#111',
+              border: '0.5px solid #111',
+              padding: '10px 12px',
+              outline: 'none',
+              background: '#fff',
+            }}
+          />
+          {ext && (
+            <span style={{
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: 12, color: '#888',
+              borderTop: '0.5px solid #111',
+              borderRight: '0.5px solid #111',
+              borderBottom: '0.5px solid #111',
+              padding: '10px 10px',
+              background: '#F6F6F4',
+            }}>
+              {ext}
+            </span>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+          <button
+            onClick={onCancel}
+            disabled={loading}
+            style={{
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.14em',
+              color: '#111', background: 'none', border: '0.5px solid #EBEBEB',
+              padding: '10px 16px', cursor: 'pointer',
+            }}
+          >
+            Оставить
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={loading || !baseName.trim()}
+            style={{
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.14em',
+              color: '#fff', background: '#111', border: '0.5px solid #111',
+              padding: '10px 16px', cursor: 'pointer',
+              opacity: (loading || !baseName.trim()) ? 0.5 : 1,
+            }}
+          >
+            {loading ? '...' : 'Применить →'}
+          </button>
         </div>
       </div>
-      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: '#EBEBEB', flexShrink: 0 }}>→</span>
+    </div>
+  );
+}
+
+// ============================================================================
+// Lightbox — fullscreen image viewer with zoom and pan
+// ============================================================================
+
+interface LightboxProps {
+  images: DesignFileWithProfile[];
+  index: number;
+  onClose: () => void;
+  onIndexChange: (index: number) => void;
+  onOpenDetail: (fileId: string) => void;
+  canRename?: boolean;
+  onRequestRename?: (fileId: string, currentName: string) => void;
+}
+
+function Lightbox({
+  images, index, onClose, onIndexChange, onOpenDetail,
+  canRename, onRequestRename,
+}: LightboxProps) {
+  const current = images[index];
+  const [scale, setScale] = useState(1);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [dragging, setDragging] = useState(false);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
+  const dragStart = useRef({ x: 0, y: 0, ox: 0, oy: 0 });
+  const pinchStart = useRef<{ dist: number; scale: number } | null>(null);
+
+  // Refs that always hold latest state for native event listeners
+  const scaleRef = useRef(scale);
+  const offsetRef = useRef(offset);
+  const draggingRef = useRef(dragging);
+  const pinchingRef = useRef(false);
+  useEffect(() => { scaleRef.current = scale; }, [scale]);
+  useEffect(() => { offsetRef.current = offset; }, [offset]);
+  useEffect(() => { draggingRef.current = dragging; }, [dragging]);
+
+  // Clamp pan offset so image never leaves the container
+  const clampOffset = useCallback((ox: number, oy: number) => {
+    const img = imgRef.current;
+    const container = containerRef.current;
+    if (!img || !container) return { x: ox, y: oy };
+    const imgRect = img.getBoundingClientRect();
+    const contRect = container.getBoundingClientRect();
+    const maxX = Math.max(0, (imgRect.width - contRect.width) / 2);
+    const maxY = Math.max(0, (imgRect.height - contRect.height) / 2);
+    return {
+      x: Math.max(-maxX, Math.min(maxX, ox)),
+      y: Math.max(-maxY, Math.min(maxY, oy)),
+    };
+  }, []);
+
+  // Reset zoom/pan when switching images
+  useEffect(() => {
+    setScale(1);
+    setOffset({ x: 0, y: 0 });
+  }, [index]);
+
+  // Re-clamp offset when scale changes (zoom out past panned position)
+  useEffect(() => {
+    if (scale === 1) {
+      setOffset({ x: 0, y: 0 });
+    } else {
+      const id = requestAnimationFrame(() => {
+        setOffset((o) => clampOffset(o.x, o.y));
+      });
+      return () => cancelAnimationFrame(id);
+    }
+  }, [scale, clampOffset]);
+
+  // Keyboard navigation
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      if (e.key === 'Escape') {
+        onClose();
+      } else if (e.key === 'ArrowLeft' && index > 0) {
+        onIndexChange(index - 1);
+      } else if (e.key === 'ArrowRight' && index < images.length - 1) {
+        onIndexChange(index + 1);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [index, images.length, onClose, onIndexChange]);
+
+  // Lock body scroll while open
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, []);
+
+  // Native wheel + touch handlers (non-passive so preventDefault works)
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const delta = e.deltaY < 0 ? 0.15 : -0.15;
+      setScale((prev) => {
+        const next = Math.max(1, Math.min(4, prev + delta));
+        return Math.round(next * 100) / 100;
+      });
+    };
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        const a = e.touches[0];
+        const b = e.touches[1];
+        const dist = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+        pinchStart.current = { dist, scale: scaleRef.current };
+        pinchingRef.current = true;
+      } else if (e.touches.length === 1 && scaleRef.current > 1) {
+        const t = e.touches[0];
+        dragStart.current = {
+          x: t.clientX,
+          y: t.clientY,
+          ox: offsetRef.current.x,
+          oy: offsetRef.current.y,
+        };
+        setDragging(true);
+      }
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 2 && pinchStart.current) {
+        e.preventDefault();
+        const a = e.touches[0];
+        const b = e.touches[1];
+        const dist = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+        const ratio = dist / pinchStart.current.dist;
+        const next = Math.max(1, Math.min(4, pinchStart.current.scale * ratio));
+        setScale(Math.round(next * 100) / 100);
+      } else if (e.touches.length === 1 && draggingRef.current && scaleRef.current > 1) {
+        e.preventDefault();
+        const t = e.touches[0];
+        const dx = t.clientX - dragStart.current.x;
+        const dy = t.clientY - dragStart.current.y;
+        setOffset(clampOffset(dragStart.current.ox + dx, dragStart.current.oy + dy));
+      }
+    };
+
+    const onTouchEnd = () => {
+      pinchStart.current = null;
+      pinchingRef.current = false;
+      setDragging(false);
+    };
+
+    container.addEventListener('wheel', onWheel, { passive: false });
+    container.addEventListener('touchstart', onTouchStart, { passive: false });
+    container.addEventListener('touchmove', onTouchMove, { passive: false });
+    container.addEventListener('touchend', onTouchEnd);
+    container.addEventListener('touchcancel', onTouchEnd);
+
+    return () => {
+      container.removeEventListener('wheel', onWheel);
+      container.removeEventListener('touchstart', onTouchStart);
+      container.removeEventListener('touchmove', onTouchMove);
+      container.removeEventListener('touchend', onTouchEnd);
+      container.removeEventListener('touchcancel', onTouchEnd);
+    };
+  }, [clampOffset]);
+
+  // Mouse drag (desktop)
+  const onImageMouseDown = (e: React.MouseEvent) => {
+    if (scaleRef.current <= 1) return;
+    e.preventDefault();
+    dragStart.current = {
+      x: e.clientX,
+      y: e.clientY,
+      ox: offset.x,
+      oy: offset.y,
+    };
+    setDragging(true);
+  };
+
+  useEffect(() => {
+    if (!dragging) return;
+    const onMove = (e: MouseEvent) => {
+      const dx = e.clientX - dragStart.current.x;
+      const dy = e.clientY - dragStart.current.y;
+      setOffset(clampOffset(dragStart.current.ox + dx, dragStart.current.oy + dy));
+    };
+    const onUp = () => setDragging(false);
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+  }, [dragging, clampOffset]);
+
+  const hasPrev = index > 0;
+  const hasNext = index < images.length - 1;
+
+  // Disable transition during pinch/drag for instant response
+  const noTransition = dragging || pinchingRef.current;
+
+  return (
+    <div
+      ref={containerRef}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0,0,0,0.92)',
+        zIndex: 1000,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+        cursor: scale > 1 ? (dragging ? 'grabbing' : 'grab') : 'default',
+        touchAction: 'none',
+      }}
+    >
+      {/* Close */}
+      <button
+        onClick={(e) => { e.stopPropagation(); onClose(); }}
+        aria-label="Закрыть"
+        style={{
+          position: 'absolute',
+          top: 16,
+          right: 16,
+          width: 40,
+          height: 40,
+          background: 'rgba(0,0,0,0.5)',
+          border: '0.5px solid rgba(255,255,255,0.3)',
+          color: '#fff',
+          fontSize: 18,
+          fontFamily: "'IBM Plex Mono', monospace",
+          cursor: 'pointer',
+          zIndex: 3,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >✕</button>
+
+      {/* Prev arrow */}
+      {hasPrev && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onIndexChange(index - 1); }}
+          aria-label="Предыдущее"
+          style={{
+            position: 'absolute',
+            left: 16,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            width: 48,
+            height: 48,
+            background: 'rgba(0,0,0,0.5)',
+            border: '0.5px solid rgba(255,255,255,0.3)',
+            color: '#fff',
+            fontSize: 22,
+            fontFamily: "'IBM Plex Mono', monospace",
+            cursor: 'pointer',
+            zIndex: 3,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >←</button>
+      )}
+
+      {/* Next arrow */}
+      {hasNext && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onIndexChange(index + 1); }}
+          aria-label="Следующее"
+          style={{
+            position: 'absolute',
+            right: 16,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            width: 48,
+            height: 48,
+            background: 'rgba(0,0,0,0.5)',
+            border: '0.5px solid rgba(255,255,255,0.3)',
+            color: '#fff',
+            fontSize: 22,
+            fontFamily: "'IBM Plex Mono', monospace",
+            cursor: 'pointer',
+            zIndex: 3,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >→</button>
+      )}
+
+      {/* Image */}
+      <img
+        ref={imgRef}
+        key={current.id}
+        src={current.file_url}
+        alt={current.name}
+        draggable={false}
+        onMouseDown={onImageMouseDown}
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          maxWidth: '94vw',
+          maxHeight: '80vh',
+          transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
+          transformOrigin: 'center center',
+          transition: noTransition ? 'none' : 'transform 0.15s ease-out',
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
+          cursor: scale > 1 ? (dragging ? 'grabbing' : 'grab') : 'default',
+          willChange: 'transform',
+          imageRendering: 'auto' as const,
+        }}
+      />
+
+      {/* Filename + counter + actions */}
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          position: 'absolute',
+          bottom: 76,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          maxWidth: '92vw',
+          padding: '8px 14px',
+          background: 'rgba(0,0,0,0.55)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          zIndex: 3,
+          flexWrap: 'wrap',
+          justifyContent: 'center',
+        }}
+      >
+        <span style={{
+          fontFamily: "'IBM Plex Mono', monospace",
+          fontSize: 11,
+          color: '#fff',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+          maxWidth: '50vw',
+        }}>
+          {current.name}
+        </span>
+        {images.length > 1 && (
+          <span style={{
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: 10,
+            color: 'rgba(255,255,255,0.6)',
+            whiteSpace: 'nowrap',
+          }}>
+            {index + 1} / {images.length}
+          </span>
+        )}
+        {canRename && onRequestRename && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onRequestRename(current.id, current.name); }}
+            style={{
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: 9,
+              color: '#fff',
+              background: 'none',
+              border: '0.5px solid rgba(255,255,255,0.4)',
+              padding: '4px 10px',
+              cursor: 'pointer',
+              textTransform: 'uppercase',
+              letterSpacing: '0.1em',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Переименовать
+          </button>
+        )}
+        <button
+          onClick={(e) => { e.stopPropagation(); onOpenDetail(current.id); }}
+          style={{
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: 9,
+            color: '#fff',
+            background: 'none',
+            border: '0.5px solid rgba(255,255,255,0.4)',
+            padding: '4px 10px',
+            cursor: 'pointer',
+            textTransform: 'uppercase',
+            letterSpacing: '0.1em',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          Подробнее →
+        </button>
+      </div>
+
+      {/* Zoom slider */}
+      <div
+        onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
+        style={{
+          position: 'absolute',
+          bottom: 16,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          padding: '10px 16px',
+          background: 'rgba(0,0,0,0.6)',
+          zIndex: 3,
+        }}
+      >
+        <button
+          onClick={() => setScale(s => Math.max(1, Math.round((s - 0.25) * 100) / 100))}
+          aria-label="Уменьшить"
+          style={{
+            color: '#fff', background: 'none',
+            border: '0.5px solid rgba(255,255,255,0.3)',
+            width: 28, height: 28,
+            fontSize: 16, fontFamily: "'IBM Plex Mono', monospace",
+            cursor: 'pointer',
+          }}
+        >−</button>
+        <span style={{
+          color: '#fff',
+          fontFamily: "'IBM Plex Mono', monospace",
+          fontSize: 10,
+          minWidth: 42,
+          textAlign: 'center',
+        }}>
+          {Math.round(scale * 100)}%
+        </span>
+        <input
+          type="range"
+          min={100}
+          max={400}
+          step={5}
+          value={Math.round(scale * 100)}
+          onChange={(e) => setScale(Number(e.target.value) / 100)}
+          style={{ width: 140, accentColor: '#fff' }}
+          aria-label="Масштаб"
+        />
+        <button
+          onClick={() => setScale(s => Math.min(4, Math.round((s + 0.25) * 100) / 100))}
+          aria-label="Увеличить"
+          style={{
+            color: '#fff', background: 'none',
+            border: '0.5px solid rgba(255,255,255,0.3)',
+            width: 28, height: 28,
+            fontSize: 16, fontFamily: "'IBM Plex Mono', monospace",
+            cursor: 'pointer',
+          }}
+        >+</button>
+      </div>
     </div>
   );
 }

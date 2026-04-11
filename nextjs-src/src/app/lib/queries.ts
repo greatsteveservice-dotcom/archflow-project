@@ -2567,6 +2567,18 @@ export async function deleteDesignFile(fileId: string, filePath: string): Promis
   if (error) throw error;
 }
 
+/** Rename a design file (DB field only — storage path and URL stay the same) */
+export async function updateDesignFileName(fileId: string, newName: string): Promise<void> {
+  const clean = sanitize(newName).trim();
+  if (!clean) throw new Error('Имя файла не может быть пустым');
+  if (clean.length > 200) throw new Error('Имя слишком длинное');
+  const { error } = await supabase
+    .from('design_files')
+    .update({ name: clean })
+    .eq('id', fileId);
+  if (error) throw error;
+}
+
 /** Fetch comments for a design file */
 export async function fetchDesignFileComments(
   fileId: string,

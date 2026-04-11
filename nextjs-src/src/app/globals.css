@@ -573,6 +573,55 @@ body {
 .af-content { padding: 24px; background: var(--af-white); }
 @media (max-width: 767px) { .af-content { padding: 16px; } }
 
+/* Design files grid — adaptive columns */
+.af-file-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px;
+  width: 100%;
+}
+@media (min-width: 600px) {
+  .af-file-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (min-width: 900px) {
+  .af-file-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (min-width: 1200px) {
+  .af-file-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
+
+.af-file-tile {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border: 0.5px solid var(--af-border, #EBEBEB);
+  background: #F6F6F4;
+  cursor: pointer;
+  overflow: hidden;
+  transition: opacity 0.2s ease;
+}
+.af-file-tile:hover .af-file-tile-name { opacity: 1; }
+.af-file-tile img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+  image-rendering: -webkit-optimize-contrast;
+}
+.af-file-tile-name {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  padding: 6px 8px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  line-height: 1.3;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+/* On mobile always show filename on tiles (no hover) */
+@media (hover: none) {
+  .af-file-tile-name { opacity: 1; }
+}
+
 .af-table { width: 100%; border-collapse: collapse; font-family: var(--af-font-mono); font-size: 12px; }
 .af-table th {
   font-size: 8px; text-transform: uppercase; letter-spacing: 0.15em;

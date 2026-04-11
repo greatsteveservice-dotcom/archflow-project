@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useDesignFile, useDesignFileComments } from '../../lib/hooks';
-import { deleteDesignFile, createDesignFileComment } from '../../lib/queries';
+import { deleteDesignFile, createDesignFileComment, updateDesignFileName } from '../../lib/queries';
 import { useAuth } from '../../lib/auth';
 import { DESIGN_FOLDERS } from '../../lib/types';
 import type { DesignFolder, DesignFileCommentWithProfile } from '../../lib/types';
@@ -46,13 +46,66 @@ export default function DesignFileDetail({
   canDelete = true, canComment = true,
   onBack, onDeleted,
 }: DesignFileDetailProps) {
-  const { data: file, loading } = useDesignFile(fileId);
+  const { data: file, loading, refetch: refetchFile } = useDesignFile(fileId);
   const { data: comments, refetch: refetchComments } = useDesignFileComments(fileId);
   const { profile } = useAuth();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [sendingComment, setSendingComment] = useState(false);
+
+  // Rename state
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState('');
+  const [savingName, setSavingName] = useState(false);
+  const nameInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editingName) {
+      nameInputRef.current?.focus();
+      nameInputRef.current?.select();
+    }
+  }, [editingName]);
+
+  const startRename = () => {
+    if (!file) return;
+    const dot = file.name.lastIndexOf('.');
+    setNameDraft(dot > 0 ? file.name.slice(0, dot) : file.name);
+    setEditingName(true);
+  };
+
+  const cancelRename = () => {
+    setEditingName(false);
+    setNameDraft('');
+  };
+
+  const saveRename = async () => {
+    if (!file) return;
+    const base = nameDraft.trim();
+    if (!base) {
+      cancelRename();
+      return;
+    }
+    const dot = file.name.lastIndexOf('.');
+    const ext = dot > 0 ? file.name.slice(dot) : '';
+    const newName = base + ext;
+    if (newName === file.name) {
+      cancelRename();
+      return;
+    }
+    setSavingName(true);
+    try {
+      await updateDesignFileName(file.id, newName);
+      await refetchFile();
+      toast('Файл переименован');
+      setEditingName(false);
+      setNameDraft('');
+    } catch (err: any) {
+      toast(err?.message || 'Ошибка переименования');
+    } finally {
+      setSavingName(false);
+    }
+  };
 
   const folderConfig = DESIGN_FOLDERS.find(f => f.id === folder);
   const folderLabel = folderConfig?.label || folder;
@@ -119,9 +172,72 @@ export default function DesignFileDetail({
       </button>
 
       {/* File header */}
-      <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 900, color: '#111', marginBottom: 4, wordBreak: 'break-word' }}>
-        {file.name}
-      </h3>
+      {!editingName ? (
+        <h3
+          onClick={canDelete ? startRename : undefined}
+          title={canDelete ? 'Нажмите, чтобы переименовать' : undefined}
+          style={{
+            fontFamily: "'Playfair Display', serif",
+            fontSize: 22,
+            fontWeight: 900,
+            color: '#111',
+            marginBottom: 4,
+            wordBreak: 'break-word',
+            cursor: canDelete ? 'text' : 'default',
+          }}
+        >
+          {file.name}
+        </h3>
+      ) : (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+          <input
+            ref={nameInputRef}
+            type="text"
+            value={nameDraft}
+            onChange={(e) => setNameDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') saveRename();
+              if (e.key === 'Escape') cancelRename();
+            }}
+            disabled={savingName}
+            style={{
+              flex: '1 1 200px',
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: 16,
+              color: '#111',
+              border: '0.5px solid #111',
+              padding: '10px 12px',
+              outline: 'none',
+              background: '#fff',
+            }}
+          />
+          <button
+            onClick={saveRename}
+            disabled={savingName || !nameDraft.trim()}
+            style={{
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.12em',
+              color: '#fff', background: '#111', border: '0.5px solid #111',
+              padding: '10px 14px', cursor: 'pointer',
+              opacity: (savingName || !nameDraft.trim()) ? 0.5 : 1,
+            }}
+          >
+            {savingName ? '...' : 'Сохранить'}
+          </button>
+          <button
+            onClick={cancelRename}
+            disabled={savingName}
+            style={{
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.12em',
+              color: '#111', background: 'none', border: '0.5px solid #EBEBEB',
+              padding: '10px 14px', cursor: 'pointer',
+            }}
+          >
+            Отмена
+          </button>
+        </div>
+      )}
       <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, color: '#111', marginBottom: 20 }}>
         {formatSize(file.file_size)} · {formatDate(file.created_at)} · {file.uploader?.full_name || '—'}
       </p>
