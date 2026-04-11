@@ -381,19 +381,85 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
 
 function FileTile({ file, onClick }: { file: DesignFileWithProfile; onClick: () => void }) {
   const [imgError, setImgError] = useState(false);
-  const image = isImageFile(file) && !imgError;
+  const [reloadKey, setReloadKey] = useState(0);
+  const isImg = isImageFile(file);
+  const showImg = isImg && !imgError;
   const typeLabel = getFileTypeLabel(file.file_type, file.name);
+
+  const handleRetry = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setImgError(false);
+    setReloadKey(k => k + 1);
+  };
 
   return (
     <div className="af-file-tile" onClick={onClick}>
-      {image ? (
+      {showImg ? (
         <img
-          src={file.file_url}
+          src={`${file.file_url}${file.file_url.includes('?') ? '&' : '?'}r=${reloadKey}`}
           alt={file.name}
           loading="lazy"
           draggable={false}
           onError={() => setImgError(true)}
         />
+      ) : isImg && imgError ? (
+        // Image was expected but failed to load — show honest error + retry
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100%',
+          padding: 12,
+          gap: 8,
+          textAlign: 'center',
+          background: '#F6F6F4',
+        }}>
+          <div style={{
+            fontFamily: "'Playfair Display', serif",
+            fontSize: 24,
+            fontWeight: 900,
+            color: '#999',
+            lineHeight: 1,
+          }}>!</div>
+          <div style={{
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: 8,
+            color: '#111',
+            textTransform: 'uppercase',
+            letterSpacing: '0.1em',
+          }}>
+            Не удалось загрузить
+          </div>
+          <button
+            onClick={handleRetry}
+            style={{
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: 8,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              color: '#111',
+              background: 'none',
+              border: '0.5px solid #111',
+              padding: '4px 10px',
+              cursor: 'pointer',
+            }}
+          >
+            Повторить
+          </button>
+          <div style={{
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: 7,
+            color: '#888',
+            marginTop: 2,
+            maxWidth: '100%',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}>
+            {file.name}
+          </div>
+        </div>
       ) : (
         <div style={{
           display: 'flex',
@@ -430,7 +496,7 @@ function FileTile({ file, onClick }: { file: DesignFileWithProfile; onClick: () 
         </div>
       )}
 
-      {image && (
+      {showImg && (
         <div className="af-file-tile-name">{file.name}</div>
       )}
     </div>

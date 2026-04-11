@@ -6,6 +6,7 @@
 
 import { useState, useEffect, useCallback, useRef, useId } from 'react';
 import { supabase } from './supabase';
+import { isBackendError, getHealth } from './health';
 import type { ProjectWithStats, VisitWithStats, PhotoRecord, Profile, Stage, SupplyItem, Invoice, Notification, ActivityItem, Document, ProjectMember, ProjectMemberWithProfile, DocumentCategory, Task, PhotoRecordWithVisit, RbacMemberWithProfile, ProjectAccessSettings, VisitReportWithStats, VisitRemarkWithDetails, ContractorTaskWithDetails, ChatMessageWithAuthor, ChatType, DesignFileWithProfile, DesignFileCommentWithProfile, DesignFolder, ProjectRoom, KindStageMapping } from './types';
 import {
   fetchProjects,
@@ -58,6 +59,34 @@ interface UseQueryResult<T> {
 /** Simple module-level cache to prevent skeleton flash on re-mounts (e.g. tab switches) */
 const _queryCache = new Map<string, unknown>();
 
+// Retry policy: only retry network/backend errors (not 4xx business errors).
+// Exponential backoff: 400ms, 1200ms, 3000ms → 3 retries, ~4.6s max total.
+const RETRY_DELAYS_MS = [400, 1200, 3000];
+
+/** Run a fetcher with automatic retry on backend failures */
+async function runWithRetry<T>(
+  fetcher: () => Promise<T>,
+  isCancelled: () => boolean,
+): Promise<T> {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
+    if (isCancelled()) throw new Error('cancelled');
+    try {
+      return await fetcher();
+    } catch (err) {
+      lastErr = err;
+      // Don't retry on 4xx business errors — those are deterministic
+      if (!isBackendError(err)) throw err;
+      // Last attempt — rethrow
+      if (attempt === RETRY_DELAYS_MS.length) throw err;
+      // Wait then retry
+      const delay = RETRY_DELAYS_MS[attempt];
+      await new Promise(r => setTimeout(r, delay));
+    }
+  }
+  throw lastErr;
+}
+
 function useQuery<T>(fetcher: () => Promise<T>, deps: unknown[] = []): UseQueryResult<T> {
   // Include fetcher source to distinguish hooks with same deps (e.g. useProject vs useProjectVisits)
   const cacheKey = fetcher.toString().slice(0, 80) + '::' + JSON.stringify(deps);
@@ -75,7 +104,7 @@ function useQuery<T>(fetcher: () => Promise<T>, deps: unknown[] = []): UseQueryR
     }
     setError(null);
 
-    fetcher()
+    runWithRetry(fetcher, () => cancelled)
       .then(result => {
         if (!cancelled) {
           _queryCache.set(cacheKey, result);
@@ -85,6 +114,12 @@ function useQuery<T>(fetcher: () => Promise<T>, deps: unknown[] = []): UseQueryR
       })
       .catch(err => {
         if (!cancelled) {
+          // If the backend is degraded and we still have cached data,
+          // keep showing the cache and don't surface an error state.
+          if (isBackendError(err) && _queryCache.has(cacheKey)) {
+            setLoading(false);
+            return;
+          }
           setError(err.message || 'Ошибка загрузки данных');
           setLoading(false);
         }
@@ -93,6 +128,18 @@ function useQuery<T>(fetcher: () => Promise<T>, deps: unknown[] = []): UseQueryR
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [...deps, refreshKey]);
+
+  // Auto-refetch when backend comes back online after a failure
+  useEffect(() => {
+    const onOnline = () => {
+      const h = getHealth();
+      if (h.status === 'online' && error) {
+        setRefreshKey(k => k + 1);
+      }
+    };
+    window.addEventListener('archflow:health-recovered', onOnline);
+    return () => window.removeEventListener('archflow:health-recovered', onOnline);
+  }, [error]);
 
   const refetch = useCallback(() => setRefreshKey(k => k + 1), []);
 

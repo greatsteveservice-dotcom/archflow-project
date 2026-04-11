@@ -14,6 +14,7 @@ import Topbar from "../components/Topbar";
 import Toast from "../components/Toast";
 import FeedbackBar from "../components/FeedbackBar";
 import OfflineBanner from "../components/OfflineBanner";
+import DatabaseBanner from "../components/DatabaseBanner";
 import SearchModal from "../components/SearchModal";
 import OnboardingFlow from "../components/OnboardingFlow";
 import ClientDashboard from "../components/ClientDashboard";
@@ -439,6 +440,7 @@ export default function AppShell() {
       />
 
       <OfflineBanner />
+      <DatabaseBanner />
 
       <SearchModal
         open={searchOpen}
