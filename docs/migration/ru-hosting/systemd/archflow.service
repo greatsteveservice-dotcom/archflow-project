@@ -1,0 +1,32 @@
+[Unit]
+Description=Archflow Next.js standalone server
+After=network.target
+
+[Service]
+Type=simple
+User=archflow
+Group=archflow
+WorkingDirectory=/home/archflow/app
+EnvironmentFile=/home/archflow/app/.env.production
+Environment=NODE_ENV=production
+Environment=PORT=3000
+Environment=HOSTNAME=127.0.0.1
+ExecStart=/usr/bin/node /home/archflow/app/server.js
+Restart=always
+RestartSec=5
+StandardOutput=append:/home/archflow/logs/app.log
+StandardError=append:/home/archflow/logs/app.err.log
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/archflow/logs /home/archflow/app
+PrivateTmp=true
+
+# Resource limits
+LimitNOFILE=65536
+MemoryMax=800M
+
+[Install]
+WantedBy=multi-user.target
