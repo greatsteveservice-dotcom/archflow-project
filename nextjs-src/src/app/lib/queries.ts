@@ -2567,16 +2567,31 @@ export async function deleteDesignFile(fileId: string, filePath: string): Promis
   if (error) throw error;
 }
 
-/** Rename a design file (DB field only — storage path and URL stay the same) */
+/** Rename a design file (DB field only — storage path and URL stay the same).
+ *  Uses a server-side API route with service role key because the
+ *  design_files table has no UPDATE RLS policy (only SELECT/INSERT/DELETE). */
 export async function updateDesignFileName(fileId: string, newName: string): Promise<void> {
   const clean = sanitize(newName).trim();
   if (!clean) throw new Error('Имя файла не может быть пустым');
   if (clean.length > 200) throw new Error('Имя слишком длинное');
-  const { error } = await supabase
-    .from('design_files')
-    .update({ name: clean })
-    .eq('id', fileId);
-  if (error) throw error;
+
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) throw new Error('Требуется авторизация');
+
+  const res = await fetch('/api/design/rename', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      fileId,
+      name: clean,
+      accessToken: session.access_token,
+    }),
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error || 'Ошибка переименования');
+  }
 }
 
 /** Fetch comments for a design file */

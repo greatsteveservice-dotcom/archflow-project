@@ -1016,7 +1016,7 @@ function Lightbox({
         onClick={(e) => e.stopPropagation()}
         style={{
           maxWidth: '94vw',
-          maxHeight: '80vh',
+          maxHeight: 'calc(100vh - 80px)',
           transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
           transformOrigin: 'center center',
           transition: noTransition ? 'none' : 'transform 0.15s ease-out',
@@ -1028,143 +1028,149 @@ function Lightbox({
         }}
       />
 
-      {/* Filename + counter + actions */}
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          position: 'absolute',
-          bottom: 76,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          maxWidth: '92vw',
-          padding: '8px 14px',
-          background: 'rgba(0,0,0,0.55)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          zIndex: 3,
-          flexWrap: 'wrap',
-          justifyContent: 'center',
-        }}
-      >
-        <span style={{
-          fontFamily: "'IBM Plex Mono', monospace",
-          fontSize: 11,
-          color: '#fff',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-          maxWidth: '50vw',
-        }}>
-          {current.name}
-        </span>
-        {images.length > 1 && (
-          <span style={{
-            fontFamily: "'IBM Plex Mono', monospace",
-            fontSize: 10,
-            color: 'rgba(255,255,255,0.6)',
-            whiteSpace: 'nowrap',
-          }}>
-            {index + 1} / {images.length}
-          </span>
-        )}
-        {canRename && onRequestRename && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onRequestRename(current.id, current.name); }}
-            style={{
-              fontFamily: "'IBM Plex Mono', monospace",
-              fontSize: 9,
-              color: '#fff',
-              background: 'none',
-              border: '0.5px solid rgba(255,255,255,0.4)',
-              padding: '4px 10px',
-              cursor: 'pointer',
-              textTransform: 'uppercase',
-              letterSpacing: '0.1em',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            Переименовать
-          </button>
-        )}
-        <button
-          onClick={(e) => { e.stopPropagation(); onOpenDetail(current.id); }}
-          style={{
-            fontFamily: "'IBM Plex Mono', monospace",
-            fontSize: 9,
-            color: '#fff',
-            background: 'none',
-            border: '0.5px solid rgba(255,255,255,0.4)',
-            padding: '4px 10px',
-            cursor: 'pointer',
-            textTransform: 'uppercase',
-            letterSpacing: '0.1em',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          Подробнее →
-        </button>
-      </div>
-
-      {/* Zoom slider */}
+      {/* Bottom bar: filename + actions + zoom — single compact strip */}
       <div
         onClick={(e) => e.stopPropagation()}
         onMouseDown={(e) => e.stopPropagation()}
         onTouchStart={(e) => e.stopPropagation()}
         style={{
           position: 'absolute',
-          bottom: 16,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-          padding: '10px 16px',
-          background: 'rgba(0,0,0,0.6)',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          background: 'rgba(0,0,0,0.7)',
           zIndex: 3,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 0,
         }}
       >
-        <button
-          onClick={() => setScale(s => Math.max(1, Math.round((s - 0.25) * 100) / 100))}
-          aria-label="Уменьшить"
-          style={{
-            color: '#fff', background: 'none',
-            border: '0.5px solid rgba(255,255,255,0.3)',
-            width: 28, height: 28,
-            fontSize: 16, fontFamily: "'IBM Plex Mono', monospace",
-            cursor: 'pointer',
-          }}
-        >−</button>
-        <span style={{
-          color: '#fff',
-          fontFamily: "'IBM Plex Mono', monospace",
-          fontSize: 10,
-          minWidth: 42,
-          textAlign: 'center',
+        {/* Row 1: filename + counter + action buttons */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          padding: '6px 12px',
+          borderBottom: '0.5px solid rgba(255,255,255,0.12)',
+          minHeight: 32,
+          flexWrap: 'nowrap',
+          overflow: 'hidden',
         }}>
-          {Math.round(scale * 100)}%
-        </span>
-        <input
-          type="range"
-          min={100}
-          max={400}
-          step={5}
-          value={Math.round(scale * 100)}
-          onChange={(e) => setScale(Number(e.target.value) / 100)}
-          style={{ width: 140, accentColor: '#fff' }}
-          aria-label="Масштаб"
-        />
-        <button
-          onClick={() => setScale(s => Math.min(4, Math.round((s + 0.25) * 100) / 100))}
-          aria-label="Увеличить"
-          style={{
-            color: '#fff', background: 'none',
-            border: '0.5px solid rgba(255,255,255,0.3)',
-            width: 28, height: 28,
-            fontSize: 16, fontFamily: "'IBM Plex Mono', monospace",
-            cursor: 'pointer',
-          }}
-        >+</button>
+          <span style={{
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: 10,
+            color: '#fff',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            flex: '1 1 auto',
+            minWidth: 0,
+          }}>
+            {current.name}
+          </span>
+          {images.length > 1 && (
+            <span style={{
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: 9,
+              color: 'rgba(255,255,255,0.5)',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+            }}>
+              {index + 1}/{images.length}
+            </span>
+          )}
+          {canRename && onRequestRename && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onRequestRename(current.id, current.name); }}
+              style={{
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: 8,
+                color: '#fff',
+                background: 'none',
+                border: '0.5px solid rgba(255,255,255,0.35)',
+                padding: '3px 8px',
+                cursor: 'pointer',
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+              }}
+            >
+              Переименовать
+            </button>
+          )}
+          <button
+            onClick={(e) => { e.stopPropagation(); onOpenDetail(current.id); }}
+            style={{
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: 8,
+              color: '#fff',
+              background: 'none',
+              border: '0.5px solid rgba(255,255,255,0.35)',
+              padding: '3px 8px',
+              cursor: 'pointer',
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+            }}
+          >
+            Подробнее
+          </button>
+        </div>
+
+        {/* Row 2: zoom controls */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8,
+          padding: '5px 12px',
+        }}>
+          <button
+            onClick={() => setScale(s => Math.max(1, Math.round((s - 0.25) * 100) / 100))}
+            aria-label="Уменьшить"
+            style={{
+              color: '#fff', background: 'none',
+              border: '0.5px solid rgba(255,255,255,0.25)',
+              width: 24, height: 24,
+              fontSize: 14, fontFamily: "'IBM Plex Mono', monospace",
+              cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >−</button>
+          <span style={{
+            color: '#fff',
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: 9,
+            minWidth: 36,
+            textAlign: 'center',
+          }}>
+            {Math.round(scale * 100)}%
+          </span>
+          <input
+            type="range"
+            min={100}
+            max={400}
+            step={5}
+            value={Math.round(scale * 100)}
+            onChange={(e) => setScale(Number(e.target.value) / 100)}
+            style={{ width: 120, accentColor: '#fff' }}
+            aria-label="Масштаб"
+          />
+          <button
+            onClick={() => setScale(s => Math.min(4, Math.round((s + 0.25) * 100) / 100))}
+            aria-label="Увеличить"
+            style={{
+              color: '#fff', background: 'none',
+              border: '0.5px solid rgba(255,255,255,0.25)',
+              width: 24, height: 24,
+              fontSize: 14, fontFamily: "'IBM Plex Mono', monospace",
+              cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >+</button>
+        </div>
       </div>
     </div>
   );
