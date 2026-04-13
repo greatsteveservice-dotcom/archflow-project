@@ -475,8 +475,8 @@ function VoiceRecorder({ projectId, userId, chatType, profile, appendMessage, re
               appendMessage(fresh[0]);
             }
           }
-        } catch (err: any) {
-          toast('Ошибка: ' + (err.message || 'не удалось отправить'));
+        } catch (err: unknown) {
+          toast('Ошибка: ' + (err instanceof Error ? err.message : 'не удалось отправить'));
         }
         resolve();
       };

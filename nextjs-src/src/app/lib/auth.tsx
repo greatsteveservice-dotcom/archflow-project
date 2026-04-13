@@ -114,7 +114,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Check if the JWT is expired (access_token exp < now)
       try {
-        const payload = JSON.parse(atob(session.access_token.split('.')[1]));
+        const parts = session.access_token.split('.');
+        if (parts.length !== 3 || !parts[1]) throw new Error('Malformed JWT');
+        const payload = JSON.parse(atob(parts[1]));
         if (payload.exp && payload.exp * 1000 < Date.now()) {
           // Token expired — try refreshing
           const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();

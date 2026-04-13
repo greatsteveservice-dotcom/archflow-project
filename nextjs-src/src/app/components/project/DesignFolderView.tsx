@@ -161,9 +161,9 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
           })
           .catch(() => {}); // silent fail — classification is non-critical
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Upload failed:', err);
-      updateOne({ error: err?.message || 'Ошибка загрузки', progress: 0 });
+      updateOne({ error: err instanceof Error ? err.message : 'Ошибка загрузки', progress: 0 });
       // Keep failed pending on screen for 5s, then remove
       setTimeout(() => {
         setPending(prev => prev.filter(p => p.id !== pendingId));
@@ -242,8 +242,8 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
       await refetch();
       toast('Файл переименован');
       setRenameDialog(null);
-    } catch (err: any) {
-      toast(err?.message || 'Ошибка переименования');
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : 'Ошибка переименования');
       setRenameDialog({ ...renameDialog, loading: false });
     }
   };

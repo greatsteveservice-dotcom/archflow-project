@@ -32,8 +32,8 @@ export default function CreateProjectModal({ open, onClose, onSuccess }: CreateP
       });
       handleClose();
       onSuccess(project.id);
-    } catch (err: any) {
-      setError(err.message || "Ошибка создания проекта");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Ошибка создания проекта");
     } finally {
       setSaving(false);
     }

@@ -96,8 +96,8 @@ export default function VisitPage({ projectId, visitId, onNavigate, toast, onMen
         photo_url: photoUrl,
       });
       refetchPhotos(); refetchVisit(); closeUploadModal();
-    } catch (err: any) {
-      setPhotoError(err.message || "Ошибка загрузки");
+    } catch (err: unknown) {
+      setPhotoError(err instanceof Error ? err.message : "Ошибка загрузки");
     } finally {
       setSavingPhoto(false); setUploadStep('idle');
     }

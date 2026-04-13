@@ -120,8 +120,8 @@ export default function NotificationSettings({ projectId, toast }: NotificationS
     try {
       const token = await generateMaxLinkToken(userId, projectId);
       setMaxLinkUrl(`https://max.ru/archflow_bot?start=${token}`);
-    } catch (err: any) {
-      toast('Ошибка: ' + (err.message || ''));
+    } catch (err: unknown) {
+      toast('Ошибка: ' + (err instanceof Error ? err.message : 'не удалось привязать'));
     } finally {
       setMaxLinking(false);
     }
