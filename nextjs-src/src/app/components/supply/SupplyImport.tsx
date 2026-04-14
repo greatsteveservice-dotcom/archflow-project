@@ -71,6 +71,7 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
   const [dragOver, setDragOver] = useState(false);
   const [unmatchedStages, setUnmatchedStages] = useState<string[]>([]);
   const [autoFilledStageItems, setAutoFilledStageItems] = useState<Set<string>>(new Set());
+  const [stageOverrides, setStageOverrides] = useState<Record<string, string>>({});
   const [aiMapping, setAiMapping] = useState(false);
   const [aiNotes, setAiNotes] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
@@ -448,6 +449,8 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
             const stageId = findStage(val);
             if (stageId) {
               item.target_stage_id = stageId;
+            } else if (stageOverrides[val]) {
+              item.target_stage_id = stageOverrides[val];
             } else {
               unmatched.add(val);
             }
@@ -479,7 +482,7 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
     }
 
     return { items, unmatched: Array.from(unmatched), autoFilled };
-  }, [rows, mapping, projectId, stages, kindMappings]);
+  }, [rows, mapping, projectId, stages, kindMappings, stageOverrides]);
 
   const handleImport = async () => {
     setImporting(true);
@@ -881,15 +884,53 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
             {previewData.total} позиций будут импортированы
           </p>
 
-          {/* Unmatched stages warning */}
+          {/* Unmatched stages — manual assignment */}
           {unmatchedStages.length > 0 && (
             <div style={{
               background: 'rgb(var(--line), 0.15)', border: '0.5px solid rgb(var(--line))',
-              padding: '8px 12px', marginBottom: 12,
-              fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-11)',
-              color: 'rgb(var(--ink))',
+              padding: '12px 16px', marginBottom: 12,
             }}>
-              Не найден этап: {unmatchedStages.join(', ')}
+              <div style={{
+                fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-12)',
+                color: 'rgb(var(--ink))', fontWeight: 600, marginBottom: 8,
+              }}>
+                Назначьте этапы вручную ({unmatchedStages.length})
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {unmatchedStages.map((name) => (
+                  <div key={name} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{
+                      fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-11)',
+                      color: 'rgb(var(--ink))', minWidth: 200, flexShrink: 0,
+                    }}>
+                      {name}
+                    </span>
+                    <span style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-11)', color: 'rgb(var(--ink-faint))' }}>→</span>
+                    <select
+                      value={stageOverrides[name] || ''}
+                      onChange={(e) => {
+                        setStageOverrides(prev => {
+                          const next = { ...prev };
+                          if (e.target.value) next[name] = e.target.value;
+                          else delete next[name];
+                          return next;
+                        });
+                      }}
+                      style={{
+                        fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-11)',
+                        padding: '4px 8px', border: '0.5px solid rgb(var(--line))',
+                        background: 'rgb(var(--srf))', color: 'rgb(var(--ink))',
+                        borderRadius: 0, minWidth: 200,
+                      }}
+                    >
+                      <option value="">— выберите этап —</option>
+                      {stages.map(s => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 

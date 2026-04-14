@@ -4,7 +4,13 @@ import { useState, useMemo } from "react";
 import { Icons } from "../Icons";
 import { formatPrice, formatShortDate, updateSupplyItemStatus, deleteSupplyItem, deleteAllSupplyItems } from "../../lib/queries";
 import { SUPPLY_STATUS_CONFIG, RISK_CONFIG } from "../../lib/types";
-import type { SupplyItemWithCalc, Stage, SupplyStatus } from "../../lib/types";
+import type { SupplyItemWithCalc, Stage, SupplyStatus, RiskLevel } from "../../lib/types";
+
+type SortKey = 'name' | 'stage' | 'deadline' | 'risk' | 'status' | 'budget';
+type SortDir = 'asc' | 'desc';
+
+const RISK_ORDER: Record<RiskLevel, number> = { critical: 3, high: 2, medium: 1, low: 0 };
+const STATUS_ORDER: Record<string, number> = { ordered: 2, approved: 1, pending: 0 };
 
 interface SupplySpecProps {
   items: SupplyItemWithCalc[];
@@ -25,6 +31,18 @@ export function SupplySpec({ items, stages, projectId, refetchItems, toast, canD
   const [deleting, setDeleting] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [confirmDeleteSelected, setConfirmDeleteSelected] = useState(false);
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [sortDir, setSortDir] = useState<SortDir>('asc');
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      if (sortDir === 'asc') setSortDir('desc');
+      else { setSortKey(null); setSortDir('asc'); }
+    } else {
+      setSortKey(key);
+      setSortDir(key === 'budget' || key === 'risk' ? 'desc' : 'asc');
+    }
+  };
 
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) => {
@@ -94,7 +112,7 @@ export function SupplySpec({ items, stages, projectId, refetchItems, toast, canD
   }, [items]);
 
   const filteredItems = useMemo(() => {
-    return items.filter((item) => {
+    const filtered = items.filter((item) => {
       const matchSearch =
         !search ||
         item.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -103,7 +121,27 @@ export function SupplySpec({ items, stages, projectId, refetchItems, toast, canD
       const matchStatus = filterStatus === "all" || item.status === filterStatus;
       return matchSearch && matchStatus;
     });
-  }, [items, search, filterStatus]);
+
+    if (!sortKey) return filtered;
+
+    return [...filtered].sort((a, b) => {
+      let cmp = 0;
+      switch (sortKey) {
+        case 'name': cmp = a.name.localeCompare(b.name, 'ru'); break;
+        case 'stage': cmp = (a.stageName || '').localeCompare(b.stageName || '', 'ru'); break;
+        case 'deadline': {
+          const da = a.orderDeadline || '9999';
+          const db = b.orderDeadline || '9999';
+          cmp = da.localeCompare(db);
+          break;
+        }
+        case 'risk': cmp = RISK_ORDER[a.riskCalc] - RISK_ORDER[b.riskCalc]; break;
+        case 'status': cmp = (STATUS_ORDER[a.status] ?? 0) - (STATUS_ORDER[b.status] ?? 0); break;
+        case 'budget': cmp = (a.budget || 0) - (b.budget || 0); break;
+      }
+      return sortDir === 'desc' ? -cmp : cmp;
+    });
+  }, [items, search, filterStatus, sortKey, sortDir]);
 
   const handleStatusChange = async (itemId: string, newStatus: SupplyStatus) => {
     setUpdatingStatus(true);
@@ -120,10 +158,27 @@ export function SupplySpec({ items, stages, projectId, refetchItems, toast, canD
     }
   };
 
+  const SortTh = ({ k, label, align }: { k: SortKey; label: string; align?: 'right' }) => {
+    const active = sortKey === k;
+    return (
+      <th
+        className={`text-[12px] font-semibold uppercase tracking-wider px-4 py-3 cursor-pointer select-none transition-colors hover:text-ink ${active ? 'text-ink' : 'text-ink-muted'} ${align === 'right' ? 'text-right' : ''}`}
+        onClick={() => toggleSort(k)}
+      >
+        <span className="inline-flex items-center gap-1">
+          {label}
+          <span className="text-[10px]" style={{ opacity: active ? 1 : 0.3 }}>
+            {active ? (sortDir === 'asc' ? '▲' : '▼') : '▲'}
+          </span>
+        </span>
+      </th>
+    );
+  };
+
   return (
     <div>
-      {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-4">
+      {/* Toolbar — sticky */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-4 sticky top-0 z-10 bg-[rgb(var(--srf-raised))] py-3 -mx-1 px-1">
         <div className="relative flex-1 max-w-[300px] w-full">
           <Icons.Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" />
           <input
@@ -244,7 +299,7 @@ export function SupplySpec({ items, stages, projectId, refetchItems, toast, canD
       {/* Desktop table */}
       <div className="hidden sm:block bg-srf border border-line rounded-xl overflow-x-auto">
         <table className="w-full text-left">
-          <thead>
+          <thead className="sticky top-[52px] z-[5] bg-srf">
             <tr className="border-b border-line-light">
               {canDelete && (
                 <th className="w-10 px-4 py-3">
@@ -256,12 +311,12 @@ export function SupplySpec({ items, stages, projectId, refetchItems, toast, canD
                   />
                 </th>
               )}
-              <th className="text-[12px] text-ink-muted font-semibold uppercase tracking-wider px-4 py-3">Позиция</th>
-              <th className="text-[12px] text-ink-muted font-semibold uppercase tracking-wider px-4 py-3">Этап</th>
-              <th className="text-[12px] text-ink-muted font-semibold uppercase tracking-wider px-4 py-3">Дедлайн</th>
-              <th className="text-[12px] text-ink-muted font-semibold uppercase tracking-wider px-4 py-3">Риск</th>
-              <th className="text-[12px] text-ink-muted font-semibold uppercase tracking-wider px-4 py-3">Статус</th>
-              <th className="text-[12px] text-ink-muted font-semibold uppercase tracking-wider px-4 py-3 text-right">Бюджет</th>
+              <SortTh k="name" label="Позиция" />
+              <SortTh k="stage" label="Этап" />
+              <SortTh k="deadline" label="Дедлайн" />
+              <SortTh k="risk" label="Риск" />
+              <SortTh k="status" label="Статус" />
+              <SortTh k="budget" label="Бюджет" align="right" />
             </tr>
           </thead>
           <tbody>
