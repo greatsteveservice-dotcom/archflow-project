@@ -119,7 +119,7 @@ export default function ContractorTasksView({
   if (showCreate) {
     return (
       <div className="animate-fade-in">
-        <h2 style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 20, color: '#111', marginBottom: 20, textTransform: 'uppercase' as const }}>
+        <h2 style={{ fontFamily: 'var(--af-font-display)', fontWeight: 700, fontSize: 20, color: '#111', marginBottom: 20, textTransform: 'uppercase' as const }}>
           Новая задача
         </h2>
 
@@ -183,7 +183,7 @@ export default function ContractorTasksView({
   return (
     <div className="animate-fade-in">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-        <h2 style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 20, color: '#111', margin: 0, textTransform: 'uppercase' as const }}>
+        <h2 style={{ fontFamily: 'var(--af-font-display)', fontWeight: 700, fontSize: 20, color: '#111', margin: 0, textTransform: 'uppercase' as const }}>
           Задачи
         </h2>
         {canManageTasks && !isContractor && (
@@ -204,10 +204,10 @@ export default function ContractorTasksView({
       </div>
 
       {loading ? (
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--af-fs-11)', color: '#111' }}>Загрузка...</div>
+        <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-11)', color: '#111' }}>Загрузка...</div>
       ) : (tasks || []).length === 0 ? (
         <div style={{ textAlign: 'center', padding: '48px 0' }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--af-fs-11)', color: '#111' }}>Задач пока нет</div>
+          <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-11)', color: '#111' }}>Задач пока нет</div>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -231,22 +231,22 @@ export default function ContractorTasksView({
                 onMouseLeave={e => { e.currentTarget.style.background = '#FFF'; }}
               >
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontFamily: 'var(--font-heading)', fontSize: 14, fontWeight: 700, color: '#111' }}>
+                  <div style={{ fontFamily: 'var(--af-font-display)', fontSize: 14, fontWeight: 700, color: '#111' }}>
                     {task.title}
                   </div>
                   <div style={{ display: 'flex', gap: 8, marginTop: 3, flexWrap: 'wrap' }}>
                     {task.assignee && (
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--af-fs-7)', textTransform: 'uppercase', letterSpacing: '0.06em', color: '#111' }}>
+                      <span style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-7)', textTransform: 'uppercase', letterSpacing: '0.06em', color: '#111' }}>
                         → {task.assignee.full_name}
                       </span>
                     )}
                     {task.deadline && (
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--af-fs-7)', color: '#111' }}>
+                      <span style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-7)', color: '#111' }}>
                         до {formatShortDate(task.deadline)}
                       </span>
                     )}
                     {task.remark_number && (
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--af-fs-7)', color: '#111' }}>
+                      <span style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-7)', color: '#111' }}>
                         ← Замечание {String(task.remark_number).padStart(2, '0')}{task.remark_date ? ` · ${formatShortDate(task.remark_date)}` : ''}
                       </span>
                     )}
@@ -254,7 +254,7 @@ export default function ContractorTasksView({
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <span style={{
-                    fontFamily: 'var(--font-mono)', fontSize: 'var(--af-fs-9)',
+                    fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-9)',
                     padding: '2px 8px', border: `1px solid ${sc.border}`, color: sc.color,
                   }}>
                     {STATUS_LABEL[task.status]}
@@ -287,12 +287,12 @@ function TaskDetail({
 
   return (
     <div className="animate-fade-in">
-      <h2 style={{ fontFamily: 'var(--font-heading)', fontWeight: 900, fontSize: 24, color: '#111', marginBottom: 16 }}>
+      <h2 style={{ fontFamily: 'var(--af-font-display)', fontWeight: 900, fontSize: 24, color: '#111', marginBottom: 16 }}>
         {task.title}
       </h2>
 
       {task.description && (
-        <p style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--af-fs-11)', color: '#111', lineHeight: 1.6, marginBottom: 16 }}>
+        <p style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-11)', color: '#111', lineHeight: 1.6, marginBottom: 16 }}>
           {task.description}
         </p>
       )}
@@ -313,7 +313,7 @@ function TaskDetail({
       {/* Photos */}
       {task.photos && task.photos.length > 0 && (
         <div style={{ marginBottom: 20 }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--af-fs-8)', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#111', marginBottom: 8 }}>
+          <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-8)', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#111', marginBottom: 8 }}>
             Фото
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2 }}>
@@ -329,7 +329,7 @@ function TaskDetail({
       {/* Status controls */}
       {canManage && !isContractor && (
         <div style={{ marginBottom: 20 }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--af-fs-8)', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#111', marginBottom: 8 }}>
+          <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-8)', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#111', marginBottom: 8 }}>
             Статус
           </div>
           <div style={{ display: 'flex', gap: 2 }}>
@@ -338,7 +338,7 @@ function TaskDetail({
                 key={s}
                 onClick={() => onStatusChange(task.id, s)}
                 style={{
-                  fontFamily: 'var(--font-mono)', fontSize: 'var(--af-fs-9)',
+                  fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-9)',
                   padding: '4px 12px',
                   background: task.status === s ? '#111' : '#F6F6F4',
                   color: task.status === s ? '#FFF' : '#111',
@@ -359,7 +359,7 @@ function TaskDetail({
           onClick={() => onStatusChange(task.id, 'done')}
           style={{
             width: '100%',
-            fontFamily: 'var(--font-mono)', fontSize: 'var(--af-fs-11)',
+            fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-11)',
             padding: '12px',
             background: '#111', color: '#FFF',
             border: 'none', cursor: 'pointer',
@@ -372,7 +372,7 @@ function TaskDetail({
 
       {isContractor && task.status === 'done' && task.completed_at && (
         <div style={{
-          fontFamily: 'var(--font-mono)', fontSize: 'var(--af-fs-11)', color: '#111',
+          fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-11)', color: '#111',
           padding: '12px', background: '#F6F6F4', marginBottom: 20,
           textAlign: 'center',
         }}>
@@ -385,7 +385,7 @@ function TaskDetail({
         <button
           onClick={() => { onDelete(task.id); onBack(); }}
           style={{
-            fontFamily: 'var(--font-mono)', fontSize: 'var(--af-fs-9)',
+            fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-9)',
             color: '#111', background: 'none', border: 'none',
             cursor: 'pointer', padding: 0,
           }}
@@ -402,10 +402,10 @@ function TaskDetail({
 function MetaRow({ label, value }: { label: string; value: string }) {
   return (
     <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--af-fs-8)', textTransform: 'uppercase', letterSpacing: '0.06em', color: '#111', minWidth: 80 }}>
+      <span style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-8)', textTransform: 'uppercase', letterSpacing: '0.06em', color: '#111', minWidth: 80 }}>
         {label}
       </span>
-      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--af-fs-11)', color: '#111' }}>
+      <span style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-11)', color: '#111' }}>
         {value}
       </span>
     </div>
@@ -415,7 +415,7 @@ function MetaRow({ label, value }: { label: string; value: string }) {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--af-fs-8)', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#111', marginBottom: 4 }}>
+      <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-8)', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#111', marginBottom: 4 }}>
         {label}
       </div>
       {children}
@@ -430,7 +430,7 @@ function formatShortDate(dateStr: string): string {
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
-  fontFamily: 'var(--font-mono)',
+  fontFamily: 'var(--af-font-mono)',
   fontSize: 'var(--af-fs-11)',
   padding: '8px 10px',
   border: '0.5px solid #EBEBEB',
@@ -441,7 +441,7 @@ const inputStyle: React.CSSProperties = {
 };
 
 const chipBtnStyle: React.CSSProperties = {
-  fontFamily: 'var(--font-mono)',
+  fontFamily: 'var(--af-font-mono)',
   fontSize: 'var(--af-fs-11)',
   padding: '10px',
   border: 'none',

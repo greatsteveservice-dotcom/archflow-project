@@ -21,8 +21,8 @@ interface SupplyDocumentsProps {
   toast: (msg: string) => void;
 }
 
-const mono = "'IBM Plex Mono', monospace";
-const display = "'Playfair Display', serif";
+const mono = 'var(--af-font-mono)';
+const display = 'var(--af-font-display)';
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} Б`;

@@ -9,8 +9,8 @@ import {
 } from '../../lib/queries';
 import type { ProjectRoom, KindStageMapping, Stage, SupplyItemWithCalc } from '../../lib/types';
 
-const mono = "'IBM Plex Mono', monospace";
-const display = "'Playfair Display', serif";
+const mono = 'var(--af-font-mono)';
+const display = 'var(--af-font-display)';
 
 const DEFAULT_STAGES = [
   "Демонтаж", "Черновые работы", "Электрика и сантехника",

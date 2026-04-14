@@ -42,6 +42,8 @@ export function usePermissions(projectId: string | null): {
       canDeleteProject: false,
       canImportSupply: false,
       canManageTasks: false,
+      canSendReport: false,
+      canAcknowledgeReport: false,
     };
 
     if (!profile) return deny;
@@ -102,6 +104,8 @@ function resolvePermissions(role: UserRole, accessLevel: AccessLevel | null): Pr
         canDeleteProject: false,
         canImportSupply: false,
         canManageTasks: false,
+        canSendReport: false,
+        canAcknowledgeReport: true,
       };
 
     case 'contractor':
@@ -125,6 +129,8 @@ function resolvePermissions(role: UserRole, accessLevel: AccessLevel | null): Pr
         canDeleteProject: false,
         canImportSupply: false,
         canManageTasks: false,
+        canSendReport: false,
+        canAcknowledgeReport: false,
       };
 
     case 'supplier':
@@ -148,6 +154,8 @@ function resolvePermissions(role: UserRole, accessLevel: AccessLevel | null): Pr
         canDeleteProject: false,
         canImportSupply: accessLevel === 'view_supply',
         canManageTasks: false,
+        canSendReport: false,
+        canAcknowledgeReport: false,
       };
 
     default:
@@ -172,6 +180,8 @@ function resolvePermissions(role: UserRole, accessLevel: AccessLevel | null): Pr
         canDeleteProject: false,
         canImportSupply: false,
         canManageTasks: false,
+        canSendReport: false,
+        canAcknowledgeReport: false,
       };
   }
 }
@@ -197,5 +207,7 @@ function fullAccess(): ProjectPermissions {
     canDeleteProject: true,
     canImportSupply: true,
     canManageTasks: true,
+    canSendReport: true,
+    canAcknowledgeReport: false, // only clients acknowledge
   };
 }

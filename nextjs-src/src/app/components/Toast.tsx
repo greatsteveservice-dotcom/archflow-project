@@ -17,7 +17,7 @@ export default function Toast({ msg, onClose }: ToastProps) {
       <div style={{
         background: '#111',
         color: '#fff',
-        fontFamily: "'IBM Plex Mono', monospace",
+        fontFamily: 'var(--af-font-mono)',
         fontSize: 11,
         textTransform: 'uppercase' as const,
         letterSpacing: '0.12em',

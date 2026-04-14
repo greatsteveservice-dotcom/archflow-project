@@ -4,9 +4,9 @@ import { useState, useMemo, useCallback } from "react";
 import { Icons } from "../Icons";
 import Loading, { ErrorMessage } from "../Loading";
 import { useProjectStages, useProjectSupplyItems, useProjectRooms, useKindStageMappings } from "../../lib/hooks";
-import { calcSupplyItem } from "../../lib/queries";
+import { calcSupplyItem, createSupplyItem, createRoom, fetchProjectRooms } from "../../lib/queries";
 import { metrikaGoal } from "../../lib/metrika";
-import type { SupplyItemWithCalc } from "../../lib/types";
+import type { SupplyItemWithCalc, Stage } from "../../lib/types";
 import { SupplySpec } from "./SupplySpec";
 import { SupplyTimeline } from "./SupplyTimeline";
 import SupplyImport from "./SupplyImport";
@@ -39,7 +39,7 @@ const ITEM_TABS = [
 
 type ItemTabId = (typeof ITEM_TABS)[number]["id"];
 
-const mono = "'IBM Plex Mono', monospace";
+const mono = 'var(--af-font-mono)';
 
 export default function SupplyModule({ projectId, toast }: SupplyModuleProps) {
   const [activeSection, setActiveSection] = useState<SectionId>("items");
@@ -86,8 +86,8 @@ export default function SupplyModule({ projectId, toast }: SupplyModuleProps) {
   const hasItems = items && items.length > 0;
   const hasRooms = rooms && rooms.length > 0;
 
-  // Show onboarding if no supply items AND no rooms
-  if (!hasItems && !hasRooms) {
+  // Show onboarding only on first visit (no stages = never configured)
+  if (!hasItems && !hasRooms && !hasStages) {
     return (
       <SupplyOnboarding
         projectId={projectId}
@@ -198,7 +198,7 @@ export default function SupplyModule({ projectId, toast }: SupplyModuleProps) {
                   projectId={projectId}
                   stages={stages!}
                   toast={doToast}
-                  onImportComplete={() => { metrikaGoal('excel_imported', { source: 'supply' }); refetchItems(); setShowImport(false); }}
+                  onImportComplete={() => { metrikaGoal('excel_imported', { source: 'supply' }); refetchItems(); refetchRooms(); setShowImport(false); }}
                   kindMappings={kindMappings || []}
                 />
               </div>
@@ -210,7 +210,17 @@ export default function SupplyModule({ projectId, toast }: SupplyModuleProps) {
             ) : (
               <>
                 {activeItemTab === "spec" && hasStages && (
-                  <SupplySpec items={calcItems} stages={stages!} projectId={projectId} refetchItems={refetchItems} toast={doToast} />
+                  !hasItems ? (
+                    <EmptyItemsState
+                      projectId={projectId}
+                      stages={stages!}
+                      toast={doToast}
+                      onImportClick={() => setShowImport(true)}
+                      onItemCreated={() => { refetchItems(); refetchRooms(); }}
+                    />
+                  ) : (
+                    <SupplySpec items={calcItems} stages={stages!} projectId={projectId} refetchItems={refetchItems} toast={doToast} canDelete={true} />
+                  )
                 )}
                 {activeItemTab === "timeline" && hasStages && (
                   <SupplyTimeline items={calcItems} stages={stages!} />
@@ -251,6 +261,222 @@ export default function SupplyModule({ projectId, toast }: SupplyModuleProps) {
   );
 }
 
+/** Empty state when stages exist but no items — two paths: import or add manually */
+function EmptyItemsState({ projectId, stages, toast, onImportClick, onItemCreated }: {
+  projectId: string;
+  stages: Stage[];
+  toast: (msg: string) => void;
+  onImportClick: () => void;
+  onItemCreated: () => void;
+}) {
+  const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [name, setName] = useState('');
+  const [room, setRoom] = useState('');
+  const [category, setCategory] = useState('');
+  const [quantity, setQuantity] = useState('1');
+  const [budget, setBudget] = useState('');
+  const [stageId, setStageId] = useState(stages[0]?.id || '');
+
+  const resetForm = () => {
+    setName(''); setRoom(''); setCategory(''); setQuantity('1'); setBudget(''); setStageId(stages[0]?.id || '');
+  };
+
+  const handleAdd = async () => {
+    if (!name.trim()) return;
+    setSaving(true);
+    try {
+      await createSupplyItem({
+        project_id: projectId,
+        name: name.trim(),
+        room: room.trim() || undefined,
+        category: category.trim() || undefined,
+        quantity: parseInt(quantity) || 1,
+        budget: parseFloat(budget.replace(/[^\d.,]/g, '').replace(',', '.')) || 0,
+        target_stage_id: stageId || undefined,
+      });
+      // Auto-create room if it doesn't exist
+      if (room.trim()) {
+        try {
+          const existing = await fetchProjectRooms(projectId);
+          const exists = existing.some(r => r.name.toLowerCase().trim() === room.trim().toLowerCase());
+          if (!exists) {
+            await createRoom({ project_id: projectId, name: room.trim(), sort_order: existing.length + 1 });
+          }
+        } catch { /* non-critical */ }
+      }
+      toast('Позиция добавлена');
+      resetForm();
+      onItemCreated();
+    } catch (err: any) {
+      toast(err?.message || 'Ошибка');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%', padding: '8px 10px', border: '0.5px solid rgb(var(--line))',
+    fontFamily: mono, fontSize: 'var(--af-fs-12)', color: 'rgb(var(--ink))',
+    background: 'rgb(var(--srf))', outline: 'none', boxSizing: 'border-box',
+  };
+  const labelStyle: React.CSSProperties = {
+    fontFamily: mono, fontSize: 'var(--af-fs-10)', color: 'rgb(var(--ink))',
+    opacity: 0.5, display: 'block', marginBottom: 4,
+  };
+
+  if (!showForm) {
+    return (
+      <div style={{ padding: '48px 0', textAlign: 'center' }}>
+        <div style={{ marginBottom: 16, color: 'rgb(var(--ink))', opacity: 0.2, display: 'flex', justifyContent: 'center' }}>
+          <Icons.Box className="w-12 h-12" />
+        </div>
+        <div style={{
+          fontFamily: 'var(--af-font-display)', fontSize: 18, fontWeight: 700,
+          color: 'rgb(var(--ink))', marginBottom: 6,
+        }}>
+          Нет позиций
+        </div>
+        <div style={{
+          fontFamily: mono, fontSize: 'var(--af-fs-12)',
+          color: 'rgb(var(--ink))', opacity: 0.5, lineHeight: 1.6, marginBottom: 28,
+        }}>
+          Импортируйте из Excel или добавьте первую позицию вручную
+        </div>
+        <div style={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <button
+            onClick={onImportClick}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              fontFamily: mono, fontSize: 'var(--af-fs-9)', textTransform: 'uppercase',
+              letterSpacing: '0.12em', padding: '10px 20px',
+              background: 'rgb(var(--ink))', color: 'rgb(var(--srf))',
+              border: 'none', cursor: 'pointer',
+            }}
+          >
+            <Icons.Upload className="w-3.5 h-3.5" />
+            Импорт из Excel
+          </button>
+          <button
+            onClick={() => setShowForm(true)}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              fontFamily: mono, fontSize: 'var(--af-fs-9)', textTransform: 'uppercase',
+              letterSpacing: '0.12em', padding: '10px 20px',
+              background: 'transparent', color: 'rgb(var(--ink))',
+              border: '0.5px solid rgb(var(--line))', cursor: 'pointer',
+            }}
+          >
+            <Icons.Plus className="w-3.5 h-3.5" />
+            Добавить вручную
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{
+      background: 'rgb(var(--srf))', border: '0.5px solid rgb(var(--line))',
+      padding: 24, maxWidth: 500,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+        <div style={{
+          fontFamily: 'var(--af-font-display)', fontSize: 16, fontWeight: 700,
+          color: 'rgb(var(--ink))',
+        }}>
+          Новая позиция
+        </div>
+        <button
+          onClick={() => { setShowForm(false); resetForm(); }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex', color: 'rgb(var(--ink))', opacity: 0.4 }}
+        >
+          <Icons.X className="w-4 h-4" />
+        </button>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {/* Name — required */}
+        <div>
+          <label style={labelStyle}>Наименование *</label>
+          <input
+            type="text" value={name}
+            onChange={e => setName(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && name.trim()) handleAdd(); }}
+            placeholder="Керамогранит 60×60"
+            style={inputStyle} autoFocus
+          />
+        </div>
+
+        {/* Room + Category row */}
+        <div style={{ display: 'flex', gap: 2 }}>
+          <div style={{ flex: 1 }}>
+            <label style={labelStyle}>Помещение</label>
+            <input type="text" value={room} onChange={e => setRoom(e.target.value)} placeholder="Гостиная" style={inputStyle} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <label style={labelStyle}>Вид</label>
+            <input type="text" value={category} onChange={e => setCategory(e.target.value)} placeholder="Плитка" style={inputStyle} />
+          </div>
+        </div>
+
+        {/* Quantity + Budget row */}
+        <div style={{ display: 'flex', gap: 2 }}>
+          <div style={{ flex: 1 }}>
+            <label style={labelStyle}>Количество</label>
+            <input type="number" value={quantity} onChange={e => setQuantity(e.target.value)} min="1" style={inputStyle} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <label style={labelStyle}>Цена за ед.</label>
+            <input type="text" value={budget} onChange={e => setBudget(e.target.value)} placeholder="0" style={inputStyle} />
+          </div>
+        </div>
+
+        {/* Stage */}
+        <div>
+          <label style={labelStyle}>Этап</label>
+          <select value={stageId} onChange={e => setStageId(e.target.value)} style={{ ...inputStyle, height: 36 }}>
+            <option value="">Не указан</option>
+            {stages.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div style={{ display: 'flex', gap: 2, marginTop: 16 }}>
+        <button
+          onClick={handleAdd}
+          disabled={!name.trim() || saving}
+          style={{
+            flex: 1, padding: '10px 0',
+            fontFamily: mono, fontSize: 'var(--af-fs-9)', textTransform: 'uppercase',
+            letterSpacing: '0.12em',
+            background: name.trim() ? 'rgb(var(--ink))' : 'transparent',
+            color: name.trim() ? 'rgb(var(--srf))' : 'rgb(var(--ink))',
+            border: name.trim() ? 'none' : '0.5px solid rgb(var(--line))',
+            cursor: !name.trim() || saving ? 'not-allowed' : 'pointer',
+            opacity: !name.trim() || saving ? 0.4 : 1,
+          }}
+        >
+          {saving ? 'Сохраняем...' : 'Добавить'}
+        </button>
+        <button
+          onClick={onImportClick}
+          style={{
+            padding: '10px 16px',
+            fontFamily: mono, fontSize: 'var(--af-fs-9)', textTransform: 'uppercase',
+            letterSpacing: '0.12em',
+            background: 'transparent', color: 'rgb(var(--ink))',
+            border: '0.5px solid rgb(var(--line))', cursor: 'pointer',
+          }}
+        >
+          Или импорт из Excel
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /** Placeholder when no stages exist */
 function EmptyStagesMessage() {
   return (
@@ -259,13 +485,13 @@ function EmptyStagesMessage() {
         <Icons.Layers className="w-10 h-10" />
       </div>
       <div style={{
-        fontFamily: "'Playfair Display', serif", fontSize: 18, fontWeight: 700,
+        fontFamily: 'var(--af-font-display)', fontSize: 18, fontWeight: 700,
         color: "rgb(var(--ink))", marginBottom: 8,
       }}>
         Нет этапов стройки
       </div>
       <div style={{
-        fontFamily: "'IBM Plex Mono', monospace", fontSize: "var(--af-fs-12)",
+        fontFamily: 'var(--af-font-mono)', fontSize: "var(--af-fs-12)",
         color: "rgb(var(--ink))", opacity: 0.5, lineHeight: 1.6,
       }}>
         Добавьте этапы в разделе Настройки

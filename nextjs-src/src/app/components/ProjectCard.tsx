@@ -53,7 +53,7 @@ const ProjectCard = memo(function ProjectCard({ project, onClick, onHover, index
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
               minWidth: 16, height: 16, padding: '0 4px',
               background: '#111', color: '#fff',
-              fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, fontWeight: 600,
+              fontFamily: 'var(--af-font-mono)', fontSize: 8, fontWeight: 600,
               flexShrink: 0,
             }}>
               {unreadCount > 99 ? '99+' : unreadCount}

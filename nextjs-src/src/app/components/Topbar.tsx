@@ -39,16 +39,6 @@ export default function Topbar({ title, breadcrumbs, actions, depth = 1, context
           <img src="/logo.png" alt="ArchFlow" style={{ height: 28, width: 'auto' }} />
         </span>
         <div className="af-topbar-right">
-          {onSearchOpen && (
-            <button
-              onClick={onSearchOpen}
-              className="af-topbar-context"
-              style={{ cursor: 'pointer', background: 'none', border: 'none', padding: '4px 0' }}
-              title="Поиск (⌘K)"
-            >
-              ⌘K
-            </button>
-          )}
           {actions}
           <span className="af-topbar-context">{ctx}</span>
         </div>

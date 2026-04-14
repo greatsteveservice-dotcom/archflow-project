@@ -253,7 +253,7 @@ export default function AppShell() {
   if (authLoading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.2em', color: '#AAA' }}>
+        <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.2em', color: '#AAA' }}>
           Загрузка...
         </div>
       </div>
@@ -270,10 +270,10 @@ export default function AppShell() {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, fontWeight: 700, color: '#111', marginBottom: 12 }}>
+          <h1 style={{ fontFamily: 'var(--af-font-display)', fontSize: 24, fontWeight: 700, color: '#111', marginBottom: 12 }}>
             Принимаем приглашение
           </h1>
-          <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: '#AAA' }}>
+          <p style={{ fontFamily: 'var(--af-font-mono)', fontSize: 11, color: '#AAA' }}>
             Подождите...
           </p>
         </div>
@@ -286,10 +286,10 @@ export default function AppShell() {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center" style={{ maxWidth: 400 }}>
-          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, fontWeight: 700, color: '#111', marginBottom: 12 }}>
+          <h1 style={{ fontFamily: 'var(--af-font-display)', fontSize: 24, fontWeight: 700, color: '#111', marginBottom: 12 }}>
             Ссылка недействительна
           </h1>
-          <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: '#999', marginBottom: 24 }}>
+          <p style={{ fontFamily: 'var(--af-font-mono)', fontSize: 11, color: '#999', marginBottom: 24 }}>
             {inviteError}
           </p>
           <button

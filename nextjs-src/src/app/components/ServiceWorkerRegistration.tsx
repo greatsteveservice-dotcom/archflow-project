@@ -89,7 +89,7 @@ export default function ServiceWorkerRegistration() {
         alignItems: 'center',
         gap: 12,
         padding: '10px 16px',
-        fontFamily: "'IBM Plex Mono', monospace",
+        fontFamily: 'var(--af-font-mono)',
         fontSize: 12,
         letterSpacing: '0.04em',
         border: '0.5px solid #333',

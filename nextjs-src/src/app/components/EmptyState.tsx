@@ -18,7 +18,7 @@ export default function EmptyState({ title, description, action }: EmptyStatePro
       <div className="af-empty-label">{title}</div>
       {description && (
         <p style={{
-          fontFamily: "'IBM Plex Mono', monospace",
+          fontFamily: 'var(--af-font-mono)',
           fontSize: 11,
           color: '#111',
           marginTop: 8,

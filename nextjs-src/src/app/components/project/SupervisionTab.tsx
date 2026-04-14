@@ -35,6 +35,8 @@ interface SupervisionTabProps {
   canChangePhotoStatus?: boolean;
   canManageTasks?: boolean;
   canEditProjectSettings?: boolean;
+  canSendReport?: boolean;
+  canAcknowledgeReport?: boolean;
   members?: ProjectMemberWithProfile[];
 }
 
@@ -43,7 +45,8 @@ export default function SupervisionTab({
   refetchVisits, refetchProject, onSelectVisit,
   canCreateVisit = true, canUploadPhoto = true,
   canChangePhotoStatus = true, canManageTasks = true,
-  canEditProjectSettings = true, members = [],
+  canEditProjectSettings = true, canSendReport = false,
+  canAcknowledgeReport = false, members = [],
 }: SupervisionTabProps) {
   const [activeSubTab, setActiveSubTab] = useState<SubTabId | null>(null);
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
@@ -80,7 +83,7 @@ export default function SupervisionTab({
           setActiveSubTab(null);
         }}
         style={{
-          fontFamily: "'IBM Plex Mono', monospace",
+          fontFamily: 'var(--af-font-mono)',
           fontSize: 8,
           letterSpacing: '0.14em',
           textTransform: 'uppercase',
@@ -134,6 +137,8 @@ export default function SupervisionTab({
             toast={toast}
             onBack={() => setSelectedReportId(null)}
             members={members}
+            canSendReport={canSendReport}
+            canAcknowledgeReport={canAcknowledgeReport}
           />
         )}
         {activeSubTab === 'tasks' && (

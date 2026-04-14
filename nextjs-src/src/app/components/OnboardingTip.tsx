@@ -52,8 +52,8 @@ export default function OnboardingTip({ id, title, text, className = "" }: Onboa
         <Icons.Info className="w-3 h-3" />
       </div>
       <div className="flex-1 min-w-0">
-        <div className="text-[13px] font-medium mb-0.5" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{title}</div>
-        <div className="text-[12px] text-[#EBEBEB] leading-relaxed" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{text}</div>
+        <div className="text-[13px] font-medium mb-0.5" style={{ fontFamily: 'var(--af-font-mono)' }}>{title}</div>
+        <div className="text-[12px] text-[#EBEBEB] leading-relaxed" style={{ fontFamily: 'var(--af-font-mono)' }}>{text}</div>
       </div>
       <button
         onClick={handleDismiss}

@@ -49,8 +49,8 @@ export default function CreateProjectModal({ open, onClose, onSuccess }: CreateP
 
   if (!open) return null;
 
-  const mono = "'IBM Plex Mono', monospace";
-  const display = "'Playfair Display', serif";
+  const mono = 'var(--af-font-mono)';
+  const display = 'var(--af-font-display)';
 
   return (
     <div style={{

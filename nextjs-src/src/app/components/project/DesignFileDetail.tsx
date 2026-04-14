@@ -140,7 +140,7 @@ export default function DesignFileDetail({
 
   if (loading) {
     return (
-      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: '#111', textAlign: 'center', padding: '40px 0', textTransform: 'uppercase', letterSpacing: '0.2em' }}>
+      <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 9, color: '#111', textAlign: 'center', padding: '40px 0', textTransform: 'uppercase', letterSpacing: '0.2em' }}>
         Загрузка...
       </div>
     );
@@ -149,8 +149,8 @@ export default function DesignFileDetail({
   if (!file) {
     return (
       <div style={{ textAlign: 'center', padding: '48px 0' }}>
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: '#111' }}>Файл не найден</div>
-        <button onClick={onBack} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, color: '#111', background: 'none', border: 'none', cursor: 'pointer', marginTop: 12, textDecoration: 'underline' }}>
+        <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 9, color: '#111' }}>Файл не найден</div>
+        <button onClick={onBack} style={{ fontFamily: 'var(--af-font-mono)', fontSize: 8, color: '#111', background: 'none', border: 'none', cursor: 'pointer', marginTop: 12, textDecoration: 'underline' }}>
           ← Назад
         </button>
       </div>
@@ -163,7 +163,7 @@ export default function DesignFileDetail({
       <button
         onClick={onBack}
         style={{
-          fontFamily: "'IBM Plex Mono', monospace", fontSize: 8,
+          fontFamily: 'var(--af-font-mono)', fontSize: 8,
           letterSpacing: '0.14em', textTransform: 'uppercase', color: '#111',
           background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: 16,
         }}
@@ -177,7 +177,7 @@ export default function DesignFileDetail({
           onClick={canDelete ? startRename : undefined}
           title={canDelete ? 'Нажмите, чтобы переименовать' : undefined}
           style={{
-            fontFamily: "'Playfair Display', serif",
+            fontFamily: 'var(--af-font-display)',
             fontSize: 22,
             fontWeight: 900,
             color: '#111',
@@ -202,7 +202,7 @@ export default function DesignFileDetail({
             disabled={savingName}
             style={{
               flex: '1 1 200px',
-              fontFamily: "'IBM Plex Mono', monospace",
+              fontFamily: 'var(--af-font-mono)',
               fontSize: 16,
               color: '#111',
               border: '0.5px solid #111',
@@ -215,7 +215,7 @@ export default function DesignFileDetail({
             onClick={saveRename}
             disabled={savingName || !nameDraft.trim()}
             style={{
-              fontFamily: "'IBM Plex Mono', monospace",
+              fontFamily: 'var(--af-font-mono)',
               fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.12em',
               color: '#fff', background: '#111', border: '0.5px solid #111',
               padding: '10px 14px', cursor: 'pointer',
@@ -228,7 +228,7 @@ export default function DesignFileDetail({
             onClick={cancelRename}
             disabled={savingName}
             style={{
-              fontFamily: "'IBM Plex Mono', monospace",
+              fontFamily: 'var(--af-font-mono)',
               fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.12em',
               color: '#111', background: 'none', border: '0.5px solid #EBEBEB',
               padding: '10px 14px', cursor: 'pointer',
@@ -238,7 +238,7 @@ export default function DesignFileDetail({
           </button>
         </div>
       )}
-      <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, color: '#111', marginBottom: 20 }}>
+      <p style={{ fontFamily: 'var(--af-font-mono)', fontSize: 8, color: '#111', marginBottom: 20 }}>
         {formatSize(file.file_size)} · {formatDate(file.created_at)} · {file.uploader?.full_name || '—'}
       </p>
 
@@ -266,7 +266,7 @@ export default function DesignFileDetail({
               target="_blank"
               rel="noopener noreferrer"
               style={{
-                fontFamily: "'IBM Plex Mono', monospace", fontSize: 8,
+                fontFamily: 'var(--af-font-mono)', fontSize: 8,
                 color: '#111', textDecoration: 'underline', display: 'inline-block', marginTop: 8,
               }}
             >
@@ -280,7 +280,7 @@ export default function DesignFileDetail({
               width: 80, height: 96, border: '0.5px solid #EBEBEB', display: 'flex',
               alignItems: 'center', justifyContent: 'center', margin: '0 auto', background: '#F6F6F4',
             }}>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 14, fontWeight: 600, color: '#111' }}>
+              <span style={{ fontFamily: 'var(--af-font-mono)', fontSize: 14, fontWeight: 600, color: '#111' }}>
                 {file.name.split('.').pop()?.toUpperCase() || 'FILE'}
               </span>
             </div>
@@ -296,7 +296,7 @@ export default function DesignFileDetail({
           target="_blank"
           rel="noopener noreferrer"
           style={{
-            fontFamily: "'IBM Plex Mono', monospace", fontSize: 8,
+            fontFamily: 'var(--af-font-mono)', fontSize: 8,
             textTransform: 'uppercase', letterSpacing: '0.14em',
             color: '#111', border: '0.5px solid #EBEBEB', padding: '8px 14px',
             textDecoration: 'none', display: 'inline-block',
@@ -310,7 +310,7 @@ export default function DesignFileDetail({
               <button
                 onClick={() => setConfirmDelete(true)}
                 style={{
-                  fontFamily: "'IBM Plex Mono', monospace", fontSize: 8,
+                  fontFamily: 'var(--af-font-mono)', fontSize: 8,
                   textTransform: 'uppercase', letterSpacing: '0.14em',
                   color: '#111', background: 'none', border: 'none',
                   cursor: 'pointer', padding: '8px 0',
@@ -320,14 +320,14 @@ export default function DesignFileDetail({
               </button>
             ) : (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 7, color: '#111' }}>
+                <span style={{ fontFamily: 'var(--af-font-mono)', fontSize: 7, color: '#111' }}>
                   Удалить файл?
                 </span>
                 <button
                   onClick={handleDelete}
                   disabled={deleting}
                   style={{
-                    fontFamily: "'IBM Plex Mono', monospace", fontSize: 7,
+                    fontFamily: 'var(--af-font-mono)', fontSize: 7,
                     color: '#111', background: 'none', border: '0.5px solid #111',
                     padding: '4px 10px', cursor: 'pointer',
                   }}
@@ -337,7 +337,7 @@ export default function DesignFileDetail({
                 <button
                   onClick={() => setConfirmDelete(false)}
                   style={{
-                    fontFamily: "'IBM Plex Mono', monospace", fontSize: 7,
+                    fontFamily: 'var(--af-font-mono)', fontSize: 7,
                     color: '#111', background: 'none', border: 'none',
                     cursor: 'pointer', padding: '4px 0',
                   }}
@@ -353,7 +353,7 @@ export default function DesignFileDetail({
       {/* Comments section */}
       <div style={{ borderTop: '0.5px solid #EBEBEB', paddingTop: 16 }}>
         <div style={{
-          fontFamily: "'IBM Plex Mono', monospace", fontSize: 8,
+          fontFamily: 'var(--af-font-mono)', fontSize: 8,
           textTransform: 'uppercase', letterSpacing: '0.14em', color: '#111', marginBottom: 12,
         }}>
           Комментарии
@@ -367,7 +367,7 @@ export default function DesignFileDetail({
             ))}
           </div>
         ) : (
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, color: '#111', marginBottom: 16 }}>
+          <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 8, color: '#111', marginBottom: 16 }}>
             Нет комментариев
           </div>
         )}
@@ -382,7 +382,7 @@ export default function DesignFileDetail({
               onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendComment(); } }}
               placeholder="Комментарий..."
               style={{
-                flex: 1, fontFamily: "'IBM Plex Mono', monospace", fontSize: 9,
+                flex: 1, fontFamily: 'var(--af-font-mono)', fontSize: 9,
                 color: '#111', border: '0.5px solid #EBEBEB', padding: '8px 12px',
                 outline: 'none', background: 'none',
               }}
@@ -391,7 +391,7 @@ export default function DesignFileDetail({
               onClick={handleSendComment}
               disabled={sendingComment || !commentText.trim()}
               style={{
-                fontFamily: "'IBM Plex Mono', monospace", fontSize: 11,
+                fontFamily: 'var(--af-font-mono)', fontSize: 11,
                 color: '#fff', background: '#111', border: 'none',
                 padding: '8px 14px', cursor: 'pointer',
                 opacity: sendingComment || !commentText.trim() ? 0.4 : 1,
@@ -421,20 +421,20 @@ function CommentRow({ comment }: { comment: DesignFileCommentWithProfile }) {
   return (
     <div style={{ paddingBottom: 10, marginBottom: 10, borderBottom: '0.5px solid #EBEBEB' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 7, textTransform: 'uppercase', color: '#111', fontWeight: 600 }}>
+        <span style={{ fontFamily: 'var(--af-font-mono)', fontSize: 7, textTransform: 'uppercase', color: '#111', fontWeight: 600 }}>
           {authorName}
         </span>
         <span style={{
-          fontFamily: "'IBM Plex Mono', monospace", fontSize: 6, color: '#111',
+          fontFamily: 'var(--af-font-mono)', fontSize: 6, color: '#111',
           border: '0.5px solid #EBEBEB', padding: '1px 5px',
         }}>
           {roleLabels[authorRole] || authorRole}
         </span>
-        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 6, color: '#111', marginLeft: 'auto' }}>
+        <span style={{ fontFamily: 'var(--af-font-mono)', fontSize: 6, color: '#111', marginLeft: 'auto' }}>
           {formatTime(comment.created_at)}
         </span>
       </div>
-      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: '#111', lineHeight: 1.5 }}>
+      <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 9, color: '#111', lineHeight: 1.5 }}>
         {comment.text}
       </div>
     </div>

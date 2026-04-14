@@ -127,14 +127,14 @@ export default function AccessScreen({ projectId, projectName, toast, onBack, em
         <>
           <button
             className="flex items-center gap-1 text-[11px] text-ink-muted mb-4 hover:text-ink transition-colors"
-            style={{ fontFamily: 'var(--font-mono)' }}
+            style={{ fontFamily: 'var(--af-font-mono)' }}
             onClick={onBack}
           >
             ← Назад
           </button>
           <h2
             className="mb-6"
-            style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700, textTransform: 'uppercase' }}
+            style={{ fontFamily: 'var(--af-font-display)', fontSize: 20, fontWeight: 700, textTransform: 'uppercase' }}
           >
             Доступ
           </h2>
@@ -155,17 +155,17 @@ export default function AccessScreen({ projectId, projectName, toast, onBack, em
           }}
         >
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 'var(--af-fs-9)', fontFamily: 'var(--font-mono)', color: '#111', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            <div style={{ fontSize: 'var(--af-fs-9)', fontFamily: 'var(--af-font-mono)', color: '#111', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
               Ссылка-приглашение
             </div>
-            <div style={{ fontSize: 'var(--af-fs-10)', fontFamily: 'var(--font-mono)', color: '#111', wordBreak: 'break-all' }}>
+            <div style={{ fontSize: 'var(--af-fs-10)', fontFamily: 'var(--af-font-mono)', color: '#111', wordBreak: 'break-all' }}>
               {lastInviteLink}
             </div>
           </div>
           <div style={{ display: 'flex', gap: 4 }}>
             <button
               onClick={() => { navigator.clipboard.writeText(lastInviteLink); toast('Ссылка скопирована'); }}
-              style={{ fontSize: 'var(--af-fs-9)', fontFamily: 'var(--font-mono)', padding: '4px 10px', background: '#111', color: '#FFF', border: 'none', cursor: 'pointer' }}
+              style={{ fontSize: 'var(--af-fs-9)', fontFamily: 'var(--af-font-mono)', padding: '4px 10px', background: '#111', color: '#FFF', border: 'none', cursor: 'pointer' }}
             >
               Копировать
             </button>
@@ -180,7 +180,7 @@ export default function AccessScreen({ projectId, projectName, toast, onBack, em
       )}
 
       {loading ? (
-        <div className="text-[13px] text-ink-faint" style={{ fontFamily: 'var(--font-mono)' }}>
+        <div className="text-[13px] text-ink-faint" style={{ fontFamily: 'var(--af-font-mono)' }}>
           Загрузка...
         </div>
       ) : (
@@ -195,7 +195,7 @@ export default function AccessScreen({ projectId, projectName, toast, onBack, em
                 {/* Section header */}
                 <div
                   className="text-[8px] uppercase tracking-[0.08em] mb-2 mt-6"
-                  style={{ fontFamily: 'var(--font-mono)', color: '#111' }}
+                  style={{ fontFamily: 'var(--af-font-mono)', color: '#111' }}
                 >
                   {label}
                 </div>
@@ -228,7 +228,7 @@ export default function AccessScreen({ projectId, projectName, toast, onBack, em
                               justifyContent: 'center',
                               fontSize: 'var(--af-fs-10)',
                               fontWeight: 600,
-                              fontFamily: 'var(--font-mono)',
+                              fontFamily: 'var(--af-font-mono)',
                               color: '#111',
                             }}
                           >
@@ -237,13 +237,13 @@ export default function AccessScreen({ projectId, projectName, toast, onBack, em
                           {/* Info */}
                           <div>
                             <div
-                              style={{ fontSize: 'var(--af-fs-11)', color: '#111', fontFamily: 'var(--font-mono)' }}
+                              style={{ fontSize: 'var(--af-fs-11)', color: '#111', fontFamily: 'var(--af-font-mono)' }}
                             >
                               {getDisplayName(m)}
                             </div>
                             {getEmail(m) && getEmail(m) !== getDisplayName(m) && (
                               <div
-                                style={{ fontSize: 'var(--af-fs-10)', color: '#111', fontFamily: 'var(--font-mono)' }}
+                                style={{ fontSize: 'var(--af-fs-10)', color: '#111', fontFamily: 'var(--af-font-mono)' }}
                               >
                                 {getEmail(m)}
                               </div>
@@ -255,7 +255,7 @@ export default function AccessScreen({ projectId, projectName, toast, onBack, em
                           <span
                             style={{
                               fontSize: 'var(--af-fs-9)',
-                              fontFamily: 'var(--font-mono)',
+                              fontFamily: 'var(--af-font-mono)',
                               padding: '2px 6px',
                               background: m.status === 'active' ? '#111' : '#F6F6F4',
                               color: m.status === 'active' ? '#FFF' : '#111',
@@ -289,7 +289,7 @@ export default function AccessScreen({ projectId, projectName, toast, onBack, em
                     style={{
                       fontSize: 'var(--af-fs-11)',
                       color: '#111',
-                      fontFamily: 'var(--font-mono)',
+                      fontFamily: 'var(--af-font-mono)',
                       padding: '8px 12px',
                     }}
                   >
@@ -329,7 +329,7 @@ export default function AccessScreen({ projectId, projectName, toast, onBack, em
                         style={{
                           fontSize: 'var(--af-fs-10)',
                           color: '#111',
-                          fontFamily: 'var(--font-mono)',
+                          fontFamily: 'var(--af-font-mono)',
                           marginBottom: 6,
                         }}
                       >
@@ -346,7 +346,7 @@ export default function AccessScreen({ projectId, projectName, toast, onBack, em
                         style={{
                           flex: 1,
                           fontSize: 'var(--af-fs-11)',
-                          fontFamily: 'var(--font-mono)',
+                          fontFamily: 'var(--af-font-mono)',
                           padding: '6px 8px',
                           border: '1px solid #EBEBEB',
                           background: '#F6F6F4',
@@ -361,7 +361,7 @@ export default function AccessScreen({ projectId, projectName, toast, onBack, em
                         disabled={formSaving}
                         style={{
                           fontSize: 'var(--af-fs-10)',
-                          fontFamily: 'var(--font-mono)',
+                          fontFamily: 'var(--af-font-mono)',
                           padding: '6px 12px',
                           background: '#111',
                           color: '#FFF',
@@ -397,7 +397,7 @@ export default function AccessScreen({ projectId, projectName, toast, onBack, em
                       gap: '4px',
                       padding: '8px 12px',
                       fontSize: 'var(--af-fs-11)',
-                      fontFamily: 'var(--font-mono)',
+                      fontFamily: 'var(--af-font-mono)',
                       color: '#111',
                       background: 'none',
                       border: 'none',
@@ -442,7 +442,7 @@ function ToggleRow({
         borderBottom: '0.5px solid #EBEBEB',
       }}
     >
-      <span style={{ fontSize: 'var(--af-fs-11)', fontFamily: 'var(--font-mono)', color: '#111' }}>
+      <span style={{ fontSize: 'var(--af-fs-11)', fontFamily: 'var(--af-font-mono)', color: '#111' }}>
         {label}
       </span>
       <div style={{ display: 'flex', gap: '2px' }}>
@@ -472,7 +472,7 @@ function ChipToggle({
       disabled={disabled}
       style={{
         fontSize: 'var(--af-fs-9)',
-        fontFamily: 'var(--font-mono)',
+        fontFamily: 'var(--af-font-mono)',
         padding: '2px 10px',
         background: active ? '#111' : 'transparent',
         color: active ? '#FFF' : '#111',

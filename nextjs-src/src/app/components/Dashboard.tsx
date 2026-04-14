@@ -59,7 +59,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
 
       {/* Activity */}
       <div className="mb-8">
-        <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, fontWeight: 900, marginBottom: 16 }}>
+        <h2 style={{ fontFamily: 'var(--af-font-display)', fontSize: 24, fontWeight: 900, marginBottom: 16 }}>
           Активность
         </h2>
         <div style={{ background: '#F6F6F4' }}>
@@ -83,7 +83,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                     background: '#111',
                   }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: '#111', lineHeight: 1.5 }}>
+                    <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 12, color: '#111', lineHeight: 1.5 }}>
                       {item.text}
                     </div>
                     <div className="af-label" style={{ marginTop: 2, fontSize: 8 }}>
@@ -112,7 +112,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
 
       {/* Projects */}
       <div className="mb-4" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, fontWeight: 900 }}>
+        <h2 style={{ fontFamily: 'var(--af-font-display)', fontSize: 24, fontWeight: 900 }}>
           Проекты
         </h2>
         <button className="af-crumb" onClick={() => onNavigate("projects")} style={{ fontSize: 10 }}>

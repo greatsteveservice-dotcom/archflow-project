@@ -11,8 +11,8 @@ interface AssistantViewProps {
   onNavigate: (page: string, ctx?: any) => void;
 }
 
-const mono = "'IBM Plex Mono', monospace";
-const display = "'Playfair Display', serif";
+const mono = 'var(--af-font-mono)';
+const display = 'var(--af-font-display)';
 
 const PRIORITY_LABEL: Record<string, string> = {
   urgent: 'СРОЧНО',
@@ -280,14 +280,14 @@ function EventCard({
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
         <span style={{
-          fontFamily: "'IBM Plex Mono', monospace", fontSize: 10,
+          fontFamily: 'var(--af-font-mono)', fontSize: 10,
           fontWeight: 600,
           color: isUrgent ? 'rgb(var(--srf))' : 'rgb(var(--ink))',
         }}>
           {event.title}
         </span>
         <span style={{
-          fontFamily: "'IBM Plex Mono', monospace", fontSize: 7,
+          fontFamily: 'var(--af-font-mono)', fontSize: 7,
           textTransform: 'uppercase', letterSpacing: '0.1em',
           padding: '1px 6px',
           background: isUrgent ? 'rgb(var(--srf))' : 'rgb(var(--line))',
@@ -300,7 +300,7 @@ function EventCard({
       {/* Body */}
       <div style={{ padding: '12px 16px' }}>
         <p style={{
-          fontFamily: "'IBM Plex Mono', monospace", fontSize: 10,
+          fontFamily: 'var(--af-font-mono)', fontSize: 10,
           color: 'rgb(var(--ink))', lineHeight: 1.5, marginBottom: 12,
         }}>
           {event.description}
@@ -314,7 +314,7 @@ function EventCard({
                 padding: '6px 12px',
                 background: 'rgb(var(--ink))', color: 'rgb(var(--srf))',
                 border: 'none', cursor: 'pointer',
-                fontFamily: "'IBM Plex Mono', monospace", fontSize: 9,
+                fontFamily: 'var(--af-font-mono)', fontSize: 9,
                 fontWeight: 600, textTransform: 'uppercase',
                 letterSpacing: '0.1em',
               }}
@@ -328,7 +328,7 @@ function EventCard({
               padding: '6px 12px',
               background: 'transparent', color: 'rgb(var(--ink))',
               border: '0.5px solid rgb(var(--line))', cursor: 'pointer',
-              fontFamily: "'IBM Plex Mono', monospace", fontSize: 9,
+              fontFamily: 'var(--af-font-mono)', fontSize: 9,
               textTransform: 'uppercase', letterSpacing: '0.1em',
             }}
           >

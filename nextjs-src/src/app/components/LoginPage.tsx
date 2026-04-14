@@ -187,23 +187,23 @@ export default function LoginPage({ inviteHint = false }: { inviteHint?: boolean
     return (
       <div style={{ minHeight: '100vh', background: '#fff', display: 'flex', flexDirection: 'column' }}>
         <div style={{ background: '#111', padding: 32 }}>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, fontWeight: 900, color: '#fff' }}>
+          <div style={{ fontFamily: 'var(--af-font-display)', fontSize: 24, fontWeight: 900, color: '#fff' }}>
             ArchFlow
           </div>
         </div>
         <div style={{ padding: '32px 24px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-          <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 900, color: '#111', marginBottom: 8 }}>
+          <h2 style={{ fontFamily: 'var(--af-font-display)', fontSize: 22, fontWeight: 900, color: '#111', marginBottom: 8 }}>
             Проверьте почту
           </h2>
-          <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-9)', color: '#111', marginBottom: 2 }}>
+          <p style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-9)', color: '#111', marginBottom: 2 }}>
             Мы отправили письмо на
           </p>
-          <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-11)', color: '#111', marginBottom: 16 }}>
+          <p style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-11)', color: '#111', marginBottom: 16 }}>
             {email}
           </p>
           <div style={{
             background: '#F6F6F4', borderLeft: '2px solid #111', padding: '12px 14px',
-            fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-8)', color: '#111', lineHeight: 1.7,
+            fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-8)', color: '#111', lineHeight: 1.7,
           }}>
             Если письмо не пришло — проверьте папку Спам или Промоакции.
           </div>
@@ -212,7 +212,7 @@ export default function LoginPage({ inviteHint = false }: { inviteHint?: boolean
               onClick={handleResend}
               style={{
                 border: '0.5px solid #EBEBEB', color: '#111', background: 'none',
-                fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-7)',
+                fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-7)',
                 textTransform: 'uppercase', letterSpacing: '0.14em',
                 padding: '8px 16px', cursor: 'pointer',
               }}
@@ -221,13 +221,13 @@ export default function LoginPage({ inviteHint = false }: { inviteHint?: boolean
             </button>
           </div>
           <div style={{ marginTop: 'auto', paddingTop: 24 }}>
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-7)', color: '#111' }}>
+            <span style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-7)', color: '#111' }}>
               Уже подтвердили?{' '}
               <button
                 onClick={() => switchMode('login')}
                 style={{
                   color: '#111', background: 'none', border: 'none',
-                  fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-7)',
+                  fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-7)',
                   cursor: 'pointer', textDecoration: 'underline',
                 }}
               >
@@ -246,7 +246,7 @@ export default function LoginPage({ inviteHint = false }: { inviteHint?: boolean
         {/* Logo */}
         <div className="mb-12">
           <img src="/logo.png" width="80" height="80" alt="ArchFlow" style={{ marginBottom: 12 }} />
-          <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-9)', color: '#111', letterSpacing: '0.1em', marginTop: 8 }}>
+          <p style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-9)', color: '#111', letterSpacing: '0.1em', marginTop: 8 }}>
             ОТ ЗАМЫСЛА ДО СДАЧИ ОБЪЕКТА
           </p>
         </div>
@@ -254,7 +254,7 @@ export default function LoginPage({ inviteHint = false }: { inviteHint?: boolean
         {/* Heading — only for non-login modes */}
         {mode !== 'login' && titles[mode].sub && (
           <div className="mb-8">
-            <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, fontWeight: 700, color: '#111' }}>
+            <h2 style={{ fontFamily: 'var(--af-font-display)', fontSize: 24, fontWeight: 700, color: '#111' }}>
               {titles[mode].heading}
             </h2>
             <p className="af-label mt-1">{titles[mode].sub}</p>
@@ -263,21 +263,21 @@ export default function LoginPage({ inviteHint = false }: { inviteHint?: boolean
 
         {/* Invite hint */}
         {inviteHint && (
-          <div className="mb-6 p-3" style={{ background: '#F6F6F4', fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-11)', color: '#111' }}>
+          <div className="mb-6 p-3" style={{ background: '#F6F6F4', fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-11)', color: '#111' }}>
             Вы получили приглашение в проект. Войдите или зарегистрируйтесь, чтобы принять его.
           </div>
         )}
 
         {/* Error */}
         {error && (
-          <div className="mb-4 p-3" style={{ border: '0.5px solid #111', fontFamily: "'IBM Plex Mono', monospace", fontSize: 11 }}>
+          <div className="mb-4 p-3" style={{ border: '0.5px solid #111', fontFamily: 'var(--af-font-mono)', fontSize: 11 }}>
             {error}
           </div>
         )}
 
         {/* Success */}
         {success && (
-          <div className="mb-4 p-3" style={{ background: '#F6F6F4', fontFamily: "'IBM Plex Mono', monospace", fontSize: 11 }}>
+          <div className="mb-4 p-3" style={{ background: '#F6F6F4', fontFamily: 'var(--af-font-mono)', fontSize: 11 }}>
             {success}
           </div>
         )}
@@ -387,7 +387,7 @@ export default function LoginPage({ inviteHint = false }: { inviteHint?: boolean
         {/* Mode switches */}
         <div className="mt-8 pt-6" style={{ borderTop: '0.5px solid #EBEBEB' }}>
           {mode === "login" && (
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11 }}>
+            <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 11 }}>
               <span style={{ color: '#111' }}>Нет аккаунта? </span>
               <button onClick={() => switchMode("register")} className="af-crumb active" style={{ fontSize: 11 }}>
                 Регистрация
@@ -395,7 +395,7 @@ export default function LoginPage({ inviteHint = false }: { inviteHint?: boolean
             </div>
           )}
           {mode === "register" && (
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11 }}>
+            <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 11 }}>
               <span style={{ color: '#111' }}>Уже есть аккаунт? </span>
               <button onClick={() => switchMode("login")} className="af-crumb active" style={{ fontSize: 11 }}>
                 Вход

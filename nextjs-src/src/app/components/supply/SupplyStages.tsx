@@ -13,8 +13,8 @@ interface SupplyStagesProps {
   toast?: (msg: string) => void;
 }
 
-const mono = "'IBM Plex Mono', monospace";
-const display = "'Playfair Display', serif";
+const mono = 'var(--af-font-mono)';
+const display = 'var(--af-font-display)';
 
 const STAGE_STATUS_STYLE: Record<StageStatus, { label: string; bg: string; text: string }> = {
   pending: { label: "Ожидает", bg: "rgb(var(--line), 0.3)", text: "rgb(var(--ink))" },

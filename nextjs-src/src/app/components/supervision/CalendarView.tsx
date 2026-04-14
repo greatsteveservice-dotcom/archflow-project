@@ -44,7 +44,7 @@ function PaymentIcon() {
     <svg width="7" height="7" viewBox="0 0 7 7" fill="none" style={{ display: 'block' }}>
       <circle cx="3.5" cy="3.5" r="3.5" fill="#111" />
       <text x="3.5" y="5.2" textAnchor="middle"
-        style={{ fontSize: 5, fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, fill: '#fff' }}>
+        style={{ fontSize: 5, fontFamily: 'var(--af-font-mono)', fontWeight: 700, fill: '#fff' }}>
         ₽
       </text>
     </svg>
@@ -247,7 +247,7 @@ export default function CalendarView({ projectId, visits, toast, refetchVisits, 
           marginBottom: 16,
         }}>
           <div style={{
-            fontFamily: "'IBM Plex Mono', monospace",
+            fontFamily: 'var(--af-font-mono)',
             fontSize: 'var(--af-fs-7)',
             textTransform: 'uppercase',
             letterSpacing: '0.12em',
@@ -257,7 +257,7 @@ export default function CalendarView({ projectId, visits, toast, refetchVisits, 
             Задача
           </div>
           <div style={{
-            fontFamily: "'Playfair Display', serif",
+            fontFamily: 'var(--af-font-display)',
             fontSize: 'var(--af-fs-13)',
             fontWeight: 700,
             color: '#111',
@@ -266,7 +266,7 @@ export default function CalendarView({ projectId, visits, toast, refetchVisits, 
             Выставить счёт
           </div>
           <div style={{
-            fontFamily: "'IBM Plex Mono', monospace",
+            fontFamily: 'var(--af-font-mono)',
             fontSize: 'var(--af-fs-7)',
             color: '#111',
             letterSpacing: '0.05em',
@@ -283,12 +283,14 @@ export default function CalendarView({ projectId, visits, toast, refetchVisits, 
             <Icons.ChevronLeft className="w-4 h-4" />
           </button>
           <h3 style={{
-            fontFamily: "'Playfair Display', serif",
-            fontSize: 15,
-            fontWeight: 700,
+            fontFamily: 'var(--af-font-mono)',
+            fontSize: 'var(--af-fs-11)',
+            fontWeight: 400,
             minWidth: 140,
             textAlign: 'center',
             color: '#111',
+            textTransform: 'uppercase',
+            letterSpacing: '0.1em',
           }}>
             {MONTHS_RU[currentMonth]} {currentYear}
           </h3>
@@ -307,7 +309,7 @@ export default function CalendarView({ projectId, visits, toast, refetchVisits, 
       <div style={{ background: '#FFFFFF', padding: 16 }}>
         <div className="grid grid-cols-7 gap-0.5 mb-2">
           {DAYS_RU.map(d => (
-            <div key={d} style={{ background: '#FFFFFF', color: '#111', fontSize: 'var(--af-fs-11)', fontWeight: 500, textAlign: 'center', padding: '4px 0' }}>{d}</div>
+            <div key={d} style={{ background: '#FFFFFF', color: '#111', fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-11)', fontWeight: 500, textAlign: 'center', padding: '4px 0', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{d}</div>
           ))}
         </div>
         <div className="grid grid-cols-7 gap-0.5">
@@ -329,6 +331,7 @@ export default function CalendarView({ projectId, visits, toast, refetchVisits, 
                 key={day}
                 className="aspect-square md:aspect-auto md:h-[52px] flex flex-col items-center justify-center cursor-pointer transition-all text-[13px]"
                 style={{
+                  fontFamily: 'var(--af-font-mono)',
                   background: (isToday || isSelected) ? '#111111' : '#FFFFFF',
                   color: (isToday || isSelected) ? '#FFFFFF' : '#111111',
                   fontWeight: isToday ? 600 : 400,
@@ -365,7 +368,7 @@ export default function CalendarView({ projectId, visits, toast, refetchVisits, 
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
               <VisitIcon />
               <span style={{
-                fontFamily: "'IBM Plex Mono', monospace",
+                fontFamily: 'var(--af-font-mono)',
                 fontSize: 'var(--af-fs-7)', textTransform: 'uppercase',
                 letterSpacing: '0.08em', color: '#111',
               }}>Визит</span>
@@ -373,7 +376,7 @@ export default function CalendarView({ projectId, visits, toast, refetchVisits, 
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
               <PaymentIcon />
               <span style={{
-                fontFamily: "'IBM Plex Mono', monospace",
+                fontFamily: 'var(--af-font-mono)',
                 fontSize: 'var(--af-fs-7)', textTransform: 'uppercase',
                 letterSpacing: '0.08em', color: '#111',
               }}>Счёт</span>
@@ -386,24 +389,24 @@ export default function CalendarView({ projectId, visits, toast, refetchVisits, 
       {selectedDate && (
         <div className="mt-4">
           <div className="flex items-center justify-between mb-3">
-            <h4 className="text-[13px] font-semibold">
+            <h4 style={{ fontFamily: 'var(--af-font-mono)', fontSize: 13, fontWeight: 600 }}>
               {formatDate(selectedDate)}
             </h4>
             {canCreateVisit && (
-              <button className="text-[12px] text-ink-muted hover:text-ink" onClick={() => handlePlanVisit(selectedDate)}>
+              <button style={{ fontFamily: 'var(--af-font-mono)', fontSize: 12 }} className="text-ink-muted hover:text-ink" onClick={() => handlePlanVisit(selectedDate)}>
                 + Добавить визит
               </button>
             )}
           </div>
           {selectedVisits.length === 0 ? (
-            <div className="text-[13px] text-ink-faint">Нет визитов на эту дату</div>
+            <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 13 }} className="text-ink-faint">Нет визитов на эту дату</div>
           ) : (
             <div className="space-y-2">
               {selectedVisits.map(v => (
                 <div key={v.id} className="card p-3 flex items-center justify-between">
                   <div>
-                    <div className="text-[13px] font-medium">{v.title}</div>
-                    <div className="text-[11px] text-ink-faint mt-0.5">
+                    <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 13, fontWeight: 500 }}>{v.title}</div>
+                    <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 11 }} className="text-ink-faint mt-0.5">
                       {v.photo_count > 0 && `${v.photo_count} фото · `}
                       {v.author?.full_name || ''}
                     </div>

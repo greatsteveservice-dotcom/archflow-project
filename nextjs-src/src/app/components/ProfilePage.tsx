@@ -160,7 +160,7 @@ export default function ProfilePage({ onNavigate, onMenuToggle, toast }: Profile
 
         {/* Edit form */}
         <div className="card p-6">
-          <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700, textTransform: 'uppercase' as const, marginBottom: 20 }}>Редактирование</h3>
+          <h3 style={{ fontFamily: 'var(--af-font-display)', fontSize: 20, fontWeight: 700, textTransform: 'uppercase' as const, marginBottom: 20 }}>Редактирование</h3>
 
           <div className="space-y-4">
             <div className="modal-field">

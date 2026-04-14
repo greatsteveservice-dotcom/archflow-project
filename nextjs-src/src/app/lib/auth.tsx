@@ -5,6 +5,7 @@ import { supabase } from "./supabase";
 import type { Session, User } from "@supabase/supabase-js";
 import type { Profile } from "./types";
 import { metrikaSetUser } from "./metrika";
+import { installErrorReporter, setErrorReporterUser } from "./error-reporter";
 
 // ======================== TYPES ========================
 
@@ -92,6 +93,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Install global error reporter (once)
+  useEffect(() => { installErrorReporter(); }, []);
+
   // Initialize auth state
   useEffect(() => {
     // Get current session — validate it's still usable
@@ -168,6 +172,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (session?.user) {
         fetchProfile(session.user.id);
         metrikaSetUser(session.user.id);
+        setErrorReporterUser(session.user.id);
       } else {
         setProfile(null);
       }

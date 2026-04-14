@@ -11,8 +11,8 @@ interface NotificationSettingsProps {
   toast: (msg: string) => void;
 }
 
-const mono = "'IBM Plex Mono', monospace";
-const display = "'Playfair Display', serif";
+const mono = 'var(--af-font-mono)';
+const display = 'var(--af-font-display)';
 
 const SCHEDULE_OPTIONS: { value: ScheduleType; label: string; desc: string }[] = [
   { value: 'any', label: 'Любое время', desc: 'Уведомления приходят круглосуточно' },
@@ -469,11 +469,11 @@ function ChannelRow({ label, sublabel, enabled, onChange }: {
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <Toggle enabled={enabled} onChange={onChange} />
         <div>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-11)', color: 'rgb(var(--ink))' }}>
+          <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-11)', color: 'rgb(var(--ink))' }}>
             {label}
           </div>
           <div style={{
-            fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-9)',
+            fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-9)',
             color: 'rgb(var(--ink))', opacity: 0.5, marginTop: 2,
           }}>
             {sublabel}

@@ -1,9 +1,10 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { Icons } from '../Icons';
-import type { VisitReportWithStats, ReportStatus } from '../../lib/types';
+import type { VisitReportWithStats, ReportStatus, EmailDeliveryStatus } from '../../lib/types';
+import { EMAIL_STATUS_CONFIG } from '../../lib/types';
 import { useVisitReports } from '../../lib/hooks';
-import { createVisitReport, ensureTodayDraft, loadSupervisionConfig } from '../../lib/queries';
+import { createVisitReport, ensureTodayDraft, loadSupervisionConfig, fetchReportDeliveryStatuses } from '../../lib/queries';
 import { isTodayScheduledVisit } from '../../lib/visit-schedule';
 
 // ─── Status config ───────────────────────────────────────
@@ -47,6 +48,15 @@ interface ReportsListViewProps {
 export default function ReportsListView({ projectId, toast, onSelectReport }: ReportsListViewProps) {
   const { data: reports, loading, refetch } = useVisitReports(projectId);
   const [creating, setCreating] = useState(false);
+  const [deliveryStatuses, setDeliveryStatuses] = useState<Map<string, EmailDeliveryStatus>>(new Map());
+
+  // Load delivery statuses for published reports
+  useEffect(() => {
+    if (!reports || reports.length === 0) return;
+    const publishedIds = reports.filter(r => r.status === 'published').map(r => r.id);
+    if (publishedIds.length === 0) return;
+    fetchReportDeliveryStatuses(publishedIds).then(setDeliveryStatuses).catch(() => {});
+  }, [reports]);
 
   // Auto-draft on mount
   useEffect(() => {
@@ -71,8 +81,8 @@ export default function ReportsListView({ projectId, toast, onSelectReport }: Re
       toast('Отчёт создан');
       refetch();
       onSelectReport(report.id);
-    } catch (err: any) {
-      toast(err.message || 'Ошибка создания отчёта');
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : 'Ошибка создания отчёта');
     } finally {
       setCreating(false);
     }
@@ -97,7 +107,7 @@ export default function ReportsListView({ projectId, toast, onSelectReport }: Re
     <div className="animate-fade-in">
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-        <h2 style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 20, color: '#111', margin: 0, textTransform: 'uppercase' as const }}>
+        <h2 style={{ fontFamily: 'var(--af-font-display)', fontWeight: 700, fontSize: 20, color: '#111', margin: 0, textTransform: 'uppercase' as const }}>
           Отчёты
         </h2>
         <button
@@ -122,12 +132,12 @@ export default function ReportsListView({ projectId, toast, onSelectReport }: Re
       </div>
 
       {loading ? (
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--af-fs-11)', color: '#111' }}>
+        <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-11)', color: '#111' }}>
           Загрузка...
         </div>
       ) : displayReports.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '48px 0' }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--af-fs-11)', color: '#111' }}>
+          <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-11)', color: '#111' }}>
             Отчётов пока нет
           </div>
         </div>
@@ -161,7 +171,7 @@ export default function ReportsListView({ projectId, toast, onSelectReport }: Re
                 <div>
                   {today && (
                     <div style={{
-                      fontFamily: 'var(--font-mono)',
+                      fontFamily: 'var(--af-font-mono)',
                       fontSize: 'var(--af-fs-7)',
                       textTransform: 'uppercase',
                       letterSpacing: '0.08em',
@@ -172,7 +182,7 @@ export default function ReportsListView({ projectId, toast, onSelectReport }: Re
                     </div>
                   )}
                   <div style={{
-                    fontFamily: 'var(--font-heading)',
+                    fontFamily: 'var(--af-font-display)',
                     fontSize: 14,
                     fontWeight: 700,
                     color: '#111',
@@ -180,7 +190,7 @@ export default function ReportsListView({ projectId, toast, onSelectReport }: Re
                     {formatReportDate(report.visit_date)}
                   </div>
                   <div style={{
-                    fontFamily: 'var(--font-mono)',
+                    fontFamily: 'var(--af-font-mono)',
                     fontSize: 'var(--af-fs-7)',
                     textTransform: 'uppercase',
                     letterSpacing: '0.06em',
@@ -193,9 +203,25 @@ export default function ReportsListView({ projectId, toast, onSelectReport }: Re
                 </div>
 
                 {/* Right */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {/* Delivery badge (only for sent reports) */}
+                  {deliveryStatuses.has(report.id) && (() => {
+                    const ds = deliveryStatuses.get(report.id)!;
+                    const dc = EMAIL_STATUS_CONFIG[ds];
+                    return (
+                      <span style={{
+                        fontFamily: 'var(--af-font-mono)',
+                        fontSize: 'var(--af-fs-8)',
+                        padding: '1px 6px',
+                        background: dc.bg,
+                        color: dc.text,
+                      }}>
+                        {dc.label}
+                      </span>
+                    );
+                  })()}
                   <span style={{
-                    fontFamily: 'var(--font-mono)',
+                    fontFamily: 'var(--af-font-mono)',
                     fontSize: 'var(--af-fs-9)',
                     padding: '2px 8px',
                     border: `1px solid ${st.border}`,

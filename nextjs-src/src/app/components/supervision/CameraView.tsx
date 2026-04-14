@@ -33,7 +33,7 @@ export default function CameraView({ projectId, webcamUrl, toast, canEdit = true
     <div className="animate-fade-in">
       <div className="flex items-center gap-2 mb-5">
         <Icons.Camera className="w-4 h-4 text-ink-muted" />
-        <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700, textTransform: 'uppercase' as const }}>Камера с объекта</h3>
+        <h3 style={{ fontFamily: 'var(--af-font-display)', fontSize: 20, fontWeight: 700, textTransform: 'uppercase' as const }}>Камера с объекта</h3>
       </div>
 
       {webcamUrl && !isEditing ? (

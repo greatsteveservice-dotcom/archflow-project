@@ -932,6 +932,26 @@ export async function updateSupplyItemStatus(id: string, status: SupplyStatus): 
   return data as SupplyItem;
 }
 
+/** Delete a single supply item */
+export async function deleteSupplyItem(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('supply_items')
+    .delete()
+    .eq('id', id);
+  if (error) throw error;
+}
+
+/** Delete all supply items for a project */
+export async function deleteAllSupplyItems(projectId: string): Promise<number> {
+  const { data, error } = await supabase
+    .from('supply_items')
+    .delete()
+    .eq('project_id', projectId)
+    .select('id');
+  if (error) throw error;
+  return data?.length || 0;
+}
+
 // ======================== INVOICES (list) ========================
 
 /** Fetch invoices for a project */
@@ -2902,6 +2922,119 @@ export async function analyzeChatMessages(
 
   if (!res.ok) return { found: false };
   return await res.json();
+}
+
+// ======================== EMAIL EVIDENCE ========================
+
+import type { EmailSend, EmailEvent, EmailDeliveryStatus } from './types';
+
+/** Fetch email sends for a specific report */
+export async function fetchReportEmailSends(reportId: string): Promise<EmailSend[]> {
+  const { data, error } = await supabase
+    .from('email_sends')
+    .select('*')
+    .eq('report_id', reportId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  if (!data || data.length === 0) return [];
+
+  // Enrich with recipient profiles
+  const userIds = [...new Set(data.filter(s => s.recipient_user_id).map(s => s.recipient_user_id))];
+  let profiles: Profile[] = [];
+  if (userIds.length > 0) {
+    const { data: p } = await supabase.from('profiles').select('*').in('id', userIds);
+    profiles = (p || []) as Profile[];
+  }
+  const profileMap = new Map(profiles.map(p => [p.id, p]));
+
+  return data.map(s => ({
+    ...s,
+    recipient_profile: s.recipient_user_id ? profileMap.get(s.recipient_user_id) : undefined,
+  })) as EmailSend[];
+}
+
+/** Fetch all email sends for a project */
+export async function fetchProjectEmailSends(projectId: string): Promise<EmailSend[]> {
+  const { data, error } = await supabase
+    .from('email_sends')
+    .select('*')
+    .eq('project_id', projectId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return (data || []) as EmailSend[];
+}
+
+/** Fetch email events for a specific send */
+export async function fetchEmailEvents(emailSendId: string): Promise<EmailEvent[]> {
+  const { data, error } = await supabase
+    .from('email_events')
+    .select('*')
+    .eq('email_send_id', emailSendId)
+    .order('created_at', { ascending: true });
+
+  if (error) throw error;
+  return (data || []) as EmailEvent[];
+}
+
+/** Fetch aggregated delivery status for a report (worst-case across recipients) */
+export async function fetchReportDeliveryStatus(
+  reportId: string,
+): Promise<EmailDeliveryStatus | null> {
+  const { data, error } = await supabase
+    .from('email_sends')
+    .select('status')
+    .eq('report_id', reportId);
+
+  if (error || !data || data.length === 0) return null;
+
+  // Priority: bounced > sending > sent > delivered > opened > confirmed > auto_accepted
+  const statuses = data.map(s => s.status as EmailDeliveryStatus);
+  if (statuses.includes('bounced')) return 'bounced';
+  if (statuses.includes('sending')) return 'sending';
+  if (statuses.includes('sent')) return 'sent';
+  if (statuses.includes('delivered')) return 'delivered';
+  if (statuses.includes('opened')) return 'opened';
+  if (statuses.includes('confirmed')) return 'confirmed';
+  if (statuses.includes('auto_accepted')) return 'auto_accepted';
+  return statuses[0] || null;
+}
+
+/** Bulk fetch delivery statuses for multiple reports */
+export async function fetchReportDeliveryStatuses(
+  reportIds: string[],
+): Promise<Map<string, EmailDeliveryStatus>> {
+  if (reportIds.length === 0) return new Map();
+
+  const { data, error } = await supabase
+    .from('email_sends')
+    .select('report_id, status')
+    .in('report_id', reportIds);
+
+  if (error || !data) return new Map();
+
+  // Group by report_id, pick worst status
+  const byReport = new Map<string, EmailDeliveryStatus[]>();
+  for (const row of data) {
+    const list = byReport.get(row.report_id) || [];
+    list.push(row.status as EmailDeliveryStatus);
+    byReport.set(row.report_id, list);
+  }
+
+  const result = new Map<string, EmailDeliveryStatus>();
+  for (const [reportId, statuses] of byReport) {
+    if (statuses.includes('bounced')) { result.set(reportId, 'bounced'); continue; }
+    if (statuses.includes('sending')) { result.set(reportId, 'sending'); continue; }
+    if (statuses.includes('sent')) { result.set(reportId, 'sent'); continue; }
+    if (statuses.includes('delivered')) { result.set(reportId, 'delivered'); continue; }
+    if (statuses.includes('opened')) { result.set(reportId, 'opened'); continue; }
+    if (statuses.includes('confirmed')) { result.set(reportId, 'confirmed'); continue; }
+    if (statuses.includes('auto_accepted')) { result.set(reportId, 'auto_accepted'); continue; }
+    result.set(reportId, statuses[0]);
+  }
+
+  return result;
 }
 
 /** Fetch upcoming timeline items (visits + stages + payments) for 2 weeks */

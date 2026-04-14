@@ -76,7 +76,7 @@ export default function PhotoGallery({ projectId, toast, canChangePhotoStatus = 
             onClick={onAddPhoto}
             style={{
               marginLeft: 'auto',
-              fontFamily: "'IBM Plex Mono', monospace",
+              fontFamily: 'var(--af-font-mono)',
               fontSize: 9,
               letterSpacing: '0.12em',
               textTransform: 'uppercase',
@@ -137,7 +137,7 @@ export default function PhotoGallery({ projectId, toast, canChangePhotoStatus = 
             <button
               onClick={onAddPhoto}
               style={{
-                fontFamily: "'IBM Plex Mono', monospace",
+                fontFamily: 'var(--af-font-mono)',
                 fontSize: 10,
                 letterSpacing: '0.12em',
                 textTransform: 'uppercase',

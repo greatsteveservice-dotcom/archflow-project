@@ -396,6 +396,8 @@ export interface ProjectPermissions {
   canDeleteProject: boolean;
   canImportSupply: boolean;
   canManageTasks: boolean;
+  canSendReport: boolean;
+  canAcknowledgeReport: boolean;
 }
 
 export interface UpdateProfileInput {
@@ -757,3 +759,50 @@ export interface ChatAnalysisResult {
   suggested_time?: string;
   reminder_text?: string;
 }
+
+// ======================== EMAIL EVIDENCE ========================
+
+export type EmailDeliveryStatus = 'sending' | 'sent' | 'delivered' | 'bounced' | 'opened' | 'confirmed' | 'auto_accepted';
+
+export interface EmailSend {
+  id: string;
+  project_id: string;
+  report_id: string;
+  resend_email_id: string | null;
+  recipient_email: string;
+  recipient_user_id: string | null;
+  status: EmailDeliveryStatus;
+  content_hash: string;
+  tracking_token: string;
+  sent_at: string | null;
+  delivered_at: string | null;
+  opened_at: string | null;
+  confirmed_at: string | null;
+  confirmed_by: string | null;
+  auto_accepted_at: string | null;
+  created_at: string;
+  /** Joined from profiles (client-side enrichment) */
+  recipient_profile?: Profile;
+}
+
+export interface EmailEvent {
+  id: string;
+  email_send_id: string;
+  resend_email_id: string | null;
+  event_type: string;
+  raw_payload: Record<string, unknown> | null;
+  ip_address: string | null;
+  user_agent: string | null;
+  created_at: string;
+}
+
+/** Monochrome status config for email delivery badges */
+export const EMAIL_STATUS_CONFIG: Record<EmailDeliveryStatus, { label: string; bg: string; text: string }> = {
+  sending:       { label: 'Отправка',     bg: '#F6F6F4', text: '#111111' },
+  sent:          { label: 'Отправлено',   bg: '#F6F6F4', text: '#111111' },
+  delivered:     { label: 'Доставлено',   bg: '#EBEBEB', text: '#111111' },
+  bounced:       { label: 'Ошибка',       bg: '#111111', text: '#FFFFFF' },
+  opened:        { label: 'Просмотрено',  bg: '#EBEBEB', text: '#111111' },
+  confirmed:     { label: 'Подтверждён',  bg: '#111111', text: '#FFFFFF' },
+  auto_accepted: { label: 'Авто-принято', bg: '#DCDCDC', text: '#111111' },
+};

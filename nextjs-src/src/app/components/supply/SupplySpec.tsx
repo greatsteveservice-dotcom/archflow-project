@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { Icons } from "../Icons";
-import { formatPrice, formatShortDate, updateSupplyItemStatus } from "../../lib/queries";
+import { formatPrice, formatShortDate, updateSupplyItemStatus, deleteSupplyItem, deleteAllSupplyItems } from "../../lib/queries";
 import { SUPPLY_STATUS_CONFIG, RISK_CONFIG } from "../../lib/types";
 import type { SupplyItemWithCalc, Stage, SupplyStatus } from "../../lib/types";
 
@@ -12,13 +12,81 @@ interface SupplySpecProps {
   projectId: string;
   refetchItems: () => void;
   toast?: (msg: string) => void;
+  canDelete?: boolean;
 }
 
-export function SupplySpec({ items, stages, projectId, refetchItems, toast }: SupplySpecProps) {
+export function SupplySpec({ items, stages, projectId, refetchItems, toast, canDelete = false }: SupplySpecProps) {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [selectedItem, setSelectedItem] = useState<SupplyItemWithCalc | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [confirmDeleteItem, setConfirmDeleteItem] = useState<string | null>(null);
+  const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [confirmDeleteSelected, setConfirmDeleteSelected] = useState(false);
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredItems.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredItems.map((i) => i.id)));
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    setDeleting(true);
+    try {
+      await Promise.all(Array.from(selectedIds).map((id) => deleteSupplyItem(id)));
+      const count = selectedIds.size;
+      setSelectedIds(new Set());
+      setConfirmDeleteSelected(false);
+      refetchItems();
+      toast?.(`Удалено ${count} позиций`);
+    } catch (err: any) {
+      toast?.(err.message || 'Ошибка удаления');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleDeleteItem = async (itemId: string) => {
+    setDeleting(true);
+    try {
+      await deleteSupplyItem(itemId);
+      setSelectedItem(null);
+      setConfirmDeleteItem(null);
+      refetchItems();
+      toast?.('Позиция удалена');
+    } catch (err: any) {
+      toast?.(err.message || 'Ошибка удаления');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    setDeleting(true);
+    try {
+      const count = await deleteAllSupplyItems(projectId);
+      setConfirmDeleteAll(false);
+      refetchItems();
+      toast?.(`Удалено ${count} позиций`);
+    } catch (err: any) {
+      toast?.(err.message || 'Ошибка удаления');
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const categories = useMemo(() => {
     const cats = new Set(items.map((i) => i.category || "Без категории"));
@@ -64,7 +132,7 @@ export function SupplySpec({ items, stages, projectId, refetchItems, toast }: Su
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Поиск по названию, поставщику..."
             className="w-full pl-9 pr-3 py-2 border border-line rounded-lg text-sm outline-none focus:border-ink transition-colors bg-srf"
-            style={{ fontFamily: "var(--font-body)" }}
+            style={{ fontFamily: "var(--af-font-mono)" }}
           />
         </div>
         <div className="filter-tabs">
@@ -93,6 +161,26 @@ export function SupplySpec({ items, stages, projectId, refetchItems, toast }: Su
             Заказано
           </button>
         </div>
+        {canDelete && items.length > 0 && (
+          <div className="flex items-center gap-2 ml-auto">
+            {selectedIds.size > 0 && (
+              <button
+                className="btn btn-secondary text-[12px]"
+                style={{ color: '#111', borderColor: '#111' }}
+                onClick={() => setConfirmDeleteSelected(true)}
+              >
+                Удалить выбранные ({selectedIds.size})
+              </button>
+            )}
+            <button
+              className="btn btn-secondary text-[12px]"
+              style={{ color: '#999', borderColor: '#ddd' }}
+              onClick={() => setConfirmDeleteAll(true)}
+            >
+              Очистить всё
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Mobile card view */}
@@ -112,7 +200,16 @@ export function SupplySpec({ items, stages, projectId, refetchItems, toast }: Su
                 onClick={() => setSelectedItem(item)}
               >
                 <div className="flex items-baseline justify-between gap-2 mb-1">
-                  <span className="text-[13px] font-medium leading-tight">{item.name}</span>
+                  {canDelete && (
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(item.id)}
+                      onChange={() => toggleSelect(item.id)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-4 h-4 shrink-0 accent-[#111] cursor-pointer"
+                    />
+                  )}
+                  <span className="text-[13px] font-medium leading-tight flex-1">{item.name}</span>
                   <span className="text-[11px] text-ink-faint whitespace-nowrap">{item.category || "—"}</span>
                 </div>
                 <div className="text-[12px] text-ink-muted mb-2">{item.stageName}</div>
@@ -149,18 +246,28 @@ export function SupplySpec({ items, stages, projectId, refetchItems, toast }: Su
         <table className="w-full text-left">
           <thead>
             <tr className="border-b border-line-light">
-              <th className="text-[11px] text-ink-faint font-medium uppercase tracking-wider px-4 py-3">Позиция</th>
-              <th className="text-[11px] text-ink-faint font-medium uppercase tracking-wider px-4 py-3">Этап</th>
-              <th className="text-[11px] text-ink-faint font-medium uppercase tracking-wider px-4 py-3">Дедлайн</th>
-              <th className="text-[11px] text-ink-faint font-medium uppercase tracking-wider px-4 py-3">Риск</th>
-              <th className="text-[11px] text-ink-faint font-medium uppercase tracking-wider px-4 py-3">Статус</th>
-              <th className="text-[11px] text-ink-faint font-medium uppercase tracking-wider px-4 py-3 text-right">Бюджет</th>
+              {canDelete && (
+                <th className="w-10 px-4 py-3">
+                  <input
+                    type="checkbox"
+                    checked={filteredItems.length > 0 && selectedIds.size === filteredItems.length}
+                    onChange={toggleSelectAll}
+                    className="w-4 h-4 accent-[#111] cursor-pointer"
+                  />
+                </th>
+              )}
+              <th className="text-[12px] text-ink-muted font-semibold uppercase tracking-wider px-4 py-3">Позиция</th>
+              <th className="text-[12px] text-ink-muted font-semibold uppercase tracking-wider px-4 py-3">Этап</th>
+              <th className="text-[12px] text-ink-muted font-semibold uppercase tracking-wider px-4 py-3">Дедлайн</th>
+              <th className="text-[12px] text-ink-muted font-semibold uppercase tracking-wider px-4 py-3">Риск</th>
+              <th className="text-[12px] text-ink-muted font-semibold uppercase tracking-wider px-4 py-3">Статус</th>
+              <th className="text-[12px] text-ink-muted font-semibold uppercase tracking-wider px-4 py-3 text-right">Бюджет</th>
             </tr>
           </thead>
           <tbody>
             {filteredItems.length === 0 ? (
               <tr>
-                <td colSpan={6} className="text-center py-8 text-[13px] text-ink-faint">
+                <td colSpan={canDelete ? 7 : 6} className="text-center py-8 text-[13px] text-ink-faint">
                   Позиции не найдены
                 </td>
               </tr>
@@ -171,9 +278,19 @@ export function SupplySpec({ items, stages, projectId, refetchItems, toast }: Su
                 return (
                   <tr
                     key={item.id}
-                    className="border-b border-line-light last:border-none hover:bg-srf-hover cursor-pointer transition-colors"
+                    className={`border-b border-line-light last:border-none hover:bg-srf-hover cursor-pointer transition-colors ${selectedIds.has(item.id) ? 'bg-srf-hover' : ''}`}
                     onClick={() => setSelectedItem(item)}
                   >
+                    {canDelete && (
+                      <td className="w-10 px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(item.id)}
+                          onChange={() => toggleSelect(item.id)}
+                          className="w-4 h-4 accent-[#111] cursor-pointer"
+                        />
+                      </td>
+                    )}
                     <td className="px-4 py-3">
                       <div className="text-[13px] font-medium">{item.name}</div>
                       <div className="text-[11px] text-ink-faint">{item.category || "—"}</div>
@@ -305,7 +422,97 @@ export function SupplySpec({ items, stages, projectId, refetchItems, toast }: Su
                     })}
                   </div>
                 </div>
+
+                {/* Delete */}
+                {canDelete && (
+                  <div className="pt-4 border-t border-line-light">
+                    {confirmDeleteItem === selectedItem.id ? (
+                      <div className="flex items-center gap-3">
+                        <span className="text-[12px] text-ink-faint">Удалить позицию?</span>
+                        <button
+                          className="btn btn-primary text-[12px] px-3 py-1"
+                          onClick={() => handleDeleteItem(selectedItem.id)}
+                          disabled={deleting}
+                        >
+                          {deleting ? 'Удаление...' : 'Да, удалить'}
+                        </button>
+                        <button
+                          className="btn btn-secondary text-[12px] px-3 py-1"
+                          onClick={() => setConfirmDeleteItem(null)}
+                          disabled={deleting}
+                        >
+                          Отмена
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        className="text-[12px] text-ink-faint hover:text-ink transition-colors"
+                        onClick={() => setConfirmDeleteItem(selectedItem.id)}
+                      >
+                        Удалить позицию
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Confirm delete selected modal */}
+      {confirmDeleteSelected && (
+        <>
+          <div className="fixed inset-0 bg-black/40 z-[60]" onClick={() => !deleting && setConfirmDeleteSelected(false)} />
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-srf border border-line p-6 z-[61] w-[90vw] max-w-[400px]" style={{ borderRadius: 0 }}>
+            <h3 className="text-lg font-semibold mb-2" style={{ fontFamily: 'var(--af-font-display)' }}>Удалить выбранные?</h3>
+            <p className="text-[13px] text-ink-muted mb-4">
+              Будут удалены {selectedIds.size} позиций. Это действие нельзя отменить.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                className="btn btn-secondary text-[13px]"
+                onClick={() => setConfirmDeleteSelected(false)}
+                disabled={deleting}
+              >
+                Отмена
+              </button>
+              <button
+                className="btn btn-primary text-[13px]"
+                onClick={handleDeleteSelected}
+                disabled={deleting}
+              >
+                {deleting ? 'Удаление...' : `Удалить (${selectedIds.size})`}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Confirm delete all modal */}
+      {confirmDeleteAll && (
+        <>
+          <div className="fixed inset-0 bg-black/40 z-[60]" onClick={() => !deleting && setConfirmDeleteAll(false)} />
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-srf border border-line p-6 z-[61] w-[90vw] max-w-[400px]" style={{ borderRadius: 0 }}>
+            <h3 className="text-lg font-semibold mb-2" style={{ fontFamily: 'var(--af-font-display)' }}>Очистить спецификацию?</h3>
+            <p className="text-[13px] text-ink-muted mb-4">
+              Будут удалены все {items.length} позиций. Это действие нельзя отменить.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                className="btn btn-secondary text-[13px]"
+                onClick={() => setConfirmDeleteAll(false)}
+                disabled={deleting}
+              >
+                Отмена
+              </button>
+              <button
+                className="btn btn-primary text-[13px]"
+                onClick={handleDeleteAll}
+                disabled={deleting}
+              >
+                {deleting ? 'Удаление...' : `Удалить всё (${items.length})`}
+              </button>
             </div>
           </div>
         </>

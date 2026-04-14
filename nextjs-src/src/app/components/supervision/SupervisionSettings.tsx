@@ -89,8 +89,8 @@ export default function SupervisionSettings({ projectId, toast }: SupervisionSet
         {/* Step 1 — День (hidden when "Своя дата") */}
         {!isCustomDate && (
           <div style={{ marginBottom: 14 }}>
-            <label style={labelStyle}>День</label>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+            <label style={labelStyle}>День визита:</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
               {WEEKDAYS.map(d => (
                 <button key={d.value} type="button" onClick={() => { setWeekday(d.value); setError(null); }} style={chipStyle(weekday === d.value)}>
                   {d.label}
@@ -98,7 +98,7 @@ export default function SupervisionSettings({ projectId, toast }: SupervisionSet
               ))}
             </div>
             {error && (
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-7)', color: '#111111', marginTop: 6, letterSpacing: '0.05em' }}>
+              <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-7)', color: '#111111', marginTop: 6, letterSpacing: '0.05em' }}>
                 {error}
               </div>
             )}
@@ -107,8 +107,8 @@ export default function SupervisionSettings({ projectId, toast }: SupervisionSet
 
         {/* Step 2 — Частота */}
         <div>
-          <label style={labelStyle}>Частота</label>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+          <label style={labelStyle}>Частота посещений:</label>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
             {FREQ_OPTIONS.map(opt => (
               <button key={opt.value} type="button" onClick={() => setFreq(opt.value)} style={chipStyle(freq === opt.value)}>
                 {opt.label}
@@ -136,8 +136,8 @@ export default function SupervisionSettings({ projectId, toast }: SupervisionSet
 
       {/* ── Field 2: Дата выставления счёта ── */}
       <div style={sectionStyle}>
-        <label style={labelStyle}>Дата</label>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+        <label style={labelStyle}>Дата выставления счёта:</label>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
           {BILLING_OPTIONS.map(d => (
             <button key={d} type="button" onClick={() => { setBillingDay(d); setCustomBilling(false); }} style={chipStyle(!customBilling && billingDay === d)}>
               {d}-го
@@ -164,8 +164,8 @@ export default function SupervisionSettings({ projectId, toast }: SupervisionSet
 
       {/* ── Field 3: Напоминание о счёте ── */}
       <div style={sectionStyle}>
-        <label style={labelStyle}>Напоминание</label>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+        <label style={labelStyle}>Напоминания о сдаче документов:</label>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
           {REMINDER_OPTIONS.map(opt => (
             <button key={opt.value} type="button" onClick={() => setReminderDays(opt.value)} style={chipStyle(reminderDays === opt.value)}>
               {opt.label}
@@ -176,7 +176,7 @@ export default function SupervisionSettings({ projectId, toast }: SupervisionSet
 
       {/* ── Field 4: Стоимость доп. визита ── */}
       <div style={sectionStyle}>
-        <label style={labelStyle}>Стоимость доп. визита</label>
+        <label style={labelStyle}>Стоимость доп. визита:</label>
         <div style={{ position: 'relative' }}>
           <input
             type="number"
@@ -188,7 +188,7 @@ export default function SupervisionSettings({ projectId, toast }: SupervisionSet
           />
           <span style={{
             position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
-            fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-11)', color: '#EBEBEB',
+            fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-11)', color: '#EBEBEB',
           }}>₽</span>
         </div>
         <div style={helperStyle}>заполните если визит сверх договора</div>
@@ -202,7 +202,7 @@ export default function SupervisionSettings({ projectId, toast }: SupervisionSet
           style={{
             width: '100%', height: 44,
             background: '#111', color: '#FFF', border: 'none',
-            fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-10)',
+            fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-10)',
             fontWeight: 400, letterSpacing: '0.15em', textTransform: 'uppercase' as const,
             cursor: 'pointer', transition: 'opacity 0.15s ease',
           }}
@@ -224,18 +224,20 @@ const sectionStyle: React.CSSProperties = {
 };
 
 const labelStyle: React.CSSProperties = {
-  display: 'block',
-  fontFamily: "'IBM Plex Mono', monospace",
-  fontSize: 'var(--af-fs-8)',
+  display: 'inline-block',
+  fontFamily: 'var(--af-font-mono)',
+  fontSize: 'var(--af-fs-9)',
   fontWeight: 400,
   textTransform: 'uppercase',
   letterSpacing: '0.15em',
   color: '#111',
-  marginBottom: 8,
+  marginBottom: 10,
+  padding: '4px 10px',
+  border: '0.5px solid #111',
 };
 
 const chipStyle = (active: boolean): React.CSSProperties => ({
-  fontFamily: "'IBM Plex Mono', monospace",
+  fontFamily: 'var(--af-font-mono)',
   fontSize: 'var(--af-fs-8)',
   fontWeight: 400,
   textTransform: 'uppercase',
@@ -249,7 +251,7 @@ const chipStyle = (active: boolean): React.CSSProperties => ({
 });
 
 const inputStyle: React.CSSProperties = {
-  fontFamily: "'IBM Plex Mono', monospace",
+  fontFamily: 'var(--af-font-mono)',
   fontSize: 'var(--af-fs-11)',
   fontWeight: 300,
   width: '100%',
@@ -263,7 +265,7 @@ const inputStyle: React.CSSProperties = {
 };
 
 const helperStyle: React.CSSProperties = {
-  fontFamily: "'IBM Plex Mono', monospace",
+  fontFamily: 'var(--af-font-mono)',
   fontSize: 'var(--af-fs-7)',
   color: '#111',
   marginTop: 6,

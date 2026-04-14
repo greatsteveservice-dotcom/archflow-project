@@ -155,7 +155,7 @@ export default function ProjectPage({ projectId, initialTab, onNavigate, toast, 
         onLogoClick={() => onNavigate("projects")}
         depth={depth}
         breadcrumbs={breadcrumbs}
-        contextLabel={activeTab ? sectionLabel : undefined}
+        contextLabel={undefined}
         actions={
           <div className="flex items-center gap-2">
             {permissions.canEditProjectSettings && !isEditingTitle && !activeTab && (
@@ -308,6 +308,8 @@ export default function ProjectPage({ projectId, initialTab, onNavigate, toast, 
                     canChangePhotoStatus={permissions.canChangePhotoStatus}
                     canManageTasks={permissions.canManageTasks}
                     canEditProjectSettings={permissions.canEditProjectSettings}
+                    canSendReport={permissions.canSendReport}
+                    canAcknowledgeReport={permissions.canAcknowledgeReport}
                     members={membersWithProfiles || []}
                   />
                 )}

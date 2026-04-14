@@ -829,6 +829,27 @@ export function useUpcomingTimeline(projectId: string | null): UseQueryResult<an
   );
 }
 
+// ======================== EMAIL EVIDENCE ========================
+
+import { fetchReportEmailSends, fetchEmailEvents } from './queries';
+import type { EmailSend, EmailEvent } from './types';
+
+/** Fetch email sends for a specific report */
+export function useReportEmailSends(reportId: string | null) {
+  return useQuery<EmailSend[]>(
+    () => reportId ? fetchReportEmailSends(reportId) : Promise.resolve([]),
+    [reportId],
+  );
+}
+
+/** Fetch email events for a specific send */
+export function useEmailEvents(emailSendId: string | null) {
+  return useQuery<EmailEvent[]>(
+    () => emailSendId ? fetchEmailEvents(emailSendId) : Promise.resolve([]),
+    [emailSendId],
+  );
+}
+
 /** Fire-and-forget: notify other project members about a new message */
 export function sendPushNotification(
   projectId: string,

@@ -12,8 +12,8 @@ interface SupplyPlanProps {
   onNavigateToSpec?: (roomName: string) => void;
 }
 
-const mono = "'IBM Plex Mono', monospace";
-const display = "'Playfair Display', serif";
+const mono = 'var(--af-font-mono)';
+const display = 'var(--af-font-display)';
 
 export default function SupplyPlan({ items, rooms, onNavigateToSpec }: SupplyPlanProps) {
   const [selectedRoom, setSelectedRoom] = useState<string | null>(null);

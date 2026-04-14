@@ -74,7 +74,7 @@ export default function DesignSection({ projectId, toast, canUpload = true, canD
               <span className="af-tab-index">{folder.index}</span>
               <span className="af-tab-name">{folder.label}</span>
               <span style={{
-                fontFamily: "'IBM Plex Mono', monospace",
+                fontFamily: 'var(--af-font-mono)',
                 fontSize: 8,
                 textTransform: 'uppercase',
                 letterSpacing: '0.16em',

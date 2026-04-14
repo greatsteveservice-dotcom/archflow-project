@@ -89,7 +89,7 @@ export default function DatabaseBanner() {
         justifyContent: "center",
         gap: 12,
         flexWrap: "wrap",
-        fontFamily: "'IBM Plex Mono', monospace",
+        fontFamily: 'var(--af-font-mono)',
         fontSize: 10,
         letterSpacing: "0.08em",
         textTransform: "uppercase",

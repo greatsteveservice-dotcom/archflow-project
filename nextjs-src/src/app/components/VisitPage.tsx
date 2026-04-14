@@ -213,7 +213,7 @@ export default function VisitPage({ projectId, visitId, onNavigate, toast, onMen
                   {/* Status overlay */}
                   <div style={{
                     position: 'absolute', top: 8, left: 8,
-                    fontFamily: "'IBM Plex Mono', monospace", fontSize: 8,
+                    fontFamily: 'var(--af-font-mono)', fontSize: 8,
                     textTransform: 'uppercase', letterSpacing: '0.1em',
                     background: 'rgba(255,255,255,0.9)', padding: '2px 6px',
                     color: '#111',
@@ -230,7 +230,7 @@ export default function VisitPage({ projectId, visitId, onNavigate, toast, onMen
                         value={photo.status}
                         onChange={(e) => handleStatusChange(photo.id, e.target.value as PhotoStatus)}
                         style={{
-                          fontFamily: "'IBM Plex Mono', monospace", fontSize: 8,
+                          fontFamily: 'var(--af-font-mono)', fontSize: 8,
                           textTransform: 'uppercase', background: 'rgba(255,255,255,0.9)',
                           border: '0.5px solid #EBEBEB', padding: '2px 4px', cursor: 'pointer',
                         }}
@@ -242,7 +242,7 @@ export default function VisitPage({ projectId, visitId, onNavigate, toast, onMen
                       <button
                         onClick={() => setPhotoToDelete(photo)}
                         style={{
-                          fontFamily: "'IBM Plex Mono', monospace", fontSize: 8,
+                          fontFamily: 'var(--af-font-mono)', fontSize: 8,
                           background: 'rgba(255,255,255,0.9)',
                           border: '0.5px solid #EBEBEB', padding: '2px 6px', cursor: 'pointer',
                         }}
@@ -258,7 +258,7 @@ export default function VisitPage({ projectId, visitId, onNavigate, toast, onMen
                       position: 'absolute', bottom: 0, left: 0, right: 0,
                       background: 'linear-gradient(transparent, rgba(0,0,0,0.7))',
                       padding: '24px 8px 8px',
-                      fontFamily: "'IBM Plex Mono', monospace", fontSize: 10,
+                      fontFamily: 'var(--af-font-mono)', fontSize: 10,
                       color: '#fff', lineHeight: 1.4,
                     }}>
                       {photo.comment}
@@ -284,7 +284,7 @@ export default function VisitPage({ projectId, visitId, onNavigate, toast, onMen
               <div className="af-modal" onClick={(e) => e.stopPropagation()}>
                 <h2 className="af-modal-title">Добавить фото</h2>
                 {photoError && (
-                  <div style={{ border: '0.5px solid #111', padding: 12, marginBottom: 16, fontFamily: "'IBM Plex Mono', monospace", fontSize: 11 }}>
+                  <div style={{ border: '0.5px solid #111', padding: 12, marginBottom: 16, fontFamily: 'var(--af-font-mono)', fontSize: 11 }}>
                     {photoError}
                   </div>
                 )}

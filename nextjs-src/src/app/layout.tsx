@@ -80,6 +80,16 @@ export default function RootLayout({
   return (
     <html lang="ru" className={`${playfair.variable} ${ibmPlexMono.variable}`} suppressHydrationWarning>
       <head>
+        {/* Google Fonts backup — ensures fonts render even when Next.js font
+            chunks are blocked by Service Worker cache or mobile network issues.
+            next/font self-hosts the same fonts via CSS variables (--font-playfair,
+            --font-ibm-mono) which take priority when loaded. */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400&family=Playfair+Display:wght@400;700;900&display=swap&subset=latin,cyrillic"
+          rel="stylesheet"
+        />
         {/* Manifest without crossOrigin for Safari PWA compatibility */}
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />

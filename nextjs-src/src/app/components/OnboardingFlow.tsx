@@ -13,23 +13,23 @@ function ProjectsPreview() {
   return (
     <div style={{ border: '0.5px solid #EBEBEB', background: '#fff', fontSize: 0 }}>
       <div style={{ background: '#fff', padding: '8px 12px', borderBottom: '0.5px solid #EBEBEB', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 'var(--af-fs-8)', fontWeight: 900, color: '#111' }}>ArchFlow</span>
-        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 5, color: '#EBEBEB', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Проекты</span>
+        <span style={{ fontFamily: 'var(--af-font-display)', fontSize: 'var(--af-fs-8)', fontWeight: 900, color: '#111' }}>ArchFlow</span>
+        <span style={{ fontFamily: 'var(--af-font-mono)', fontSize: 5, color: '#EBEBEB', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Проекты</span>
       </div>
       {[
         { name: 'Квартира на Патриарших', meta: 'Москва · 2026', letter: 'К' },
         { name: 'Загородный дом', meta: 'Барвиха · 2026', letter: 'З' },
       ].map((p, i) => (
         <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderBottom: '0.5px solid #EBEBEB' }}>
-          <div style={{ width: 24, height: 24, background: '#F6F6F4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Playfair Display', serif", fontSize: 'var(--af-fs-9)', color: '#EBEBEB', flexShrink: 0 }}>{p.letter}</div>
+          <div style={{ width: 24, height: 24, background: '#F6F6F4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--af-font-display)', fontSize: 'var(--af-fs-9)', color: '#EBEBEB', flexShrink: 0 }}>{p.letter}</div>
           <div>
-            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 'var(--af-fs-9)', fontWeight: 700, color: '#111' }}>{p.name}</div>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 5, color: '#EBEBEB', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{p.meta}</div>
+            <div style={{ fontFamily: 'var(--af-font-display)', fontSize: 'var(--af-fs-9)', fontWeight: 700, color: '#111' }}>{p.name}</div>
+            <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 5, color: '#EBEBEB', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{p.meta}</div>
           </div>
-          <span style={{ marginLeft: 'auto', fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-7)', color: '#EBEBEB' }}>→</span>
+          <span style={{ marginLeft: 'auto', fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-7)', color: '#EBEBEB' }}>→</span>
         </div>
       ))}
-      <div style={{ padding: '10px 12px', borderTop: '0.5px dashed #EBEBEB', textAlign: 'center', fontFamily: "'IBM Plex Mono', monospace", fontSize: 6, color: '#EBEBEB', textTransform: 'uppercase', letterSpacing: '0.14em' }}>
+      <div style={{ padding: '10px 12px', borderTop: '0.5px dashed #EBEBEB', textAlign: 'center', fontFamily: 'var(--af-font-mono)', fontSize: 6, color: '#EBEBEB', textTransform: 'uppercase', letterSpacing: '0.14em' }}>
         + Новый проект
       </div>
     </div>
@@ -52,16 +52,16 @@ function SectionsPreview() {
           background: s.active ? '#111' : 'transparent', opacity: s.disabled ? 0.4 : 1,
         }}>
           <div>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 5, color: s.active ? '#111' : '#EBEBEB', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 2 }}>{s.idx} — Раздел</div>
-            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 'var(--af-fs-11)', fontWeight: 700, color: s.active ? '#fff' : '#111' }}>{s.name}</div>
+            <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 5, color: s.active ? '#111' : '#EBEBEB', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 2 }}>{s.idx} — Раздел</div>
+            <div style={{ fontFamily: 'var(--af-font-display)', fontSize: 'var(--af-fs-11)', fontWeight: 700, color: s.active ? '#fff' : '#111' }}>{s.name}</div>
           </div>
-          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-7)', color: s.active ? '#111' : '#EBEBEB' }}>
+          <span style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-7)', color: s.active ? '#111' : '#EBEBEB' }}>
             {s.disabled ? s.label : '→'}
           </span>
         </div>
       ))}
       <div style={{ padding: '8px 12px', background: '#111' }}>
-        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 6, color: '#EBEBEB', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Настройки</span>
+        <span style={{ fontFamily: 'var(--af-font-mono)', fontSize: 6, color: '#EBEBEB', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Настройки</span>
       </div>
     </div>
   );
@@ -75,12 +75,12 @@ function CalendarPreview() {
   return (
     <div style={{ border: '0.5px solid #EBEBEB', background: '#fff', fontSize: 0 }}>
       <div style={{ padding: '8px 12px', borderBottom: '0.5px solid #EBEBEB', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 'var(--af-fs-8)', fontWeight: 700, color: '#111' }}>Апрель 2026</span>
-        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 5, color: '#EBEBEB' }}>настроено: каждый чт</span>
+        <span style={{ fontFamily: 'var(--af-font-display)', fontSize: 'var(--af-fs-8)', fontWeight: 700, color: '#111' }}>Апрель 2026</span>
+        <span style={{ fontFamily: 'var(--af-font-mono)', fontSize: 5, color: '#EBEBEB' }}>настроено: каждый чт</span>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 0, padding: '4px 8px 8px' }}>
         {['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map(d => (
-          <div key={d} style={{ textAlign: 'center', fontFamily: "'IBM Plex Mono', monospace", fontSize: 4, color: '#EBEBEB', padding: '2px 0', textTransform: 'uppercase' }}>{d}</div>
+          <div key={d} style={{ textAlign: 'center', fontFamily: 'var(--af-font-mono)', fontSize: 4, color: '#EBEBEB', padding: '2px 0', textTransform: 'uppercase' }}>{d}</div>
         ))}
         {/* offset: April 2026 starts on Wednesday */}
         <div /><div />
@@ -91,7 +91,7 @@ function CalendarPreview() {
           return (
             <div key={d} style={{ textAlign: 'center', padding: '3px 0' }}>
               <div style={{
-                fontFamily: "'IBM Plex Mono', monospace", fontSize: 6,
+                fontFamily: 'var(--af-font-mono)', fontSize: 6,
                 color: isToday ? '#fff' : '#111',
                 background: isToday ? '#111' : 'transparent',
                 width: 14, height: 14, lineHeight: '14px',
@@ -105,14 +105,14 @@ function CalendarPreview() {
               )}
               {isInvoice && (
                 <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#111', margin: '1px auto 0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 4, color: '#fff' }}>₽</span>
+                  <span style={{ fontFamily: 'var(--af-font-mono)', fontSize: 4, color: '#fff' }}>₽</span>
                 </div>
               )}
             </div>
           );
         })}
       </div>
-      <div style={{ padding: '4px 12px 8px', fontFamily: "'IBM Plex Mono', monospace", fontSize: 5, color: '#EBEBEB', textAlign: 'center' }}>
+      <div style={{ padding: '4px 12px 8px', fontFamily: 'var(--af-font-mono)', fontSize: 5, color: '#EBEBEB', textAlign: 'center' }}>
         Визиты и напоминания о счёте появляются автоматически после настройки
       </div>
     </div>
@@ -133,12 +133,12 @@ function AccessPreview() {
           padding: '8px 12px', borderBottom: '0.5px solid #EBEBEB',
           background: r.dark ? '#111' : 'transparent',
         }}>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-7)', fontWeight: 600, color: r.dark ? '#fff' : '#111', marginBottom: 4 }}>{r.name}</div>
+          <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-7)', fontWeight: 600, color: r.dark ? '#fff' : '#111', marginBottom: 4 }}>{r.name}</div>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             {r.perms.map((p, j) => (
               <div key={j} style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                 <div style={{ width: 4, height: 4, background: r.all ? (r.dark ? '#fff' : '#111') : '#EBEBEB' }} />
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 5, color: r.dark ? '#EBEBEB' : '#EBEBEB' }}>{p}</span>
+                <span style={{ fontFamily: 'var(--af-font-mono)', fontSize: 5, color: r.dark ? '#EBEBEB' : '#EBEBEB' }}>{p}</span>
               </div>
             ))}
           </div>
@@ -158,15 +158,15 @@ function ChatPreview() {
   return (
     <div style={{ border: '0.5px solid #EBEBEB', background: '#fff', fontSize: 0 }}>
       <div style={{ display: 'flex', borderBottom: '0.5px solid #EBEBEB' }}>
-        <div style={{ flex: 1, padding: '6px 0', textAlign: 'center', fontFamily: "'IBM Plex Mono', monospace", fontSize: 5, fontWeight: 600, color: '#111', borderBottom: '1.5px solid #111', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Команда</div>
-        <div style={{ flex: 1, padding: '6px 0', textAlign: 'center', fontFamily: "'IBM Plex Mono', monospace", fontSize: 5, color: '#EBEBEB', textTransform: 'uppercase', letterSpacing: '0.12em' }}>С заказчиком</div>
+        <div style={{ flex: 1, padding: '6px 0', textAlign: 'center', fontFamily: 'var(--af-font-mono)', fontSize: 5, fontWeight: 600, color: '#111', borderBottom: '1.5px solid #111', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Команда</div>
+        <div style={{ flex: 1, padding: '6px 0', textAlign: 'center', fontFamily: 'var(--af-font-mono)', fontSize: 5, color: '#EBEBEB', textTransform: 'uppercase', letterSpacing: '0.12em' }}>С заказчиком</div>
       </div>
       <div style={{ padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: 4 }}>
         {msgs.map((m, i) => (
           <div key={i} style={{ display: 'flex', justifyContent: m.own ? 'flex-end' : 'flex-start' }}>
             <div style={{
               background: m.own ? '#111' : '#F6F6F4', color: m.own ? '#fff' : '#111',
-              padding: '4px 8px', fontFamily: "'IBM Plex Mono', monospace", fontSize: 6,
+              padding: '4px 8px', fontFamily: 'var(--af-font-mono)', fontSize: 6,
               maxWidth: '70%',
             }}>{m.text}</div>
           </div>
@@ -193,9 +193,9 @@ function Slide({ children }: SlideProps) {
 function SlideCaption({ num, title, desc }: { num?: string; title: string; desc: string }) {
   return (
     <div style={{ padding: '20px 0 0' }}>
-      {num && <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-9)', color: '#EBEBEB', textTransform: 'uppercase', letterSpacing: '0.16em', marginBottom: 8 }}>{num}</div>}
-      <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 700, color: '#111', marginBottom: 8 }}>{title}</h3>
-      <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-13)', color: '#111', lineHeight: 1.6 }}>{desc}</p>
+      {num && <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-9)', color: '#EBEBEB', textTransform: 'uppercase', letterSpacing: '0.16em', marginBottom: 8 }}>{num}</div>}
+      <h3 style={{ fontFamily: 'var(--af-font-display)', fontSize: 28, fontWeight: 700, color: '#111', marginBottom: 8 }}>{title}</h3>
+      <p style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-13)', color: '#111', lineHeight: 1.6 }}>{desc}</p>
     </div>
   );
 }
@@ -246,18 +246,18 @@ function ClientOnboarding({ userId, onComplete }: { userId: string; onComplete: 
           <Slide>
             <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
               <div style={{ background: '#111', padding: '32px 24px 24px' }}>
-                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 32, fontWeight: 900, color: '#fff', marginBottom: 10 }}>ArchFlow</div>
+                <div style={{ fontFamily: 'var(--af-font-display)', fontSize: 32, fontWeight: 900, color: '#fff', marginBottom: 10 }}>ArchFlow</div>
               </div>
               <div style={{ padding: '28px 24px', flex: 1, overflowY: 'auto' }}>
-                <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 900, color: '#111', marginBottom: 12 }}>
+                <h2 style={{ fontFamily: 'var(--af-font-display)', fontSize: 28, fontWeight: 900, color: '#111', marginBottom: 12 }}>
                   Добро пожаловать
                 </h2>
-                <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-13)', color: '#111', lineHeight: 1.6, marginBottom: 20 }}>
+                <p style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-13)', color: '#111', lineHeight: 1.6, marginBottom: 20 }}>
                   Дизайнер открыл вам доступ к проекту. Здесь вы можете следить за ходом работ.
                 </p>
                 <div style={{ background: '#F6F6F4', borderLeft: '2px solid #111', padding: '14px 16px' }}>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-9)', color: '#111', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 8 }}>Что здесь можно</div>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-12)', color: '#111', lineHeight: 1.7 }}>
+                  <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-9)', color: '#111', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 8 }}>Что здесь можно</div>
+                  <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-12)', color: '#111', lineHeight: 1.7 }}>
                     Просматривать отчёты, комментировать, общаться с дизайнером напрямую.
                   </div>
                 </div>
@@ -300,7 +300,7 @@ function ClientOnboarding({ userId, onComplete }: { userId: string; onComplete: 
           onClick={isLast ? handleComplete : next}
           style={{
             background: '#111', color: '#fff', border: 'none',
-            fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-7)',
+            fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-7)',
             textTransform: 'uppercase', letterSpacing: '0.16em',
             padding: '8px 14px', cursor: 'pointer',
           }}
@@ -319,13 +319,13 @@ function ClientChatPreview() {
   ];
   return (
     <div style={{ border: '0.5px solid #EBEBEB', background: '#fff', fontSize: 0 }}>
-      <div style={{ padding: '6px 0', textAlign: 'center', fontFamily: "'IBM Plex Mono', monospace", fontSize: 5, fontWeight: 600, color: '#111', borderBottom: '1.5px solid #111', textTransform: 'uppercase', letterSpacing: '0.12em' }}>С дизайнером</div>
+      <div style={{ padding: '6px 0', textAlign: 'center', fontFamily: 'var(--af-font-mono)', fontSize: 5, fontWeight: 600, color: '#111', borderBottom: '1.5px solid #111', textTransform: 'uppercase', letterSpacing: '0.12em' }}>С дизайнером</div>
       <div style={{ padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: 4 }}>
         {msgs.map((m, i) => (
           <div key={i} style={{ display: 'flex', justifyContent: m.own ? 'flex-end' : 'flex-start' }}>
             <div style={{
               background: m.own ? '#111' : '#F6F6F4', color: m.own ? '#fff' : '#111',
-              padding: '4px 8px', fontFamily: "'IBM Plex Mono', monospace", fontSize: 6,
+              padding: '4px 8px', fontFamily: 'var(--af-font-mono)', fontSize: 6,
               maxWidth: '70%',
             }}>{m.text}</div>
           </div>
@@ -372,9 +372,9 @@ function SupplyDemoOnboarding({ userId, onComplete }: { userId: string; onComple
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         {/* Header */}
         <div style={{ background: '#111', padding: '32px 24px 24px' }}>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 32, fontWeight: 900, color: '#fff', marginBottom: 10 }}>ArchFlow</div>
+          <div style={{ fontFamily: 'var(--af-font-display)', fontSize: 32, fontWeight: 900, color: '#fff', marginBottom: 10 }}>ArchFlow</div>
           <span style={{
-            fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-9)', color: '#111',
+            fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-9)', color: '#111',
             border: '0.5px solid #111', padding: '3px 10px',
             textTransform: 'uppercase', letterSpacing: '0.16em',
           }}>Демо</span>
@@ -382,10 +382,10 @@ function SupplyDemoOnboarding({ userId, onComplete }: { userId: string; onComple
 
         {/* Content */}
         <div style={{ padding: '28px 24px', flex: 1, overflowY: 'auto' }}>
-          <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 900, color: '#111', marginBottom: 12 }}>
+          <h2 style={{ fontFamily: 'var(--af-font-display)', fontSize: 28, fontWeight: 900, color: '#111', marginBottom: 12 }}>
             Добро пожаловать в демо Комплектации
           </h2>
-          <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-13)', color: '#111', lineHeight: 1.6, marginBottom: 24 }}>
+          <p style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-13)', color: '#111', lineHeight: 1.6, marginBottom: 24 }}>
             Создайте проект, добавьте позиции и загрузите документацию.
           </p>
 
@@ -395,14 +395,14 @@ function SupplyDemoOnboarding({ userId, onComplete }: { userId: string; onComple
             { n: '03', t: 'Добавьте позиции и загрузите файлы' },
           ].map((step, i) => (
             <div key={i} style={{ background: '#F6F6F4', padding: '14px 16px', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 14 }}>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-9)', color: '#EBEBEB' }}>{step.n}</span>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-13)', color: '#111' }}>{step.t}</span>
+              <span style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-9)', color: '#EBEBEB' }}>{step.n}</span>
+              <span style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-13)', color: '#111' }}>{step.t}</span>
             </div>
           ))}
 
           <div style={{ background: '#F6F6F4', borderLeft: '2px solid #111', padding: '14px 16px', marginTop: 20 }}>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-9)', color: '#111', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 6 }}>Что доступно</div>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-12)', color: '#111', lineHeight: 1.7 }}>
+            <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-9)', color: '#111', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 6 }}>Что доступно</div>
+            <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-12)', color: '#111', lineHeight: 1.7 }}>
               Спецификация, Timeline, Этапы, Импорт Excel, Документация и Настройки комплектации.
             </div>
           </div>
@@ -418,7 +418,7 @@ function SupplyDemoOnboarding({ userId, onComplete }: { userId: string; onComple
           onClick={handleComplete}
           style={{
             width: '100%', background: '#111', color: '#fff', border: 'none',
-            fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-9)',
+            fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-9)',
             textTransform: 'uppercase', letterSpacing: '0.16em',
             padding: '14px 0', cursor: 'pointer',
           }}
@@ -496,27 +496,27 @@ function DesignerOnboarding({ userId, onComplete }: { userId: string; onComplete
           <Slide>
             <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
               <div style={{ background: '#111', padding: '32px 24px 24px' }}>
-                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 32, fontWeight: 900, color: '#fff', marginBottom: 10 }}>ArchFlow</div>
+                <div style={{ fontFamily: 'var(--af-font-display)', fontSize: 32, fontWeight: 900, color: '#fff', marginBottom: 10 }}>ArchFlow</div>
                 <span style={{
-                  fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-9)', color: '#111',
+                  fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-9)', color: '#111',
                   border: '0.5px solid #111', padding: '3px 10px',
                   textTransform: 'uppercase', letterSpacing: '0.16em',
                 }}>Early Access</span>
               </div>
               <div style={{ padding: '28px 24px', flex: 1, overflowY: 'auto' }}>
-                <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 900, color: '#111', marginBottom: 12 }}>
+                <h2 style={{ fontFamily: 'var(--af-font-display)', fontSize: 28, fontWeight: 900, color: '#111', marginBottom: 12 }}>
                   Добро пожаловать в команду
                 </h2>
-                <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-13)', color: '#111', lineHeight: 1.6, marginBottom: 20 }}>
+                <p style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-13)', color: '#111', lineHeight: 1.6, marginBottom: 20 }}>
                   Один из первых дизайнеров на платформе. Ваш голос будет формировать продукт.
                 </p>
                 <div style={{ background: '#F6F6F4', borderLeft: '2px solid #111', padding: '14px 16px', marginBottom: 20 }}>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-9)', color: '#111', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 8 }}>Наше обещание</div>
-                  <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 16, color: '#111', lineHeight: 1.5 }}>
+                  <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-9)', color: '#111', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 8 }}>Наше обещание</div>
+                  <div style={{ fontFamily: 'var(--af-font-display)', fontSize: 16, color: '#111', lineHeight: 1.5 }}>
                     Ранние пользователи получат лучшие условия — это обещание, а не маркетинг.
                   </div>
                 </div>
-                <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-11)', color: '#111' }}>
+                <p style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-11)', color: '#111' }}>
                   За 30 секунд покажем как это работает →
                 </p>
               </div>
@@ -567,13 +567,13 @@ function DesignerOnboarding({ userId, onComplete }: { userId: string; onComplete
           <Slide>
             <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
               <div style={{ background: '#111', padding: '32px 24px 24px' }}>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-9)', color: '#111', textTransform: 'uppercase', letterSpacing: '0.16em', marginBottom: 10 }}>Готово</div>
-                <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 900, color: '#fff' }}>
+                <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-9)', color: '#111', textTransform: 'uppercase', letterSpacing: '0.16em', marginBottom: 10 }}>Готово</div>
+                <h2 style={{ fontFamily: 'var(--af-font-display)', fontSize: 28, fontWeight: 900, color: '#fff' }}>
                   Создайте первый проект
                 </h2>
               </div>
               <div style={{ padding: '28px 24px', flex: 1, overflowY: 'auto' }}>
-                <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-13)', color: '#111', lineHeight: 1.6, marginBottom: 20 }}>
+                <p style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-13)', color: '#111', lineHeight: 1.6, marginBottom: 20 }}>
                   Займёт 3 минуты. Потом пригласите заказчика — оценит прозрачность.
                 </p>
                 {[
@@ -582,22 +582,22 @@ function DesignerOnboarding({ userId, onComplete }: { userId: string; onComplete
                   { n: '03', t: 'Пригласите заказчика и команду' },
                 ].map((step, i) => (
                   <div key={i} style={{ background: '#F6F6F4', padding: '12px 16px', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-9)', color: '#EBEBEB' }}>{step.n}</span>
-                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-12)', color: '#111' }}>{step.t}</span>
+                    <span style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-9)', color: '#EBEBEB' }}>{step.n}</span>
+                    <span style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-12)', color: '#111' }}>{step.t}</span>
                   </div>
                 ))}
 
                 {/* PWA install hint */}
                 <div style={{ background: '#F6F6F4', borderLeft: '2px solid #111', padding: '12px 16px', marginTop: 16 }}>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-9)', color: '#111', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Совет</div>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-12)', color: '#111', marginTop: 6 }}>Добавьте на рабочий стол</div>
+                  <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-9)', color: '#111', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Совет</div>
+                  <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-12)', color: '#111', marginTop: 6 }}>Добавьте на рабочий стол</div>
                   {(platform === 'ios' || platform === 'unknown') && (
-                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-11)', color: '#111', lineHeight: 1.6, marginTop: 6 }}>
+                    <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-11)', color: '#111', lineHeight: 1.6, marginTop: 6 }}>
                       Safari → кнопка поделиться →{'\u00A0'}«На экран домой»
                     </div>
                   )}
                   {(platform === 'android' || platform === 'unknown') && (
-                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-11)', color: '#111', lineHeight: 1.6, marginTop: platform === 'unknown' ? 2 : 6 }}>
+                    <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-11)', color: '#111', lineHeight: 1.6, marginTop: platform === 'unknown' ? 2 : 6 }}>
                       Chrome → меню →{'\u00A0'}«Добавить на главный экран»
                     </div>
                   )}
@@ -634,7 +634,7 @@ function DesignerOnboarding({ userId, onComplete }: { userId: string; onComplete
           onClick={isLast ? handleComplete : next}
           style={{
             background: '#111', color: '#fff', border: 'none',
-            fontFamily: "'IBM Plex Mono', monospace", fontSize: 'var(--af-fs-7)',
+            fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-7)',
             textTransform: 'uppercase', letterSpacing: '0.16em',
             padding: '8px 14px', cursor: 'pointer',
           }}

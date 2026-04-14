@@ -5,7 +5,7 @@ import { Icons } from '../Icons';
 import { batchUpsertKindStageMappings } from '../../lib/queries';
 import type { Stage, CreateKindStageMappingInput } from '../../lib/types';
 
-const mono = "'IBM Plex Mono', monospace";
+const mono = 'var(--af-font-mono)';
 
 interface KindStageReconciliationProps {
   unmappedKinds: string[];

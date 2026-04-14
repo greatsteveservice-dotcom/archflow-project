@@ -1,8 +1,11 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { Icons } from '../Icons';
-import type { VisitReport, VisitRemarkWithDetails, ReportStatus, RemarkStatus, ProjectMemberWithProfile, ContractorTask, TaskStatus } from '../../lib/types';
-import { useVisitRemarks } from '../../lib/hooks';
+import type { VisitReport, VisitRemarkWithDetails, ReportStatus, RemarkStatus, ProjectMemberWithProfile, ContractorTask, TaskStatus, EmailDeliveryStatus } from '../../lib/types';
+import { EMAIL_STATUS_CONFIG } from '../../lib/types';
+import { useVisitRemarks, useReportEmailSends } from '../../lib/hooks';
+import { useAuth } from '../../lib/auth';
+import { supabase } from '../../lib/supabase';
 import {
   fetchVisitReport,
   updateVisitReport,
@@ -59,12 +62,20 @@ interface ReportDetailViewProps {
   toast: (msg: string) => void;
   onBack: () => void;
   members?: ProjectMemberWithProfile[];
+  canSendReport?: boolean;
+  canAcknowledgeReport?: boolean;
 }
 
-export default function ReportDetailView({ reportId, projectId, toast, onBack, members = [] }: ReportDetailViewProps) {
+export default function ReportDetailView({ reportId, projectId, toast, onBack, members = [], canSendReport = false, canAcknowledgeReport = false }: ReportDetailViewProps) {
+  const { profile } = useAuth();
   const [report, setReport] = useState<VisitReport | null>(null);
   const [loadingReport, setLoadingReport] = useState(true);
   const { data: remarks, loading: loadingRemarks, refetch: refetchRemarks } = useVisitRemarks(reportId);
+  const { data: emailSends, refetch: refetchSends } = useReportEmailSends(reportId);
+
+  // Send / acknowledge state
+  const [sending, setSending] = useState(false);
+  const [acknowledging, setAcknowledging] = useState(false);
 
   // Edit state
   const [comment, setComment] = useState('');
@@ -102,8 +113,8 @@ export default function ReportDetailView({ reportId, projectId, toast, onBack, m
       const updated = await updateVisitReport(reportId, { general_comment: comment || null });
       setReport(updated);
       toast('Сохранено');
-    } catch (err: any) {
-      toast(err.message || 'Ошибка');
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : 'Ошибка');
     } finally {
       setSaving(false);
     }
@@ -116,8 +127,8 @@ export default function ReportDetailView({ reportId, projectId, toast, onBack, m
       const updated = await updateVisitReport(reportId, { status: newStatus });
       setReport(updated);
       toast(newStatus === 'published' ? 'Отчёт опубликован' : 'Статус обновлён');
-    } catch (err: any) {
-      toast(err.message || 'Ошибка');
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : 'Ошибка');
     } finally {
       setSaving(false);
     }
@@ -140,8 +151,8 @@ export default function ReportDetailView({ reportId, projectId, toast, onBack, m
       setShowNewRemark(false);
       refetchRemarks();
       toast('Замечание добавлено');
-    } catch (err: any) {
-      toast(err.message || 'Ошибка');
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : 'Ошибка');
     } finally {
       setAddingRemark(false);
     }
@@ -151,8 +162,8 @@ export default function ReportDetailView({ reportId, projectId, toast, onBack, m
     try {
       await updateVisitRemark(remarkId, { status: newStatus });
       refetchRemarks();
-    } catch (err: any) {
-      toast(err.message || 'Ошибка');
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : 'Ошибка');
     }
   };
 
@@ -161,8 +172,8 @@ export default function ReportDetailView({ reportId, projectId, toast, onBack, m
       await deleteVisitRemark(remarkId);
       refetchRemarks();
       toast('Замечание удалено');
-    } catch (err: any) {
-      toast(err.message || 'Ошибка');
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : 'Ошибка');
     }
   };
 
@@ -177,16 +188,73 @@ export default function ReportDetailView({ reportId, projectId, toast, onBack, m
       setRemarkCommentText('');
       setCommentingOnRemark(null);
       refetchRemarks();
-    } catch (err: any) {
-      toast(err.message || 'Ошибка');
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : 'Ошибка');
     }
   };
+
+  const handleSendToClients = async () => {
+    if (!report || report.status !== 'published') return;
+    setSending(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error('Not authenticated');
+
+      const res = await fetch(`/api/reports/${reportId}/send`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Ошибка отправки');
+      toast(`Отправлено: ${result.sent} из ${result.total}`);
+      refetchSends();
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : 'Ошибка');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleAcknowledge = async () => {
+    setAcknowledging(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error('Not authenticated');
+
+      const res = await fetch(`/api/reports/${reportId}/acknowledge`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Ошибка');
+      toast('Отчёт подтверждён');
+      refetchSends();
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : 'Ошибка');
+    } finally {
+      setAcknowledging(false);
+    }
+  };
+
+  // Check if current user already acknowledged
+  const myAcknowledgment = emailSends?.find(
+    s => s.recipient_user_id === profile?.id && ['confirmed', 'auto_accepted'].includes(s.status)
+  );
+  const myPendingSend = emailSends?.find(
+    s => s.recipient_user_id === profile?.id && !['confirmed', 'auto_accepted', 'bounced'].includes(s.status)
+  );
 
   // ─── Render ────────────────────────────────────────────
 
   if (loadingReport) {
     return (
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--af-fs-11)', color: '#111' }}>
+      <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-11)', color: '#111' }}>
         Загрузка...
       </div>
     );
@@ -194,7 +262,7 @@ export default function ReportDetailView({ reportId, projectId, toast, onBack, m
 
   if (!report) {
     return (
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--af-fs-11)', color: '#111' }}>
+      <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-11)', color: '#111' }}>
         Отчёт не найден
       </div>
     );
@@ -207,7 +275,7 @@ export default function ReportDetailView({ reportId, projectId, toast, onBack, m
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
         <h2 style={{
-          fontFamily: 'var(--font-heading)',
+          fontFamily: 'var(--af-font-display)',
           fontWeight: 900,
           fontSize: 28,
           color: '#111',
@@ -220,7 +288,7 @@ export default function ReportDetailView({ reportId, projectId, toast, onBack, m
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {/* Status chip */}
           <span style={{
-            fontFamily: 'var(--font-mono)',
+            fontFamily: 'var(--af-font-mono)',
             fontSize: 'var(--af-fs-9)',
             padding: '2px 8px',
             border: `1px solid ${st.border}`,
@@ -235,7 +303,7 @@ export default function ReportDetailView({ reportId, projectId, toast, onBack, m
               onClick={() => handleStatusChange('filled')}
               disabled={saving}
               style={{
-                fontFamily: 'var(--font-mono)',
+                fontFamily: 'var(--af-font-mono)',
                 fontSize: 'var(--af-fs-9)',
                 padding: '2px 8px',
                 background: '#111',
@@ -252,7 +320,7 @@ export default function ReportDetailView({ reportId, projectId, toast, onBack, m
               onClick={() => handleStatusChange('published')}
               disabled={saving}
               style={{
-                fontFamily: 'var(--font-mono)',
+                fontFamily: 'var(--af-font-mono)',
                 fontSize: 'var(--af-fs-9)',
                 padding: '2px 8px',
                 background: '#111',
@@ -264,13 +332,157 @@ export default function ReportDetailView({ reportId, projectId, toast, onBack, m
               Опубликовать →
             </button>
           )}
+
+          {/* Send to clients button */}
+          {report.status === 'published' && canSendReport && (
+            <button
+              onClick={handleSendToClients}
+              disabled={sending}
+              style={{
+                fontFamily: 'var(--af-font-mono)',
+                fontSize: 'var(--af-fs-9)',
+                padding: '2px 8px',
+                background: 'transparent',
+                color: '#111',
+                border: '1px solid #111',
+                cursor: sending ? 'wait' : 'pointer',
+                opacity: sending ? 0.5 : 1,
+              }}
+            >
+              {sending ? 'Отправка...' : 'Отправить клиенту →'}
+            </button>
+          )}
+
+          {/* Acknowledge button for clients */}
+          {report.status === 'published' && canAcknowledgeReport && myPendingSend && !myAcknowledgment && (
+            <button
+              onClick={handleAcknowledge}
+              disabled={acknowledging}
+              style={{
+                fontFamily: 'var(--af-font-mono)',
+                fontSize: 'var(--af-fs-9)',
+                padding: '2px 8px',
+                background: 'transparent',
+                color: '#111',
+                border: '1px solid #111',
+                cursor: acknowledging ? 'wait' : 'pointer',
+                opacity: acknowledging ? 0.5 : 1,
+              }}
+            >
+              {acknowledging ? '...' : 'Ознакомлен'}
+            </button>
+          )}
+          {myAcknowledgment && (
+            <span style={{
+              fontFamily: 'var(--af-font-mono)',
+              fontSize: 'var(--af-fs-9)',
+              padding: '2px 8px',
+              color: '#111',
+              border: '1px solid #EBEBEB',
+            }}>
+              Ознакомлен ✓
+            </span>
+          )}
         </div>
       </div>
+
+      {/* Delivery section */}
+      {emailSends && emailSends.length > 0 && (
+        <div style={{ marginBottom: 24 }}>
+          <div style={{
+            fontFamily: 'var(--af-font-mono)',
+            fontSize: 'var(--af-fs-8)',
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
+            color: '#111',
+            marginBottom: 6,
+          }}>
+            Доставка
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {emailSends.map(send => {
+              const cfg = EMAIL_STATUS_CONFIG[send.status];
+              return (
+                <div key={send.id} style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '6px 10px',
+                  background: '#FFF',
+                  borderBottom: '0.5px solid #EBEBEB',
+                }}>
+                  <span style={{
+                    fontFamily: 'var(--af-font-mono)',
+                    fontSize: 'var(--af-fs-10)',
+                    color: '#111',
+                    flex: 1,
+                    minWidth: 0,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}>
+                    {send.recipient_profile?.full_name || send.recipient_email}
+                  </span>
+                  <span style={{
+                    fontFamily: 'var(--af-font-mono)',
+                    fontSize: 'var(--af-fs-8)',
+                    padding: '1px 6px',
+                    background: cfg.bg,
+                    color: cfg.text,
+                    whiteSpace: 'nowrap',
+                  }}>
+                    {cfg.label}
+                  </span>
+                  {send.delivered_at && (
+                    <span style={{
+                      fontFamily: 'var(--af-font-mono)',
+                      fontSize: 'var(--af-fs-8)',
+                      color: '#111',
+                      whiteSpace: 'nowrap',
+                    }}>
+                      {new Date(send.delivered_at).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Content hash */}
+          {emailSends[0]?.content_hash && (
+            <div style={{
+              marginTop: 8,
+              padding: '8px 10px',
+              background: '#F6F6F4',
+            }}>
+              <div style={{
+                fontFamily: 'var(--af-font-mono)',
+                fontSize: 'var(--af-fs-8)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                color: '#111',
+                marginBottom: 2,
+              }}>
+                SHA-256
+              </div>
+              <div style={{
+                fontFamily: "'Courier New', Courier, monospace",
+                fontSize: 'var(--af-fs-9)',
+                color: '#111',
+                wordBreak: 'break-all',
+                lineHeight: 1.4,
+              }}>
+                {emailSends[0].content_hash}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* General comment */}
       <div style={{ marginBottom: 24 }}>
         <div style={{
-          fontFamily: 'var(--font-mono)',
+          fontFamily: 'var(--af-font-mono)',
           fontSize: 'var(--af-fs-8)',
           textTransform: 'uppercase',
           letterSpacing: '0.08em',
@@ -286,7 +498,7 @@ export default function ReportDetailView({ reportId, projectId, toast, onBack, m
           rows={3}
           style={{
             width: '100%',
-            fontFamily: 'var(--font-mono)',
+            fontFamily: 'var(--af-font-mono)',
             fontSize: 'var(--af-fs-11)',
             padding: '10px 12px',
             border: '0.5px solid #EBEBEB',
@@ -303,7 +515,7 @@ export default function ReportDetailView({ reportId, projectId, toast, onBack, m
             disabled={saving}
             style={{
               marginTop: 6,
-              fontFamily: 'var(--font-mono)',
+              fontFamily: 'var(--af-font-mono)',
               fontSize: 'var(--af-fs-9)',
               padding: '4px 12px',
               background: '#111',
@@ -326,7 +538,7 @@ export default function ReportDetailView({ reportId, projectId, toast, onBack, m
           marginBottom: 12,
         }}>
           <div style={{
-            fontFamily: 'var(--font-mono)',
+            fontFamily: 'var(--af-font-mono)',
             fontSize: 'var(--af-fs-8)',
             textTransform: 'uppercase',
             letterSpacing: '0.08em',
@@ -337,7 +549,7 @@ export default function ReportDetailView({ reportId, projectId, toast, onBack, m
           <button
             onClick={() => setShowNewRemark(!showNewRemark)}
             style={{
-              fontFamily: 'var(--font-mono)',
+              fontFamily: 'var(--af-font-mono)',
               fontSize: 'var(--af-fs-9)',
               color: '#111',
               background: 'none',
@@ -368,7 +580,7 @@ export default function ReportDetailView({ reportId, projectId, toast, onBack, m
               autoFocus
               style={{
                 width: '100%',
-                fontFamily: 'var(--font-mono)',
+                fontFamily: 'var(--af-font-mono)',
                 fontSize: 'var(--af-fs-11)',
                 padding: '8px',
                 border: '0.5px solid #EBEBEB',
@@ -386,7 +598,7 @@ export default function ReportDetailView({ reportId, projectId, toast, onBack, m
                 value={newRemarkDeadline}
                 onChange={e => setNewRemarkDeadline(e.target.value)}
                 style={{
-                  fontFamily: 'var(--font-mono)',
+                  fontFamily: 'var(--af-font-mono)',
                   fontSize: 'var(--af-fs-10)',
                   padding: '4px 8px',
                   border: '0.5px solid #EBEBEB',
@@ -401,7 +613,7 @@ export default function ReportDetailView({ reportId, projectId, toast, onBack, m
                   value={newRemarkAssignee}
                   onChange={e => setNewRemarkAssignee(e.target.value)}
                   style={{
-                    fontFamily: 'var(--font-mono)',
+                    fontFamily: 'var(--af-font-mono)',
                     fontSize: 'var(--af-fs-10)',
                     padding: '4px 8px',
                     border: '0.5px solid #EBEBEB',
@@ -421,7 +633,7 @@ export default function ReportDetailView({ reportId, projectId, toast, onBack, m
               <div style={{ flex: 1 }} />
               <button
                 onClick={() => { setShowNewRemark(false); setNewRemarkText(''); }}
-                style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--af-fs-9)', color: '#111', background: 'none', border: 'none', cursor: 'pointer' }}
+                style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-9)', color: '#111', background: 'none', border: 'none', cursor: 'pointer' }}
               >
                 Отмена
               </button>
@@ -429,7 +641,7 @@ export default function ReportDetailView({ reportId, projectId, toast, onBack, m
                 onClick={handleAddRemark}
                 disabled={addingRemark || !newRemarkText.trim()}
                 style={{
-                  fontFamily: 'var(--font-mono)',
+                  fontFamily: 'var(--af-font-mono)',
                   fontSize: 'var(--af-fs-9)',
                   padding: '4px 12px',
                   background: '#111',
@@ -447,11 +659,11 @@ export default function ReportDetailView({ reportId, projectId, toast, onBack, m
 
         {/* Remarks list */}
         {loadingRemarks ? (
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--af-fs-11)', color: '#111' }}>
+          <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-11)', color: '#111' }}>
             Загрузка...
           </div>
         ) : (remarks || []).length === 0 ? (
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--af-fs-11)', color: '#111', padding: '16px 0' }}>
+          <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-11)', color: '#111', padding: '16px 0' }}>
             Замечаний нет
           </div>
         ) : (
@@ -536,8 +748,8 @@ function RemarkRow({
       const tasks = await fetchRemarkTasks(remark.id);
       setLinkedTasks(tasks);
       toast('Задача создана');
-    } catch (err: any) {
-      toast(err.message || 'Ошибка');
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : 'Ошибка');
     } finally {
       setCreatingTask(false);
     }
@@ -563,7 +775,7 @@ function RemarkRow({
       }}>
         {/* Number */}
         <div style={{
-          fontFamily: 'var(--font-mono)',
+          fontFamily: 'var(--af-font-mono)',
           fontSize: 'var(--af-fs-10)',
           color: '#111',
           minWidth: 20,
@@ -575,7 +787,7 @@ function RemarkRow({
         {/* Content */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
-            fontFamily: 'var(--font-mono)',
+            fontFamily: 'var(--af-font-mono)',
             fontSize: 'var(--af-fs-11)',
             color: '#111',
             lineHeight: 1.5,
@@ -593,7 +805,7 @@ function RemarkRow({
           }}>
             {/* Status chip */}
             <span style={{
-              fontFamily: 'var(--font-mono)',
+              fontFamily: 'var(--af-font-mono)',
               fontSize: 'var(--af-fs-8)',
               padding: '1px 6px',
               background: rs.bg,
@@ -607,7 +819,7 @@ function RemarkRow({
               <button
                 onClick={() => onStatusChange(remark.id, nextStatus)}
                 style={{
-                  fontFamily: 'var(--font-mono)',
+                  fontFamily: 'var(--af-font-mono)',
                   fontSize: 'var(--af-fs-8)',
                   color: '#111',
                   background: 'none',
@@ -622,14 +834,14 @@ function RemarkRow({
 
             {/* Assignee */}
             {remark.assignee && (
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--af-fs-8)', color: '#111' }}>
+              <span style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-8)', color: '#111' }}>
                 {remark.assignee.full_name}
               </span>
             )}
 
             {/* Deadline */}
             {remark.deadline && (
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--af-fs-8)', color: '#111' }}>
+              <span style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-8)', color: '#111' }}>
                 до {remark.deadline}
               </span>
             )}
@@ -639,7 +851,7 @@ function RemarkRow({
               <button
                 onClick={onToggleComment}
                 style={{
-                  fontFamily: 'var(--font-mono)',
+                  fontFamily: 'var(--af-font-mono)',
                   fontSize: 'var(--af-fs-8)',
                   color: '#111',
                   background: 'none',
@@ -657,7 +869,7 @@ function RemarkRow({
               <button
                 onClick={onToggleComment}
                 style={{
-                  fontFamily: 'var(--font-mono)',
+                  fontFamily: 'var(--af-font-mono)',
                   fontSize: 'var(--af-fs-8)',
                   color: '#111',
                   background: 'none',
@@ -701,7 +913,7 @@ function RemarkRow({
               borderTop: '0.5px solid #EBEBEB',
             }}>
               <div style={{
-                fontFamily: 'var(--font-mono)',
+                fontFamily: 'var(--af-font-mono)',
                 fontSize: 'var(--af-fs-10)',
                 color: '#111',
                 lineHeight: 1.5,
@@ -709,7 +921,7 @@ function RemarkRow({
                 {c.text}
               </div>
               <div style={{
-                fontFamily: 'var(--font-mono)',
+                fontFamily: 'var(--af-font-mono)',
                 fontSize: 'var(--af-fs-8)',
                 color: '#111',
                 marginTop: 2,
@@ -729,7 +941,7 @@ function RemarkRow({
               autoFocus
               style={{
                 flex: 1,
-                fontFamily: 'var(--font-mono)',
+                fontFamily: 'var(--af-font-mono)',
                 fontSize: 'var(--af-fs-10)',
                 padding: '4px 8px',
                 border: '0.5px solid #EBEBEB',
@@ -744,7 +956,7 @@ function RemarkRow({
               onClick={onSubmitComment}
               disabled={!commentText.trim()}
               style={{
-                fontFamily: 'var(--font-mono)',
+                fontFamily: 'var(--af-font-mono)',
                 fontSize: 'var(--af-fs-9)',
                 padding: '4px 10px',
                 background: '#111',
@@ -765,7 +977,7 @@ function RemarkRow({
         <div style={{ padding: '0 12px 8px 42px' }}>
           {linkedTasks.map(task => (
             <div key={task.id} style={{
-              fontFamily: 'var(--font-mono)',
+              fontFamily: 'var(--af-font-mono)',
               fontSize: 'var(--af-fs-8)',
               color: '#111',
               padding: '2px 0',
@@ -778,7 +990,7 @@ function RemarkRow({
             <button
               onClick={() => setShowCreateTask(true)}
               style={{
-                fontFamily: 'var(--font-mono)',
+                fontFamily: 'var(--af-font-mono)',
                 fontSize: 'var(--af-fs-8)',
                 textTransform: 'uppercase',
                 letterSpacing: '0.06em',
@@ -807,7 +1019,7 @@ function RemarkRow({
                 autoFocus
                 style={{
                   width: '100%',
-                  fontFamily: 'var(--font-mono)',
+                  fontFamily: 'var(--af-font-mono)',
                   fontSize: 'var(--af-fs-10)',
                   padding: '4px 8px',
                   border: '0.5px solid #EBEBEB',
@@ -824,7 +1036,7 @@ function RemarkRow({
                     value={newTaskAssignee}
                     onChange={e => setNewTaskAssignee(e.target.value)}
                     style={{
-                      fontFamily: 'var(--font-mono)',
+                      fontFamily: 'var(--af-font-mono)',
                       fontSize: 'var(--af-fs-10)',
                       padding: '3px 6px',
                       border: '0.5px solid #EBEBEB',
@@ -846,7 +1058,7 @@ function RemarkRow({
                     value={newTaskAssignee}
                     onChange={e => setNewTaskAssignee(e.target.value)}
                     style={{
-                      fontFamily: 'var(--font-mono)',
+                      fontFamily: 'var(--af-font-mono)',
                       fontSize: 'var(--af-fs-10)',
                       padding: '3px 6px',
                       border: '0.5px solid #EBEBEB',
@@ -866,7 +1078,7 @@ function RemarkRow({
                 <div style={{ flex: 1 }} />
                 <button
                   onClick={() => { setShowCreateTask(false); setNewTaskTitle(''); setNewTaskAssignee(''); }}
-                  style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--af-fs-8)', color: '#111', background: 'none', border: 'none', cursor: 'pointer' }}
+                  style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-8)', color: '#111', background: 'none', border: 'none', cursor: 'pointer' }}
                 >
                   Отмена
                 </button>
@@ -874,7 +1086,7 @@ function RemarkRow({
                   onClick={handleCreateTask}
                   disabled={creatingTask || !newTaskTitle.trim() || !newTaskAssignee}
                   style={{
-                    fontFamily: 'var(--font-mono)',
+                    fontFamily: 'var(--af-font-mono)',
                     fontSize: 'var(--af-fs-8)',
                     padding: '3px 8px',
                     background: '#111',

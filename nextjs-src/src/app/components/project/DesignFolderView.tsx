@@ -49,7 +49,7 @@ function FileTypeIcon({ type }: { type: string }) {
       alignItems: 'center', justifyContent: 'center', flexShrink: 0, background: '#fff',
     }}>
       <span style={{
-        fontFamily: "'IBM Plex Mono', monospace", fontSize: 10,
+        fontFamily: 'var(--af-font-mono)', fontSize: 10,
         fontWeight: 600, color: '#111', textTransform: 'uppercase', letterSpacing: '0.08em',
       }}>{type}</span>
     </div>
@@ -163,6 +163,7 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
       }
     } catch (err: unknown) {
       console.error('Upload failed:', err);
+      toast(err instanceof Error ? `Ошибка: ${err.message}` : 'Ошибка загрузки файла');
       updateOne({ error: err instanceof Error ? err.message : 'Ошибка загрузки', progress: 0 });
       // Keep failed pending on screen for 5s, then remove
       setTimeout(() => {
@@ -175,12 +176,14 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
     const fileList = e.target.files;
     if (!fileList || fileList.length === 0) return;
 
-    // Reset input
+    // IMPORTANT: Copy files BEFORE resetting input value!
+    // FileList is a live reference — setting value='' clears it.
+    const filesArr = Array.from(fileList);
+
+    // Reset input so the same file can be re-uploaded
     if (fileInputRef.current) fileInputRef.current.value = '';
 
     setUploadError(null);
-
-    const filesArr = Array.from(fileList);
     // Validate sizes
     const tooLarge = filesArr.filter(f => f.size > MAX_SIZE);
     if (tooLarge.length > 0) {
@@ -254,7 +257,7 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
       <button
         onClick={onBack}
         style={{
-          fontFamily: "'IBM Plex Mono', monospace", fontSize: 8,
+          fontFamily: 'var(--af-font-mono)', fontSize: 8,
           letterSpacing: '0.14em', textTransform: 'uppercase', color: '#111',
           background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: 16,
         }}
@@ -264,14 +267,14 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
 
       {/* Header row */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700, color: '#111', margin: 0, textTransform: 'uppercase' }}>
+        <h3 style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-13)', fontWeight: 400, color: '#111', margin: 0, textTransform: 'uppercase', letterSpacing: '0.14em' }}>
           {folderLabel}
         </h3>
         {canUpload && (
           <button
             onClick={() => fileInputRef.current?.click()}
             style={{
-              fontFamily: "'IBM Plex Mono', monospace", fontSize: 8,
+              fontFamily: 'var(--af-font-mono)', fontSize: 8,
               textTransform: 'uppercase', letterSpacing: '0.14em',
               color: '#111', background: 'none', border: '0.5px solid #EBEBEB',
               padding: '6px 12px', cursor: 'pointer',
@@ -286,14 +289,26 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
           accept={ACCEPT}
           multiple
           onChange={handleUpload}
-          style={{ display: 'none' }}
+          style={{
+            position: 'absolute',
+            width: 1,
+            height: 1,
+            padding: 0,
+            margin: -1,
+            overflow: 'hidden',
+            clip: 'rect(0, 0, 0, 0)',
+            whiteSpace: 'nowrap',
+            border: 0,
+          }}
+          tabIndex={-1}
+          aria-hidden="true"
         />
       </div>
 
       {/* Upload error */}
       {uploadError && (
         <div style={{
-          fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: '#111',
+          fontFamily: 'var(--af-font-mono)', fontSize: 9, color: '#111',
           marginBottom: 12, padding: '10px 12px', border: '0.5px solid #111', background: '#FFF8E1',
         }}>
           {uploadError}
@@ -302,7 +317,7 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
 
       {/* Loading initial */}
       {loading && !files && (
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: '#111', textAlign: 'center', padding: '40px 0', textTransform: 'uppercase', letterSpacing: '0.2em' }}>
+        <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 9, color: '#111', textAlign: 'center', padding: '40px 0', textTransform: 'uppercase', letterSpacing: '0.2em' }}>
           Загрузка...
         </div>
       )}
@@ -310,15 +325,15 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
       {/* Empty state */}
       {!loading && pending.length === 0 && (!files || files.length === 0) && (
         <div style={{ textAlign: 'center', padding: '48px 0' }}>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 48, fontWeight: 900, color: '#EBEBEB', marginBottom: 8 }}>—</div>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, textTransform: 'uppercase', letterSpacing: '0.16em', color: '#111' }}>
+          <div style={{ fontFamily: 'var(--af-font-display)', fontSize: 48, fontWeight: 900, color: '#EBEBEB', marginBottom: 8 }}>—</div>
+          <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 8, textTransform: 'uppercase', letterSpacing: '0.16em', color: '#111' }}>
             Файлов пока нет
           </div>
           {canUpload && (
             <button
               onClick={() => fileInputRef.current?.click()}
               style={{
-                fontFamily: "'IBM Plex Mono', monospace", fontSize: 8,
+                fontFamily: 'var(--af-font-mono)', fontSize: 8,
                 textTransform: 'uppercase', letterSpacing: '0.14em',
                 color: '#111', background: 'none', border: '0.5px solid #EBEBEB',
                 padding: '8px 16px', cursor: 'pointer', marginTop: 16,
@@ -416,14 +431,14 @@ function FileTile({ file, onClick }: { file: DesignFileWithProfile; onClick: () 
           background: '#F6F6F4',
         }}>
           <div style={{
-            fontFamily: "'Playfair Display', serif",
+            fontFamily: 'var(--af-font-display)',
             fontSize: 24,
             fontWeight: 900,
             color: '#999',
             lineHeight: 1,
           }}>!</div>
           <div style={{
-            fontFamily: "'IBM Plex Mono', monospace",
+            fontFamily: 'var(--af-font-mono)',
             fontSize: 8,
             color: '#111',
             textTransform: 'uppercase',
@@ -434,7 +449,7 @@ function FileTile({ file, onClick }: { file: DesignFileWithProfile; onClick: () 
           <button
             onClick={handleRetry}
             style={{
-              fontFamily: "'IBM Plex Mono', monospace",
+              fontFamily: 'var(--af-font-mono)',
               fontSize: 8,
               letterSpacing: '0.12em',
               textTransform: 'uppercase',
@@ -448,7 +463,7 @@ function FileTile({ file, onClick }: { file: DesignFileWithProfile; onClick: () 
             Повторить
           </button>
           <div style={{
-            fontFamily: "'IBM Plex Mono', monospace",
+            fontFamily: 'var(--af-font-mono)',
             fontSize: 7,
             color: '#888',
             marginTop: 2,
@@ -473,7 +488,7 @@ function FileTile({ file, onClick }: { file: DesignFileWithProfile; onClick: () 
         }}>
           <FileTypeIcon type={typeLabel} />
           <div style={{
-            fontFamily: "'IBM Plex Mono', monospace",
+            fontFamily: 'var(--af-font-mono)',
             fontSize: 9,
             color: '#111',
             lineHeight: 1.3,
@@ -487,7 +502,7 @@ function FileTile({ file, onClick }: { file: DesignFileWithProfile; onClick: () 
             {file.name}
           </div>
           <div style={{
-            fontFamily: "'IBM Plex Mono', monospace",
+            fontFamily: 'var(--af-font-mono)',
             fontSize: 8,
             color: '#888',
           }}>
@@ -551,7 +566,7 @@ function PendingTile({ pending }: { pending: PendingUpload }) {
         padding: '6px 8px',
         background: 'rgba(0,0,0,0.55)',
         color: '#fff',
-        fontFamily: "'IBM Plex Mono', monospace",
+        fontFamily: 'var(--af-font-mono)',
         fontSize: 9,
         textTransform: 'uppercase',
         letterSpacing: '0.1em',
@@ -627,7 +642,7 @@ function RenameDialog({
         }}
       >
         <div style={{
-          fontFamily: "'Playfair Display', serif",
+          fontFamily: 'var(--af-font-display)',
           fontSize: 20, fontWeight: 700, color: '#111',
           marginBottom: 4,
         }}>
@@ -635,7 +650,7 @@ function RenameDialog({
         </div>
         {suggestedName && (
           <div style={{
-            fontFamily: "'IBM Plex Mono', monospace",
+            fontFamily: 'var(--af-font-mono)',
             fontSize: 9, color: '#666', marginBottom: 16,
             textTransform: 'uppercase', letterSpacing: '0.08em',
           }}>
@@ -655,7 +670,7 @@ function RenameDialog({
             disabled={loading}
             style={{
               flex: 1,
-              fontFamily: "'IBM Plex Mono', monospace", fontSize: 13,
+              fontFamily: 'var(--af-font-mono)', fontSize: 13,
               color: '#111',
               border: '0.5px solid #111',
               padding: '10px 12px',
@@ -665,7 +680,7 @@ function RenameDialog({
           />
           {ext && (
             <span style={{
-              fontFamily: "'IBM Plex Mono', monospace",
+              fontFamily: 'var(--af-font-mono)',
               fontSize: 12, color: '#888',
               borderTop: '0.5px solid #111',
               borderRight: '0.5px solid #111',
@@ -683,7 +698,7 @@ function RenameDialog({
             onClick={onCancel}
             disabled={loading}
             style={{
-              fontFamily: "'IBM Plex Mono', monospace",
+              fontFamily: 'var(--af-font-mono)',
               fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.14em',
               color: '#111', background: 'none', border: '0.5px solid #EBEBEB',
               padding: '10px 16px', cursor: 'pointer',
@@ -695,7 +710,7 @@ function RenameDialog({
             onClick={handleSubmit}
             disabled={loading || !baseName.trim()}
             style={{
-              fontFamily: "'IBM Plex Mono', monospace",
+              fontFamily: 'var(--af-font-mono)',
               fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.14em',
               color: '#fff', background: '#111', border: '0.5px solid #111',
               padding: '10px 16px', cursor: 'pointer',
@@ -944,7 +959,7 @@ function Lightbox({
           border: '0.5px solid rgba(255,255,255,0.3)',
           color: '#fff',
           fontSize: 18,
-          fontFamily: "'IBM Plex Mono', monospace",
+          fontFamily: 'var(--af-font-mono)',
           cursor: 'pointer',
           zIndex: 3,
           display: 'flex',
@@ -969,7 +984,7 @@ function Lightbox({
             border: '0.5px solid rgba(255,255,255,0.3)',
             color: '#fff',
             fontSize: 22,
-            fontFamily: "'IBM Plex Mono', monospace",
+            fontFamily: 'var(--af-font-mono)',
             cursor: 'pointer',
             zIndex: 3,
             display: 'flex',
@@ -995,7 +1010,7 @@ function Lightbox({
             border: '0.5px solid rgba(255,255,255,0.3)',
             color: '#fff',
             fontSize: 22,
-            fontFamily: "'IBM Plex Mono', monospace",
+            fontFamily: 'var(--af-font-mono)',
             cursor: 'pointer',
             zIndex: 3,
             display: 'flex',
@@ -1057,7 +1072,7 @@ function Lightbox({
           overflow: 'hidden',
         }}>
           <span style={{
-            fontFamily: "'IBM Plex Mono', monospace",
+            fontFamily: 'var(--af-font-mono)',
             fontSize: 10,
             color: '#fff',
             overflow: 'hidden',
@@ -1070,7 +1085,7 @@ function Lightbox({
           </span>
           {images.length > 1 && (
             <span style={{
-              fontFamily: "'IBM Plex Mono', monospace",
+              fontFamily: 'var(--af-font-mono)',
               fontSize: 9,
               color: 'rgba(255,255,255,0.5)',
               whiteSpace: 'nowrap',
@@ -1083,7 +1098,7 @@ function Lightbox({
             <button
               onClick={(e) => { e.stopPropagation(); onRequestRename(current.id, current.name); }}
               style={{
-                fontFamily: "'IBM Plex Mono', monospace",
+                fontFamily: 'var(--af-font-mono)',
                 fontSize: 8,
                 color: '#fff',
                 background: 'none',
@@ -1102,7 +1117,7 @@ function Lightbox({
           <button
             onClick={(e) => { e.stopPropagation(); onOpenDetail(current.id); }}
             style={{
-              fontFamily: "'IBM Plex Mono', monospace",
+              fontFamily: 'var(--af-font-mono)',
               fontSize: 8,
               color: '#fff',
               background: 'none',
@@ -1134,14 +1149,14 @@ function Lightbox({
               color: '#fff', background: 'none',
               border: '0.5px solid rgba(255,255,255,0.25)',
               width: 24, height: 24,
-              fontSize: 14, fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: 14, fontFamily: 'var(--af-font-mono)',
               cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}
           >−</button>
           <span style={{
             color: '#fff',
-            fontFamily: "'IBM Plex Mono', monospace",
+            fontFamily: 'var(--af-font-mono)',
             fontSize: 9,
             minWidth: 36,
             textAlign: 'center',
@@ -1165,7 +1180,7 @@ function Lightbox({
               color: '#fff', background: 'none',
               border: '0.5px solid rgba(255,255,255,0.25)',
               width: 24, height: 24,
-              fontSize: 14, fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: 14, fontFamily: 'var(--af-font-mono)',
               cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}
