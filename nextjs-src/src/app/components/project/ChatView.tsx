@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import Image from 'next/image';
 import { useAuth } from '../../lib/auth';
 import { useChatMessages, useChatRealtime, useChatMarkRead, useChatUnreadByType, sendPushNotification, useProjectMembersWithProfiles, useChatChannels } from '../../lib/hooks';
-import { sendChatMessage, deleteChatMessage, fetchChatMessages, analyzeChatMessages, createReminder, createChatChannel, deleteChatChannel, uploadChatImage } from '../../lib/queries';
+import { sendChatMessage, deleteChatMessage, fetchChatMessages, analyzeChatMessages, createReminder, createChatChannel, deleteChatChannel, uploadChatImage, toggleChatMessagePin, fetchPinnedMessages, searchChatMessages } from '../../lib/queries';
 import type { ChatMessageWithAuthor, ChatType, ChatChannel, Profile, ChatAnalysisResult } from '../../lib/types';
 import PushPermissionBanner from './PushPermissionBanner';
 
@@ -171,15 +171,18 @@ interface MessageBubbleProps {
   isOwn: boolean;
   showAvatar: boolean;
   onDelete: (id: string) => void;
+  onTogglePin?: (id: string, pinned: boolean) => void;
+  searchHighlight?: string;
 }
 
-function MessageBubble({ msg, isOwn, showAvatar, onDelete }: MessageBubbleProps) {
+function MessageBubble({ msg, isOwn, showAvatar, onDelete, onTogglePin, searchHighlight }: MessageBubbleProps) {
   const [showMenu, setShowMenu] = useState(false);
   const name = msg.author?.full_name || 'Пользователь';
   const avatarUrl = msg.author?.avatar_url;
 
   return (
     <div
+      id={`chat-msg-${msg.id}`}
       style={{
         display: 'flex',
         flexDirection: isOwn ? 'row-reverse' : 'row',
@@ -222,7 +225,7 @@ function MessageBubble({ msg, isOwn, showAvatar, onDelete }: MessageBubbleProps)
           position: 'relative',
         }}
         onContextMenu={(e) => {
-          if (isOwn) { e.preventDefault(); setShowMenu(true); }
+          e.preventDefault(); setShowMenu(true);
         }}
       >
         {/* Author name (first in group) */}
@@ -242,8 +245,19 @@ function MessageBubble({ msg, isOwn, showAvatar, onDelete }: MessageBubbleProps)
         {/* Text / Voice */}
         <VoiceBubble msg={msg} isOwn={isOwn} />
 
+        {/* Pin indicator */}
+        {msg.is_pinned && (
+          <div style={{
+            fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-7)',
+            letterSpacing: '0.1em', textTransform: 'uppercase',
+            color: '#111', opacity: 0.5, marginTop: 2,
+          }}>
+            📌 Закреплено
+          </div>
+        )}
+
         {/* Context menu */}
-        {showMenu && isOwn && (
+        {showMenu && (
           <div
             style={{
               position: 'absolute', top: -4, right: 0, zIndex: 10,
@@ -251,19 +265,36 @@ function MessageBubble({ msg, isOwn, showAvatar, onDelete }: MessageBubbleProps)
               boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
             }}
           >
-            <button
-              onClick={() => { onDelete(msg.id); setShowMenu(false); }}
-              style={{
-                display: 'block', width: '100%', padding: '6px 16px',
-                fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-10)',
-                color: '#111', background: 'none', border: 'none', cursor: 'pointer',
-                textAlign: 'left',
-              }}
-              onMouseEnter={e => { (e.target as HTMLElement).style.background = '#F6F6F4'; }}
-              onMouseLeave={e => { (e.target as HTMLElement).style.background = 'transparent'; }}
-            >
-              Удалить
-            </button>
+            {onTogglePin && (
+              <button
+                onClick={() => { onTogglePin(msg.id, !msg.is_pinned); setShowMenu(false); }}
+                style={{
+                  display: 'block', width: '100%', padding: '6px 16px',
+                  fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-10)',
+                  color: '#111', background: 'none', border: 'none', cursor: 'pointer',
+                  textAlign: 'left', whiteSpace: 'nowrap',
+                }}
+                onMouseEnter={e => { (e.target as HTMLElement).style.background = '#F6F6F4'; }}
+                onMouseLeave={e => { (e.target as HTMLElement).style.background = 'transparent'; }}
+              >
+                {msg.is_pinned ? 'Открепить' : 'Закрепить'}
+              </button>
+            )}
+            {isOwn && (
+              <button
+                onClick={() => { onDelete(msg.id); setShowMenu(false); }}
+                style={{
+                  display: 'block', width: '100%', padding: '6px 16px',
+                  fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-10)',
+                  color: '#111', background: 'none', border: 'none', cursor: 'pointer',
+                  textAlign: 'left',
+                }}
+                onMouseEnter={e => { (e.target as HTMLElement).style.background = '#F6F6F4'; }}
+                onMouseLeave={e => { (e.target as HTMLElement).style.background = 'transparent'; }}
+              >
+                Удалить
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -632,6 +663,75 @@ function ChatTabPanel({ projectId, chatType, channelId, userId, profile, toast, 
   // Mark as read on mount and when tab becomes active
   useChatMarkRead(isActive ? projectId : null, userId, chatType);
 
+  // Search state
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<ChatMessageWithAuthor[]>([]);
+  const [searchIdx, setSearchIdx] = useState(0);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Pinned messages
+  const [pinnedMessages, setPinnedMessages] = useState<ChatMessageWithAuthor[]>([]);
+  const [showPinned, setShowPinned] = useState(false);
+
+  // Load pinned messages
+  useEffect(() => {
+    if (isActive && projectId) {
+      fetchPinnedMessages(projectId, chatType).then(setPinnedMessages).catch(() => {});
+    }
+  }, [isActive, projectId, chatType]);
+
+  // Search handler
+  useEffect(() => {
+    if (!searchQuery.trim()) { setSearchResults([]); setSearchIdx(0); return; }
+    const timer = setTimeout(() => {
+      searchChatMessages(projectId, chatType, searchQuery).then(results => {
+        setSearchResults(results);
+        setSearchIdx(0);
+      }).catch(() => {});
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery, projectId, chatType]);
+
+  // Scroll to search result
+  useEffect(() => {
+    if (searchResults.length > 0 && searchResults[searchIdx]) {
+      const el = document.getElementById(`chat-msg-${searchResults[searchIdx].id}`);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [searchIdx, searchResults]);
+
+  // Focus search input when opened
+  useEffect(() => {
+    if (searchOpen) searchInputRef.current?.focus();
+  }, [searchOpen]);
+
+  // Pin/unpin handler
+  const handleTogglePin = async (messageId: string, pinned: boolean) => {
+    try {
+      await toggleChatMessagePin(messageId, pinned);
+      // Refresh pinned list
+      const fresh = await fetchPinnedMessages(projectId, chatType);
+      setPinnedMessages(fresh);
+      // Update in message list
+      refetch();
+      toast(pinned ? 'Сообщение закреплено' : 'Сообщение откреплено');
+    } catch {
+      toast('Ошибка');
+    }
+  };
+
+  // Scroll to pinned message
+  const scrollToMessage = (messageId: string) => {
+    const el = document.getElementById(`chat-msg-${messageId}`);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setShowPinned(false);
+  };
+
+  // Highlight search match IDs
+  const searchMatchIds = useMemo(() => new Set(searchResults.map(r => r.id)), [searchResults]);
+  const currentSearchId = searchResults[searchIdx]?.id;
+
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const [pastedImage, setPastedImage] = useState<{ file: File; previewUrl: string } | null>(null);
@@ -800,6 +900,128 @@ function ChatTabPanel({ projectId, chatType, channelId, userId, profile, toast, 
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+      {/* Search bar + pinned strip */}
+      <div style={{ flexShrink: 0, borderBottom: '0.5px solid #EBEBEB' }}>
+        {/* Search / pin header row */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          padding: '4px 12px', minHeight: 32,
+        }}>
+          {/* Search toggle */}
+          <button
+            onClick={() => { setSearchOpen(!searchOpen); if (searchOpen) { setSearchQuery(''); setSearchResults([]); } }}
+            style={{
+              fontFamily: 'var(--af-font-mono)', fontSize: 14, color: '#111',
+              background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px',
+            }}
+            title="Поиск по чату"
+          >
+            {searchOpen ? '✕' : '⌕'}
+          </button>
+
+          {/* Search input */}
+          {searchOpen && (
+            <>
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'ArrowDown' || (e.key === 'Enter' && !e.shiftKey)) {
+                    e.preventDefault();
+                    setSearchIdx(i => Math.min(searchResults.length - 1, i + 1));
+                  } else if (e.key === 'ArrowUp' || (e.key === 'Enter' && e.shiftKey)) {
+                    e.preventDefault();
+                    setSearchIdx(i => Math.max(0, i - 1));
+                  } else if (e.key === 'Escape') {
+                    setSearchOpen(false); setSearchQuery(''); setSearchResults([]);
+                  }
+                }}
+                placeholder="Поиск..."
+                style={{
+                  flex: 1, fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-10)',
+                  border: '0.5px solid #EBEBEB', padding: '4px 8px', outline: 'none',
+                  background: '#F6F6F4',
+                }}
+              />
+              {searchResults.length > 0 && (
+                <span style={{
+                  fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-8)',
+                  color: '#111', whiteSpace: 'nowrap',
+                }}>
+                  {searchIdx + 1}/{searchResults.length}
+                </span>
+              )}
+              <button
+                onClick={() => setSearchIdx(i => Math.max(0, i - 1))}
+                disabled={searchIdx <= 0}
+                style={{
+                  fontFamily: 'var(--af-font-mono)', fontSize: 12, color: '#111',
+                  background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px',
+                  opacity: searchIdx <= 0 ? 0.3 : 1,
+                }}
+              >↑</button>
+              <button
+                onClick={() => setSearchIdx(i => Math.min(searchResults.length - 1, i + 1))}
+                disabled={searchIdx >= searchResults.length - 1}
+                style={{
+                  fontFamily: 'var(--af-font-mono)', fontSize: 12, color: '#111',
+                  background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px',
+                  opacity: searchIdx >= searchResults.length - 1 ? 0.3 : 1,
+                }}
+              >↓</button>
+            </>
+          )}
+
+          {/* Pinned indicator */}
+          {!searchOpen && pinnedMessages.length > 0 && (
+            <button
+              onClick={() => setShowPinned(!showPinned)}
+              style={{
+                fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-8)',
+                color: '#111', background: showPinned ? '#F6F6F4' : 'none',
+                border: '0.5px solid #EBEBEB', padding: '3px 8px', cursor: 'pointer',
+                marginLeft: 'auto', letterSpacing: '0.08em', textTransform: 'uppercase',
+              }}
+            >
+              📌 {pinnedMessages.length}
+            </button>
+          )}
+        </div>
+
+        {/* Pinned messages dropdown */}
+        {showPinned && pinnedMessages.length > 0 && (
+          <div style={{
+            maxHeight: 150, overflowY: 'auto',
+            borderTop: '0.5px solid #EBEBEB', background: '#F6F6F4',
+          }}>
+            {pinnedMessages.map(pm => (
+              <button
+                key={pm.id}
+                onClick={() => scrollToMessage(pm.id)}
+                style={{
+                  display: 'block', width: '100%', textAlign: 'left',
+                  padding: '6px 12px', background: 'none', border: 'none',
+                  borderBottom: '0.5px solid #EBEBEB', cursor: 'pointer',
+                  fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-9)',
+                  color: '#111',
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#FFFFFF'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+              >
+                <span style={{ fontWeight: 600, fontSize: 'var(--af-fs-8)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  {pm.author?.full_name || 'Аноним'}
+                </span>
+                <span style={{ marginLeft: 6, opacity: 0.6 }}>
+                  {pm.text.slice(0, 60)}{pm.text.length > 60 ? '…' : ''}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Messages area */}
       <div
         ref={scrollContainerRef}
@@ -852,13 +1074,23 @@ function ChatTabPanel({ projectId, chatType, channelId, userId, profile, toast, 
               {group.date}
             </div>
             {group.messages.map((msg, idx) => (
-              <MessageBubble
+              <div
                 key={msg.id}
-                msg={msg}
-                isOwn={msg.user_id === userId}
-                showAvatar={shouldShowAvatar(group.messages, idx)}
-                onDelete={handleDelete}
-              />
+                style={{
+                  background: currentSearchId === msg.id ? 'rgba(17,17,17,0.06)' : searchMatchIds.has(msg.id) ? 'rgba(17,17,17,0.03)' : 'transparent',
+                  transition: 'background 0.2s',
+                  margin: '0 -16px',
+                  padding: '0 16px',
+                }}
+              >
+                <MessageBubble
+                  msg={msg}
+                  isOwn={msg.user_id === userId}
+                  showAvatar={shouldShowAvatar(group.messages, idx)}
+                  onDelete={handleDelete}
+                  onTogglePin={handleTogglePin}
+                />
+              </div>
             ))}
           </div>
         ))}

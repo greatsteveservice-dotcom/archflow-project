@@ -592,6 +592,7 @@ export interface ChatMessage {
   message_type: 'text' | 'voice';
   voice_duration: number | null;
   voice_original: string | null;
+  is_pinned: boolean;
 }
 
 export interface ChatMessageWithAuthor extends ChatMessage {

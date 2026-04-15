@@ -2425,6 +2425,82 @@ export async function updateChatMessage(
   if (error) throw error;
 }
 
+/** Toggle pin status of a chat message */
+export async function toggleChatMessagePin(messageId: string, pinned: boolean): Promise<void> {
+  const { error } = await supabase
+    .from('chat_messages')
+    .update({ is_pinned: pinned })
+    .eq('id', messageId);
+
+  if (error) throw error;
+}
+
+/** Fetch pinned messages for a project+chatType */
+export async function fetchPinnedMessages(
+  projectId: string,
+  chatType: ChatType = 'team',
+): Promise<ChatMessageWithAuthor[]> {
+  const { data, error } = await supabase
+    .from('chat_messages')
+    .select('*')
+    .eq('project_id', projectId)
+    .eq('chat_type', chatType)
+    .eq('is_pinned', true)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  if (!data || data.length === 0) return [];
+
+  // Fetch author profiles
+  const userIds = [...new Set(data.map(m => m.user_id))] as string[];
+  let profiles: Profile[] = [];
+  if (userIds.length > 0) {
+    const { data: p } = await supabase.from('profiles').select('*').in('id', userIds);
+    profiles = (p || []) as Profile[];
+  }
+  const profileMap = new Map(profiles.map(p => [p.id, p]));
+
+  return data.map(m => ({
+    ...m,
+    author: profileMap.get(m.user_id),
+  })) as ChatMessageWithAuthor[];
+}
+
+/** Search chat messages by text */
+export async function searchChatMessages(
+  projectId: string,
+  chatType: ChatType,
+  query: string,
+): Promise<ChatMessageWithAuthor[]> {
+  const clean = query.trim();
+  if (!clean) return [];
+
+  const { data, error } = await supabase
+    .from('chat_messages')
+    .select('*')
+    .eq('project_id', projectId)
+    .eq('chat_type', chatType)
+    .ilike('text', `%${clean}%`)
+    .order('created_at', { ascending: false })
+    .limit(50);
+
+  if (error) throw error;
+  if (!data || data.length === 0) return [];
+
+  const userIds = [...new Set(data.map(m => m.user_id))] as string[];
+  let profiles: Profile[] = [];
+  if (userIds.length > 0) {
+    const { data: p } = await supabase.from('profiles').select('*').in('id', userIds);
+    profiles = (p || []) as Profile[];
+  }
+  const profileMap = new Map(profiles.map(p => [p.id, p]));
+
+  return data.map(m => ({
+    ...m,
+    author: profileMap.get(m.user_id),
+  })) as ChatMessageWithAuthor[];
+}
+
 /** Get or create the chat_reads row, return last_read_at */
 export async function fetchChatRead(
   projectId: string,
