@@ -5,136 +5,225 @@ import { useAuth } from "../lib/auth";
 import { supabase } from "../lib/supabase";
 import { metrikaGoal } from "../lib/metrika";
 
-export default function FeedbackBar() {
-  const { profile } = useAuth();
-  const [open, setOpen] = useState(false);
-  const [text, setText] = useState("");
-  const [sent, setSent] = useState(false);
-  const [sending, setSending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+interface SupportMessage {
+  id: string;
+  thread_id: string;
+  sender: "user" | "support";
+  body: string;
+  created_at: string;
+}
 
-  // Lock body scroll when modal open
+export default function FeedbackBar() {
+  const { profile, session } = useAuth();
+  const [open, setOpen] = useState(false);
+  const [messages, setMessages] = useState<SupportMessage[]>([]);
+  const [hasUnread, setHasUnread] = useState(false);
+  const [input, setInput] = useState("");
+  const [sending, setSending] = useState(false);
+  const [threadId, setThreadId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+
+  // Scroll to bottom when messages change or chat opens
   useEffect(() => {
-    if (open) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-    return () => { document.body.style.overflow = ""; };
-  }, [open]);
+  }, [messages, open]);
+
+  // Load thread & subscribe to realtime
+  useEffect(() => {
+    if (!session?.access_token) return;
+
+    let mounted = true;
+
+    async function init() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || !mounted) return;
+
+      // Get existing thread
+      const { data: thread } = await supabase
+        .from("support_threads")
+        .select("id, has_unread")
+        .eq("user_id", user.id)
+        .single();
+
+      if (!thread || !mounted) return;
+
+      setThreadId(thread.id);
+      setHasUnread(thread.has_unread || false);
+
+      // Load message history
+      const { data: msgs } = await supabase
+        .from("support_messages")
+        .select("id, thread_id, sender, body, created_at")
+        .eq("thread_id", thread.id)
+        .order("created_at", { ascending: true });
+
+      if (msgs && mounted) setMessages(msgs);
+
+      // Subscribe to new messages
+      const channel = supabase
+        .channel(`support:${thread.id}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "support_messages",
+            filter: `thread_id=eq.${thread.id}`,
+          },
+          (payload) => {
+            const msg = payload.new as SupportMessage;
+            if (msg.sender === "support") {
+              setMessages((prev) => {
+                if (prev.some((m) => m.id === msg.id)) return prev;
+                return [...prev, msg];
+              });
+              setHasUnread(true);
+            }
+          }
+        )
+        .subscribe();
+
+      channelRef.current = channel;
+    }
+
+    init();
+
+    return () => {
+      mounted = false;
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+    };
+  }, [session?.access_token]);
+
+  // Mark as read when opening
+  const handleOpen = useCallback(async () => {
+    setOpen(true);
+    if (hasUnread && threadId) {
+      setHasUnread(false);
+      await supabase
+        .from("support_threads")
+        .update({ has_unread: false })
+        .eq("id", threadId);
+    }
+  }, [hasUnread, threadId]);
 
   // Escape to close
   useEffect(() => {
     if (!open) return;
-    const h = (e: KeyboardEvent) => { if (e.key === "Escape") close(); };
+    const h = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
     document.addEventListener("keydown", h);
     return () => document.removeEventListener("keydown", h);
   }, [open]);
 
-  // Auto-close after "Спасибо"
-  useEffect(() => {
-    if (!sent) return;
-    const t = setTimeout(() => { setSent(false); setOpen(false); }, 2000);
-    return () => clearTimeout(t);
-  }, [sent]);
-
-  const close = useCallback(() => {
-    setOpen(false);
-    setText("");
-    setSent(false);
-    setError(null);
-    setFile(null);
-    setPreview(null);
-  }, []);
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    if (f.size > 10 * 1024 * 1024) {
-      alert("Максимальный размер файла — 10 МБ");
-      return;
-    }
-    setFile(f);
-    const url = URL.createObjectURL(f);
-    setPreview(url);
-  };
-
-  const removeFile = () => {
-    setFile(null);
-    if (preview) URL.revokeObjectURL(preview);
-    setPreview(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
-
-  const handleSubmit = async () => {
-    if (!text.trim() || sending) return;
+  // Send message
+  const handleSend = useCallback(async () => {
+    if (!input.trim() || sending) return;
+    const text = input.trim();
+    setInput("");
     setSending(true);
-    let imageUrl: string | undefined;
 
-    // Upload screenshot if attached
-    if (file) {
+    // Optimistic UI
+    const optimisticMsg: SupportMessage = {
+      id: crypto.randomUUID(),
+      thread_id: threadId || "",
+      sender: "user",
+      body: text,
+      created_at: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, optimisticMsg]);
+
+    try {
+      // Get current project name from URL
+      let projectName: string | undefined;
       try {
-        const timestamp = Date.now();
-        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-        const path = `feedback/${timestamp}_${safeName}`;
-        const { error } = await supabase.storage
-          .from('feedback-screenshots')
-          .upload(path, file, { contentType: file.type, upsert: false });
-        if (!error) {
-          const { data } = supabase.storage
-            .from('feedback-screenshots')
-            .getPublicUrl(path);
-          imageUrl = data.publicUrl;
+        const match = window.location.pathname.match(/\/projects\/([^/]+)/);
+        if (match) {
+          const { data } = await supabase
+            .from("projects")
+            .select("title")
+            .eq("id", match[1])
+            .maybeSingle();
+          if (data?.title) projectName = data.title;
         }
-      } catch {
-        // continue without image
-      }
-    }
+      } catch {}
 
-    // Get current project name from URL if on a project page
-    let projectName: string | undefined;
-    try {
-      const match = window.location.pathname.match(/\/projects\/([^/]+)/);
-      if (match) {
-        const { data } = await supabase
-          .from('projects')
-          .select('title')
-          .eq('id', match[1])
-          .maybeSingle();
-        if (data?.title) projectName = data.title;
-      }
-    } catch {}
-
-    let success = false;
-    try {
-      const res = await fetch("/api/feedback", {
+      const res = await fetch("/api/support/send", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token}`,
+        },
         body: JSON.stringify({
-          text: text.trim(),
-          userEmail: profile?.email || undefined,
-          userName: profile?.full_name || undefined,
-          userRole: profile?.role || undefined,
-          projectName,
-          imageUrl,
+          body: text,
+          context: {
+            page: document.title,
+            url: window.location.pathname,
+            project_name: projectName,
+          },
         }),
       });
-      success = res.ok;
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.thread_id && !threadId) {
+          setThreadId(data.thread_id);
+
+          // Subscribe to new thread's messages
+          const channel = supabase
+            .channel(`support:${data.thread_id}`)
+            .on(
+              "postgres_changes",
+              {
+                event: "INSERT",
+                schema: "public",
+                table: "support_messages",
+                filter: `thread_id=eq.${data.thread_id}`,
+              },
+              (payload) => {
+                const msg = payload.new as SupportMessage;
+                if (msg.sender === "support") {
+                  setMessages((prev) => {
+                    if (prev.some((m) => m.id === msg.id)) return prev;
+                    return [...prev, msg];
+                  });
+                  setHasUnread(true);
+                }
+              }
+            )
+            .subscribe();
+
+          if (channelRef.current) {
+            supabase.removeChannel(channelRef.current);
+          }
+          channelRef.current = channel;
+        }
+        metrikaGoal("feedback_sent");
+      }
     } catch {
-      success = false;
+      // keep optimistic message visible
+    } finally {
+      setSending(false);
     }
-    setSending(false);
-    if (success) {
-      setText("");
-      setFile(null);
-      setPreview(null);
-      setSent(true);
-      metrikaGoal('feedback_sent');
-    } else {
-      setError("Не удалось отправить. Попробуйте ещё раз.");
+  }, [input, sending, threadId, session?.access_token]);
+
+  // Format time
+  const formatTime = (iso: string) => {
+    try {
+      const d = new Date(iso);
+      return d.toLocaleTimeString("ru-RU", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return "";
     }
   };
 
@@ -167,11 +256,11 @@ export default function FeedbackBar() {
           <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
             <span
               style={{
-                fontFamily: 'var(--af-font-mono)',
+                fontFamily: "var(--af-font-mono)",
                 fontWeight: 400,
-                fontSize: 'var(--af-fs-9)',
-                textTransform: 'uppercase' as const,
-                letterSpacing: '0.14em',
+                fontSize: "var(--af-fs-9)",
+                textTransform: "uppercase" as const,
+                letterSpacing: "0.14em",
                 color: "#111",
                 lineHeight: 1,
               }}
@@ -181,9 +270,9 @@ export default function FeedbackBar() {
             </span>
             <span
               style={{
-                fontFamily: 'var(--af-font-mono)',
+                fontFamily: "var(--af-font-mono)",
                 fontWeight: 400,
-                fontSize: 'var(--af-fs-7)',
+                fontSize: "var(--af-fs-7)",
                 textTransform: "uppercase" as const,
                 letterSpacing: "0.14em",
                 color: "#111",
@@ -194,40 +283,56 @@ export default function FeedbackBar() {
             </span>
           </div>
 
-          {/* Right */}
+          {/* Right — button with unread dot */}
           <button
-            onClick={() => setOpen(true)}
+            onClick={handleOpen}
             style={{
               background: "#111",
               color: "#fff",
-              fontFamily: 'var(--af-font-mono)',
+              fontFamily: "var(--af-font-mono)",
               fontWeight: 400,
-              fontSize: 'var(--af-fs-7)',
+              fontSize: "var(--af-fs-7)",
               textTransform: "uppercase" as const,
               letterSpacing: "0.18em",
               padding: "7px 12px",
               border: "none",
               cursor: "pointer",
               whiteSpace: "nowrap",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              position: "relative",
             }}
           >
             Написать →
+            {hasUnread && (
+              <span
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: "50%",
+                  background: "#E24B4A",
+                  display: "inline-block",
+                  flexShrink: 0,
+                }}
+              />
+            )}
           </button>
         </div>
       </div>
 
-      {/* ── Modal ── */}
+      {/* ── Chat panel ── */}
       {open && (
         <div
-          onClick={close}
+          onClick={() => setOpen(false)}
           style={{
             position: "fixed",
             inset: 0,
             background: "rgba(0,0,0,0.6)",
             zIndex: 50,
             display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            alignItems: "flex-end",
+            justifyContent: "flex-end",
             animation: "fadeIn 0.15s ease",
           }}
           className="feedback-modal-overlay"
@@ -236,209 +341,206 @@ export default function FeedbackBar() {
             onClick={(e) => e.stopPropagation()}
             style={{
               background: "#fff",
-              padding: 28,
-              width: 480,
-              maxWidth: "92vw",
-              maxHeight: "90vh",
-              overflowY: "auto",
+              width: 380,
+              maxWidth: "100vw",
+              height: "min(520px, 80vh)",
+              display: "flex",
+              flexDirection: "column",
               position: "relative",
               animation: "slideUp 0.2s ease",
+              marginRight: 20,
+              marginBottom: 68,
             }}
-            className="feedback-modal-panel"
+            className="feedback-chat-panel"
           >
-            {/* Close button */}
-            <button
-              onClick={close}
+            {/* Header */}
+            <div
               style={{
-                position: "absolute",
-                top: 20,
-                right: 20,
-                background: "none",
-                border: "none",
-                fontFamily: 'var(--af-font-mono)',
-                fontSize: 'var(--af-fs-8)',
-                textTransform: "uppercase" as const,
-                letterSpacing: "0.12em",
-                color: "#111",
-                cursor: "pointer",
+                padding: "14px 16px",
+                borderBottom: "0.5px solid #EBEBEB",
                 display: "flex",
                 alignItems: "center",
-                gap: 4,
-                padding: 0,
+                justifyContent: "space-between",
+                flexShrink: 0,
               }}
             >
-              ✕{'  '}Закрыть
-            </button>
-
-            {sent ? (
-              /* Thank you state */
-              <div style={{ textAlign: "center", padding: "40px 0" }}>
+              <div>
                 <div
                   style={{
-                    fontFamily: 'var(--af-font-display)',
+                    fontFamily: "var(--af-font-display)",
                     fontWeight: 900,
-                    fontSize: 32,
+                    fontSize: 16,
                     color: "#111",
-                    marginBottom: 8,
+                    lineHeight: 1.2,
                   }}
                 >
-                  Спасибо
+                  Поддержка
                 </div>
                 <div
                   style={{
-                    fontFamily: 'var(--af-font-mono)',
-                    fontSize: 'var(--af-fs-9)',
+                    fontFamily: "var(--af-font-mono)",
+                    fontSize: "var(--af-fs-7)",
                     textTransform: "uppercase" as const,
-                    letterSpacing: "0.2em",
+                    letterSpacing: "0.14em",
                     color: "#111",
+                    opacity: 0.5,
+                    marginTop: 2,
                   }}
                 >
-                  Мы учтём ваш отзыв
+                  обычно отвечаем за час
                 </div>
               </div>
-            ) : (
-              /* Form */
-              <>
-                <h2
-                  style={{
-                    fontFamily: 'var(--af-font-display)',
-                    fontWeight: 900,
-                    fontSize: 24,
-                    color: "#111",
-                    marginBottom: 4,
-                    lineHeight: 1.1,
-                  }}
-                  className="feedback-modal-title"
-                >
-                  Что случилось?
-                </h2>
+              <button
+                onClick={() => setOpen(false)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  fontFamily: "var(--af-font-mono)",
+                  fontSize: "var(--af-fs-8)",
+                  textTransform: "uppercase" as const,
+                  letterSpacing: "0.12em",
+                  color: "#111",
+                  cursor: "pointer",
+                  padding: 0,
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Messages */}
+            <div
+              ref={scrollRef}
+              style={{
+                flex: 1,
+                overflowY: "auto",
+                padding: "12px 16px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 6,
+                background: "#F6F6F4",
+              }}
+            >
+              {messages.length === 0 && (
                 <div
                   style={{
-                    fontFamily: 'var(--af-font-mono)',
-                    fontSize: 'var(--af-fs-9)',
+                    textAlign: "center",
+                    padding: "40px 16px",
+                    fontFamily: "var(--af-font-mono)",
+                    fontSize: "var(--af-fs-9)",
                     textTransform: "uppercase" as const,
-                    letterSpacing: "0.18em",
+                    letterSpacing: "0.14em",
                     color: "#111",
-                    marginBottom: 16,
+                    opacity: 0.4,
+                    lineHeight: 1.6,
                   }}
                 >
-                  Early Access · ArchFlow
+                  Опишите проблему
+                  <br />— ответим быстро
                 </div>
-                <textarea
-                  value={text}
-                  onChange={(e) => setText(e.target.value)}
-                  placeholder="Опиши подробнее..."
+              )}
+              {messages.map((msg) => (
+                <div
+                  key={msg.id}
                   style={{
-                    width: "100%",
-                    minHeight: 100,
-                    border: "0.5px solid #EBEBEB",
-                    padding: 12,
-                    fontFamily: 'var(--af-font-mono)',
-                    fontSize: 'var(--af-fs-11)',
-                    fontWeight: 300,
-                    color: "#111",
-                    background: "#F6F6F4",
-                    outline: "none",
-                    resize: "vertical",
-                    display: "block",
-                    boxSizing: "border-box",
+                    display: "flex",
+                    justifyContent:
+                      msg.sender === "user" ? "flex-end" : "flex-start",
                   }}
-                />
-                {/* Screenshot attachment */}
-                <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8 }}>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    style={{ display: "none" }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
+                >
+                  <div
                     style={{
-                      fontFamily: 'var(--af-font-mono)',
-                      fontSize: 'var(--af-fs-7)',
-                      textTransform: "uppercase" as const,
-                      letterSpacing: "0.14em",
-                      color: "#111",
-                      border: "0.5px solid #EBEBEB",
-                      background: "none",
-                      padding: "3px 8px",
-                      cursor: "pointer",
+                      maxWidth: "82%",
+                      padding: "8px 10px",
+                      fontFamily: "var(--af-font-mono)",
+                      fontSize: "var(--af-fs-9)",
+                      lineHeight: 1.5,
+                      color: msg.sender === "user" ? "#fff" : "#111",
+                      background: msg.sender === "user" ? "#111" : "#fff",
+                      border:
+                        msg.sender === "support"
+                          ? "0.5px solid #EBEBEB"
+                          : "none",
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-word",
                     }}
                   >
-                    📎 Прикрепить скриншот
-                  </button>
-                  {file && (
-                    <button
-                      type="button"
-                      onClick={removeFile}
+                    {msg.body}
+                    <div
                       style={{
-                        fontFamily: 'var(--af-font-mono)',
-                        fontSize: 'var(--af-fs-7)',
-                        color: "#EBEBEB",
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        padding: 0,
+                        fontFamily: "var(--af-font-mono)",
+                        fontSize: 9,
+                        opacity: 0.5,
+                        marginTop: 3,
+                        textAlign: "right",
+                        color: msg.sender === "user" ? "#fff" : "#111",
                       }}
                     >
-                      ✕
-                    </button>
-                  )}
+                      {formatTime(msg.created_at)}
+                    </div>
+                  </div>
                 </div>
-                {preview && file && (
-                  <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 8 }}>
-                    <img
-                      src={preview}
-                      alt=""
-                      style={{ height: 40, objectFit: "cover", border: "0.5px solid #EBEBEB" }}
-                    />
-                    <span style={{
-                      fontFamily: 'var(--af-font-mono)',
-                      fontSize: 'var(--af-fs-7)',
-                      color: "#111",
-                      letterSpacing: "0.08em",
-                    }}>
-                      {file.name.length > 30 ? file.name.slice(0, 27) + '...' : file.name}
-                    </span>
-                  </div>
-                )}
+              ))}
+            </div>
 
-                {error && (
-                  <div style={{
-                    fontFamily: 'var(--af-font-mono)',
-                    fontSize: 10,
-                    color: "#111",
-                    marginTop: 8,
-                  }}>
-                    {error}
-                  </div>
-                )}
-
-                <button
-                  onClick={() => { setError(null); handleSubmit(); }}
-                  disabled={!text.trim() || sending}
-                  style={{
-                    width: "100%",
-                    height: 48,
-                    marginTop: 12,
-                    background: !text.trim() ? "#EBEBEB" : "#111",
-                    color: "#fff",
-                    border: "none",
-                    fontFamily: 'var(--af-font-mono)',
-                    fontSize: 'var(--af-fs-9)',
-                    fontWeight: 400,
-                    textTransform: "uppercase" as const,
-                    letterSpacing: "0.2em",
-                    cursor: !text.trim() ? "not-allowed" : "pointer",
-                  }}
-                >
-                  {sending ? "Отправка..." : "Отправить"}
-                </button>
-              </>
-            )}
+            {/* Input */}
+            <div
+              style={{
+                padding: "10px 12px",
+                borderTop: "0.5px solid #EBEBEB",
+                display: "flex",
+                gap: 8,
+                alignItems: "flex-end",
+                flexShrink: 0,
+                background: "#fff",
+              }}
+            >
+              <textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
+                placeholder="Напишите сообщение..."
+                rows={2}
+                style={{
+                  flex: 1,
+                  resize: "none",
+                  border: "0.5px solid #EBEBEB",
+                  padding: "8px 10px",
+                  fontFamily: "var(--af-font-mono)",
+                  fontSize: "var(--af-fs-9)",
+                  color: "#111",
+                  background: "#F6F6F4",
+                  outline: "none",
+                  display: "block",
+                  boxSizing: "border-box",
+                }}
+              />
+              <button
+                onClick={handleSend}
+                disabled={!input.trim() || sending}
+                style={{
+                  width: 36,
+                  height: 36,
+                  background: !input.trim() ? "#EBEBEB" : "#111",
+                  color: "#fff",
+                  border: "none",
+                  cursor: !input.trim() ? "not-allowed" : "pointer",
+                  fontFamily: "var(--af-font-mono)",
+                  fontSize: 16,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                →
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -455,15 +557,14 @@ export default function FeedbackBar() {
           }
           .feedback-modal-overlay {
             align-items: flex-end !important;
+            justify-content: stretch !important;
           }
-          .feedback-modal-panel {
+          .feedback-chat-panel {
             width: 100% !important;
             max-width: 100% !important;
-            padding: 20px !important;
-            padding-bottom: calc(20px + env(safe-area-inset-bottom, 20px)) !important;
-          }
-          .feedback-modal-title {
-            font-size: 20px !important;
+            margin-right: 0 !important;
+            margin-bottom: 52px !important;
+            height: min(480px, 70vh) !important;
           }
         }
       `}</style>
