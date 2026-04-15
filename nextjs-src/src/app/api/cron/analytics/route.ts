@@ -124,6 +124,24 @@ async function fetchTopPages(date1: string, date2: string) {
   }));
 }
 
+async function fetchBounceByPage(date1: string, date2: string) {
+  const url = `${METRIKA_API}?id=${COUNTER_ID}&metrics=ym:s:bounceRate,ym:s:visits&dimensions=ym:s:startURL&sort=-ym:s:bounceRate&limit=10&date1=${date1}&date2=${date2}`;
+  const res = await fetch(url, {
+    headers: { Authorization: `OAuth ${METRIKA_TOKEN}` },
+  });
+
+  if (!res.ok) return [];
+
+  const data = await res.json();
+  return (data.data || [])
+    .map((row: { dimensions: { name: string }[]; metrics: number[] }) => ({
+      url: row.dimensions?.[0]?.name || "—",
+      bounceRate: Math.round(row.metrics?.[0] || 0),
+      visits: Math.round(row.metrics?.[1] || 0),
+    }))
+    .filter((p: { visits: number }) => p.visits >= 3); // only pages with enough visits
+}
+
 // ── Telegram ──────────────────────────────────────
 
 async function sendTelegram(text: string) {
@@ -155,6 +173,7 @@ function buildReport(
   goals: { id: number; name: string }[],
   goalReaches: Record<number, number>,
   topPages: { url: string; views: number }[],
+  bouncePages: { url: string; bounceRate: number; visits: number }[],
   date1: Date,
   date2: Date,
 ) {
@@ -199,6 +218,20 @@ function buildReport(
     });
   }
 
+  // Bounce rate by page
+  if (bouncePages.length > 0) {
+    lines.push(`─────────────────`);
+    lines.push(`📉 Отказы по страницам:`);
+    bouncePages.slice(0, 5).forEach((p) => {
+      let path = p.url;
+      try {
+        path = new URL(p.url).pathname;
+      } catch { /* use as is */ }
+      if (path.length > 30) path = path.slice(0, 27) + "...";
+      lines.push(`• ${path} — ${p.bounceRate}% (${p.visits} визитов)`);
+    });
+  }
+
   return lines.join("\n");
 }
 
@@ -237,13 +270,14 @@ export async function GET(req: NextRequest) {
 
     // Fetch goal reaches (needs goal IDs from above)
     const goalIds = goals.map((g) => g.id);
-    const [goalReaches, topPages] = await Promise.all([
+    const [goalReaches, topPages, bouncePages] = await Promise.all([
       fetchGoalReaches(fmt(date1), fmt(date2), goalIds),
       fetchTopPages(fmt(date1), fmt(date2)),
+      fetchBounceByPage(fmt(date1), fmt(date2)),
     ]);
 
     // Build and send report
-    const report = buildReport(stats, prev, goals, goalReaches, topPages, date1, date2);
+    const report = buildReport(stats, prev, goals, goalReaches, topPages, bouncePages, date1, date2);
     await sendTelegram(report);
 
     return NextResponse.json({
