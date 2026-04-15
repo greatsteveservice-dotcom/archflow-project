@@ -5,7 +5,7 @@ import { Icons } from '../Icons';
 import Modal from '../Modal';
 import type { PhotoRecordWithVisit, PhotoStatus, VisitWithStats } from '../../lib/types';
 import { useProjectPhotos } from '../../lib/hooks';
-import { formatDate, updatePhotoStatus, uploadPhoto, createPhotoRecord, createVisit } from '../../lib/queries';
+import { formatDate, updatePhotoStatus, updatePhotoRecord, uploadPhoto, createPhotoRecord, createVisit } from '../../lib/queries';
 import { PHOTO_STATUS_CONFIG } from '../../lib/types';
 
 const ZONES = ['Спальня', 'Гостиная', 'Кухня', 'Ванная', 'Детская', 'Прихожая', 'Коридор', 'Балкон'];
@@ -24,16 +24,22 @@ export default function PhotoGallery({ projectId, toast, canChangePhotoStatus = 
   const [filter, setFilter] = useState<'all' | 'issue' | 'approved' | 'in_progress'>('all');
   const [selectedPhoto, setSelectedPhoto] = useState<PhotoRecordWithVisit | null>(null);
 
+  // Edit state for detail modal
+  const [isEditing, setIsEditing] = useState(false);
+  const [editZone, setEditZone] = useState('');
+  const [editComment, setEditComment] = useState('');
+  const [editSaving, setEditSaving] = useState(false);
+
   // Upload modal state
   const [showUpload, setShowUpload] = useState(false);
   const [selectedVisitId, setSelectedVisitId] = useState('');
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoFiles, setPhotoFiles] = useState<File[]>([]);
+  const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
   const [photoZone, setPhotoZone] = useState('Спальня');
   const [photoComment, setPhotoComment] = useState('');
   const [photoStatus, setPhotoStatus] = useState<PhotoStatus>('approved');
   const [saving, setSaving] = useState(false);
-  const [uploadStep, setUploadStep] = useState<'idle' | 'uploading' | 'saving'>('idle');
+  const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
   const [uploadError, setUploadError] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -94,19 +100,57 @@ export default function PhotoGallery({ projectId, toast, canChangePhotoStatus = 
     }
   };
 
+  const handleStartEdit = () => {
+    if (!selectedPhoto) return;
+    setEditZone(selectedPhoto.zone || '');
+    setEditComment(selectedPhoto.comment || '');
+    setIsEditing(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!selectedPhoto) return;
+    setEditSaving(true);
+    try {
+      await updatePhotoRecord(selectedPhoto.id, {
+        zone: editZone || undefined,
+        comment: editComment.trim() || undefined,
+      });
+      setSelectedPhoto(prev => prev ? { ...prev, zone: editZone, comment: editComment.trim() } : null);
+      setIsEditing(false);
+      refetch();
+      toast('Фото обновлено');
+    } catch (e: any) {
+      toast(e.message || 'Ошибка');
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
   // Upload handlers
-  const handleFileSelect = (file: File) => {
-    if (!file.type.startsWith('image/')) { setUploadError('Выберите изображение'); return; }
-    if (file.size > 20 * 1024 * 1024) { setUploadError('Файл слишком большой (макс. 20 МБ)'); return; }
-    setPhotoFile(file);
-    setPhotoPreview(URL.createObjectURL(file));
+  const handleFilesSelect = (files: FileList | File[]) => {
+    const validFiles: File[] = [];
+    const previews: string[] = [];
+    for (const file of Array.from(files)) {
+      if (!file.type.startsWith('image/')) continue;
+      if (file.size > 20 * 1024 * 1024) continue;
+      validFiles.push(file);
+      previews.push(URL.createObjectURL(file));
+    }
+    if (validFiles.length === 0) { setUploadError('Нет подходящих изображений (макс. 20 МБ)'); return; }
+    setPhotoFiles(prev => [...prev, ...validFiles]);
+    setPhotoPreviews(prev => [...prev, ...previews]);
     setUploadError('');
+  };
+
+  const handleRemoveFile = (idx: number) => {
+    URL.revokeObjectURL(photoPreviews[idx]);
+    setPhotoFiles(prev => prev.filter((_, i) => i !== idx));
+    setPhotoPreviews(prev => prev.filter((_, i) => i !== idx));
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault(); setIsDragging(false);
-    const file = e.dataTransfer.files[0];
-    if (file) handleFileSelect(file);
+    if (e.dataTransfer.files.length > 0) handleFilesSelect(e.dataTransfer.files);
   };
 
   const handleOpenUpload = () => {
@@ -118,36 +162,40 @@ export default function PhotoGallery({ projectId, toast, canChangePhotoStatus = 
   };
 
   const closeUploadModal = () => {
-    setShowUpload(false); setPhotoFile(null);
-    if (photoPreview) URL.revokeObjectURL(photoPreview);
-    setPhotoPreview(null); setPhotoComment(''); setPhotoZone('Спальня');
-    setPhotoStatus('approved'); setUploadError(''); setUploadStep('idle');
+    setShowUpload(false);
+    photoPreviews.forEach(p => URL.revokeObjectURL(p));
+    setPhotoFiles([]); setPhotoPreviews([]);
+    setPhotoComment(''); setPhotoZone('Спальня');
+    setPhotoStatus('approved'); setUploadError(''); setUploadProgress({ current: 0, total: 0 });
     setShowNewVisit(false); setNewVisitTitle(''); setNewVisitDate(new Date().toISOString().slice(0, 10));
   };
 
   const handleSavePhoto = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!photoFile) { setUploadError('Выберите фото'); return; }
+    if (photoFiles.length === 0) { setUploadError('Выберите фото'); return; }
     if (!selectedVisitId) { setUploadError('Выберите визит'); return; }
-    setSaving(true); setUploadStep('uploading'); setUploadError('');
+    setSaving(true); setUploadError('');
+    setUploadProgress({ current: 0, total: photoFiles.length });
     try {
-      const photoUrl = await uploadPhoto(photoFile, projectId, selectedVisitId);
-      setUploadStep('saving');
-      await createPhotoRecord({
-        visit_id: selectedVisitId,
-        comment: photoComment.trim() || undefined,
-        status: photoStatus,
-        zone: photoZone,
-        photo_url: photoUrl,
-      });
+      for (let i = 0; i < photoFiles.length; i++) {
+        setUploadProgress({ current: i + 1, total: photoFiles.length });
+        const photoUrl = await uploadPhoto(photoFiles[i], projectId, selectedVisitId);
+        await createPhotoRecord({
+          visit_id: selectedVisitId,
+          comment: photoFiles.length === 1 ? (photoComment.trim() || undefined) : undefined,
+          status: photoStatus,
+          zone: photoZone,
+          photo_url: photoUrl,
+        });
+      }
       refetch();
       refetchVisits?.();
       closeUploadModal();
-      toast('Фото добавлено');
+      toast(photoFiles.length === 1 ? 'Фото добавлено' : `Загружено ${photoFiles.length} фото`);
     } catch (err: unknown) {
       setUploadError(err instanceof Error ? err.message : 'Ошибка загрузки');
     } finally {
-      setSaving(false); setUploadStep('idle');
+      setSaving(false); setUploadProgress({ current: 0, total: 0 });
     }
   };
 
@@ -308,41 +356,76 @@ export default function PhotoGallery({ projectId, toast, canChangePhotoStatus = 
       )}
 
       {/* Photo detail modal */}
-      <Modal open={!!selectedPhoto} onClose={() => setSelectedPhoto(null)} title={selectedPhoto?.comment || 'Фото'}>
+      <Modal open={!!selectedPhoto} onClose={() => { setSelectedPhoto(null); setIsEditing(false); }} title={selectedPhoto?.comment || 'Фото'}>
         {selectedPhoto && (
           <div className="space-y-4">
             {selectedPhoto.photo_url && (
               <Image src={selectedPhoto.photo_url} alt="" width={960} height={720} sizes="(max-width: 480px) 92vw, 448px" className="w-full" style={{ height: 'auto' }} />
             )}
-            <div className="space-y-2 text-[13px]">
-              {selectedPhoto.comment && (
-                <div><span className="text-ink-muted">Комментарий:</span> {selectedPhoto.comment}</div>
-              )}
-              {selectedPhoto.zone && (
-                <div><span className="text-ink-muted">Зона:</span> {selectedPhoto.zone}</div>
-              )}
-              <div><span className="text-ink-muted">Визит:</span> {selectedPhoto.visit_title} ({selectedPhoto.visit_date ? formatDate(selectedPhoto.visit_date) : '—'})</div>
-              <div className="flex items-center gap-2">
-                <span className="text-ink-muted">Статус:</span>
-                {canChangePhotoStatus ? (
-                  <select
-                    value={selectedPhoto.status}
-                    onChange={e => handleStatusChange(selectedPhoto.id, e.target.value as PhotoStatus)}
-                    className="text-[12px] border border-line rounded-lg px-2 py-1 bg-srf"
-                  >
-                    <option value="new">Новое</option>
-                    <option value="issue">Замечание</option>
-                    <option value="in_progress">В работе</option>
-                    <option value="resolved">Исправлено</option>
-                    <option value="approved">Принято</option>
+            {isEditing ? (
+              <div className="space-y-3">
+                <div className="modal-field">
+                  <label>Зона</label>
+                  <select value={editZone} onChange={e => setEditZone(e.target.value)}>
+                    <option value="">—</option>
+                    {ZONES.map(z => <option key={z} value={z}>{z}</option>)}
                   </select>
-                ) : (
-                  <span className={`text-[11px] font-medium px-2 py-0.5 rounded-md ${PHOTO_STATUS_CONFIG[selectedPhoto.status].bg} ${PHOTO_STATUS_CONFIG[selectedPhoto.status].color}`}>
-                    {PHOTO_STATUS_CONFIG[selectedPhoto.status].label}
-                  </span>
+                </div>
+                <div className="modal-field">
+                  <label>Комментарий</label>
+                  <textarea value={editComment} onChange={e => setEditComment(e.target.value)} placeholder="Опишите фото..." className="resize-y min-h-[60px]" rows={2} />
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <button type="button" className="btn btn-secondary" onClick={() => setIsEditing(false)} disabled={editSaving}>Отмена</button>
+                  <button type="button" className="btn btn-primary" onClick={handleSaveEdit} disabled={editSaving}>
+                    {editSaving ? 'Сохранение...' : 'Сохранить'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2 text-[13px]">
+                {selectedPhoto.comment && (
+                  <div><span className="text-ink-muted">Комментарий:</span> {selectedPhoto.comment}</div>
+                )}
+                {selectedPhoto.zone && (
+                  <div><span className="text-ink-muted">Зона:</span> {selectedPhoto.zone}</div>
+                )}
+                <div><span className="text-ink-muted">Визит:</span> {selectedPhoto.visit_title} ({selectedPhoto.visit_date ? formatDate(selectedPhoto.visit_date) : '—'})</div>
+                <div className="flex items-center gap-2">
+                  <span className="text-ink-muted">Статус:</span>
+                  {canChangePhotoStatus ? (
+                    <select
+                      value={selectedPhoto.status}
+                      onChange={e => handleStatusChange(selectedPhoto.id, e.target.value as PhotoStatus)}
+                      className="text-[12px] border border-line px-2 py-1 bg-srf"
+                    >
+                      <option value="new">Новое</option>
+                      <option value="issue">Замечание</option>
+                      <option value="in_progress">В работе</option>
+                      <option value="resolved">Исправлено</option>
+                      <option value="approved">Принято</option>
+                    </select>
+                  ) : (
+                    <span className={`text-[11px] font-medium px-2 py-0.5 ${PHOTO_STATUS_CONFIG[selectedPhoto.status].bg} ${PHOTO_STATUS_CONFIG[selectedPhoto.status].color}`}>
+                      {PHOTO_STATUS_CONFIG[selectedPhoto.status].label}
+                    </span>
+                  )}
+                </div>
+                {canChangePhotoStatus && (
+                  <button
+                    onClick={handleStartEdit}
+                    style={{
+                      fontFamily: 'var(--af-font-mono)', fontSize: 9, letterSpacing: '0.1em',
+                      textTransform: 'uppercase', color: 'rgb(var(--ink))', background: 'none',
+                      border: '0.5px solid rgb(var(--line))', padding: '4px 12px', cursor: 'pointer',
+                      marginTop: 8,
+                    }}
+                  >
+                    Редактировать
+                  </button>
                 )}
               </div>
-            </div>
+            )}
           </div>
         )}
       </Modal>
@@ -481,14 +564,39 @@ export default function PhotoGallery({ projectId, toast, canChangePhotoStatus = 
                 onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
                 onDragLeave={() => setIsDragging(false)}
               >
-                <input ref={fileInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleFileSelect(f); }} />
-                {photoPreview ? (
-                  <div style={{ textAlign: 'center' }}>
-                    <img src={photoPreview} alt="Preview" style={{ maxHeight: 200, margin: '0 auto 8px' }} />
-                    <div className="af-label">{photoFile?.name}</div>
+                <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={e => { if (e.target.files?.length) handleFilesSelect(e.target.files); e.target.value = ''; }} />
+                {photoPreviews.length > 0 ? (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'center' }}>
+                    {photoPreviews.map((preview, idx) => (
+                      <div key={idx} style={{ position: 'relative', width: 80, height: 80 }}>
+                        <img src={preview} alt="" style={{ width: 80, height: 80, objectFit: 'cover' }} />
+                        <button
+                          type="button"
+                          onClick={e => { e.stopPropagation(); handleRemoveFile(idx); }}
+                          style={{
+                            position: 'absolute', top: -6, right: -6,
+                            width: 18, height: 18, borderRadius: '50%',
+                            background: '#111', color: '#fff', border: 'none',
+                            fontSize: 10, cursor: 'pointer', display: 'flex',
+                            alignItems: 'center', justifyContent: 'center',
+                          }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                    <div
+                      style={{
+                        width: 80, height: 80, border: '1px dashed rgb(var(--line))',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 24, color: 'rgb(var(--ink))', opacity: 0.3, cursor: 'pointer',
+                      }}
+                    >
+                      +
+                    </div>
                   </div>
                 ) : (
-                  <span className="af-upload-label">Перетащите фото или нажмите</span>
+                  <span className="af-upload-label">Перетащите фото или нажмите (можно несколько)</span>
                 )}
               </div>
 
@@ -515,18 +623,18 @@ export default function PhotoGallery({ projectId, toast, canChangePhotoStatus = 
               {saving && (
                 <div style={{ marginTop: 16 }}>
                   <div className="af-label" style={{ marginBottom: 8 }}>
-                    {uploadStep === 'uploading' ? 'Загрузка файла...' : 'Сохранение...'}
+                    Загрузка {uploadProgress.current} из {uploadProgress.total}...
                   </div>
-                  <div style={{ width: '100%', height: 2, background: '#EBEBEB', overflow: 'hidden' }}>
-                    <div style={{ height: '100%', background: '#111' }} className="animate-progress-indeterminate" />
+                  <div style={{ width: '100%', height: 3, background: '#EBEBEB', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', background: '#111', width: `${(uploadProgress.current / uploadProgress.total) * 100}%`, transition: 'width 0.3s' }} />
                   </div>
                 </div>
               )}
 
               <div className="flex gap-2 justify-end mt-6">
                 <button type="button" className="btn btn-secondary" onClick={closeUploadModal} disabled={saving}>Отмена</button>
-                <button type="submit" className="btn btn-primary" disabled={saving || !selectedVisitId}>
-                  {saving ? 'Загрузка...' : 'Сохранить'}
+                <button type="submit" className="btn btn-primary" disabled={saving || !selectedVisitId || photoFiles.length === 0}>
+                  {saving ? 'Загрузка...' : photoFiles.length > 1 ? `Загрузить (${photoFiles.length})` : 'Сохранить'}
                 </button>
               </div>
             </form>

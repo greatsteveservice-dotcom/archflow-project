@@ -545,6 +545,22 @@ export async function updatePhotoStatus(id: string, status: PhotoStatus): Promis
   return data as PhotoRecord;
 }
 
+/** Update photo record fields (zone, comment, status) */
+export async function updatePhotoRecord(
+  id: string,
+  updates: { zone?: string; comment?: string; status?: PhotoStatus }
+): Promise<PhotoRecord> {
+  const { data, error } = await supabase
+    .from('photo_records')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw new Error(humanError(error));
+  return data as PhotoRecord;
+}
+
 /** Invite a project member by email */
 export async function inviteProjectMember(input: CreateProjectMemberInput): Promise<ProjectMember> {
   // Use RPC to look up user by email (bypasses RLS)
