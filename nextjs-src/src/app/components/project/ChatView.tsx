@@ -3,9 +3,9 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import Image from 'next/image';
 import { useAuth } from '../../lib/auth';
-import { useChatMessages, useChatRealtime, useChatMarkRead, useChatUnreadByType, sendPushNotification, useProjectMembersWithProfiles } from '../../lib/hooks';
-import { sendChatMessage, deleteChatMessage, fetchChatMessages, analyzeChatMessages, createReminder } from '../../lib/queries';
-import type { ChatMessageWithAuthor, ChatType, Profile, ChatAnalysisResult } from '../../lib/types';
+import { useChatMessages, useChatRealtime, useChatMarkRead, useChatUnreadByType, sendPushNotification, useProjectMembersWithProfiles, useChatChannels } from '../../lib/hooks';
+import { sendChatMessage, deleteChatMessage, fetchChatMessages, analyzeChatMessages, createReminder, createChatChannel, deleteChatChannel, uploadChatImage } from '../../lib/queries';
+import type { ChatMessageWithAuthor, ChatType, ChatChannel, Profile, ChatAnalysisResult } from '../../lib/types';
 import PushPermissionBanner from './PushPermissionBanner';
 
 // ======================== HELPERS ========================
@@ -98,6 +98,22 @@ function VoiceBubble({ msg, isOwn }: { msg: ChatMessageWithAuthor; isOwn: boolea
         }}>
           <span>{'\uD83C\uDFA4'}</span>
           {msg.voice_duration && <span>{formatDuration(msg.voice_duration)}</span>}
+        </div>
+      )}
+
+      {msg.image_url && (
+        <div style={{ marginBottom: msg.text ? 4 : 0 }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={msg.image_url}
+            alt=""
+            style={{
+              maxWidth: '100%', maxHeight: 240, display: 'block',
+              border: `0.5px solid ${isOwn ? 'rgba(255,255,255,0.2)' : '#EBEBEB'}`,
+              cursor: 'pointer',
+            }}
+            onClick={() => window.open(msg.image_url!, '_blank')}
+          />
         </div>
       )}
 
@@ -603,13 +619,14 @@ function VoiceRecorder({ projectId, userId, chatType, profile, appendMessage, re
 interface ChatTabPanelProps {
   projectId: string;
   chatType: ChatType;
+  channelId?: string;
   userId: string;
   profile: Profile | null;
   toast: (msg: string) => void;
   isActive: boolean;
 }
 
-function ChatTabPanel({ projectId, chatType, userId, profile, toast, isActive }: ChatTabPanelProps) {
+function ChatTabPanel({ projectId, chatType, channelId, userId, profile, toast, isActive }: ChatTabPanelProps) {
   const { messages, loading, hasMore, loadMore, appendMessage, removeMessage, refetch } = useChatMessages(projectId, chatType);
 
   // Mark as read on mount and when tab becomes active
@@ -617,6 +634,7 @@ function ChatTabPanel({ projectId, chatType, userId, profile, toast, isActive }:
 
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
+  const [pastedImage, setPastedImage] = useState<{ file: File; previewUrl: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -686,15 +704,30 @@ function ChatTabPanel({ projectId, chatType, userId, profile, toast, isActive }:
   // Send message
   const handleSend = async () => {
     const trimmed = text.trim();
-    if (!trimmed || !userId) return;
+    if (!trimmed && !pastedImage) return;
+    if (!userId) return;
     setSending(true);
     try {
-      const msg = await sendChatMessage({ project_id: projectId, text: trimmed, chat_type: chatType }, userId);
+      // Upload image if pasted
+      let imageUrl: string | undefined;
+      if (pastedImage) {
+        imageUrl = await uploadChatImage(projectId, pastedImage.file);
+        URL.revokeObjectURL(pastedImage.previewUrl);
+        setPastedImage(null);
+      }
+
+      const msg = await sendChatMessage({
+        project_id: projectId,
+        text: trimmed || (imageUrl ? '' : ''),
+        chat_type: chatType,
+        channel_id: channelId,
+        image_url: imageUrl,
+      }, userId);
       appendMessage({ ...msg, author: profile || undefined });
       setText('');
       setAutoScroll(true);
       inputRef.current?.focus();
-      sendPushNotification(projectId, userId, profile?.full_name || '', trimmed);
+      sendPushNotification(projectId, userId, profile?.full_name || '', trimmed || '📎 Изображение');
 
       // Trigger chat analysis (debounced, every 5th message)
       if (!suggestionCooldown.current && messages.length > 5) {
@@ -713,6 +746,30 @@ function ChatTabPanel({ projectId, chatType, userId, profile, toast, isActive }:
     }
     setSending(false);
   };
+
+  // Paste image handler
+  const handlePaste = useCallback((e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith('image/')) {
+        e.preventDefault();
+        const file = items[i].getAsFile();
+        if (!file) return;
+        // Revoke previous preview if any
+        if (pastedImage) URL.revokeObjectURL(pastedImage.previewUrl);
+        const previewUrl = URL.createObjectURL(file);
+        setPastedImage({ file, previewUrl });
+        return;
+      }
+    }
+  }, [pastedImage]);
+
+  // Clean up pasted image preview on unmount
+  useEffect(() => {
+    return () => { if (pastedImage) URL.revokeObjectURL(pastedImage.previewUrl); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Delete message
   const handleDelete = async (id: string) => {
@@ -897,6 +954,34 @@ function ChatTabPanel({ projectId, chatType, userId, profile, toast, isActive }:
         </div>
       )}
 
+      {/* Pasted image preview */}
+      {pastedImage && (
+        <div style={{
+          padding: '6px 16px', background: '#F6F6F4', borderTop: '0.5px solid #EBEBEB',
+          display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0,
+        }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={pastedImage.previewUrl}
+            alt=""
+            style={{ width: 48, height: 48, objectFit: 'cover', border: '0.5px solid #EBEBEB' }}
+          />
+          <span style={{
+            fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-9)',
+            color: '#111', flex: 1,
+          }}>
+            {pastedImage.file.name || 'Изображение'}
+          </span>
+          <button
+            onClick={() => { URL.revokeObjectURL(pastedImage.previewUrl); setPastedImage(null); }}
+            style={{
+              fontFamily: 'var(--af-font-mono)', fontSize: 12, color: '#111',
+              background: 'none', border: 'none', cursor: 'pointer', padding: '4px',
+            }}
+          >✕</button>
+        </div>
+      )}
+
       {/* Input area */}
       <div style={{
         padding: '8px 16px',
@@ -925,6 +1010,7 @@ function ChatTabPanel({ projectId, chatType, userId, profile, toast, isActive }:
               value={text}
               onChange={e => setText(e.target.value)}
               onKeyDown={handleKeyDown}
+              onPaste={handlePaste}
               placeholder="Сообщение..."
               rows={1}
               style={{
@@ -945,11 +1031,11 @@ function ChatTabPanel({ projectId, chatType, userId, profile, toast, isActive }:
             />
             <button
               onClick={handleSend}
-              disabled={sending || !text.trim()}
+              disabled={sending || (!text.trim() && !pastedImage)}
               style={{
                 padding: '10px 20px',
-                background: text.trim() ? '#111' : '#EBEBEB',
-                color: text.trim() ? '#fff' : '#EBEBEB',
+                background: (text.trim() || pastedImage) ? '#111' : '#EBEBEB',
+                color: (text.trim() || pastedImage) ? '#fff' : '#EBEBEB',
                 border: 'none',
                 fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-10)',
                 fontWeight: 600, cursor: text.trim() ? 'pointer' : 'default',
@@ -990,19 +1076,24 @@ export default function ChatView({ projectId, toast }: ChatViewProps) {
 
   // Fetch members for pills and role detection
   const { data: membersWithProfiles } = useProjectMembersWithProfiles(projectId);
+  const { data: channels, refetch: refetchChannels } = useChatChannels(projectId);
 
   // Determine role from project-level member_role (not global profile.role)
   const currentMember = membersWithProfiles?.find(m => m.user_id === userId);
   const isClientOnly = currentMember ? currentMember.member_role === 'client' : profile?.role === 'client';
+  const canManageChannels = !isClientOnly;
   const availableTabs: ChatType[] = isClientOnly ? ['client'] : ['team', 'client'];
   const defaultTab: ChatType = isClientOnly ? 'client' : 'team';
 
+  // Active selection: { chatType, channelId? }
   const [activeTab, setActiveTab] = useState<ChatType>(defaultTab);
+  const [activeChannelId, setActiveChannelId] = useState<string | undefined>(undefined);
 
   // Sync active tab when member data loads and role is determined
   useEffect(() => {
     if (isClientOnly && activeTab === 'team') {
       setActiveTab('client');
+      setActiveChannelId(undefined);
     }
   }, [isClientOnly, activeTab]);
 
@@ -1017,8 +1108,6 @@ export default function ChatView({ projectId, toast }: ChatViewProps) {
   }, [activeTab, refetchTeamUnread, refetchClientUnread]);
 
   // Filter members for each tab
-  // team tab: designer + assistant (team members)
-  // client tab: designer + assistant + client
   const teamMembers = useMemo(() => {
     if (!membersWithProfiles) return [];
     return membersWithProfiles
@@ -1035,13 +1124,130 @@ export default function ChatView({ projectId, toast }: ChatViewProps) {
       .filter((p): p is Profile => !!p);
   }, [membersWithProfiles]);
 
-  // Tab labels depend on role:
-  // Designer/team: "Команда" / "С заказчиком"
-  // Client: "С дизайнером" (single tab)
-  const getTabLabel = (tab: ChatType): string => {
-    if (tab === 'team') return 'Команда';
-    return isClientOnly ? 'С дизайнером' : 'С заказчиком';
+  // Group channels by type
+  const teamChannels = useMemo(() => (channels || []).filter(c => c.chat_group === 'team'), [channels]);
+  const clientChannels = useMemo(() => (channels || []).filter(c => c.chat_group === 'client'), [channels]);
+
+  const handleSelectChat = (chatType: ChatType, channelId?: string) => {
+    setActiveTab(chatType);
+    setActiveChannelId(channelId);
   };
+
+  const handleCreateChannel = async (chatGroup: ChatType) => {
+    const name = prompt('Имя чата:');
+    if (!name?.trim()) return;
+    try {
+      const ch = await createChatChannel(projectId, chatGroup, name.trim());
+      refetchChannels();
+      handleSelectChat(chatGroup, ch.id);
+      toast('Чат создан');
+    } catch (err: any) {
+      toast(err?.message || 'Ошибка создания чата');
+    }
+  };
+
+  const handleDeleteChannel = async (ch: ChatChannel) => {
+    if (!confirm(`Удалить чат «${ch.name}»? Все сообщения будут удалены.`)) return;
+    try {
+      await deleteChatChannel(ch.id);
+      refetchChannels();
+      if (activeChannelId === ch.id) {
+        setActiveChannelId(undefined);
+      }
+      toast('Чат удалён');
+    } catch (err: any) {
+      toast(err?.message || 'Ошибка удаления');
+    }
+  };
+
+  // Default label for the main channel
+  const getDefaultLabel = (tab: ChatType): string => {
+    if (tab === 'team') return 'Основной';
+    return isClientOnly ? 'С дизайнером' : 'Основной';
+  };
+
+  // Channel button style
+  const channelBtnStyle = (isActive: boolean): React.CSSProperties => ({
+    display: 'flex', alignItems: 'center', gap: 6,
+    width: '100%', textAlign: 'left' as const,
+    padding: '6px 12px',
+    fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-9)',
+    letterSpacing: '0.08em',
+    color: '#111',
+    fontWeight: isActive ? 600 : 400,
+    background: isActive ? '#F6F6F4' : 'transparent',
+    border: 'none', cursor: 'pointer',
+    borderLeft: isActive ? '2px solid #111' : '2px solid transparent',
+  });
+
+  // Render a chat section (team or client)
+  const renderSection = (group: ChatType, label: string, channelList: ChatChannel[], unread: number) => (
+    <div>
+      {/* Section header */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '8px 12px 4px',
+      }}>
+        <span style={{
+          fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-7)',
+          letterSpacing: '0.16em', textTransform: 'uppercase',
+          color: '#111', fontWeight: 600,
+        }}>
+          {label}
+        </span>
+        {canManageChannels && (
+          <button
+            onClick={() => handleCreateChannel(group)}
+            style={{
+              fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-8)',
+              color: '#111', background: 'none', border: 'none', cursor: 'pointer',
+              padding: '0 4px',
+            }}
+            title="Новый чат"
+          >+</button>
+        )}
+      </div>
+
+      {/* Default channel */}
+      <button
+        onClick={() => handleSelectChat(group, undefined)}
+        style={channelBtnStyle(activeTab === group && !activeChannelId)}
+      >
+        <span style={{ flex: 1 }}>{getDefaultLabel(group)}</span>
+        {activeTab !== group && unread > 0 && (
+          <span style={{
+            width: 5, height: 5, background: '#111',
+            borderRadius: '50%', flexShrink: 0,
+          }} />
+        )}
+      </button>
+
+      {/* User-created channels */}
+      {channelList.map(ch => {
+        const isSel = activeTab === group && activeChannelId === ch.id;
+        return (
+          <div key={ch.id} style={{ display: 'flex', alignItems: 'center' }}>
+            <button
+              onClick={() => handleSelectChat(group, ch.id)}
+              style={{ ...channelBtnStyle(isSel), flex: 1 }}
+            >
+              {ch.name}
+            </button>
+            {canManageChannels && (
+              <button
+                onClick={() => handleDeleteChannel(ch)}
+                style={{
+                  fontFamily: 'var(--af-font-mono)', fontSize: 10, color: '#999',
+                  background: 'none', border: 'none', cursor: 'pointer', padding: '0 6px',
+                }}
+                title="Удалить чат"
+              >✕</button>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
 
   return (
     <div style={{
@@ -1055,69 +1261,46 @@ export default function ChatView({ projectId, toast }: ChatViewProps) {
       {/* Push notification permission banner */}
       <PushPermissionBanner />
 
-      {/* Tab bar */}
+      {/* Channel navigation — sections with divider */}
       <div style={{
-        display: 'flex',
         borderBottom: '0.5px solid #EBEBEB',
         background: '#FFFFFF',
         flexShrink: 0,
+        overflowX: 'auto',
       }}>
-        {availableTabs.map(tab => {
-          const isActive = activeTab === tab;
-          const unread = tab === 'team' ? teamUnread : clientUnread;
-          return (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              style={{
-                flex: 1,
-                padding: '10px 0',
-                textAlign: 'center' as const,
-                fontSize: 'var(--af-fs-7)',
-                letterSpacing: '0.16em',
-                textTransform: 'uppercase' as const,
-                fontFamily: 'var(--af-font-mono)',
-                color: isActive ? '#111' : '#111',
-                fontWeight: isActive ? 600 : 400,
-                borderTop: 'none',
-                borderLeft: 'none',
-                borderRight: 'none',
-                borderBottom: isActive ? '2px solid #111' : '2px solid transparent',
-                background: 'none',
-                cursor: 'pointer',
-              }}
-            >
-              {getTabLabel(tab)}
-              {!isActive && unread > 0 && (
-                <span style={{
-                  display: 'inline-block',
-                  width: 5, height: 5,
-                  background: '#111',
-                  borderRadius: '50%',
-                  marginLeft: 6,
-                  verticalAlign: 'middle',
-                }} />
-              )}
-            </button>
-          );
-        })}
+        {/* Team section */}
+        {availableTabs.includes('team') && renderSection('team', 'Команда', teamChannels, teamUnread)}
+
+        {/* Divider */}
+        {availableTabs.length > 1 && (
+          <div style={{
+            height: 3, background: '#111', margin: '4px 12px',
+          }} />
+        )}
+
+        {/* Client section */}
+        {availableTabs.includes('client') && renderSection(
+          'client',
+          isClientOnly ? 'С дизайнером' : 'Заказчик',
+          clientChannels,
+          clientUnread,
+        )}
       </div>
 
       {/* Member pills */}
       <MemberPills members={activeTab === 'team' ? teamMembers : clientMembers} />
 
-      {/* Chat panel per tab */}
-      {availableTabs.map(tab => (
-        <ChatTabPanel
-          key={tab}
-          projectId={projectId}
-          chatType={tab}
-          userId={userId}
-          profile={profile}
-          toast={toast}
-          isActive={activeTab === tab}
-        />
-      ))}
+      {/* Chat panel */}
+      <ChatTabPanel
+        key={`${activeTab}-${activeChannelId || 'default'}`}
+        projectId={projectId}
+        chatType={activeTab}
+        channelId={activeChannelId}
+        userId={userId}
+        profile={profile}
+        toast={toast}
+        isActive={true}
+      />
     </div>
   );
 }

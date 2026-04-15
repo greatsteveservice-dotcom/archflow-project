@@ -7,7 +7,7 @@
 import { useState, useEffect, useCallback, useRef, useId } from 'react';
 import { supabase } from './supabase';
 import { isBackendError, getHealth } from './health';
-import type { ProjectWithStats, VisitWithStats, PhotoRecord, Profile, Stage, SupplyItem, Invoice, Notification, ActivityItem, Document, ProjectMember, ProjectMemberWithProfile, DocumentCategory, Task, PhotoRecordWithVisit, RbacMemberWithProfile, ProjectAccessSettings, VisitReportWithStats, VisitRemarkWithDetails, ContractorTaskWithDetails, ChatMessageWithAuthor, ChatType, DesignFileWithProfile, DesignFileCommentWithProfile, DesignFolder, DesignSubfolder, ProjectRoom, KindStageMapping } from './types';
+import type { ProjectWithStats, VisitWithStats, PhotoRecord, Profile, Stage, SupplyItem, Invoice, Notification, ActivityItem, Document, ProjectMember, ProjectMemberWithProfile, DocumentCategory, Task, PhotoRecordWithVisit, RbacMemberWithProfile, ProjectAccessSettings, VisitReportWithStats, VisitRemarkWithDetails, ContractorTaskWithDetails, ChatMessageWithAuthor, ChatType, ChatChannel, DesignFileWithProfile, DesignFileCommentWithProfile, DesignFolder, DesignSubfolder, ProjectRoom, KindStageMapping } from './types';
 import {
   fetchProjects,
   fetchProjectsPaginated,
@@ -44,6 +44,7 @@ import {
   fetchDesignFile,
   fetchDesignFileComments,
   fetchDesignSubfolders,
+  fetchChatChannels,
   fetchProjectRooms,
   fetchKindStageMappings,
 } from './queries';
@@ -732,6 +733,14 @@ export function useDesignSubfolders(projectId: string | null, folder?: DesignFol
   return useQuery<DesignSubfolder[]>(
     () => (projectId && folder) ? fetchDesignSubfolders(projectId, folder) : Promise.resolve([]),
     [projectId, folder]
+  );
+}
+
+/** Fetch chat channels for a project */
+export function useChatChannels(projectId: string | null) {
+  return useQuery<ChatChannel[]>(
+    () => projectId ? fetchChatChannels(projectId) : Promise.resolve([]),
+    [projectId]
   );
 }
 

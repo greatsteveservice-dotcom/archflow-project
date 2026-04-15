@@ -582,6 +582,8 @@ export interface ChatMessage {
   user_id: string;
   text: string;
   chat_type: ChatType;
+  channel_id: string | null;
+  image_url: string | null;
   ref_type: ChatRefType | null;
   ref_id: string | null;
   ref_preview: string | null;
@@ -617,12 +619,23 @@ export interface SendChatMessageInput {
   project_id: string;
   text: string;
   chat_type?: ChatType;
+  channel_id?: string;
+  image_url?: string;
   ref_type?: ChatRefType;
   ref_id?: string;
   ref_preview?: string;
   message_type?: 'text' | 'voice';
   voice_duration?: number;
   voice_original?: string;
+}
+
+export interface ChatChannel {
+  id: string;
+  project_id: string;
+  chat_group: ChatType;
+  name: string;
+  created_by: string | null;
+  created_at: string;
 }
 
 // ======================== DESIGN FILES ========================

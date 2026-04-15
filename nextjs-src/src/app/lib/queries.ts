@@ -2386,6 +2386,8 @@ export async function sendChatMessage(
       user_id: userId,
       text: sanitize(input.text),
       chat_type: input.chat_type || 'team',
+      channel_id: input.channel_id || null,
+      image_url: input.image_url || null,
       ref_type: input.ref_type || null,
       ref_id: input.ref_id || null,
       ref_preview: input.ref_preview ? sanitize(input.ref_preview) : null,
@@ -2564,6 +2566,70 @@ export async function removePushSubscription(
     .eq('endpoint', endpoint);
 
   if (error) throw error;
+}
+
+// ======================== CHAT CHANNELS ========================
+
+/** Fetch chat channels for a project */
+export async function fetchChatChannels(
+  projectId: string,
+): Promise<import('./types').ChatChannel[]> {
+  const { data, error } = await supabase
+    .from('chat_channels')
+    .select('*')
+    .eq('project_id', projectId)
+    .order('created_at', { ascending: true });
+
+  if (error) throw error;
+  return (data || []) as import('./types').ChatChannel[];
+}
+
+/** Create a chat channel */
+export async function createChatChannel(
+  projectId: string,
+  chatGroup: import('./types').ChatType,
+  name: string,
+): Promise<import('./types').ChatChannel> {
+  const { data: { user } } = await supabase.auth.getUser();
+  const clean = sanitize(name).trim();
+  if (!clean) throw new Error('Имя канала не может быть пустым');
+
+  const { data, error } = await supabase
+    .from('chat_channels')
+    .insert({ project_id: projectId, chat_group: chatGroup, name: clean, created_by: user?.id || null })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as import('./types').ChatChannel;
+}
+
+/** Delete a chat channel */
+export async function deleteChatChannel(channelId: string): Promise<void> {
+  const { error } = await supabase
+    .from('chat_channels')
+    .delete()
+    .eq('id', channelId);
+  if (error) throw error;
+}
+
+/** Upload a chat image to storage */
+export async function uploadChatImage(
+  projectId: string,
+  file: File,
+): Promise<string> {
+  const timestamp = Date.now();
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const path = `chat/${projectId}/${timestamp}_${safeName}`;
+
+  const { error } = await supabase.storage
+    .from('design-files')
+    .upload(path, file, { contentType: file.type });
+
+  if (error) throw error;
+
+  const { data: urlData } = supabase.storage.from('design-files').getPublicUrl(path);
+  return urlData.publicUrl;
 }
 
 // ======================== DESIGN FILES ========================
