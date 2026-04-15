@@ -8,7 +8,7 @@ import { useProjectPhotos } from '../../lib/hooks';
 import { formatDate, updatePhotoStatus, updatePhotoRecord, uploadPhoto, createPhotoRecord, createVisit } from '../../lib/queries';
 import { PHOTO_STATUS_CONFIG } from '../../lib/types';
 
-const ZONES = ['Спальня', 'Гостиная', 'Кухня', 'Ванная', 'Детская', 'Прихожая', 'Коридор', 'Балкон'];
+const ZONES = ['Спальня', 'Гостиная', 'Кухня', 'Ванная', 'Детская', 'Прихожая', 'Коридор', 'Балкон', 'Гардеробная'];
 
 interface PhotoGalleryProps {
   projectId: string;
