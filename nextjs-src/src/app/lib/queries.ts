@@ -22,7 +22,7 @@ import type {
   ContractorTask, ContractorTaskWithDetails, CreateContractorTaskInput,
   ChatType, ChatMessage, ChatMessageWithAuthor, ChatRead, SendChatMessageInput,
   DesignFile, DesignFileWithProfile, DesignFileComment, DesignFileCommentWithProfile,
-  DesignFolder, CreateDesignFileInput,
+  DesignFolder, CreateDesignFileInput, DesignSubfolder,
   ProjectRoom, CreateProjectRoomInput,
   KindStageMapping, CreateKindStageMappingInput,
 } from './types';
@@ -2649,6 +2649,7 @@ export async function createDesignFile(input: CreateDesignFileInput): Promise<De
     .insert({
       project_id: input.project_id,
       folder: input.folder,
+      subfolder: input.subfolder || null,
       name: sanitize(input.name),
       file_path: input.file_path,
       file_url: input.file_url,
@@ -2698,6 +2699,90 @@ export async function updateDesignFileName(fileId: string, newName: string): Pro
     const body = await res.json().catch(() => ({}));
     throw new Error(body.error || 'Ошибка переименования');
   }
+}
+
+/** Move a design file to a subfolder (or root if null) */
+export async function moveDesignFileToSubfolder(fileId: string, subfolder: string | null): Promise<void> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) throw new Error('Требуется авторизация');
+
+  // Use the same API route as rename, but with subfolder field
+  const res = await fetch('/api/design/rename', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fileId, subfolder, accessToken: session.access_token }),
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error || 'Ошибка перемещения');
+  }
+}
+
+// ======================== DESIGN SUBFOLDERS ========================
+
+/** Fetch subfolders for a project+folder */
+export async function fetchDesignSubfolders(
+  projectId: string,
+  folder: DesignFolder,
+): Promise<DesignSubfolder[]> {
+  const { data, error } = await supabase
+    .from('design_subfolders')
+    .select('*')
+    .eq('project_id', projectId)
+    .eq('folder', folder)
+    .order('position', { ascending: true });
+
+  if (error) throw error;
+  return (data || []) as DesignSubfolder[];
+}
+
+/** Create a new subfolder */
+export async function createDesignSubfolder(
+  projectId: string,
+  folder: DesignFolder,
+  name: string,
+): Promise<DesignSubfolder> {
+  const clean = sanitize(name).trim();
+  if (!clean) throw new Error('Имя папки не может быть пустым');
+
+  const { data, error } = await supabase
+    .from('design_subfolders')
+    .insert({ project_id: projectId, folder, name: clean })
+    .select()
+    .single();
+
+  if (error) {
+    if (error.code === '23505') throw new Error('Папка с таким именем уже существует');
+    throw error;
+  }
+  return data as DesignSubfolder;
+}
+
+/** Rename a subfolder */
+export async function renameDesignSubfolder(id: string, newName: string): Promise<void> {
+  const clean = sanitize(newName).trim();
+  if (!clean) throw new Error('Имя папки не может быть пустым');
+
+  const { error } = await supabase
+    .from('design_subfolders')
+    .update({ name: clean })
+    .eq('id', id);
+
+  if (error) {
+    if (error.code === '23505') throw new Error('Папка с таким именем уже существует');
+    throw error;
+  }
+}
+
+/** Delete a subfolder (files move to root) */
+export async function deleteDesignSubfolder(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('design_subfolders')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw error;
 }
 
 /** Fetch comments for a design file */

@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { useDesignFiles } from '../../lib/hooks';
-import { createDesignFile, updateDesignFileName } from '../../lib/queries';
+import { useDesignFiles, useDesignSubfolders } from '../../lib/hooks';
+import { createDesignFile, updateDesignFileName, createDesignSubfolder, renameDesignSubfolder, deleteDesignSubfolder, moveDesignFileToSubfolder } from '../../lib/queries';
 import { supabase } from '../../lib/supabase';
 import { DESIGN_FOLDERS } from '../../lib/types';
-import type { DesignFolder, DesignFileWithProfile } from '../../lib/types';
+import type { DesignFolder, DesignFileWithProfile, DesignSubfolder } from '../../lib/types';
 
 interface DesignFolderViewProps {
   projectId: string;
@@ -76,6 +76,7 @@ interface PendingUpload {
 
 export default function DesignFolderView({ projectId, folder, toast, canUpload = true, onBack, onSelectFile }: DesignFolderViewProps) {
   const { data: files, loading, refetch } = useDesignFiles(projectId, folder);
+  const { data: subfolders, refetch: refetchSubfolders } = useDesignSubfolders(projectId, folder);
   const [pending, setPending] = useState<PendingUpload[]>([]);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -85,6 +86,9 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
     suggestedName?: string;
     loading?: boolean;
   } | null>(null);
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+  const [activeSubfolder, setActiveSubfolder] = useState<string | null>(null); // subfolder for upload target
+  const [dragOverFolder, setDragOverFolder] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const folderConfig = DESIGN_FOLDERS.find(f => f.id === folder);
@@ -94,6 +98,94 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
     () => (files ?? []).filter(isImageFile),
     [files]
   );
+
+  // Group files by subfolder
+  const rootFiles = useMemo(() => (files ?? []).filter(f => !f.subfolder), [files]);
+  const filesBySubfolder = useMemo(() => {
+    const map = new Map<string, DesignFileWithProfile[]>();
+    (files ?? []).forEach(f => {
+      if (f.subfolder) {
+        const arr = map.get(f.subfolder) || [];
+        arr.push(f);
+        map.set(f.subfolder, arr);
+      }
+    });
+    return map;
+  }, [files]);
+
+  const toggleFolder = (name: string) => {
+    setExpandedFolders(prev => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name); else next.add(name);
+      return next;
+    });
+  };
+
+  // Create subfolder
+  const handleCreateSubfolder = async () => {
+    const name = prompt('Имя папки:');
+    if (!name?.trim()) return;
+    try {
+      await createDesignSubfolder(projectId, folder, name.trim());
+      refetchSubfolders();
+      toast('Папка создана');
+    } catch (err: any) {
+      toast(err?.message || 'Ошибка создания папки');
+    }
+  };
+
+  // Rename subfolder (double-click)
+  const handleRenameSubfolder = async (sf: DesignSubfolder) => {
+    const name = prompt('Новое имя папки:', sf.name);
+    if (!name?.trim() || name.trim() === sf.name) return;
+    try {
+      await renameDesignSubfolder(sf.id, name.trim());
+      refetchSubfolders();
+      toast('Папка переименована');
+    } catch (err: any) {
+      toast(err?.message || 'Ошибка переименования');
+    }
+  };
+
+  // Delete subfolder
+  const handleDeleteSubfolder = async (sf: DesignSubfolder) => {
+    const fileCount = filesBySubfolder.get(sf.name)?.length || 0;
+    const msg = fileCount > 0
+      ? `Удалить папку «${sf.name}»? ${fileCount} файл(ов) будут перемещены в корень.`
+      : `Удалить папку «${sf.name}»?`;
+    if (!confirm(msg)) return;
+    try {
+      // Move files to root first
+      const filesToMove = filesBySubfolder.get(sf.name) || [];
+      await Promise.all(filesToMove.map(f => moveDesignFileToSubfolder(f.id, null)));
+      await deleteDesignSubfolder(sf.id);
+      refetchSubfolders();
+      refetch();
+      toast('Папка удалена');
+    } catch (err: any) {
+      toast(err?.message || 'Ошибка удаления');
+    }
+  };
+
+  // Drag-and-drop file to subfolder
+  const handleFileDragStart = (e: React.DragEvent, fileId: string) => {
+    e.dataTransfer.setData('text/plain', fileId);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleFolderDrop = async (e: React.DragEvent, subfolderName: string | null) => {
+    e.preventDefault();
+    setDragOverFolder(null);
+    const fileId = e.dataTransfer.getData('text/plain');
+    if (!fileId) return;
+    try {
+      await moveDesignFileToSubfolder(fileId, subfolderName);
+      refetch();
+      toast(subfolderName ? `Перемещено в «${subfolderName}»` : 'Перемещено в корень');
+    } catch (err: any) {
+      toast(err?.message || 'Ошибка перемещения');
+    }
+  };
 
   const handleFileClick = (file: DesignFileWithProfile) => {
     if (isImageFile(file)) {
@@ -128,6 +220,7 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
       const created = await createDesignFile({
         project_id: projectId,
         folder,
+        subfolder: activeSubfolder,
         name: file.name,
         file_path: path,
         file_url: urlData.publicUrl,
@@ -170,7 +263,7 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
         setPending(prev => prev.filter(p => p.id !== pendingId));
       }, 5000);
     }
-  }, [projectId, folder, refetch]);
+  }, [projectId, folder, activeSubfolder, refetch]);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const fileList = e.target.files;
@@ -271,17 +364,30 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
           {folderLabel}
         </h3>
         {canUpload && (
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            style={{
-              fontFamily: 'var(--af-font-mono)', fontSize: 8,
-              textTransform: 'uppercase', letterSpacing: '0.14em',
-              color: '#111', background: 'none', border: '0.5px solid #EBEBEB',
-              padding: '6px 12px', cursor: 'pointer',
-            }}
-          >
-            + Загрузить
-          </button>
+          <div style={{ display: 'flex', gap: 4 }}>
+            <button
+              onClick={handleCreateSubfolder}
+              style={{
+                fontFamily: 'var(--af-font-mono)', fontSize: 8,
+                textTransform: 'uppercase', letterSpacing: '0.14em',
+                color: '#111', background: 'none', border: '0.5px solid #EBEBEB',
+                padding: '6px 12px', cursor: 'pointer',
+              }}
+            >
+              + Папка
+            </button>
+            <button
+              onClick={() => { setActiveSubfolder(null); fileInputRef.current?.click(); }}
+              style={{
+                fontFamily: 'var(--af-font-mono)', fontSize: 8,
+                textTransform: 'uppercase', letterSpacing: '0.14em',
+                color: '#111', background: 'none', border: '0.5px solid #EBEBEB',
+                padding: '6px 12px', cursor: 'pointer',
+              }}
+            >
+              + Загрузить
+            </button>
+          </div>
         )}
         <input
           ref={fileInputRef}
@@ -323,7 +429,7 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
       )}
 
       {/* Empty state */}
-      {!loading && pending.length === 0 && (!files || files.length === 0) && (
+      {!loading && pending.length === 0 && (!files || files.length === 0) && (!subfolders || subfolders.length === 0) && (
         <div style={{ textAlign: 'center', padding: '48px 0' }}>
           <div style={{ fontFamily: 'var(--af-font-display)', fontSize: 48, fontWeight: 900, color: '#EBEBEB', marginBottom: 8 }}>—</div>
           <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 8, textTransform: 'uppercase', letterSpacing: '0.16em', color: '#111' }}>
@@ -345,15 +451,126 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
         </div>
       )}
 
-      {/* File grid (pending tiles first, then actual files) */}
-      {(pending.length > 0 || (files && files.length > 0)) && (
-        <div className="af-file-grid">
-          {pending.map((p) => (
-            <PendingTile key={p.id} pending={p} />
-          ))}
-          {files?.map((file) => (
-            <FileTile key={file.id} file={file} onClick={() => handleFileClick(file)} />
-          ))}
+      {/* Subfolders */}
+      {subfolders && subfolders.length > 0 && (
+        <div style={{ marginBottom: 16 }}>
+          {subfolders.map((sf) => {
+            const isExpanded = expandedFolders.has(sf.name);
+            const folderFiles = filesBySubfolder.get(sf.name) || [];
+            const isDragOver = dragOverFolder === sf.name;
+            return (
+              <div key={sf.id} style={{ marginBottom: 2 }}>
+                {/* Folder row */}
+                <div
+                  onClick={() => toggleFolder(sf.name)}
+                  onDoubleClick={(e) => { e.stopPropagation(); handleRenameSubfolder(sf); }}
+                  onDragOver={(e) => { e.preventDefault(); setDragOverFolder(sf.name); }}
+                  onDragLeave={() => setDragOverFolder(null)}
+                  onDrop={(e) => handleFolderDrop(e, sf.name)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    padding: '8px 12px', cursor: 'pointer',
+                    border: isDragOver ? '0.5px solid #111' : '0.5px solid #EBEBEB',
+                    background: isDragOver ? '#F6F6F4' : '#fff',
+                    transition: 'border-color 0.15s, background 0.15s',
+                    userSelect: 'none',
+                  }}
+                >
+                  {/* Folder icon */}
+                  <span style={{ fontFamily: 'var(--af-font-mono)', fontSize: 14, lineHeight: 1, flexShrink: 0 }}>
+                    {isExpanded ? '▾' : '▸'}
+                  </span>
+                  {/* Folder visual */}
+                  <svg width="18" height="14" viewBox="0 0 18 14" fill="none" style={{ flexShrink: 0 }}>
+                    <path d="M0 1h7l2 2h9v11H0V1z" fill="#111" />
+                  </svg>
+                  <span style={{
+                    fontFamily: 'var(--af-font-mono)', fontSize: 10, color: '#111',
+                    flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  }}>
+                    {sf.name}
+                  </span>
+                  <span style={{ fontFamily: 'var(--af-font-mono)', fontSize: 8, color: '#999' }}>
+                    {folderFiles.length}
+                  </span>
+                  {canUpload && (
+                    <>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setActiveSubfolder(sf.name); fileInputRef.current?.click(); }}
+                        title="Загрузить в папку"
+                        style={{
+                          fontFamily: 'var(--af-font-mono)', fontSize: 10, color: '#111',
+                          background: 'none', border: 'none', cursor: 'pointer', padding: '0 4px',
+                        }}
+                      >+</button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDeleteSubfolder(sf); }}
+                        title="Удалить папку"
+                        style={{
+                          fontFamily: 'var(--af-font-mono)', fontSize: 10, color: '#999',
+                          background: 'none', border: 'none', cursor: 'pointer', padding: '0 4px',
+                        }}
+                      >✕</button>
+                    </>
+                  )}
+                </div>
+                {/* Expanded folder content */}
+                {isExpanded && folderFiles.length > 0 && (
+                  <div style={{ marginLeft: 0, borderLeft: '0.5px solid #EBEBEB', paddingLeft: 0, marginTop: 2 }}>
+                    <div className="af-file-grid">
+                      {folderFiles.map((file) => (
+                        <FileTile
+                          key={file.id}
+                          file={file}
+                          onClick={() => handleFileClick(file)}
+                          draggable
+                          onDragStart={(e) => handleFileDragStart(e, file.id)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {isExpanded && folderFiles.length === 0 && (
+                  <div style={{
+                    padding: '12px', borderLeft: '0.5px solid #EBEBEB', marginTop: 2,
+                    fontFamily: 'var(--af-font-mono)', fontSize: 8, color: '#999',
+                    textTransform: 'uppercase', letterSpacing: '0.12em',
+                  }}>
+                    Пусто
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Root files (no subfolder) + pending tiles */}
+      {(pending.length > 0 || rootFiles.length > 0) && (
+        <div
+          onDragOver={(e) => { e.preventDefault(); setDragOverFolder('__root__'); }}
+          onDragLeave={() => setDragOverFolder(null)}
+          onDrop={(e) => handleFolderDrop(e, null)}
+          style={{
+            border: dragOverFolder === '__root__' ? '0.5px dashed #111' : 'none',
+            padding: dragOverFolder === '__root__' ? 4 : 0,
+            transition: 'border 0.15s',
+          }}
+        >
+          <div className="af-file-grid">
+            {pending.map((p) => (
+              <PendingTile key={p.id} pending={p} />
+            ))}
+            {rootFiles.map((file) => (
+              <FileTile
+                key={file.id}
+                file={file}
+                onClick={() => handleFileClick(file)}
+                draggable
+                onDragStart={(e) => handleFileDragStart(e, file.id)}
+              />
+            ))}
+          </div>
         </div>
       )}
 
@@ -394,7 +611,7 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
 // FileTile — one cell in the grid (uploaded file)
 // ============================================================================
 
-function FileTile({ file, onClick }: { file: DesignFileWithProfile; onClick: () => void }) {
+function FileTile({ file, onClick, draggable, onDragStart }: { file: DesignFileWithProfile; onClick: () => void; draggable?: boolean; onDragStart?: (e: React.DragEvent) => void }) {
   const [imgError, setImgError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const isImg = isImageFile(file);
@@ -408,7 +625,7 @@ function FileTile({ file, onClick }: { file: DesignFileWithProfile; onClick: () 
   };
 
   return (
-    <div className="af-file-tile" onClick={onClick}>
+    <div className="af-file-tile" onClick={onClick} draggable={draggable} onDragStart={onDragStart}>
       {showImg ? (
         <img
           src={`${file.file_url}${file.file_url.includes('?') ? '&' : '?'}r=${reloadKey}`}

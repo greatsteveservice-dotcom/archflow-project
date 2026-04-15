@@ -7,7 +7,7 @@
 import { useState, useEffect, useCallback, useRef, useId } from 'react';
 import { supabase } from './supabase';
 import { isBackendError, getHealth } from './health';
-import type { ProjectWithStats, VisitWithStats, PhotoRecord, Profile, Stage, SupplyItem, Invoice, Notification, ActivityItem, Document, ProjectMember, ProjectMemberWithProfile, DocumentCategory, Task, PhotoRecordWithVisit, RbacMemberWithProfile, ProjectAccessSettings, VisitReportWithStats, VisitRemarkWithDetails, ContractorTaskWithDetails, ChatMessageWithAuthor, ChatType, DesignFileWithProfile, DesignFileCommentWithProfile, DesignFolder, ProjectRoom, KindStageMapping } from './types';
+import type { ProjectWithStats, VisitWithStats, PhotoRecord, Profile, Stage, SupplyItem, Invoice, Notification, ActivityItem, Document, ProjectMember, ProjectMemberWithProfile, DocumentCategory, Task, PhotoRecordWithVisit, RbacMemberWithProfile, ProjectAccessSettings, VisitReportWithStats, VisitRemarkWithDetails, ContractorTaskWithDetails, ChatMessageWithAuthor, ChatType, DesignFileWithProfile, DesignFileCommentWithProfile, DesignFolder, DesignSubfolder, ProjectRoom, KindStageMapping } from './types';
 import {
   fetchProjects,
   fetchProjectsPaginated,
@@ -43,6 +43,7 @@ import {
   fetchDesignFileCounts,
   fetchDesignFile,
   fetchDesignFileComments,
+  fetchDesignSubfolders,
   fetchProjectRooms,
   fetchKindStageMappings,
 } from './queries';
@@ -723,6 +724,14 @@ export function useDesignFileComments(fileId: string | null) {
   return useQuery<DesignFileCommentWithProfile[]>(
     () => fileId ? fetchDesignFileComments(fileId) : Promise.resolve([]),
     [fileId]
+  );
+}
+
+/** Fetch subfolders for a project+folder */
+export function useDesignSubfolders(projectId: string | null, folder?: DesignFolder) {
+  return useQuery<DesignSubfolder[]>(
+    () => (projectId && folder) ? fetchDesignSubfolders(projectId, folder) : Promise.resolve([]),
+    [projectId, folder]
   );
 }
 

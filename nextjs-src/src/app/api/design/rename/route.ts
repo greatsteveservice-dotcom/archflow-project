@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-// Server-side rename endpoint that uses the service role key
+// Server-side endpoint that uses the service role key
 // to bypass RLS (the design_files table has no UPDATE policy).
 //
-// Body: { fileId: string, name: string, accessToken: string }
+// Body: { fileId: string, name?: string, subfolder?: string|null, accessToken: string }
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -12,24 +12,28 @@ const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { fileId, name, accessToken } = body;
+    const { fileId, name, subfolder, accessToken } = body;
 
-    if (!fileId || !name) {
-      return NextResponse.json({ error: 'fileId and name required' }, { status: 400 });
+    // At least one of name or subfolder must be provided
+    if (!fileId || (name === undefined && subfolder === undefined)) {
+      return NextResponse.json({ error: 'fileId and name or subfolder required' }, { status: 400 });
     }
 
     if (!accessToken) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const cleanName = name
-      .replace(/<[^>]*>/g, '')
-      .replace(/javascript:/gi, '')
-      .replace(/on\w+\s*=/gi, '')
-      .trim();
+    let cleanName: string | undefined;
+    if (name !== undefined) {
+      cleanName = name
+        .replace(/<[^>]*>/g, '')
+        .replace(/javascript:/gi, '')
+        .replace(/on\w+\s*=/gi, '')
+        .trim();
 
-    if (!cleanName || cleanName.length > 200) {
-      return NextResponse.json({ error: 'Invalid name' }, { status: 400 });
+      if (!cleanName || cleanName.length > 200) {
+        return NextResponse.json({ error: 'Invalid name' }, { status: 400 });
+      }
     }
 
     // Verify the user is authenticated
@@ -75,17 +79,22 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Build update payload
+    const updates: Record<string, unknown> = {};
+    if (cleanName !== undefined) updates.name = cleanName;
+    if (subfolder !== undefined) updates.subfolder = subfolder; // null = move to root
+
     // Perform the update with service role (bypasses RLS)
     const { error: updateErr } = await adminClient
       .from('design_files')
-      .update({ name: cleanName })
+      .update(updates)
       .eq('id', fileId);
 
     if (updateErr) {
       return NextResponse.json({ error: updateErr.message }, { status: 500 });
     }
 
-    return NextResponse.json({ ok: true, name: cleanName });
+    return NextResponse.json({ ok: true, ...updates });
   } catch (err: any) {
     return NextResponse.json({ error: err?.message || 'Server error' }, { status: 500 });
   }

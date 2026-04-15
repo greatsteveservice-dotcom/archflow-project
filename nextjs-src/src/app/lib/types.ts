@@ -633,6 +633,7 @@ export interface DesignFile {
   id: string;
   project_id: string;
   folder: DesignFolder;
+  subfolder: string | null;
   name: string;
   file_path: string;
   file_url: string;
@@ -663,11 +664,21 @@ export interface DesignFileCommentWithProfile extends DesignFileComment {
 export interface CreateDesignFileInput {
   project_id: string;
   folder: DesignFolder;
+  subfolder?: string | null;
   name: string;
   file_path: string;
   file_url: string;
   file_size?: number;
   file_type?: string;
+}
+
+export interface DesignSubfolder {
+  id: string;
+  project_id: string;
+  folder: DesignFolder;
+  name: string;
+  position: number;
+  created_at: string;
 }
 
 export interface DesignFolderConfig {
