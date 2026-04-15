@@ -142,6 +142,33 @@ async function fetchBounceByPage(date1: string, date2: string) {
     .filter((p: { visits: number }) => p.visits >= 3); // only pages with enough visits
 }
 
+function humanPageName(rawUrl: string): string {
+  let path = rawUrl;
+  try {
+    path = new URL(rawUrl).pathname;
+  } catch { /* use as is */ }
+
+  if (path === "/" || path === "") return "Главная (логин)";
+  if (path === "/projects") return "Список проектов";
+
+  // /projects/<uuid> or /projects/<uuid>/section
+  const m = path.match(/^\/projects\/[a-f0-9-]+(?:\/(.+))?$/);
+  if (m) {
+    const section = m[1];
+    if (!section) return "Проект (обзор)";
+    const map: Record<string, string> = {
+      design: "Дизайн",
+      supply: "Комплектация",
+      journal: "Авторский надзор",
+      settings: "Настройки проекта",
+    };
+    return map[section] || `Проект/${section}`;
+  }
+
+  if (path.length > 35) return path.slice(0, 32) + "...";
+  return path;
+}
+
 // ── Telegram ──────────────────────────────────────
 
 async function sendTelegram(text: string) {
@@ -181,7 +208,7 @@ function buildReport(
   const d2 = fmtDate(date2);
 
   const lines: string[] = [
-    `📊 ArchFlow — Аналитика за неделю`,
+    `📊 ArchFlow — Аналитика за 2 дня`,
     `${d1} – ${d2}`,
     `─────────────────`,
     `👥 Пользователи: ${stats.users} (${arrow(stats.users, prev.users)} ${pct(stats.users, prev.users)})`,
@@ -208,13 +235,7 @@ function buildReport(
     lines.push(`─────────────────`);
     lines.push(`📍 Топ страницы:`);
     topPages.forEach((p, i) => {
-      // Shorten URL for readability
-      let path = p.url;
-      try {
-        path = new URL(p.url).pathname;
-      } catch { /* use as is */ }
-      if (path.length > 40) path = path.slice(0, 37) + "...";
-      lines.push(`${i + 1}. ${path} — ${p.views}`);
+      lines.push(`${i + 1}. ${humanPageName(p.url)} — ${p.views}`);
     });
   }
 
@@ -223,12 +244,7 @@ function buildReport(
     lines.push(`─────────────────`);
     lines.push(`📉 Отказы по страницам:`);
     bouncePages.slice(0, 5).forEach((p) => {
-      let path = p.url;
-      try {
-        path = new URL(p.url).pathname;
-      } catch { /* use as is */ }
-      if (path.length > 30) path = path.slice(0, 27) + "...";
-      lines.push(`• ${path} — ${p.bounceRate}% (${p.visits} визитов)`);
+      lines.push(`• ${humanPageName(p.url)} — ${p.bounceRate}% (${p.visits} визитов)`);
     });
   }
 
@@ -249,17 +265,17 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // Date ranges
+    // Date ranges (2-day window)
     const now = new Date();
     const date2 = new Date(now);
     date2.setDate(date2.getDate() - 1); // yesterday (today's data incomplete)
     const date1 = new Date(date2);
-    date1.setDate(date1.getDate() - 6); // 7-day window
+    date1.setDate(date1.getDate() - 1); // 2-day window
 
     const prevDate2 = new Date(date1);
     prevDate2.setDate(prevDate2.getDate() - 1);
     const prevDate1 = new Date(prevDate2);
-    prevDate1.setDate(prevDate1.getDate() - 6);
+    prevDate1.setDate(prevDate1.getDate() - 1);
 
     // Fetch all data in parallel
     const [stats, prev, goals] = await Promise.all([
