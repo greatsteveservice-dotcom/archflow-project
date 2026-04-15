@@ -86,8 +86,8 @@ export default function SupplyModule({ projectId, toast }: SupplyModuleProps) {
   const hasItems = items && items.length > 0;
   const hasRooms = rooms && rooms.length > 0;
 
-  // Show onboarding only on first visit (no stages = never configured)
-  if (!hasItems && !hasRooms && !hasStages) {
+  // Show onboarding when no supply data exists (stages may already be set by designer)
+  if (!hasItems && !hasRooms) {
     return (
       <SupplyOnboarding
         projectId={projectId}
