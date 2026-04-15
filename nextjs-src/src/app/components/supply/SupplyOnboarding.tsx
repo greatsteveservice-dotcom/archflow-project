@@ -335,10 +335,10 @@ export default function SupplyOnboarding({
                       }}
                     />
                     <button onClick={() => handleRenameStage(s.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2 }}>
-                      <Icons.Check className="w-4 h-4" style={{ color: 'rgb(var(--ink))' }} />
+                      <Icons.Check className="w-4 h-4 text-ink" />
                     </button>
                     <button onClick={() => setEditingId(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2 }}>
-                      <Icons.X className="w-4 h-4" style={{ color: 'rgb(var(--ink))', opacity: 0.4 }} />
+                      <Icons.X className="w-4 h-4 text-ink opacity-40" />
                     </button>
                   </>
                 ) : (
@@ -368,14 +368,14 @@ export default function SupplyOnboarding({
                         style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2 }}
                         title="Переименовать"
                       >
-                        <Icons.Edit className="w-3.5 h-3.5" style={{ color: 'rgb(var(--ink))' }} />
+                        <Icons.Edit className="w-3.5 h-3.5 text-ink" />
                       </button>
                       <button
                         onClick={() => handleDeleteStage(s.id)}
                         style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2 }}
                         title="Удалить"
                       >
-                        <Icons.X className="w-3.5 h-3.5" style={{ color: 'rgb(var(--ink))' }} />
+                        <Icons.X className="w-3.5 h-3.5 text-ink" />
                       </button>
                     </div>
                   </>
