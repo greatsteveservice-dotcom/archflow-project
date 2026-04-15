@@ -459,12 +459,20 @@ export const RISK_CONFIG: Record<RiskLevel, { label: string; bg: string; text: s
 export type ReportStatus = 'draft' | 'filled' | 'published';
 export type RemarkStatus = 'open' | 'in_progress' | 'resolved';
 
+export interface ReportAttachment {
+  name: string;
+  file_url: string;
+  size: number;
+  uploaded_at: string;
+}
+
 export interface VisitReport {
   id: string;
   project_id: string;
   visit_date: string;
   status: ReportStatus;
   general_comment: string | null;
+  attachments: ReportAttachment[] | null;
   created_at: string;
   updated_at: string;
 }

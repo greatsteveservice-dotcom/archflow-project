@@ -120,7 +120,9 @@ export default function SupervisionTab({
             projectId={projectId}
             toast={toast}
             canChangePhotoStatus={canChangePhotoStatus}
-            onAddPhoto={() => setActiveSubTab('calendar')}
+            canUploadPhoto={canUploadPhoto}
+            visits={visits}
+            refetchVisits={() => { refetchVisits(); refetchProject(); }}
           />
         )}
         {activeSubTab === 'reports' && !selectedReportId && (

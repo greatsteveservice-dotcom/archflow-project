@@ -1730,6 +1730,76 @@ export async function updateVisitReport(
   return data as VisitReport;
 }
 
+/** Upload a report attachment file to Supabase Storage */
+export async function uploadReportFile(file: File, projectId: string, reportId: string): Promise<string> {
+  const ext = file.name.split('.').pop() || 'pdf';
+  const fileName = `${crypto.randomUUID()}.${ext}`;
+  const filePath = `${projectId}/reports/${reportId}/${fileName}`;
+
+  const { error } = await supabase.storage
+    .from('documents')
+    .upload(filePath, file, {
+      cacheControl: '3600',
+      contentType: file.type,
+    });
+
+  if (error) throw error;
+
+  const { data: urlData } = supabase.storage
+    .from('documents')
+    .getPublicUrl(filePath);
+
+  return urlData.publicUrl;
+}
+
+/** Add an attachment to a visit report */
+export async function addReportAttachment(
+  reportId: string,
+  attachment: { name: string; file_url: string; size: number }
+): Promise<VisitReport> {
+  // Fetch current attachments
+  const { data: report, error: fetchError } = await supabase
+    .from('visit_reports')
+    .select('attachments')
+    .eq('id', reportId)
+    .single();
+  if (fetchError) throw new Error(humanError(fetchError));
+
+  const current = (report?.attachments || []) as Array<{ name: string; file_url: string; size: number; uploaded_at: string }>;
+  const updated = [...current, { ...attachment, uploaded_at: new Date().toISOString() }];
+
+  const { data, error } = await supabase
+    .from('visit_reports')
+    .update({ attachments: updated })
+    .eq('id', reportId)
+    .select()
+    .single();
+  if (error) throw new Error(humanError(error));
+  return data as VisitReport;
+}
+
+/** Remove an attachment from a visit report */
+export async function removeReportAttachment(reportId: string, fileUrl: string): Promise<VisitReport> {
+  const { data: report, error: fetchError } = await supabase
+    .from('visit_reports')
+    .select('attachments')
+    .eq('id', reportId)
+    .single();
+  if (fetchError) throw new Error(humanError(fetchError));
+
+  const current = (report?.attachments || []) as Array<{ name: string; file_url: string; size: number; uploaded_at: string }>;
+  const updated = current.filter(a => a.file_url !== fileUrl);
+
+  const { data, error } = await supabase
+    .from('visit_reports')
+    .update({ attachments: updated })
+    .eq('id', reportId)
+    .select()
+    .single();
+  if (error) throw new Error(humanError(error));
+  return data as VisitReport;
+}
+
 /** Delete a visit report */
 export async function deleteVisitReport(reportId: string): Promise<void> {
   const { error } = await supabase

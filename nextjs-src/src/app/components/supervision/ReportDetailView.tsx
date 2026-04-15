@@ -1,7 +1,7 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Icons } from '../Icons';
-import type { VisitReport, VisitRemarkWithDetails, ReportStatus, RemarkStatus, ProjectMemberWithProfile, ContractorTask, TaskStatus, EmailDeliveryStatus } from '../../lib/types';
+import type { VisitReport, VisitRemarkWithDetails, ReportStatus, RemarkStatus, ProjectMemberWithProfile, ContractorTask, TaskStatus, EmailDeliveryStatus, ReportAttachment } from '../../lib/types';
 import { EMAIL_STATUS_CONFIG } from '../../lib/types';
 import { useVisitRemarks, useReportEmailSends } from '../../lib/hooks';
 import { useAuth } from '../../lib/auth';
@@ -15,6 +15,9 @@ import {
   createRemarkComment,
   fetchRemarkTasks,
   createContractorTask,
+  uploadReportFile,
+  addReportAttachment,
+  removeReportAttachment,
 } from '../../lib/queries';
 
 // ─── Status config ───────────────────────────────────────
@@ -91,6 +94,11 @@ export default function ReportDetailView({ reportId, projectId, toast, onBack, m
   // Inline comment form
   const [commentingOnRemark, setCommentingOnRemark] = useState<string | null>(null);
   const [remarkCommentText, setRemarkCommentText] = useState('');
+
+  // File upload state
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const [isDraggingFile, setIsDraggingFile] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load report
   useEffect(() => {
@@ -239,6 +247,48 @@ export default function ReportDetailView({ reportId, projectId, toast, onBack, m
       toast(err instanceof Error ? err.message : 'Ошибка');
     } finally {
       setAcknowledging(false);
+    }
+  };
+
+  // File upload handlers
+  const handleFileUpload = async (file: File) => {
+    if (file.size > 50 * 1024 * 1024) { toast('Файл слишком большой (макс. 50 МБ)'); return; }
+    setUploadingFile(true);
+    try {
+      const fileUrl = await uploadReportFile(file, projectId, reportId);
+      const updated = await addReportAttachment(reportId, {
+        name: file.name,
+        file_url: fileUrl,
+        size: file.size,
+      });
+      setReport(updated);
+      toast('Файл загружен');
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : 'Ошибка загрузки');
+    } finally {
+      setUploadingFile(false);
+    }
+  };
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleFileUpload(file);
+    e.target.value = '';
+  };
+
+  const handleFileDrop = (e: React.DragEvent) => {
+    e.preventDefault(); setIsDraggingFile(false);
+    const file = e.dataTransfer.files[0];
+    if (file) handleFileUpload(file);
+  };
+
+  const handleRemoveAttachment = async (fileUrl: string) => {
+    try {
+      const updated = await removeReportAttachment(reportId, fileUrl);
+      setReport(updated);
+      toast('Файл удалён');
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : 'Ошибка');
     }
   };
 
@@ -526,6 +576,154 @@ export default function ReportDetailView({ reportId, projectId, toast, onBack, m
           >
             {saving ? '...' : 'Сохранить'}
           </button>
+        )}
+      </div>
+
+      {/* Attachments section */}
+      <div style={{ marginBottom: 24 }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 8,
+        }}>
+          <div style={{
+            fontFamily: 'var(--af-font-mono)',
+            fontSize: 'var(--af-fs-8)',
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
+            color: '#111',
+          }}>
+            Файлы {(report.attachments || []).length > 0 && `(${(report.attachments || []).length})`}
+          </div>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadingFile}
+            style={{
+              fontFamily: 'var(--af-font-mono)',
+              fontSize: 'var(--af-fs-9)',
+              color: '#111',
+              background: 'none',
+              border: 'none',
+              cursor: uploadingFile ? 'wait' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+              opacity: uploadingFile ? 0.5 : 1,
+            }}
+          >
+            <Icons.Plus className="w-3 h-3" />
+            {uploadingFile ? 'Загрузка...' : 'Загрузить'}
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.zip,.dwg"
+            onChange={handleFileInputChange}
+          />
+        </div>
+
+        {/* Drop zone */}
+        <div
+          onClick={() => fileInputRef.current?.click()}
+          onDrop={handleFileDrop}
+          onDragOver={e => { e.preventDefault(); setIsDraggingFile(true); }}
+          onDragLeave={() => setIsDraggingFile(false)}
+          style={{
+            border: `1px dashed ${isDraggingFile ? '#111' : '#EBEBEB'}`,
+            background: isDraggingFile ? '#F6F6F4' : '#FFF',
+            padding: '12px 16px',
+            textAlign: 'center',
+            cursor: 'pointer',
+            transition: 'all 0.12s',
+            marginBottom: (report.attachments || []).length > 0 ? 8 : 0,
+          }}
+        >
+          <div style={{
+            fontFamily: 'var(--af-font-mono)',
+            fontSize: 'var(--af-fs-10)',
+            color: '#111',
+            opacity: 0.5,
+          }}>
+            Перетащите файл или нажмите · PDF, DOC, XLSX, PNG, DWG
+          </div>
+        </div>
+
+        {/* File list */}
+        {(report.attachments || []).length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {(report.attachments || []).map((att, idx) => (
+              <div key={idx} style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: '8px 12px',
+                background: '#FFF',
+                borderBottom: '0.5px solid #EBEBEB',
+              }}>
+                <div style={{
+                  fontFamily: 'var(--af-font-mono)',
+                  fontSize: 'var(--af-fs-8)',
+                  textTransform: 'uppercase',
+                  color: '#111',
+                  padding: '2px 6px',
+                  background: '#F6F6F4',
+                  whiteSpace: 'nowrap',
+                }}>
+                  {att.name.split('.').pop()?.toUpperCase() || 'FILE'}
+                </div>
+                <a
+                  href={att.file_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    flex: 1,
+                    fontFamily: 'var(--af-font-mono)',
+                    fontSize: 'var(--af-fs-10)',
+                    color: '#111',
+                    textDecoration: 'none',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                  onMouseEnter={e => { (e.target as HTMLElement).style.textDecoration = 'underline'; }}
+                  onMouseLeave={e => { (e.target as HTMLElement).style.textDecoration = 'none'; }}
+                >
+                  {att.name}
+                </a>
+                <span style={{
+                  fontFamily: 'var(--af-font-mono)',
+                  fontSize: 'var(--af-fs-8)',
+                  color: '#111',
+                  opacity: 0.5,
+                  whiteSpace: 'nowrap',
+                }}>
+                  {att.size < 1024 * 1024
+                    ? `${Math.round(att.size / 1024)} КБ`
+                    : `${(att.size / (1024 * 1024)).toFixed(1)} МБ`}
+                </span>
+                <button
+                  onClick={() => handleRemoveAttachment(att.file_url)}
+                  style={{
+                    fontFamily: 'var(--af-font-mono)',
+                    fontSize: 14,
+                    color: '#111',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: '0 2px',
+                    opacity: 0.3,
+                    transition: 'opacity 0.12s',
+                  }}
+                  onMouseEnter={e => { (e.target as HTMLElement).style.opacity = '1'; }}
+                  onMouseLeave={e => { (e.target as HTMLElement).style.opacity = '0.3'; }}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
         )}
       </div>
 
