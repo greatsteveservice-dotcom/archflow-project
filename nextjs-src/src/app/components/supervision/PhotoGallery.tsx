@@ -50,6 +50,27 @@ export default function PhotoGallery({ projectId, toast, canChangePhotoStatus = 
     return photos.filter(p => p.status === filter);
   }, [photos, filter]);
 
+  // Group photos by visit (date descending)
+  const groupedByVisit = useMemo(() => {
+    const groups: { visitId: string; title: string; date: string; photos: typeof filtered }[] = [];
+    const map = new Map<string, typeof filtered>();
+    const meta = new Map<string, { title: string; date: string }>();
+    for (const p of filtered) {
+      const key = p.visit_id || '_none';
+      if (!map.has(key)) {
+        map.set(key, []);
+        meta.set(key, { title: p.visit_title || 'Без визита', date: p.visit_date || '' });
+      }
+      map.get(key)!.push(p);
+    }
+    for (const [visitId, photos] of map) {
+      const m = meta.get(visitId)!;
+      groups.push({ visitId, title: m.title, date: m.date, photos });
+    }
+    groups.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    return groups;
+  }, [filtered]);
+
   const statusCounts = useMemo(() => {
     if (!photos) return { all: 0, issue: 0, approved: 0, in_progress: 0 };
     return {
@@ -195,40 +216,69 @@ export default function PhotoGallery({ projectId, toast, canChangePhotoStatus = 
         )}
       </div>
 
-      {/* Gallery grid */}
+      {/* Gallery grouped by visit */}
       {filtered.length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-          {filtered.map(photo => {
-            const cfg = PHOTO_STATUS_CONFIG[photo.status];
-            return (
-              <div
-                key={photo.id}
-                className="group cursor-pointer rounded-xl overflow-hidden border border-line hover:border-ink-ghost transition-all"
-                onClick={() => setSelectedPhoto(photo)}
-              >
-                {photo.photo_url ? (
-                  <div className="aspect-square bg-srf-secondary relative">
-                    <Image src={photo.photo_url} alt="" fill sizes="(max-width: 640px) 50vw, 25vw" className="object-cover" />
-                    <div className="absolute top-2 right-2">
-                      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-md ${cfg.bg} ${cfg.color}`}>
-                        {cfg.label}
-                      </span>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="aspect-square bg-srf-secondary flex items-center justify-center">
-                    <Icons.Camera className="w-6 h-6 text-ink-ghost" />
-                  </div>
-                )}
-                <div className="p-2">
-                  <div className="text-[11px] text-ink-muted truncate">{photo.comment || photo.zone || '—'}</div>
-                  <div className="text-[10px] text-ink-faint mt-0.5">
-                    {photo.visit_title || ''} · {photo.visit_date ? formatDate(photo.visit_date) : ''}
-                  </div>
-                </div>
+        <div className="space-y-6">
+          {groupedByVisit.map(group => (
+            <div key={group.visitId}>
+              {/* Visit header */}
+              <div style={{
+                display: 'flex', alignItems: 'baseline', gap: 8,
+                marginBottom: 10, borderBottom: '0.5px solid rgb(var(--line))',
+                paddingBottom: 6,
+              }}>
+                <span style={{
+                  fontFamily: 'var(--af-font-display)', fontSize: 15, fontWeight: 700,
+                  color: 'rgb(var(--ink))',
+                }}>
+                  {group.date ? formatDate(group.date) : '—'}
+                </span>
+                <span style={{
+                  fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-11)',
+                  color: 'rgb(var(--ink))', opacity: 0.5,
+                }}>
+                  {group.title}
+                </span>
+                <span style={{
+                  fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-10)',
+                  color: 'rgb(var(--ink))', opacity: 0.3, marginLeft: 'auto',
+                }}>
+                  {group.photos.length} фото
+                </span>
               </div>
-            );
-          })}
+              {/* Photo grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {group.photos.map(photo => {
+                  const cfg = PHOTO_STATUS_CONFIG[photo.status];
+                  return (
+                    <div
+                      key={photo.id}
+                      className="group cursor-pointer overflow-hidden border border-line hover:border-ink-ghost transition-all"
+                      onClick={() => setSelectedPhoto(photo)}
+                    >
+                      {photo.photo_url ? (
+                        <div className="aspect-square bg-srf-secondary relative">
+                          <Image src={photo.photo_url} alt="" fill sizes="(max-width: 640px) 50vw, 25vw" className="object-cover" />
+                          <div className="absolute top-2 right-2">
+                            <span className={`text-[10px] font-medium px-1.5 py-0.5 ${cfg.bg} ${cfg.color}`}>
+                              {cfg.label}
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="aspect-square bg-srf-secondary flex items-center justify-center">
+                          <Icons.Camera className="w-6 h-6 text-ink-ghost" />
+                        </div>
+                      )}
+                      <div className="p-2">
+                        <div className="text-[11px] text-ink-muted truncate">{photo.comment || photo.zone || '—'}</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center py-12 text-center">
