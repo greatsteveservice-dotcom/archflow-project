@@ -155,7 +155,7 @@ export default function FeedbackBar() {
         }
       } catch {}
 
-      const res = await fetch("/api/support/send", {
+      const res = await fetch("/api/support-send", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
