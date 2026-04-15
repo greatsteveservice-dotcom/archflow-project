@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useDesignFile, useDesignFileComments } from '../../lib/hooks';
 import { deleteDesignFile, createDesignFileComment, updateDesignFileName } from '../../lib/queries';
 import { useAuth } from '../../lib/auth';
@@ -53,6 +53,9 @@ export default function DesignFileDetail({
   const [deleting, setDeleting] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [sendingComment, setSendingComment] = useState(false);
+
+  // PDF fullscreen state
+  const [pdfFullscreen, setPdfFullscreen] = useState(false);
 
   // Rename state
   const [editingName, setEditingName] = useState(false);
@@ -256,22 +259,48 @@ export default function DesignFileDetail({
         )}
         {isPdf(file.file_type) && (
           <div>
-            <iframe
-              src={file.file_url}
-              style={{ width: '100%', height: 400, border: '0.5px solid #EBEBEB' }}
-              title={file.name}
-            />
-            <a
-              href={file.file_url}
-              target="_blank"
-              rel="noopener noreferrer"
+            <div
+              style={{ position: 'relative', cursor: 'pointer' }}
+              onClick={() => setPdfFullscreen(true)}
+            >
+              <iframe
+                src={file.file_url}
+                style={{ width: '100%', height: 400, border: '0.5px solid #EBEBEB', pointerEvents: 'none' }}
+                title={file.name}
+              />
+              {/* Hover overlay */}
+              <div
+                className="af-pdf-preview-overlay"
+                style={{
+                  position: 'absolute', inset: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: 'rgba(0,0,0,0)',
+                  transition: 'background 0.15s',
+                }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(0,0,0,0.08)'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(0,0,0,0)'; }}
+              >
+                <span style={{
+                  fontFamily: 'var(--af-font-mono)', fontSize: 9,
+                  textTransform: 'uppercase', letterSpacing: '0.14em',
+                  color: '#111', background: '#fff', border: '0.5px solid #111',
+                  padding: '6px 14px', opacity: 0.85,
+                }}>
+                  На весь экран
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={() => setPdfFullscreen(true)}
               style={{
                 fontFamily: 'var(--af-font-mono)', fontSize: 8,
-                color: '#111', textDecoration: 'underline', display: 'inline-block', marginTop: 8,
+                color: '#111', background: 'none', border: 'none',
+                cursor: 'pointer', padding: 0, marginTop: 8,
+                textDecoration: 'underline',
               }}
             >
-              Открыть полностью →
-            </a>
+              Открыть на весь экран →
+            </button>
           </div>
         )}
         {!isImage(file.file_type) && !isPdf(file.file_type) && (
@@ -402,6 +431,11 @@ export default function DesignFileDetail({
           </div>
         )}
       </div>
+
+      {/* PDF fullscreen viewer */}
+      {pdfFullscreen && file && isPdf(file.file_type) && (
+        <PdfLightbox url={file.file_url} name={file.name} onClose={() => setPdfFullscreen(false)} />
+      )}
     </div>
   );
 }
@@ -436,6 +470,196 @@ function CommentRow({ comment }: { comment: DesignFileCommentWithProfile }) {
       </div>
       <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 9, color: '#111', lineHeight: 1.5 }}>
         {comment.text}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// PdfLightbox — fullscreen PDF viewer with page navigation & zoom
+// ============================================================================
+
+const ZOOM_LEVELS = [50, 75, 100, 125, 150, 200, 300];
+
+function PdfLightbox({ url, name, onClose }: { url: string; name: string; onClose: () => void }) {
+  const [page, setPage] = useState(1);
+  const [zoomIdx, setZoomIdx] = useState(2); // index in ZOOM_LEVELS, default 100%
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  const zoom = ZOOM_LEVELS[zoomIdx];
+  const pdfSrc = `${url}#page=${page}&zoom=${zoom}`;
+
+  // Keyboard: Escape to close, arrows for pages
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      if (e.key === 'Escape') onClose();
+      else if (e.key === 'ArrowLeft') setPage(p => Math.max(1, p - 1));
+      else if (e.key === 'ArrowRight') setPage(p => p + 1);
+      else if (e.key === '+' || e.key === '=') setZoomIdx(i => Math.min(ZOOM_LEVELS.length - 1, i + 1));
+      else if (e.key === '-') setZoomIdx(i => Math.max(0, i - 1));
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  // Lock body scroll
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, []);
+
+  const btnStyle: React.CSSProperties = {
+    color: '#fff',
+    background: 'rgba(0,0,0,0.5)',
+    border: '0.5px solid rgba(255,255,255,0.3)',
+    fontFamily: 'var(--af-font-mono)',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  };
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0,
+      background: 'rgba(0,0,0,0.92)',
+      zIndex: 1000,
+      display: 'flex', flexDirection: 'column',
+    }}>
+      {/* Close button */}
+      <button
+        onClick={onClose}
+        aria-label="Закрыть"
+        style={{
+          ...btnStyle,
+          position: 'absolute', top: 16, right: 16, zIndex: 3,
+          width: 40, height: 40, fontSize: 18,
+        }}
+      >✕</button>
+
+      {/* Prev page arrow */}
+      <button
+        onClick={() => setPage(p => Math.max(1, p - 1))}
+        disabled={page <= 1}
+        aria-label="Предыдущая страница"
+        style={{
+          ...btnStyle,
+          position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', zIndex: 3,
+          width: 48, height: 48, fontSize: 22,
+          opacity: page <= 1 ? 0.3 : 1,
+        }}
+      >←</button>
+
+      {/* Next page arrow */}
+      <button
+        onClick={() => setPage(p => p + 1)}
+        aria-label="Следующая страница"
+        style={{
+          ...btnStyle,
+          position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', zIndex: 3,
+          width: 48, height: 48, fontSize: 22,
+        }}
+      >→</button>
+
+      {/* PDF iframe */}
+      <div style={{ flex: 1, padding: '16px 72px 0', overflow: 'hidden' }}>
+        <iframe
+          ref={iframeRef}
+          key={`${page}-${zoom}`}
+          src={pdfSrc}
+          title={name}
+          style={{ width: '100%', height: '100%', border: 'none', background: '#fff' }}
+        />
+      </div>
+
+      {/* Bottom bar: filename + page + zoom */}
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: 'rgba(0,0,0,0.7)',
+          zIndex: 3,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 0,
+        }}
+      >
+        {/* Row 1: filename + page number */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          padding: '6px 12px',
+          borderBottom: '0.5px solid rgba(255,255,255,0.12)',
+          minHeight: 32,
+          overflow: 'hidden',
+        }}>
+          <span style={{
+            fontFamily: 'var(--af-font-mono)', fontSize: 10, color: '#fff',
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            flex: '1 1 auto', minWidth: 0,
+          }}>
+            {name}
+          </span>
+          <span style={{
+            fontFamily: 'var(--af-font-mono)', fontSize: 9,
+            color: 'rgba(255,255,255,0.5)', whiteSpace: 'nowrap', flexShrink: 0,
+          }}>
+            Стр. {page}
+          </span>
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              fontFamily: 'var(--af-font-mono)', fontSize: 8, color: '#fff',
+              border: '0.5px solid rgba(255,255,255,0.35)', padding: '3px 8px',
+              textDecoration: 'none', textTransform: 'uppercase', letterSpacing: '0.08em',
+              whiteSpace: 'nowrap', flexShrink: 0,
+            }}
+          >
+            Скачать
+          </a>
+        </div>
+
+        {/* Row 2: zoom controls */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          gap: 8, padding: '5px 12px',
+        }}>
+          <button
+            onClick={() => setZoomIdx(i => Math.max(0, i - 1))}
+            disabled={zoomIdx <= 0}
+            aria-label="Уменьшить"
+            style={{
+              ...btnStyle,
+              width: 24, height: 24, fontSize: 14,
+              border: '0.5px solid rgba(255,255,255,0.25)',
+              background: 'none',
+              opacity: zoomIdx <= 0 ? 0.3 : 1,
+            }}
+          >−</button>
+          <span style={{
+            color: '#fff', fontFamily: 'var(--af-font-mono)', fontSize: 9,
+            minWidth: 36, textAlign: 'center',
+          }}>
+            {zoom}%
+          </span>
+          <button
+            onClick={() => setZoomIdx(i => Math.min(ZOOM_LEVELS.length - 1, i + 1))}
+            disabled={zoomIdx >= ZOOM_LEVELS.length - 1}
+            aria-label="Увеличить"
+            style={{
+              ...btnStyle,
+              width: 24, height: 24, fontSize: 14,
+              border: '0.5px solid rgba(255,255,255,0.25)',
+              background: 'none',
+              opacity: zoomIdx >= ZOOM_LEVELS.length - 1 ? 0.3 : 1,
+            }}
+          >+</button>
+        </div>
       </div>
     </div>
   );
