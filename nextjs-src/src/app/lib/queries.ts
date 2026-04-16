@@ -2402,8 +2402,22 @@ export async function sendChatMessage(
   return data;
 }
 
-/** Delete a chat message (own only) */
+/** Delete a chat message (own only, within 24h of sending) */
 export async function deleteChatMessage(messageId: string): Promise<void> {
+  // Pre-check so we can show a friendly error. RLS also enforces this server-side.
+  const { data: msg, error: fetchErr } = await supabase
+    .from('chat_messages')
+    .select('created_at')
+    .eq('id', messageId)
+    .maybeSingle();
+  if (fetchErr) throw fetchErr;
+  if (msg?.created_at) {
+    const age = Date.now() - new Date(msg.created_at).getTime();
+    if (age > 24 * 60 * 60 * 1000) {
+      throw new Error('Сообщение можно удалить только в течение 24 часов после отправки');
+    }
+  }
+
   const { error } = await supabase
     .from('chat_messages')
     .delete()

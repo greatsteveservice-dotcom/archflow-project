@@ -175,10 +175,14 @@ interface MessageBubbleProps {
   searchHighlight?: string;
 }
 
+// Messages can only be deleted within 24h of sending (in ms)
+const DELETE_WINDOW_MS = 24 * 60 * 60 * 1000;
+
 function MessageBubble({ msg, isOwn, showAvatar, onDelete, onTogglePin, searchHighlight }: MessageBubbleProps) {
   const [showMenu, setShowMenu] = useState(false);
   const name = msg.author?.full_name || 'Пользователь';
   const avatarUrl = msg.author?.avatar_url;
+  const canDelete = isOwn && msg.created_at && (Date.now() - new Date(msg.created_at).getTime() < DELETE_WINDOW_MS);
 
   return (
     <div
@@ -280,7 +284,7 @@ function MessageBubble({ msg, isOwn, showAvatar, onDelete, onTogglePin, searchHi
                 {msg.is_pinned ? 'Открепить' : 'Закрепить'}
               </button>
             )}
-            {isOwn && (
+            {canDelete && (
               <button
                 onClick={() => { onDelete(msg.id); setShowMenu(false); }}
                 style={{
