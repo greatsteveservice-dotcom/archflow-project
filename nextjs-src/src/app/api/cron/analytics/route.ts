@@ -169,6 +169,122 @@ function humanPageName(rawUrl: string): string {
   return path;
 }
 
+// ── Supabase (designers stats) ────────────────────
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
+interface DesignerStats {
+  id: string;
+  full_name: string;
+  email: string;
+  projects: number;
+  invited: number;
+  registered_at: string;
+  last_sign_in_at: string | null;
+  days_active: number;
+}
+
+async function sbFetch(path: string, extraHeaders: Record<string, string> = {}) {
+  const res = await fetch(`${SUPABASE_URL}${path}`, {
+    headers: {
+      apikey: SERVICE_KEY,
+      Authorization: `Bearer ${SERVICE_KEY}`,
+      ...extraHeaders,
+    },
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Supabase ${path}: ${res.status} ${err}`);
+  }
+  return res;
+}
+
+async function fetchDesignersStats(): Promise<DesignerStats[]> {
+  // 1. Get all designers from profiles
+  const profilesRes = await sbFetch(
+    `/rest/v1/profiles?role=eq.designer&select=id,full_name,email,created_at`
+  );
+  const profiles: { id: string; full_name: string | null; email: string | null; created_at: string }[] =
+    await profilesRes.json();
+
+  // 2. Get last_sign_in_at from auth.users via admin API
+  const authUsersMap = new Map<string, string | null>();
+  try {
+    const authRes = await sbFetch(`/auth/v1/admin/users?per_page=200`);
+    const authData = await authRes.json();
+    const users = authData.users || authData || [];
+    for (const u of users) {
+      authUsersMap.set(u.id, u.last_sign_in_at || null);
+    }
+  } catch (e) {
+    console.error("[analytics] auth.users fetch failed:", e);
+  }
+
+  // 3. For each designer, count projects and invited members
+  const now = Date.now();
+  const result: DesignerStats[] = [];
+
+  for (const d of profiles) {
+    // Projects owned by designer
+    const projectsRes = await sbFetch(
+      `/rest/v1/projects?owner_id=eq.${d.id}&select=id`,
+      { Prefer: "count=exact" }
+    );
+    const projects: { id: string }[] = await projectsRes.json();
+    const projectsCount = projects.length;
+
+    // Members invited to designer's projects (excluding designer themselves)
+    let invited = 0;
+    if (projectsCount > 0) {
+      const projectIds = projects.map((p) => p.id).join(",");
+      const membersRes = await sbFetch(
+        `/rest/v1/project_members?project_id=in.(${projectIds})&user_id=neq.${d.id}&select=user_id`,
+        { Prefer: "count=exact" }
+      );
+      const members: { user_id: string }[] = await membersRes.json();
+      // Unique users only
+      invited = new Set(members.map((m) => m.user_id)).size;
+    }
+
+    const daysActive = Math.max(
+      0,
+      Math.floor((now - new Date(d.created_at).getTime()) / (1000 * 60 * 60 * 24))
+    );
+
+    result.push({
+      id: d.id,
+      full_name: d.full_name || "—",
+      email: d.email || "—",
+      projects: projectsCount,
+      invited,
+      registered_at: d.created_at,
+      last_sign_in_at: authUsersMap.get(d.id) || null,
+      days_active: daysActive,
+    });
+  }
+
+  // Sort: most projects first
+  result.sort((a, b) => b.projects - a.projects);
+  return result;
+}
+
+function fmtShortDate(iso: string | null): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  if (diffDays === 0) return "сегодня";
+  if (diffDays === 1) return "вчера";
+  if (diffDays < 7) return `${diffDays} дн назад`;
+  return d.toLocaleDateString("ru-RU", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: "Europe/Moscow",
+  });
+}
+
 // ── Telegram ──────────────────────────────────────
 
 async function sendTelegram(text: string) {
@@ -201,6 +317,7 @@ function buildReport(
   goalReaches: Record<number, number>,
   topPages: { url: string; views: number }[],
   bouncePages: { url: string; bounceRate: number; visits: number }[],
+  designers: DesignerStats[],
   date1: Date,
   date2: Date,
 ) {
@@ -248,6 +365,25 @@ function buildReport(
     });
   }
 
+  // Designers section
+  if (designers.length > 0) {
+    const totalProjects = designers.reduce((s, d) => s + d.projects, 0);
+    const totalInvited = designers.reduce((s, d) => s + d.invited, 0);
+
+    lines.push(`─────────────────`);
+    lines.push(`👤 Дизайнеры: ${designers.length} (проектов: ${totalProjects}, приглашено: ${totalInvited})`);
+
+    designers.forEach((d, i) => {
+      const name = d.full_name.length > 22 ? d.full_name.slice(0, 20) + "…" : d.full_name;
+      const lastSeen = fmtShortDate(d.last_sign_in_at);
+      lines.push(``);
+      lines.push(`${i + 1}. ${name}`);
+      lines.push(`   ✉ ${d.email}`);
+      lines.push(`   📁 Проектов: ${d.projects} · 👥 Приглашено: ${d.invited}`);
+      lines.push(`   📅 Регистрация: ${d.days_active} дн назад · Был: ${lastSeen}`);
+    });
+  }
+
   return lines.join("\n");
 }
 
@@ -286,14 +422,18 @@ export async function GET(req: NextRequest) {
 
     // Fetch goal reaches (needs goal IDs from above)
     const goalIds = goals.map((g) => g.id);
-    const [goalReaches, topPages, bouncePages] = await Promise.all([
+    const [goalReaches, topPages, bouncePages, designers] = await Promise.all([
       fetchGoalReaches(fmt(date1), fmt(date2), goalIds),
       fetchTopPages(fmt(date1), fmt(date2)),
       fetchBounceByPage(fmt(date1), fmt(date2)),
+      fetchDesignersStats().catch((e) => {
+        console.error("[analytics] designers fetch failed:", e);
+        return [] as DesignerStats[];
+      }),
     ]);
 
     // Build and send report
-    const report = buildReport(stats, prev, goals, goalReaches, topPages, bouncePages, date1, date2);
+    const report = buildReport(stats, prev, goals, goalReaches, topPages, bouncePages, designers, date1, date2);
     await sendTelegram(report);
 
     return NextResponse.json({
