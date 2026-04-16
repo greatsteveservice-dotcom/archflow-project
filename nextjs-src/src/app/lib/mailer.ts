@@ -10,8 +10,14 @@ function escapeHtml(str: string): string {
     .replace(/'/g, '&#39;');
 }
 
-// Initialize Resend client
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Lazy-init Resend client — constructor throws when RESEND_API_KEY is missing,
+// so we defer instantiation to request time to keep `next build` happy in CI
+// where this secret may not be set.
+let _resend: Resend | null = null;
+function getResend(): Resend {
+  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY);
+  return _resend;
+}
 
 const FROM_EMAIL = 'Archflow <hello@archflow.ru>';
 
@@ -29,7 +35,7 @@ export async function sendWelcomeEmail(
 
   const html = buildWelcomeHtml(fullName, to);
 
-  const { error } = await resend.emails.send({
+  const { error } = await getResend().emails.send({
     from: FROM_EMAIL,
     to,
     subject: 'Добро пожаловать в Archflow',
@@ -61,7 +67,7 @@ export async function sendInviteEmail(
 
   const html = buildInviteHtml(projectName, inviteUrl);
 
-  const { error } = await resend.emails.send({
+  const { error } = await getResend().emails.send({
     from: FROM_EMAIL,
     to,
     subject: 'Вас пригласили в проект — ArchFlow',

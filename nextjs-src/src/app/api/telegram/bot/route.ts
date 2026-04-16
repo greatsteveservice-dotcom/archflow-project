@@ -1,18 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-// --- Supabase Admin ---
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { autoRefreshToken: false, persistSession: false } }
-);
+// --- Supabase Admin (lazy) ---
+// createClient throws when url/key are missing, so defer init to request time
+// to keep `next build` working in CI where these secrets may not be available.
+let _supabaseAdmin: SupabaseClient | null = null;
+function getSupabaseAdmin(): SupabaseClient {
+  if (!_supabaseAdmin) {
+    _supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+  }
+  return _supabaseAdmin;
+}
 
 // --- Telegram helpers ---
-const BOT_TOKEN = process.env.TELEGRAM_VOICE_BOT_TOKEN!;
-
 const TG = (method: string, body: object) =>
-  fetch(`https://api.telegram.org/bot${BOT_TOKEN}/${method}`, {
+  fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_VOICE_BOT_TOKEN}/${method}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -118,7 +124,7 @@ async function handleOwnVoice(chatId: number, voice: { file_id: string }) {
   }
 
   // Save transcript to Supabase
-  const { data: draft } = await supabaseAdmin
+  const { data: draft } = await getSupabaseAdmin()
     .from('bot_drafts')
     .insert({
       chat_id: chatId,
@@ -195,7 +201,7 @@ async function sendLongTranscript(chatId: number, senderName: string, transcript
   const text = `*${senderName} говорит — кратко:*\n\n${summary}\n\n*Полный текст:*\n${preview}`;
 
   // Save full transcript for copy buttons
-  const { data: draft } = await supabaseAdmin
+  const { data: draft } = await getSupabaseAdmin()
     .from('bot_drafts')
     .insert({
       chat_id: chatId,
@@ -218,7 +224,7 @@ async function sendLongTranscript(chatId: number, senderName: string, transcript
 // --- Handle text messages (edit flow) ---
 async function handleTextMessage(chatId: number, text: string) {
   // Check for active draft awaiting edit
-  const { data: draft } = await supabaseAdmin
+  const { data: draft } = await getSupabaseAdmin()
     .from('bot_drafts')
     .select('id, transcript, tone, result')
     .eq('chat_id', chatId)
@@ -235,7 +241,7 @@ async function handleTextMessage(chatId: number, text: string) {
   const result = await applyEdit(draft.transcript, draft.result, draft.tone, text);
 
   // Update draft
-  await supabaseAdmin
+  await getSupabaseAdmin()
     .from('bot_drafts')
     .update({ result, awaiting_edit: false })
     .eq('id', draft.id);
@@ -261,7 +267,7 @@ async function handleCallback(callbackQuery: {
     const tone = parts[1];
     const draftId = parts[2];
 
-    const { data: draft } = await supabaseAdmin
+    const { data: draft } = await getSupabaseAdmin()
       .from('bot_drafts')
       .select('transcript')
       .eq('id', draftId)
@@ -278,7 +284,7 @@ async function handleCallback(callbackQuery: {
     const label = TONE_LABELS[tone] || '';
 
     // Save result and tone to draft
-    await supabaseAdmin
+    await getSupabaseAdmin()
       .from('bot_drafts')
       .update({ result, tone })
       .eq('id', draftId);
@@ -289,7 +295,7 @@ async function handleCallback(callbackQuery: {
   // Edit request
   if (data.startsWith('edit:')) {
     const draftId = data.split(':')[1];
-    await supabaseAdmin
+    await getSupabaseAdmin()
       .from('bot_drafts')
       .update({ awaiting_edit: true })
       .eq('id', draftId);
@@ -300,7 +306,7 @@ async function handleCallback(callbackQuery: {
   // Show full transcript
   if (data.startsWith('full:')) {
     const draftId = data.split(':')[1];
-    const { data: draft } = await supabaseAdmin
+    const { data: draft } = await getSupabaseAdmin()
       .from('bot_drafts')
       .select('transcript')
       .eq('id', draftId)
@@ -339,7 +345,7 @@ async function transcribe(fileId: string): Promise<string | null> {
   try {
     // Get file path from Telegram
     const fileRes = await fetch(
-      `https://api.telegram.org/bot${BOT_TOKEN}/getFile?file_id=${fileId}`
+      `https://api.telegram.org/bot${process.env.TELEGRAM_VOICE_BOT_TOKEN}/getFile?file_id=${fileId}`
     );
     const fileData = await fileRes.json();
 
@@ -352,7 +358,7 @@ async function transcribe(fileId: string): Promise<string | null> {
 
     // Download audio
     const audioRes = await fetch(
-      `https://api.telegram.org/file/bot${BOT_TOKEN}/${filePath}`
+      `https://api.telegram.org/file/bot${process.env.TELEGRAM_VOICE_BOT_TOKEN}/${filePath}`
     );
     const audioBuffer = await audioRes.arrayBuffer();
 

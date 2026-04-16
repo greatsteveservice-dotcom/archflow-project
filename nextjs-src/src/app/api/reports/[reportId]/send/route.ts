@@ -17,7 +17,13 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://archflow.ru';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Lazy-init: Resend throws when RESEND_API_KEY is missing, so defer to request
+// time to avoid breaking `next build` in CI without runtime secrets.
+let _resend: Resend | null = null;
+function getResend(): Resend {
+  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY);
+  return _resend;
+}
 const FROM_EMAIL = 'Archflow <hello@archflow.ru>';
 
 // Simple in-memory rate limit: 10 sends per user per hour
@@ -169,7 +175,7 @@ export async function POST(
       });
 
       try {
-        const { data: resendData, error: resendErr } = await resend.emails.send({
+        const { data: resendData, error: resendErr } = await getResend().emails.send({
           from: FROM_EMAIL,
           to: recipient.email,
           subject: `Отчёт авторского надзора — ${projectTitle}`,
