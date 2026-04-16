@@ -5,7 +5,7 @@ import { Icons } from '../Icons';
 import Modal from '../Modal';
 import type { PhotoRecordWithVisit, PhotoStatus, VisitWithStats } from '../../lib/types';
 import { useProjectPhotos } from '../../lib/hooks';
-import { formatDate, updatePhotoStatus, updatePhotoRecord, uploadPhoto, createPhotoRecord, createVisit } from '../../lib/queries';
+import { formatDate, updatePhotoStatus, updatePhotoRecord, uploadPhoto, createPhotoRecord, createVisit, deletePhotoRecord } from '../../lib/queries';
 import { PHOTO_STATUS_CONFIG } from '../../lib/types';
 
 const ZONES = ['Спальня', 'Гостиная', 'Кухня', 'Ванная', 'Детская', 'Прихожая', 'Коридор', 'Балкон', 'Гардеробная'];
@@ -123,6 +123,20 @@ export default function PhotoGallery({ projectId, toast, canChangePhotoStatus = 
       toast(e.message || 'Ошибка');
     } finally {
       setEditSaving(false);
+    }
+  };
+
+  const handleDeletePhoto = async () => {
+    if (!selectedPhoto) return;
+    if (!confirm('Удалить это фото? Действие необратимо.')) return;
+    try {
+      await deletePhotoRecord(selectedPhoto.id);
+      setSelectedPhoto(null);
+      setIsEditing(false);
+      refetch();
+      toast('Фото удалено');
+    } catch (e: any) {
+      toast(e.message || 'Ошибка удаления');
     }
   };
 
@@ -412,17 +426,28 @@ export default function PhotoGallery({ projectId, toast, canChangePhotoStatus = 
                   )}
                 </div>
                 {canChangePhotoStatus && (
-                  <button
-                    onClick={handleStartEdit}
-                    style={{
-                      fontFamily: 'var(--af-font-mono)', fontSize: 9, letterSpacing: '0.1em',
-                      textTransform: 'uppercase', color: 'rgb(var(--ink))', background: 'none',
-                      border: '0.5px solid rgb(var(--line))', padding: '4px 12px', cursor: 'pointer',
-                      marginTop: 8,
-                    }}
-                  >
-                    Редактировать
-                  </button>
+                  <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                    <button
+                      onClick={handleStartEdit}
+                      style={{
+                        fontFamily: 'var(--af-font-mono)', fontSize: 9, letterSpacing: '0.1em',
+                        textTransform: 'uppercase', color: 'rgb(var(--ink))', background: 'none',
+                        border: '0.5px solid rgb(var(--line))', padding: '4px 12px', cursor: 'pointer',
+                      }}
+                    >
+                      Редактировать
+                    </button>
+                    <button
+                      onClick={handleDeletePhoto}
+                      style={{
+                        fontFamily: 'var(--af-font-mono)', fontSize: 9, letterSpacing: '0.1em',
+                        textTransform: 'uppercase', color: 'rgb(var(--ink))', background: 'none',
+                        border: '0.5px solid rgb(var(--line))', padding: '4px 12px', cursor: 'pointer',
+                      }}
+                    >
+                      Удалить
+                    </button>
+                  </div>
                 )}
               </div>
             )}

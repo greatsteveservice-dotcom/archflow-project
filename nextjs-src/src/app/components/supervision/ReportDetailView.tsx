@@ -84,6 +84,10 @@ export default function ReportDetailView({ reportId, projectId, toast, onBack, m
   const [comment, setComment] = useState('');
   const [saving, setSaving] = useState(false);
 
+  // Date edit state
+  const [editingDate, setEditingDate] = useState(false);
+  const [editDateValue, setEditDateValue] = useState('');
+
   // New remark form
   const [showNewRemark, setShowNewRemark] = useState(false);
   const [newRemarkText, setNewRemarkText] = useState('');
@@ -121,6 +125,22 @@ export default function ReportDetailView({ reportId, projectId, toast, onBack, m
       const updated = await updateVisitReport(reportId, { general_comment: comment || null });
       setReport(updated);
       toast('Сохранено');
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : 'Ошибка');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveDate = async () => {
+    if (!report || !editDateValue) { setEditingDate(false); return; }
+    if (editDateValue === report.visit_date) { setEditingDate(false); return; }
+    setSaving(true);
+    try {
+      const updated = await updateVisitReport(reportId, { visit_date: editDateValue });
+      setReport(updated);
+      setEditingDate(false);
+      toast('Дата изменена');
     } catch (err: unknown) {
       toast(err instanceof Error ? err.message : 'Ошибка');
     } finally {
@@ -324,16 +344,78 @@ export default function ReportDetailView({ reportId, projectId, toast, onBack, m
     <div className="animate-fade-in">
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
-        <h2 style={{
-          fontFamily: 'var(--af-font-display)',
-          fontWeight: 900,
-          fontSize: 28,
-          color: '#111',
-          margin: 0,
-          marginBottom: 8,
-        }}>
-          {formatReportDate(report.visit_date)}
-        </h2>
+        {editingDate && report.status !== 'published' ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <input
+              type="date"
+              value={editDateValue}
+              onChange={e => setEditDateValue(e.target.value)}
+              autoFocus
+              style={{
+                fontFamily: 'var(--af-font-display)',
+                fontWeight: 700,
+                fontSize: 22,
+                color: '#111',
+                border: '0.5px solid #111',
+                background: '#FFF',
+                padding: '4px 8px',
+              }}
+            />
+            <button
+              type="button"
+              onClick={handleSaveDate}
+              disabled={saving}
+              style={{
+                fontFamily: 'var(--af-font-mono)',
+                fontSize: 'var(--af-fs-9)',
+                padding: '4px 12px',
+                background: '#111',
+                color: '#FFF',
+                border: 'none',
+                cursor: saving ? 'wait' : 'pointer',
+              }}
+            >
+              Сохранить
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditingDate(false)}
+              disabled={saving}
+              style={{
+                fontFamily: 'var(--af-font-mono)',
+                fontSize: 'var(--af-fs-9)',
+                padding: '4px 12px',
+                background: 'none',
+                color: '#111',
+                border: '0.5px solid #EBEBEB',
+                cursor: 'pointer',
+              }}
+            >
+              Отмена
+            </button>
+          </div>
+        ) : (
+          <h2
+            onClick={() => {
+              if (report.status === 'published') return;
+              setEditDateValue(report.visit_date);
+              setEditingDate(true);
+            }}
+            title={report.status !== 'published' ? 'Нажмите, чтобы изменить дату' : undefined}
+            style={{
+              fontFamily: 'var(--af-font-display)',
+              fontWeight: 900,
+              fontSize: 28,
+              color: '#111',
+              margin: 0,
+              marginBottom: 8,
+              cursor: report.status === 'published' ? 'default' : 'pointer',
+              display: 'inline-block',
+            }}
+          >
+            {formatReportDate(report.visit_date)}
+          </h2>
+        )}
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {/* Status chip */}

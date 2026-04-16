@@ -4,7 +4,7 @@ import { Icons } from '../Icons';
 import type { VisitReportWithStats, ReportStatus, EmailDeliveryStatus } from '../../lib/types';
 import { EMAIL_STATUS_CONFIG } from '../../lib/types';
 import { useVisitReports } from '../../lib/hooks';
-import { createVisitReport, ensureTodayDraft, loadSupervisionConfig, fetchReportDeliveryStatuses } from '../../lib/queries';
+import { createVisitReport, ensureTodayDraft, loadSupervisionConfig, fetchReportDeliveryStatuses, deleteVisitReport } from '../../lib/queries';
 import { isTodayScheduledVisit } from '../../lib/visit-schedule';
 
 // ─── Status config ───────────────────────────────────────
@@ -49,6 +49,8 @@ export default function ReportsListView({ projectId, toast, onSelectReport }: Re
   const { data: reports, loading, refetch } = useVisitReports(projectId);
   const [creating, setCreating] = useState(false);
   const [deliveryStatuses, setDeliveryStatuses] = useState<Map<string, EmailDeliveryStatus>>(new Map());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [newDate, setNewDate] = useState(new Date().toISOString().slice(0, 10));
 
   // Load delivery statuses for published reports
   useEffect(() => {
@@ -71,20 +73,35 @@ export default function ReportsListView({ projectId, toast, onSelectReport }: Re
 
   // Manual create
   const handleCreate = async () => {
+    if (!newDate) return;
     setCreating(true);
     try {
-      const today = new Date().toISOString().slice(0, 10);
       const report = await createVisitReport({
         project_id: projectId,
-        visit_date: today,
+        visit_date: newDate,
       });
       toast('Отчёт создан');
+      setShowDatePicker(false);
+      setNewDate(new Date().toISOString().slice(0, 10));
       refetch();
       onSelectReport(report.id);
     } catch (err: unknown) {
       toast(err instanceof Error ? err.message : 'Ошибка создания отчёта');
     } finally {
       setCreating(false);
+    }
+  };
+
+  // Delete report
+  const handleDelete = async (e: React.MouseEvent, reportId: string) => {
+    e.stopPropagation();
+    if (!confirm('Удалить отчёт? Все замечания и комментарии будут удалены.')) return;
+    try {
+      await deleteVisitReport(reportId);
+      toast('Отчёт удалён');
+      refetch();
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : 'Ошибка удаления');
     }
   };
 
@@ -111,7 +128,7 @@ export default function ReportsListView({ projectId, toast, onSelectReport }: Re
           Отчёты
         </h2>
         <button
-          onClick={handleCreate}
+          onClick={() => setShowDatePicker(true)}
           disabled={creating}
           style={{
             width: 32,
@@ -130,6 +147,42 @@ export default function ReportsListView({ projectId, toast, onSelectReport }: Re
           <Icons.Plus className="w-4 h-4" />
         </button>
       </div>
+
+      {/* Date picker modal */}
+      {showDatePicker && (
+        <div className="af-modal-overlay" onClick={() => !creating && setShowDatePicker(false)}>
+          <div className="af-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 360 }}>
+            <h2 className="af-modal-title">Новый отчёт</h2>
+            <div className="modal-field mb-4">
+              <label>Дата визита *</label>
+              <input
+                type="date"
+                value={newDate}
+                onChange={e => setNewDate(e.target.value)}
+                autoFocus
+              />
+            </div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setShowDatePicker(false)}
+                disabled={creating}
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleCreate}
+                disabled={creating || !newDate}
+              >
+                {creating ? 'Создание...' : 'Создать'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-11)', color: '#111' }}>
@@ -229,6 +282,31 @@ export default function ReportsListView({ projectId, toast, onSelectReport }: Re
                   }}>
                     {STATUS_LABEL[report.status]}
                   </span>
+                  {report.status !== 'published' && (
+                    <button
+                      onClick={e => handleDelete(e, report.id)}
+                      title="Удалить отчёт"
+                      style={{
+                        width: 22,
+                        height: 22,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        border: '0.5px solid #EBEBEB',
+                        background: 'transparent',
+                        color: '#111',
+                        fontFamily: 'var(--af-font-mono)',
+                        fontSize: 12,
+                        cursor: 'pointer',
+                        padding: 0,
+                        lineHeight: 1,
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = '#111'; e.currentTarget.style.color = '#FFF'; e.currentTarget.style.borderColor = '#111'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#111'; e.currentTarget.style.borderColor = '#EBEBEB'; }}
+                    >
+                      ×
+                    </button>
+                  )}
                   <span style={{ color: '#EBEBEB', fontSize: 14 }}>→</span>
                 </div>
               </div>

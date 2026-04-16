@@ -1734,7 +1734,7 @@ export async function createVisitReport(input: CreateVisitReportInput): Promise<
 /** Update a visit report */
 export async function updateVisitReport(
   reportId: string,
-  updates: Partial<Pick<VisitReport, 'status' | 'general_comment'>>
+  updates: Partial<Pick<VisitReport, 'status' | 'general_comment' | 'visit_date'>>
 ): Promise<VisitReport> {
   const { data, error } = await supabase
     .from('visit_reports')
