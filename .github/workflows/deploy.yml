@@ -1,0 +1,84 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'nextjs-src/**'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: nextjs-src/package-lock.json
+
+      - name: Install dependencies
+        working-directory: nextjs-src
+        run: npm ci --prefer-offline --no-audit --no-fund
+
+      - name: Build
+        working-directory: nextjs-src
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_METRIKA_ID: ${{ secrets.NEXT_PUBLIC_METRIKA_ID }}
+        run: npm run build
+
+      - name: Stage release artefact
+        working-directory: nextjs-src
+        run: |
+          set -e
+          TS=$(date -u +%Y%m%d_%H%M%S)
+          echo "RELEASE_TS=$TS" >> $GITHUB_ENV
+          STAGE=/tmp/archflow-release-$TS
+          mkdir -p "$STAGE"
+          cp -r .next/standalone/. "$STAGE/"
+          cp -r .next/static "$STAGE/.next/static"
+          cp -r public "$STAGE/public"
+          ls "$STAGE/server.js"
+          ls "$STAGE/.next/BUILD_ID"
+          echo "STAGE=$STAGE" >> $GITHUB_ENV
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H 212.67.10.6 >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Rsync to VPS
+        run: |
+          rsync -az --delete \
+            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+            "$STAGE/" \
+            archflow@212.67.10.6:/home/archflow/releases/$RELEASE_TS/
+
+      - name: Switch symlink and restart
+        run: |
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
+            archflow@212.67.10.6 "bash /home/archflow/deploy.sh $RELEASE_TS"
+
+      - name: Smoke test
+        run: |
+          sleep 3
+          HTTP=$(curl -sL -o /dev/null -w "%{http_code}" https://archflow.ru/login)
+          echo "HTTP $HTTP"
+          [ "$HTTP" = "200" ] || exit 1
+          curl -sL https://archflow.ru/sw.js | grep SW_VERSION | head -1
