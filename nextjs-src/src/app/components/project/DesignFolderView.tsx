@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useDesignFiles, useDesignSubfolders } from '../../lib/hooks';
-import { createDesignFile, updateDesignFileName, createDesignSubfolder, renameDesignSubfolder, deleteDesignSubfolder, moveDesignFileToSubfolder } from '../../lib/queries';
+import { createDesignFile, updateDesignFileName, createDesignSubfolder, renameDesignSubfolder, deleteDesignSubfolder, moveDesignFileToSubfolder, deleteDesignFile } from '../../lib/queries';
 import { supabase } from '../../lib/supabase';
 import { DESIGN_FOLDERS } from '../../lib/types';
 import type { DesignFolder, DesignFileWithProfile, DesignSubfolder } from '../../lib/types';
@@ -89,7 +89,59 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [activeSubfolder, setActiveSubfolder] = useState<string | null>(null); // subfolder for upload target
   const [dragOverFolder, setDragOverFolder] = useState<string | null>(null);
+  // Multi-select state: Set<fileId>. When size > 0 → selection mode UI is on.
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [movePicker, setMovePicker] = useState(false);
+  const [bulkBusy, setBulkBusy] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const selectionMode = selectedIds.size > 0;
+
+  const toggleSelect = useCallback((fileId: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(fileId)) next.delete(fileId); else next.add(fileId);
+      return next;
+    });
+  }, []);
+
+  const clearSelection = useCallback(() => setSelectedIds(new Set()), []);
+
+  const handleBulkDelete = useCallback(async () => {
+    if (selectedIds.size === 0 || bulkBusy) return;
+    const n = selectedIds.size;
+    if (!confirm(`Удалить выбранные файлы (${n})? Действие необратимо.`)) return;
+    setBulkBusy(true);
+    try {
+      const ids = Array.from(selectedIds);
+      const targets = (files ?? []).filter(f => ids.includes(f.id));
+      await Promise.all(targets.map(f => deleteDesignFile(f.id, f.file_path)));
+      clearSelection();
+      await refetch();
+      toast(`Удалено: ${n}`);
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : 'Ошибка удаления');
+    } finally {
+      setBulkBusy(false);
+    }
+  }, [selectedIds, files, refetch, toast, clearSelection, bulkBusy]);
+
+  const handleBulkMove = useCallback(async (targetSubfolder: string | null) => {
+    if (selectedIds.size === 0 || bulkBusy) return;
+    setBulkBusy(true);
+    try {
+      const ids = Array.from(selectedIds);
+      await Promise.all(ids.map(id => moveDesignFileToSubfolder(id, targetSubfolder)));
+      clearSelection();
+      setMovePicker(false);
+      await refetch();
+      toast(targetSubfolder ? `Перемещено в «${targetSubfolder}»` : 'Перемещено в корень');
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : 'Ошибка перемещения');
+    } finally {
+      setBulkBusy(false);
+    }
+  }, [selectedIds, refetch, toast, clearSelection, bulkBusy]);
 
   const folderConfig = DESIGN_FOLDERS.find(f => f.id === folder);
   const folderLabel = folderConfig?.label || folder;
@@ -188,6 +240,12 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
   };
 
   const handleFileClick = (file: DesignFileWithProfile) => {
+    // In selection mode a plain click on the tile toggles selection
+    // instead of opening the file. The explicit checkbox keeps the same behaviour.
+    if (selectionMode) {
+      toggleSelect(file.id);
+      return;
+    }
     if (isImageFile(file)) {
       const idx = imageFiles.findIndex(f => f.id === file.id);
       if (idx >= 0) setLightboxIndex(idx);
@@ -514,9 +572,15 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
                     </>
                   )}
                 </div>
-                {/* Expanded folder content */}
+                {/* Expanded folder content — visually nested inside folder */}
                 {isExpanded && folderFiles.length > 0 && (
-                  <div style={{ marginLeft: 0, borderLeft: '0.5px solid #EBEBEB', paddingLeft: 0, marginTop: 2 }}>
+                  <div style={{
+                    marginTop: 2,
+                    marginBottom: 8,
+                    borderLeft: '2px solid #111',
+                    background: '#F6F6F4',
+                    padding: '10px 8px 10px 14px',
+                  }}>
                     <div className="af-file-grid">
                       {folderFiles.map((file) => (
                         <FileTile
@@ -525,6 +589,9 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
                           onClick={() => handleFileClick(file)}
                           draggable
                           onDragStart={(e) => handleFileDragStart(e, file.id)}
+                          selected={selectedIds.has(file.id)}
+                          onToggleSelect={() => toggleSelect(file.id)}
+                          selectionMode={selectionMode}
                         />
                       ))}
                     </div>
@@ -568,6 +635,9 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
                 onClick={() => handleFileClick(file)}
                 draggable
                 onDragStart={(e) => handleFileDragStart(e, file.id)}
+                selected={selectedIds.has(file.id)}
+                onToggleSelect={() => toggleSelect(file.id)}
+                selectionMode={selectionMode}
               />
             ))}
           </div>
@@ -593,6 +663,126 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
         />
       )}
 
+      {/* Bulk selection action bar */}
+      {selectionMode && (
+        <div
+          style={{
+            position: 'fixed',
+            left: 0, right: 0,
+            bottom: 40, // sits above FeedbackBar (40px)
+            zIndex: 40,
+            background: '#111',
+            color: '#fff',
+            padding: '10px 16px',
+            display: 'flex', alignItems: 'center', gap: 12,
+            fontFamily: 'var(--af-font-mono)', fontSize: 10,
+            textTransform: 'uppercase', letterSpacing: '0.14em',
+          }}
+        >
+          <span style={{ fontWeight: 700 }}>Выбрано: {selectedIds.size}</span>
+          <div style={{ flex: 1 }} />
+          <button
+            onClick={() => setMovePicker(true)}
+            disabled={bulkBusy}
+            style={{
+              fontFamily: 'var(--af-font-mono)', fontSize: 10,
+              textTransform: 'uppercase', letterSpacing: '0.14em',
+              color: '#fff', background: 'transparent',
+              border: '0.5px solid #fff', padding: '6px 12px', cursor: 'pointer',
+            }}
+          >
+            Переместить
+          </button>
+          <button
+            onClick={handleBulkDelete}
+            disabled={bulkBusy}
+            style={{
+              fontFamily: 'var(--af-font-mono)', fontSize: 10,
+              textTransform: 'uppercase', letterSpacing: '0.14em',
+              color: '#fff', background: 'transparent',
+              border: '0.5px solid #fff', padding: '6px 12px', cursor: 'pointer',
+            }}
+          >
+            Удалить
+          </button>
+          <button
+            onClick={clearSelection}
+            disabled={bulkBusy}
+            style={{
+              fontFamily: 'var(--af-font-mono)', fontSize: 10,
+              textTransform: 'uppercase', letterSpacing: '0.14em',
+              color: '#fff', background: 'transparent',
+              border: 'none', padding: '6px 4px', cursor: 'pointer',
+            }}
+          >
+            Отмена
+          </button>
+        </div>
+      )}
+
+      {/* Move-to-folder picker modal */}
+      {movePicker && (
+        <div
+          className="af-modal-overlay"
+          onClick={() => !bulkBusy && setMovePicker(false)}
+          style={{ zIndex: 60 }}
+        >
+          <div className="af-modal" onClick={(e) => e.stopPropagation()} style={{ width: 360, padding: 20 }}>
+            <div style={{
+              fontFamily: 'var(--af-font-mono)', fontSize: 10,
+              textTransform: 'uppercase', letterSpacing: '0.14em', color: '#111',
+              marginBottom: 14,
+            }}>
+              Переместить в
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <button
+                onClick={() => handleBulkMove(null)}
+                disabled={bulkBusy}
+                style={{
+                  fontFamily: 'var(--af-font-mono)', fontSize: 11, color: '#111',
+                  background: '#F6F6F4', border: 'none', padding: '12px 14px',
+                  textAlign: 'left', cursor: 'pointer',
+                }}
+              >
+                ← Корень
+              </button>
+              {(subfolders ?? []).map((sf) => (
+                <button
+                  key={sf.id}
+                  onClick={() => handleBulkMove(sf.name)}
+                  disabled={bulkBusy}
+                  style={{
+                    fontFamily: 'var(--af-font-mono)', fontSize: 11, color: '#111',
+                    background: '#F6F6F4', border: 'none', padding: '12px 14px',
+                    textAlign: 'left', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', gap: 8,
+                  }}
+                >
+                  <svg width="14" height="11" viewBox="0 0 18 14" fill="none">
+                    <path d="M0 1h7l2 2h9v11H0V1z" fill="#111" />
+                  </svg>
+                  {sf.name}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setMovePicker(false)}
+              disabled={bulkBusy}
+              style={{
+                marginTop: 16,
+                fontFamily: 'var(--af-font-mono)', fontSize: 9,
+                textTransform: 'uppercase', letterSpacing: '0.14em',
+                color: '#111', background: 'none', border: 'none',
+                padding: 0, cursor: 'pointer',
+              }}
+            >
+              Отмена
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Rename dialog */}
       {renameDialog && (
         <RenameDialog
@@ -611,7 +801,23 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
 // FileTile — one cell in the grid (uploaded file)
 // ============================================================================
 
-function FileTile({ file, onClick, draggable, onDragStart }: { file: DesignFileWithProfile; onClick: () => void; draggable?: boolean; onDragStart?: (e: React.DragEvent) => void }) {
+function FileTile({
+  file,
+  onClick,
+  draggable,
+  onDragStart,
+  selected = false,
+  onToggleSelect,
+  selectionMode = false,
+}: {
+  file: DesignFileWithProfile;
+  onClick: () => void;
+  draggable?: boolean;
+  onDragStart?: (e: React.DragEvent) => void;
+  selected?: boolean;
+  onToggleSelect?: () => void;
+  selectionMode?: boolean;
+}) {
   const [imgError, setImgError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const isImg = isImageFile(file);
@@ -624,8 +830,38 @@ function FileTile({ file, onClick, draggable, onDragStart }: { file: DesignFileW
     setReloadKey(k => k + 1);
   };
 
+  const handleCheckboxClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onToggleSelect?.();
+  };
+
   return (
-    <div className="af-file-tile" onClick={onClick} draggable={draggable} onDragStart={onDragStart}>
+    <div
+      className="af-file-tile"
+      onClick={onClick}
+      draggable={draggable && !selectionMode}
+      onDragStart={onDragStart}
+      style={selected ? { outline: '2px solid #111', outlineOffset: -2 } : undefined}
+    >
+      {/* Selection checkbox — visible when selectionMode or hover (handled via CSS) */}
+      {onToggleSelect && (
+        <div
+          onClick={handleCheckboxClick}
+          className={`af-file-tile-checkbox${selectionMode || selected ? ' visible' : ''}`}
+          style={{
+            position: 'absolute', top: 8, left: 8, zIndex: 2,
+            width: 20, height: 20,
+            background: selected ? '#111' : 'rgba(255,255,255,0.92)',
+            border: '0.5px solid #111',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer',
+            fontFamily: 'var(--af-font-mono)',
+            fontSize: 12, lineHeight: 1, color: '#fff', fontWeight: 700,
+          }}
+        >
+          {selected ? '✓' : ''}
+        </div>
+      )}
       {showImg ? (
         <img
           src={`${file.file_url}${file.file_url.includes('?') ? '&' : '?'}r=${reloadKey}`}
