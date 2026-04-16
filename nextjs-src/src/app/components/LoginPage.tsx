@@ -73,6 +73,7 @@ export default function LoginPage({ inviteHint = false }: { inviteHint?: boolean
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState("");
@@ -105,6 +106,11 @@ export default function LoginPage({ inviteHint = false }: { inviteHint?: boolean
       }
       if (password !== confirmPassword) {
         setError("Пароли не совпадают");
+        setLoading(false);
+        return;
+      }
+      if (!privacyAccepted) {
+        setError("Необходимо принять Политику конфиденциальности");
         setLoading(false);
         return;
       }
@@ -351,6 +357,40 @@ export default function LoginPage({ inviteHint = false }: { inviteHint?: boolean
             </div>
           )}
 
+          {/* Privacy policy consent (register) */}
+          {mode === "register" && (
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 16 }}>
+              <input
+                type="checkbox"
+                id="privacy-consent"
+                checked={privacyAccepted}
+                onChange={(e) => setPrivacyAccepted(e.target.checked)}
+                style={{ marginTop: 3, flexShrink: 0, cursor: 'pointer' }}
+              />
+              <label
+                htmlFor="privacy-consent"
+                style={{
+                  fontFamily: 'var(--af-font)',
+                  fontSize: 'var(--af-fs-11)',
+                  color: '#111',
+                  lineHeight: 1.5,
+                  cursor: 'pointer',
+                }}
+              >
+                Я принимаю{' '}
+                <a
+                  href="/privacy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ color: '#111', textDecoration: 'underline' }}
+                >
+                  Политику конфиденциальности
+                </a>{' '}
+                и даю согласие на обработку персональных данных
+              </label>
+            </div>
+          )}
+
           {/* Reset mode passwords */}
           {mode === "reset" && (
             <>
@@ -377,7 +417,7 @@ export default function LoginPage({ inviteHint = false }: { inviteHint?: boolean
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || (mode === "register" && !privacyAccepted)}
             className="af-btn af-btn-full mt-2"
           >
             {loading ? "Загрузка..." : buttonLabels[mode]}

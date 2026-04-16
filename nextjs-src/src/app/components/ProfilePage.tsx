@@ -244,6 +244,66 @@ export default function ProfilePage({ onNavigate, onMenuToggle, toast }: Profile
               {saving ? 'Сохранение...' : 'Сохранить'}
             </button>
           </div>
+
+          {/* Privacy & data ──────────────────────────────── */}
+          <div style={{ marginTop: 40, paddingTop: 24, borderTop: '0.5px solid var(--af-border)' }}>
+            <p className="af-settings-heading">Конфиденциальность и данные</p>
+
+            <a
+              href="/privacy"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                fontFamily: 'var(--af-font)',
+                fontSize: 13,
+                color: 'var(--af-black)',
+                textDecoration: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '14px 0',
+                borderBottom: '0.5px solid var(--af-border)',
+              }}
+            >
+              <span>Политика конфиденциальности</span>
+              <span style={{ color: 'var(--af-gray)' }}>→</span>
+            </a>
+
+            <a
+              href="mailto:privacy@archflow.ru?subject=Запрос данных аккаунта"
+              style={{
+                fontFamily: 'var(--af-font)',
+                fontSize: 13,
+                color: 'var(--af-black)',
+                textDecoration: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '14px 0',
+                borderBottom: '0.5px solid var(--af-border)',
+              }}
+            >
+              <span>Запросить копию моих данных</span>
+              <span style={{ color: 'var(--af-gray)' }}>→</span>
+            </a>
+
+            <a
+              href="mailto:privacy@archflow.ru?subject=Удаление аккаунта и данных"
+              style={{
+                fontFamily: 'var(--af-font)',
+                fontSize: 13,
+                color: 'var(--af-black)',
+                textDecoration: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '14px 0',
+              }}
+            >
+              <span>Удалить аккаунт и все данные</span>
+              <span style={{ color: 'var(--af-gray)' }}>→</span>
+            </a>
+          </div>
         </div>
       </div>
     </>

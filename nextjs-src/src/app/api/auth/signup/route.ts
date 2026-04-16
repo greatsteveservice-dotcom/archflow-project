@@ -67,16 +67,29 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    // Update profile: role is ALWAYS 'designer', never from client input
+    // Update profile: role is ALWAYS 'designer', never from client input.
+    // User implicitly accepts the privacy policy by submitting the signup form
+    // (the checkbox is enforced client-side). Record the timestamp here.
     if (data.user) {
       const userName = full_name || email.split("@")[0];
-      await supabaseAdmin
+      // Try full update incl. privacy_accepted_at; fall back without it
+      // if the column has not been migrated yet on this environment.
+      const nowIso = new Date().toISOString();
+      const { error: fullUpdateErr } = await supabaseAdmin
         .from("profiles")
         .update({
           full_name: userName,
           role: "designer",  // ← hardcoded, never from request body
+          privacy_accepted_at: nowIso,
         })
         .eq("id", data.user.id);
+      if (fullUpdateErr) {
+        // Column missing — fall back to legacy update
+        await supabaseAdmin
+          .from("profiles")
+          .update({ full_name: userName, role: "designer" })
+          .eq("id", data.user.id);
+      }
     }
 
     // Send welcome email (must await — Netlify kills function after return)
