@@ -38,9 +38,9 @@ const config: Config = {
         "info-bg": cv("info-bg"),
       },
       fontFamily: {
-        body: ["'IBM Plex Mono'", "monospace"],
-        mono: ["'IBM Plex Mono'", "monospace"],
-        display: ["'Playfair Display'", "serif"],
+        body: ["'Vollkorn SC'", "serif"],
+        mono: ["'Vollkorn SC'", "serif"],
+        display: ["'Vollkorn SC'", "serif"],
       },
       borderRadius: {
         xl: "0px",

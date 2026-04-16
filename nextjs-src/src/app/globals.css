@@ -14,8 +14,12 @@
   --af-border: #EBEBEB;
   --af-white: #FFFFFF;
   --af-gap: 2px;
-  --af-font-display: var(--font-playfair), 'Playfair Display', serif;
-  --af-font-mono: var(--font-ibm-mono), 'IBM Plex Mono', monospace;
+  /* Single-font system: Vollkorn SC (small caps serif).
+     Legacy aliases kept so TSX var(--af-font-mono) / var(--af-font-display)
+     continue to resolve to the same face without per-component edits. */
+  --af-font: var(--font-vollkorn), 'Vollkorn SC', serif;
+  --af-font-display: var(--af-font);
+  --af-font-mono: var(--af-font);
 
   /* Responsive font sizes — override on mobile */
   --af-fs-7: 7px;
@@ -26,9 +30,9 @@
   --af-fs-12: 12px;
   --af-fs-13: 13px;
 
-  /* Legacy Tailwind vars → monochrome */
-  --font-body: var(--af-font-mono);
-  --font-mono: var(--af-font-mono);
+  /* Legacy Tailwind vars → Vollkorn */
+  --font-body: var(--af-font);
+  --font-mono: var(--af-font);
 
   --ink: 17 17 17;
   --ink-hover: 0 0 0;
@@ -81,8 +85,8 @@
 }
 
 body {
-  font-family: var(--af-font-mono);
-  font-weight: 300;
+  font-family: var(--af-font);
+  font-weight: 400;
   background: var(--af-white);
   color: var(--af-black);
   -webkit-font-smoothing: antialiased;
@@ -160,7 +164,7 @@ body {
 .af-crumb {
   font-family: var(--af-font-mono);
   font-size: 9px; text-transform: uppercase; letter-spacing: 0.18em;
-  color: #111111; cursor: pointer; font-weight: 300;
+  color: #111111; cursor: pointer; font-weight: 400;
   transition: color 0.15s ease;
   background: none; border: none; padding: 0;
 }
@@ -190,7 +194,7 @@ body {
 }
 .af-page-subtitle {
   font-family: var(--af-font-mono);
-  font-size: 9px; text-transform: uppercase;
+  font-size: 9px;
   letter-spacing: 0.2em; color: var(--af-gray);
   margin-top: 6px;
 }
@@ -235,18 +239,17 @@ body {
   font-size: 32px;
   color: var(--af-black); display: block; line-height: 1.0;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  text-transform: uppercase;
   transition: color 0.2s ease;
 }
 .af-block-sub {
   font-family: var(--af-font-mono); font-size: 9px;
-  text-transform: uppercase; letter-spacing: 0.2em;
+  letter-spacing: 0.2em;
   color: #EBEBEB; display: block; margin-top: 10px;
   transition: color 0.2s ease;
 }
 .af-block-arrow {
   font-family: var(--af-font-display); font-size: 24px;
-  font-weight: 300; color: #EBEBEB;
+  font-weight: 400; color: #EBEBEB;
   flex-shrink: 0; padding-left: 20px;
   transition: color 0.2s ease;
 }
@@ -258,8 +261,8 @@ body {
 .af-block-settings .af-block-inner { display: flex; align-items: center; }
 .af-block-settings .af-block-name {
   font-family: var(--af-font-mono); font-size: 13px;
-  font-weight: 400; letter-spacing: 0.18em;
-  color: var(--af-white); text-transform: uppercase;
+  font-weight: 400; letter-spacing: 0.06em;
+  color: var(--af-white);
 }
 .af-block-settings .af-block-arrow { color: #EBEBEB; font-size: 16px; }
 .af-block-settings:hover { background: var(--af-offwhite); }
@@ -319,7 +322,7 @@ body {
 }
 .af-project-status {
   font-family: var(--af-font-mono); font-size: 8px;
-  text-transform: uppercase; letter-spacing: 0.12em;
+  letter-spacing: 0.12em;
   color: var(--af-gray); border: 0.5px solid #EBEBEB;
   padding: 3px 8px; margin-top: 8px; display: inline-block;
   transition: border-color 0.2s ease, color 0.2s ease;
@@ -333,7 +336,7 @@ body {
 .af-project-arrow {
   position: absolute; bottom: 20px; right: 24px;
   font-family: var(--af-font-display); font-size: 18px;
-  font-weight: 300; color: #EBEBEB;
+  font-weight: 400; color: #EBEBEB;
   transition: color 0.2s ease;
 }
 .af-project-add {
@@ -345,7 +348,7 @@ body {
 }
 .af-project-add-label {
   font-family: var(--af-font-mono); font-size: 10px;
-  text-transform: uppercase; letter-spacing: 0.18em;
+  letter-spacing: 0.06em;
   color: var(--af-gray); transition: color 0.2s ease;
 }
 .af-project-add:hover { background: var(--af-black); border-color: var(--af-black); }
@@ -371,7 +374,6 @@ body {
   font-family: var(--af-font-display);
   font-size: 32px; font-weight: 900;
   color: var(--af-black); line-height: 1.0;
-  text-transform: uppercase;
 }
 @media (max-width: 767px) {
   .af-section-hero { padding: 16px; padding-bottom: 14px; }
@@ -405,7 +407,6 @@ body {
   font-weight: 700; letter-spacing: -0.01em;
   color: var(--af-black); transition: color 0.2s ease;
   line-height: 1.1;
-  text-transform: uppercase;
 }
 .af-tab-index {
   font-family: var(--af-font-mono); font-size: 8px;
@@ -416,12 +417,12 @@ body {
 .af-tab-arrow {
   position: absolute; top: 16px; right: 16px;
   font-family: var(--af-font-display); font-size: 16px;
-  font-weight: 300; color: #EBEBEB;
+  font-weight: 400; color: #EBEBEB;
   transition: color 0.2s ease;
 }
 .af-tab-sub {
   font-family: var(--af-font-mono); font-size: 8px;
-  text-transform: uppercase; letter-spacing: 0.16em;
+  letter-spacing: 0.16em;
   color: #999999; margin-top: 6px;
   transition: color 0.2s ease;
 }
@@ -433,7 +434,7 @@ body {
 .af-tab-row-dark .af-tab-name {
   font-family: var(--af-font-display); font-size: 20px;
   font-weight: 700; letter-spacing: -0.01em;
-  color: var(--af-white); text-transform: uppercase;
+  color: var(--af-white);
   line-height: 1.1;
 }
 .af-tab-row-dark .af-tab-arrow { color: #EBEBEB; }
@@ -461,7 +462,7 @@ body {
 }
 .af-metric-label {
   font-family: var(--af-font-mono); font-size: 9px;
-  text-transform: uppercase; letter-spacing: 0.18em;
+  letter-spacing: 0.18em;
   color: var(--af-gray); margin-top: 6px;
 }
 
@@ -470,7 +471,7 @@ body {
    ═══════════════════════════════════════════════ */
 .af-btn {
   font-family: var(--af-font-mono); font-size: 11px; font-weight: 400;
-  text-transform: uppercase; letter-spacing: 0.2em;
+  text-transform: uppercase; letter-spacing: 0.08em;
   background: var(--af-black); color: var(--af-white);
   height: 52px; padding: 0 24px;
   display: inline-flex; align-items: center; justify-content: center;
@@ -491,7 +492,7 @@ body {
    FORM FIELDS
    ═══════════════════════════════════════════════ */
 .af-input {
-  font-family: var(--af-font-mono); font-size: 13px; font-weight: 300;
+  font-family: var(--af-font-mono); font-size: 13px; font-weight: 400;
   height: 52px; padding: 0 16px; width: 100%;
   border: 0.5px solid #EBEBEB; background: var(--af-white);
   color: var(--af-black); outline: none;
@@ -506,7 +507,7 @@ body {
 }
 .af-input-error {
   font-family: var(--af-font-mono); font-size: 8px; font-weight: 400;
-  text-transform: uppercase; letter-spacing: 0.1em;
+  letter-spacing: 0.1em;
   color: var(--af-black); margin-top: 4px;
 }
 @media (max-width: 767px) { .af-input { height: 48px; } }
@@ -551,12 +552,12 @@ body {
 }
 .af-empty-label {
   font-family: var(--af-font-mono); font-size: 9px;
-  text-transform: uppercase; letter-spacing: 0.18em;
+  letter-spacing: 0.18em;
   color: #EBEBEB; margin-top: 12px;
 }
 .af-empty-btn {
   font-family: var(--af-font-mono); font-size: 10px;
-  text-transform: uppercase; letter-spacing: 0.15em;
+  letter-spacing: 0.05em;
   border: 0.5px solid var(--af-black); color: var(--af-black);
   background: transparent; padding: 14px 24px;
   margin-top: 20px; cursor: pointer;
@@ -625,7 +626,7 @@ body {
 
 .af-table { width: 100%; border-collapse: collapse; font-family: var(--af-font-mono); font-size: 12px; }
 .af-table th {
-  font-size: 8px; text-transform: uppercase; letter-spacing: 0.15em;
+  font-size: 8px; letter-spacing: 0.15em;
   color: var(--af-gray); text-align: left; padding: 12px 16px;
   border-bottom: 0.5px solid var(--af-border); font-weight: 400;
 }
@@ -641,7 +642,7 @@ body {
 .af-upload.dragging { border-color: var(--af-black); background: var(--af-offwhite); }
 .af-upload-label {
   font-family: var(--af-font-mono); font-size: 9px;
-  text-transform: uppercase; letter-spacing: 0.2em; color: var(--af-gray);
+  letter-spacing: 0.2em; color: var(--af-gray);
 }
 @media (max-width: 767px) { .af-upload { padding: 20px; } }
 
@@ -651,7 +652,7 @@ body {
 .af-file-label {
   position: absolute; bottom: 8px; left: 8px;
   font-family: var(--af-font-mono); font-size: 8px;
-  text-transform: uppercase; letter-spacing: 0.1em;
+  letter-spacing: 0.1em;
   color: #111111; background: #FFFFFF; padding: 2px 6px;
 }
 
@@ -660,13 +661,13 @@ body {
    ═══════════════════════════════════════════════ */
 .af-settings-heading {
   font-family: var(--af-font-mono); font-size: 11px;
-  text-transform: uppercase; letter-spacing: 0.2em;
+  text-transform: uppercase; letter-spacing: 0.08em;
   color: var(--af-gray); margin-bottom: 16px; margin-top: 32px;
 }
 .af-settings-heading:first-child { margin-top: 0; }
 .af-toggle {
   font-family: var(--af-font-mono); font-size: 11px;
-  text-transform: uppercase; letter-spacing: 0.1em;
+  letter-spacing: 0.1em;
   cursor: pointer; display: inline-flex; gap: 0; align-items: center;
 }
 .af-toggle-option {
@@ -684,7 +685,7 @@ body {
   .btn {
     @apply inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap;
     font-family: var(--af-font-mono); font-size: 11px; font-weight: 400;
-    text-transform: uppercase; letter-spacing: 0.15em;
+    text-transform: uppercase; letter-spacing: 0.05em;
     min-height: 44px; padding: 0 18px;
     transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
   }
@@ -700,7 +701,7 @@ body {
   .badge {
     @apply inline-flex items-center;
     font-family: var(--af-font-mono); font-size: 8px;
-    text-transform: uppercase; letter-spacing: 0.1em;
+    letter-spacing: 0.1em;
     border: 0.5px solid #EBEBEB; color: var(--af-gray);
     padding: 2px 7px; background: transparent;
   }
@@ -711,7 +712,7 @@ body {
   .tn { @apply flex; border-bottom: 0.5px solid var(--af-border); gap: 0; background: var(--af-white); }
   .ti {
     font-family: var(--af-font-mono); font-size: 10px; font-weight: 400;
-    text-transform: uppercase; letter-spacing: 0.12em;
+    text-transform: uppercase; letter-spacing: 0.04em;
     padding: 16px 20px; cursor: pointer;
     transition: background 0.15s ease, color 0.15s ease;
     color: var(--af-gray); border-bottom: 2px solid transparent;
@@ -754,11 +755,11 @@ body {
   }
   .modal-field label {
     font-family: var(--af-font-mono); font-size: 9px; font-weight: 400;
-    text-transform: uppercase; letter-spacing: 0.15em;
+    letter-spacing: 0.15em;
     color: var(--af-gray); display: block; margin-bottom: 6px;
   }
   .modal-field input, .modal-field textarea, .modal-field select {
-    font-family: var(--af-font-mono); font-size: 13px; font-weight: 300;
+    font-family: var(--af-font-mono); font-size: 13px; font-weight: 400;
     height: 48px; padding: 0 14px; width: 100%;
     border: 0.5px solid #EBEBEB; background: var(--af-white);
     color: var(--af-black); outline: none; transition: border-color 0.15s ease;
@@ -769,7 +770,7 @@ body {
   .sidebar-item {
     display: flex; align-items: center; gap: 10px; padding: 12px 16px;
     cursor: pointer; font-family: var(--af-font-mono); font-size: 11px;
-    text-transform: uppercase; letter-spacing: 0.12em;
+    letter-spacing: 0.04em;
     color: #EBEBEB; transition: background 0.15s ease, color 0.15s ease;
     min-height: 44px;
   }

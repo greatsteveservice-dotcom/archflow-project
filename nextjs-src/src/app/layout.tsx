@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Playfair_Display, IBM_Plex_Mono } from "next/font/google";
+import { Vollkorn_SC } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "./lib/auth";
 import { ThemeProvider } from "./lib/theme";
@@ -7,17 +7,10 @@ import YandexMetrika from "./components/YandexMetrika";
 import ServiceWorkerRegistration from "./components/ServiceWorkerRegistration";
 import HydrationGate from "./components/HydrationGate";
 
-const playfair = Playfair_Display({
+const vollkornSC = Vollkorn_SC({
   subsets: ['latin', 'cyrillic'],
-  weight: ['400', '700', '900'],
-  variable: '--font-playfair',
-  display: 'swap',
-});
-
-const ibmPlexMono = IBM_Plex_Mono({
-  subsets: ['latin', 'cyrillic'],
-  weight: ['300', '400'],
-  variable: '--font-ibm-mono',
+  weight: ['400', '600', '700', '900'],
+  variable: '--font-vollkorn',
   display: 'swap',
 });
 
@@ -78,16 +71,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ru" className={`${playfair.variable} ${ibmPlexMono.variable}`} suppressHydrationWarning>
+    <html lang="ru" className={vollkornSC.variable} suppressHydrationWarning>
       <head>
         {/* Google Fonts backup — ensures fonts render even when Next.js font
             chunks are blocked by Service Worker cache or mobile network issues.
-            next/font self-hosts the same fonts via CSS variables (--font-playfair,
-            --font-ibm-mono) which take priority when loaded. */}
+            next/font self-hosts the same font via CSS variable (--font-vollkorn)
+            which takes priority when loaded. */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400&family=Playfair+Display:wght@400;700;900&display=swap&subset=latin,cyrillic"
+          href="https://fonts.googleapis.com/css2?family=Vollkorn+SC:wght@400;600;700;900&display=swap&subset=latin,cyrillic"
           rel="stylesheet"
         />
         {/* Manifest without crossOrigin for Safari PWA compatibility */}
@@ -115,14 +108,14 @@ export default function RootLayout({
             justifyContent: "center",
             padding: 24,
             zIndex: 9999,
-            fontFamily: "'IBM Plex Mono', monospace",
+            fontFamily: "'Vollkorn SC', serif",
             textAlign: "center",
           }}
         >
           <div style={{ maxWidth: 480, width: "100%" }}>
             <h1
               style={{
-                fontFamily: "'Playfair Display', serif",
+                fontFamily: "'Vollkorn SC', serif",
                 fontSize: 32,
                 fontWeight: 700,
                 margin: 0,
@@ -138,8 +131,7 @@ export default function RootLayout({
             <p
               style={{
                 fontSize: 11,
-                textTransform: "uppercase",
-                letterSpacing: "0.15em",
+                letterSpacing: "0.05em",
                 color: "#999",
                 margin: 0,
               }}
@@ -171,8 +163,7 @@ export default function RootLayout({
                     color: "#111",
                     textDecoration: "none",
                     fontSize: 11,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.1em",
+                    letterSpacing: "0.04em",
                   }}
                 >
                   Сбросить кеш
