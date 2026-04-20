@@ -32,14 +32,21 @@ export async function GET(req: Request, { params }: { params: { fileId: string }
       .eq('file_id', params.fileId);
     if (!sigs || sigs.length === 0) return NextResponse.json({ signatures: [] });
 
-    // Check project membership
+    // Access check: owner OR project member (any role — checking status is read-only)
     const projectId = (sigs[0] as any).project_id;
-    const { data: membership } = await (admin.from('project_members') as any)
-      .select('user_id')
-      .eq('project_id', projectId)
-      .eq('user_id', user.id)
+    const { data: project } = await (admin.from('projects') as any)
+      .select('owner_id')
+      .eq('id', projectId)
       .maybeSingle();
-    if (!membership) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    const isOwner = !!project && (project as any).owner_id === user.id;
+    if (!isOwner) {
+      const { data: membership } = await (admin.from('project_members') as any)
+        .select('user_id')
+        .eq('project_id', projectId)
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (!membership) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
 
     const sdk = getPodpislon();
     const uniqueDocIds = Array.from(new Set((sigs as any[]).map(s => s.podpislon_doc_id)));

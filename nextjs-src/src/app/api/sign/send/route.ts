@@ -68,13 +68,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Подписание доступно только для файлов в папке Документы' }, { status: 400 });
     }
 
-    // Verify user is a team member on this project (designer/assistant)
-    const { data: membership } = await (admin.from('project_members') as any)
-      .select('role')
-      .eq('project_id', file.project_id)
-      .eq('user_id', user.id)
+    // Permission: owner of project OR member with designer/assistant role
+    const { data: project } = await (admin.from('projects') as any)
+      .select('owner_id')
+      .eq('id', file.project_id)
       .maybeSingle();
-    if (!membership || !['designer', 'assistant'].includes((membership as any).role)) {
+    const isOwner = !!project && (project as any).owner_id === user.id;
+    let isTeamMember = false;
+    if (!isOwner) {
+      const { data: membership } = await (admin.from('project_members') as any)
+        .select('role')
+        .eq('project_id', file.project_id)
+        .eq('user_id', user.id)
+        .maybeSingle();
+      isTeamMember = !!membership && ['designer', 'assistant'].includes((membership as any).role);
+    }
+    if (!isOwner && !isTeamMember) {
       return NextResponse.json({ error: 'Нет прав для отправки на подпись' }, { status: 403 });
     }
 
