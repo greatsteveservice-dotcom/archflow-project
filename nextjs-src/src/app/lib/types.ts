@@ -643,6 +643,8 @@ export interface ChatChannel {
 
 export type DesignFolder = 'design_project' | 'visuals' | 'drawings' | 'furniture' | 'engineering' | 'documents';
 
+export type SignatureStatus = 'none' | 'sent' | 'viewed' | 'signed' | 'cancelled';
+
 export interface DesignFile {
   id: string;
   project_id: string;
@@ -654,6 +656,25 @@ export interface DesignFile {
   file_size: number | null;
   file_type: string | null;
   uploaded_by: string | null;
+  signature_status: SignatureStatus | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DocumentSignature {
+  id: string;
+  file_id: string;
+  project_id: string;
+  user_id: string | null;
+  podpislon_doc_id: string;
+  signer_name: string | null;
+  signer_last_name: string | null;
+  signer_phone: string | null;
+  status: 'sent' | 'viewed' | 'signed' | 'cancelled';
+  sent_at: string;
+  viewed_at: string | null;
+  signed_at: string | null;
+  last_checked_at: string | null;
   created_at: string;
   updated_at: string;
 }

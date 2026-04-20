@@ -10,6 +10,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@podpislon/podpislon-sdk": "^1.0.1",
     "@supabase/supabase-js": "^2.49.1",
     "cheerio": "^1.2.0",
     "konva": "^9.3.22",

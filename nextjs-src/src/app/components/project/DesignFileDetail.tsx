@@ -5,7 +5,8 @@ import { useDesignFile, useDesignFileComments } from '../../lib/hooks';
 import { deleteDesignFile, createDesignFileComment, updateDesignFileName } from '../../lib/queries';
 import { useAuth } from '../../lib/auth';
 import { DESIGN_FOLDERS } from '../../lib/types';
-import type { DesignFolder, DesignFileCommentWithProfile } from '../../lib/types';
+import type { DesignFolder, DesignFileCommentWithProfile, SignatureStatus } from '../../lib/types';
+import SignatureSection from './SignatureSection';
 
 interface DesignFileDetailProps {
   fileId: string;
@@ -244,6 +245,17 @@ export default function DesignFileDetail({
       <p style={{ fontFamily: 'var(--af-font-mono)', fontSize: 8, color: '#111', marginBottom: 20 }}>
         {formatSize(file.file_size)} · {formatDate(file.created_at)} · {file.uploader?.full_name || '—'}
       </p>
+
+      {/* Electronic signature — only in "documents" folder, for PDF files */}
+      {folder === 'documents' && isPdf(file.file_type) && (
+        <SignatureSection
+          fileId={file.id}
+          canSend={!!canDelete}
+          status={(file as any).signature_status as SignatureStatus | null}
+          onStatusChange={() => refetchFile()}
+          toast={toast}
+        />
+      )}
 
       {/* Preview */}
       <div style={{ marginBottom: 20 }}>
