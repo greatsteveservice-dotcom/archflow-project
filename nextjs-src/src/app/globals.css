@@ -682,9 +682,9 @@ body {
 }
 .af-canvas-container canvas { display: block; }
 
-/* Left toolbar */
+/* Left toolbar (desktop) */
 .af-canvas-toolbar {
-  width: 40px;
+  width: 44px;
   background: var(--af-white);
   border-right: 0.5px solid var(--af-border);
   display: flex;
@@ -694,6 +694,7 @@ body {
   gap: 2px;
   z-index: 2;
   flex-shrink: 0;
+  overflow-y: auto;
 }
 .af-canvas-toolbar-group {
   display: flex;
@@ -705,10 +706,10 @@ body {
   width: 24px;
   height: 0;
   border-top: 0.5px solid var(--af-border);
-  margin: 4px 0;
+  margin: 6px 0;
 }
 .af-canvas-tool-btn {
-  width: 32px; height: 32px;
+  width: 36px; height: 36px;
   display: flex; align-items: center; justify-content: center;
   border: 0.5px solid transparent;
   background: transparent;
@@ -718,6 +719,7 @@ body {
   font-weight: 600;
   color: #111;
   transition: background 0.1s, border-color 0.1s;
+  flex-shrink: 0;
 }
 .af-canvas-tool-btn:hover {
   background: var(--af-offwhite);
@@ -728,6 +730,17 @@ body {
   color: var(--af-white);
   border-color: var(--af-black);
 }
+.af-canvas-tool-hint {
+  display: none;
+  font-family: var(--af-font);
+  font-size: 9px;
+  color: #111;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0 6px;
+  user-select: none;
+  white-space: nowrap;
+}
 .af-canvas-zoom-label {
   font-family: var(--af-font);
   font-size: 9px;
@@ -735,7 +748,9 @@ body {
   width: 32px;
   text-align: center;
   user-select: none;
+  padding: 2px 0;
 }
+.af-canvas-mobile-only { display: none; }
 
 /* Right sidebar */
 .af-canvas-sidebar {
@@ -854,11 +869,76 @@ body {
   border-color: var(--af-black);
 }
 
-/* Mobile: collapse sidebar */
+/* Sidebar close button (mobile) */
+.af-canvas-sidebar-close {
+  display: none;
+  position: absolute;
+  top: 8px; right: 8px;
+  width: 32px; height: 32px;
+  border: 0.5px solid var(--af-border);
+  background: var(--af-white);
+  font-size: 16px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  z-index: 11;
+}
+
+/* Mobile: toolbar at bottom, sidebar as slide-in overlay */
 @media (max-width: 768px) {
-  .af-canvas-sidebar { display: none; }
-  .af-canvas-toolbar { width: 36px; }
-  .af-canvas-tool-btn { width: 28px; height: 28px; font-size: 10px; }
+  .af-canvas-workspace {
+    flex-direction: column;
+    height: calc(100dvh - 56px - 40px);
+  }
+  .af-canvas-toolbar {
+    width: 100%;
+    height: auto;
+    flex-direction: row;
+    border-right: none;
+    border-top: 0.5px solid var(--af-border);
+    padding: 6px 8px;
+    gap: 4px;
+    order: 2;
+    overflow-x: auto;
+    overflow-y: hidden;
+    justify-content: flex-start;
+    align-items: center;
+    flex-wrap: nowrap;
+  }
+  .af-canvas-toolbar-group {
+    flex-direction: row;
+    gap: 4px;
+  }
+  .af-canvas-toolbar-divider {
+    width: 0;
+    height: 24px;
+    border-top: none;
+    border-left: 0.5px solid var(--af-border);
+    margin: 0 4px;
+  }
+  .af-canvas-tool-btn { width: 40px; height: 40px; }
+  .af-canvas-tool-hint {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .af-canvas-zoom-label { width: 40px; font-size: 10px; }
+  .af-canvas-container { order: 1; flex: 1; min-height: 0; }
+  .af-canvas-mobile-only { display: flex; margin-left: auto; }
+
+  .af-canvas-sidebar {
+    position: absolute;
+    top: 0; bottom: 0; right: 0;
+    width: 80vw; max-width: 320px;
+    z-index: 10;
+    border-left: 0.5px solid var(--af-border);
+    box-shadow: -4px 0 16px rgba(0,0,0,0.06);
+    transform: translateX(100%);
+    transition: transform 0.2s ease;
+  }
+  .af-canvas-sidebar.open { transform: translateX(0); }
+  .af-canvas-sidebar-close { display: flex; }
+
   .af-canvas-minimap { display: none; }
 }
 

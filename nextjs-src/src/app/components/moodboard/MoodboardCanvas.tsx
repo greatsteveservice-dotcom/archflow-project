@@ -194,6 +194,15 @@ export default function MoodboardCanvas({ projectId, toast }: Props) {
   const [drawStart, setDrawStart] = useState<{ x: number; y: number } | null>(null);
   const [drawCurrent, setDrawCurrent] = useState<{ x: number; y: number } | null>(null);
 
+  // Mobile sidebar visibility
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  useEffect(() => {
+    // Auto-open sidebar on mobile when something gets selected
+    if (selectedId && typeof window !== 'undefined' && window.innerWidth <= 768) {
+      setSidebarOpen(true);
+    }
+  }, [selectedId]);
+
   // Section drag tracking (to move children)
   const sectionDragRef = useRef<{ id: string; startX: number; startY: number; childSnapshots: { id: string; x: number; y: number }[] } | null>(null);
 
@@ -736,7 +745,7 @@ export default function MoodboardCanvas({ projectId, toast }: Props) {
     <div className="af-canvas-workspace">
       <CanvasToolbar
         tool={tool}
-        onToolChange={setTool}
+        onToolChange={(t) => { setTool(t); if (t === 'catalog') setSidebarOpen(true); }}
         zoom={zoom}
         onZoomIn={handleZoomIn}
         onZoomOut={handleZoomOut}
@@ -744,6 +753,8 @@ export default function MoodboardCanvas({ projectId, toast }: Props) {
         onExportPng={handleExportPng}
         onShare={handleShareBoard}
         isPublic={!!board?.is_public}
+        onToggleSidebar={() => setSidebarOpen(v => !v)}
+        sidebarOpen={sidebarOpen}
       />
 
       <div
@@ -859,6 +870,8 @@ export default function MoodboardCanvas({ projectId, toast }: Props) {
         onAddCatalogItem={handleAddCatalogItem}
         boardTitle={board?.title || ''}
         onBoardTitleChange={handleBoardTitleChange}
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
       />
 
       <input

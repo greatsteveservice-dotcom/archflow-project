@@ -26,6 +26,8 @@ interface Props {
   onAddCatalogItem: (item: SupplySearchItem) => void;
   boardTitle: string;
   onBoardTitleChange: (title: string) => void;
+  open?: boolean;
+  onClose?: () => void;
 }
 
 function formatRub(n: number): string {
@@ -36,6 +38,7 @@ export default function CanvasSidebar({
   projectId, tool, sections, items, selectedId, selectedType,
   onSelectSection, onUpdateSection, onDeleteSection,
   onUpdateItem, onAddCatalogItem, boardTitle, onBoardTitleChange,
+  open, onClose,
 }: Props) {
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState(boardTitle);
@@ -72,7 +75,10 @@ export default function CanvasSidebar({
   }, [tool, searchQuery, projectId]);
 
   return (
-    <div className="af-canvas-sidebar">
+    <div className={`af-canvas-sidebar${open ? ' open' : ''}`}>
+      {onClose && (
+        <button className="af-canvas-sidebar-close" onClick={onClose} aria-label="Закрыть">×</button>
+      )}
       {/* Board title */}
       <div className="af-canvas-sidebar-header">
         {editingTitle ? (
