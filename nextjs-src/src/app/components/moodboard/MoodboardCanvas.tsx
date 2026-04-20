@@ -223,6 +223,29 @@ export default function MoodboardCanvas({ projectId, toast }: Props) {
     return () => ro.disconnect();
   }, []);
 
+  // Measure actual topbar height (logo + progress + breadcrumb) and expose as CSS var
+  // so .af-canvas-workspace height calc accounts for real chrome, not hardcoded 56px.
+  useEffect(() => {
+    const measure = () => {
+      const topbar = document.querySelector('.af-topbar-wrapper') as HTMLElement | null;
+      const h = topbar?.getBoundingClientRect().height;
+      if (h && h > 0) {
+        document.documentElement.style.setProperty('--af-topbar-h', `${Math.ceil(h)}px`);
+      }
+    };
+    measure();
+    const t = setTimeout(measure, 50);
+    const ro = new ResizeObserver(measure);
+    const topbar = document.querySelector('.af-topbar-wrapper');
+    if (topbar) ro.observe(topbar);
+    window.addEventListener('resize', measure);
+    return () => {
+      clearTimeout(t);
+      ro.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, []);
+
   // ═══ TRANSFORMER ═══
   useEffect(() => {
     const tr = transformerRef.current;

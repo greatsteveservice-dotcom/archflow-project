@@ -668,8 +668,8 @@ body {
 /* ═══ Moodboard Canvas ═══ */
 .af-canvas-workspace {
   display: flex;
-  /* viewport minus topbar (56) and bottom tabbar (56) + safe-area */
-  height: calc(100vh - 56px - 68px - env(safe-area-inset-bottom));
+  /* --af-topbar-h set dynamically in JS (measure real topbar incl. breadcrumb) */
+  height: calc(100vh - var(--af-topbar-h, 104px) - 68px - env(safe-area-inset-bottom));
   position: relative;
   overflow: hidden;
   background: var(--af-offwhite);
@@ -889,7 +889,7 @@ body {
 @media (max-width: 768px) {
   .af-canvas-workspace {
     flex-direction: column;
-    height: calc(100dvh - 56px - 68px - env(safe-area-inset-bottom));
+    height: calc(100dvh - var(--af-topbar-h, 104px) - 68px - env(safe-area-inset-bottom));
   }
   .af-canvas-toolbar {
     width: 100%;
