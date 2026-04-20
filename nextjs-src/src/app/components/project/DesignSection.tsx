@@ -6,6 +6,7 @@ import { DESIGN_FOLDERS } from '../../lib/types';
 import type { DesignFolder } from '../../lib/types';
 import DesignFolderView from './DesignFolderView';
 import DesignFileDetail from './DesignFileDetail';
+import MoodboardSection from './MoodboardSection';
 
 interface DesignSectionProps {
   projectId: string;
@@ -28,6 +29,19 @@ export default function DesignSection({ projectId, toast, canUpload = true, canD
   const { data: counts, refetch: refetchCounts } = useDesignFileCounts(projectId);
   const [activeFolder, setActiveFolder] = useState<DesignFolder | null>(null);
   const [activeFileId, setActiveFileId] = useState<string | null>(null);
+  const [showMoodboards, setShowMoodboards] = useState(false);
+
+  // Moodboards view
+  if (showMoodboards) {
+    return (
+      <MoodboardSection
+        projectId={projectId}
+        toast={toast}
+        canEdit={canUpload}
+        onBack={() => setShowMoodboards(false)}
+      />
+    );
+  }
 
   // Level 3: File detail
   if (activeFileId && activeFolder) {
@@ -87,6 +101,25 @@ export default function DesignSection({ projectId, toast, canUpload = true, canD
             </div>
           );
         })}
+        {/* Moodboards entry */}
+        <div
+          className="af-tab-row"
+          onClick={() => setShowMoodboards(true)}
+        >
+          <span className="af-tab-index">07</span>
+          <span className="af-tab-name">Мудборды</span>
+          <span style={{
+            fontFamily: 'var(--af-font-mono)',
+            fontSize: 8,
+            textTransform: 'uppercase',
+            letterSpacing: '0.16em',
+            color: '#111',
+            marginTop: 6,
+          }}>
+            концепции
+          </span>
+          <span className="af-tab-arrow">→</span>
+        </div>
       </div>
     </div>
   );

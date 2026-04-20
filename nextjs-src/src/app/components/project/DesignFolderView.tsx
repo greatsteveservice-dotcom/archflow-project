@@ -821,6 +821,7 @@ function FileTile({
   const [imgError, setImgError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const isImg = isImageFile(file);
+  const isPdfFile = file.file_type?.includes('pdf') || file.name.toLowerCase().endsWith('.pdf');
   const showImg = isImg && !imgError;
   const typeLabel = getFileTypeLabel(file.file_type, file.name);
 
@@ -928,6 +929,28 @@ function FileTile({
             {file.name}
           </div>
         </div>
+      ) : isPdfFile ? (
+        /* PDF tile — scaled-down iframe preview of first page */
+        <div style={{
+          position: 'relative',
+          width: '100%',
+          height: '100%',
+          overflow: 'hidden',
+          background: '#F6F6F4',
+        }}>
+          <iframe
+            src={file.file_url}
+            style={{
+              position: 'absolute', top: 0, left: 0,
+              width: '500%', height: '500%',
+              border: 'none', pointerEvents: 'none',
+              transform: 'scale(0.2)',
+              transformOrigin: 'top left',
+            }}
+            title={file.name}
+            loading="lazy"
+          />
+        </div>
       ) : (
         <div style={{
           display: 'flex',
@@ -964,7 +987,7 @@ function FileTile({
         </div>
       )}
 
-      {showImg && (
+      {(showImg || isPdfFile) && (
         <div className="af-file-tile-name">{file.name}</div>
       )}
     </div>
@@ -1398,20 +1421,20 @@ function Lightbox({
         touchAction: 'none',
       }}
     >
-      {/* Close */}
+      {/* Close — safe area for iOS notch */}
       <button
         onClick={(e) => { e.stopPropagation(); onClose(); }}
         aria-label="Закрыть"
         style={{
           position: 'absolute',
-          top: 16,
-          right: 16,
-          width: 40,
-          height: 40,
+          top: 'max(16px, env(safe-area-inset-top, 16px))',
+          right: 8,
+          width: 44,
+          height: 44,
           background: 'rgba(0,0,0,0.5)',
           border: '0.5px solid rgba(255,255,255,0.3)',
           color: '#fff',
-          fontSize: 18,
+          fontSize: 20,
           fontFamily: 'var(--af-font-mono)',
           cursor: 'pointer',
           zIndex: 3,
@@ -1584,6 +1607,24 @@ function Lightbox({
             }}
           >
             Подробнее
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); onClose(); }}
+            style={{
+              fontFamily: 'var(--af-font-mono)',
+              fontSize: 8,
+              color: '#fff',
+              background: 'none',
+              border: '0.5px solid rgba(255,255,255,0.35)',
+              padding: '3px 8px',
+              cursor: 'pointer',
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+            }}
+          >
+            Закрыть
           </button>
         </div>
 

@@ -19,8 +19,9 @@ import SettingsTab from "./project/SettingsTab";
 
 const ChatView = dynamic(() => import("./project/ChatView"), { loading: () => null, ssr: false });
 const AssistantView = dynamic(() => import("./project/AssistantView"), { loading: () => null, ssr: false });
+const MoodboardCanvas = dynamic(() => import("./moodboard/MoodboardCanvas"), { loading: () => null, ssr: false });
 
-type ProjectTab = "design" | "supervision" | "supply" | "chat" | "settings" | "assistant";
+type ProjectTab = "design" | "supervision" | "supply" | "chat" | "settings" | "assistant" | "moodboard";
 
 interface ProjectPageProps {
   projectId: string;
@@ -33,8 +34,9 @@ interface ProjectPageProps {
 
 const SECTION_CONFIG: { id: ProjectTab; label: string; permKey: keyof ProjectPermissions; index: string }[] = [
   { id: "design", label: "Дизайн", permKey: "canViewDesign", index: "01" },
-  { id: "supply", label: "Комплектация", permKey: "canViewSupply", index: "02" },
-  { id: "supervision", label: "Авторский надзор", permKey: "canViewSupervision", index: "03" },
+  { id: "moodboard", label: "Мудборд", permKey: "canViewDesign", index: "02" },
+  { id: "supply", label: "Комплектация", permKey: "canViewSupply", index: "03" },
+  { id: "supervision", label: "Авторский надзор", permKey: "canViewSupervision", index: "04" },
 ];
 
 /** Client-friendly labels: renames professional jargon for client role */
@@ -57,7 +59,7 @@ export default function ProjectPage({ projectId, initialTab, onNavigate, toast, 
 
   const visibleSections = SECTION_CONFIG.filter(t => permissions[t.permKey]);
   // activeTab derived from URL (initialTab prop) — null = Level 2 (section list), string = Level 3 (section content)
-  const validTabs: string[] = ['design', 'supervision', 'supply', 'chat', 'settings', 'assistant'];
+  const validTabs: string[] = ['design', 'supervision', 'supply', 'chat', 'settings', 'assistant', 'moodboard'];
   const isDesigner = profile?.role === 'designer';
   const activeTab: ProjectTab | null = (initialTab && validTabs.includes(initialTab) ? initialTab : null) as ProjectTab | null;
 
@@ -227,6 +229,7 @@ export default function ProjectPage({ projectId, initialTab, onNavigate, toast, 
                   <span className="af-tab-name">{displayLabel}</span>
                   <span className="af-tab-sub">
                     {section.id === 'design' && (designCounts ? `${Object.values(designCounts).reduce((a, b) => a + b, 0)} файлов` : '—')}
+                    {section.id === 'moodboard' && 'Визуальная концепция'}
                     {section.id === 'supply' && 'Позиции и документация'}
                     {section.id === 'supervision' && `${projectVisits.length} ${isClient ? 'отчётов' : 'визитов'}`}
                   </span>
@@ -241,7 +244,7 @@ export default function ProjectPage({ projectId, initialTab, onNavigate, toast, 
                 className="af-tab-row"
                 onClick={() => onNavigate("project", { id: projectId, tab: "chat" })}
               >
-                <span className="af-tab-index">04</span>
+                <span className="af-tab-index">05</span>
                 <span className="af-tab-name">Чат</span>
                 <span className="af-tab-sub">{isClient ? 'Связь с дизайнером' : 'Обсуждение проекта'}</span>
                 <span className="af-tab-arrow">→</span>
@@ -254,7 +257,7 @@ export default function ProjectPage({ projectId, initialTab, onNavigate, toast, 
                 className="af-tab-row"
                 onClick={() => onNavigate("project", { id: projectId, tab: "assistant" })}
               >
-                <span className="af-tab-index">05</span>
+                <span className="af-tab-index">06</span>
                 <span className="af-tab-name">Ассистент</span>
                 <span className="af-tab-sub">Анализ и напоминания</span>
                 <span className="af-tab-arrow">→</span>
@@ -277,13 +280,16 @@ export default function ProjectPage({ projectId, initialTab, onNavigate, toast, 
         {/* ═══ LEVEL 3: Section content ═══ */}
         {activeTab !== null && (
           <div>
-            {/* Chat renders edge-to-edge (no af-content padding) for proper viewport fill */}
+            {/* Chat and Moodboard render edge-to-edge (no af-content padding) for proper viewport fill */}
             {activeTab === "chat" && (
               <ChatView projectId={projectId} toast={toast} />
             )}
+            {activeTab === "moodboard" && permissions.canViewDesign && (
+              <MoodboardCanvas projectId={projectId} toast={toast} />
+            )}
 
             {/* All other tabs render inside af-content with standard padding */}
-            {activeTab !== "chat" && (
+            {activeTab !== "chat" && activeTab !== "moodboard" && (
               <div className="af-content">
                 {activeTab === "design" && permissions.canViewDesign && (
                   <DesignSection

@@ -39,8 +39,8 @@ function parsePath(pathname: string): { page: string; context: any; tab: string 
     return { page: 'profile', context: null, tab: null };
   }
 
-  // /projects/:id/:tab (chat|design|supervision|supply|settings|assistant)
-  const projectTabMatch = pathname.match(/^\/projects\/([^/]+)\/(chat|design|supervision|supply|settings|assistant)$/);
+  // /projects/:id/:tab (chat|design|supervision|supply|settings|assistant|moodboard)
+  const projectTabMatch = pathname.match(/^\/projects\/([^/]+)\/(chat|design|supervision|supply|settings|assistant|moodboard)$/);
   if (projectTabMatch) {
     return { page: 'project', context: projectTabMatch[1], tab: projectTabMatch[2] };
   }

@@ -890,3 +890,36 @@ export function sendPushNotification(
     });
   });
 }
+
+// ======================== MOODBOARDS ========================
+
+import type { MoodboardWithStats, MoodboardItem, MoodboardComment, MoodboardSection } from './types';
+import { fetchMoodboards, fetchMoodboardItems, fetchMoodboardComments, fetchMoodboardSections } from './queries';
+
+export function useMoodboards(projectId: string | null) {
+  return useQuery<MoodboardWithStats[]>(
+    () => projectId ? fetchMoodboards(projectId) : Promise.resolve([]),
+    [projectId]
+  );
+}
+
+export function useMoodboardItems(moodboardId: string | null) {
+  return useQuery<MoodboardItem[]>(
+    () => moodboardId ? fetchMoodboardItems(moodboardId) : Promise.resolve([]),
+    [moodboardId]
+  );
+}
+
+export function useMoodboardComments(moodboardId: string | null) {
+  return useQuery<MoodboardComment[]>(
+    () => moodboardId ? fetchMoodboardComments(moodboardId) : Promise.resolve([]),
+    [moodboardId]
+  );
+}
+
+export function useMoodboardSections(moodboardId: string | null) {
+  return useQuery<MoodboardSection[]>(
+    () => moodboardId ? fetchMoodboardSections(moodboardId) : Promise.resolve([]),
+    [moodboardId]
+  );
+}

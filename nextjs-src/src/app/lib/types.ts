@@ -710,6 +710,86 @@ export const DESIGN_FOLDERS: DesignFolderConfig[] = [
   { id: 'documents', label: 'Документы', index: '06' },
 ];
 
+// ======================== MOODBOARDS ========================
+
+export type MoodboardItemType = 'image' | 'text_note' | 'color_swatch' | 'arrow' | 'catalog';
+export type CanvasTool = 'select' | 'image' | 'text' | 'section' | 'arrow' | 'catalog';
+export type ClientReaction = 'like' | 'dislike' | 'maybe';
+
+export interface Moodboard {
+  id: string;
+  project_id: string;
+  title: string;
+  description: string | null;
+  room_type: string | null;
+  style_tags: string[];
+  color_palette: { hex: string; name?: string }[];
+  is_public: boolean;
+  public_token: string | null;
+  client_can_comment: boolean;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MoodboardWithStats extends Moodboard {
+  item_count: number;
+}
+
+export interface MoodboardItem {
+  id: string;
+  moodboard_id: string;
+  type: MoodboardItemType;
+  position: number;
+  image_url: string | null;
+  thumbnail_url: string | null;
+  file_path: string | null;
+  title: string | null;
+  source_url: string | null;
+  source_platform: string | null;
+  dominant_colors: { hex: string; population: number }[] | null;
+  text_content: string | null;
+  text_color: string;
+  bg_color: string;
+  color_hex: string | null;
+  color_name: string | null;
+  client_reaction: ClientReaction | null;
+  client_comment: string | null;
+  canvas_x: number | null;
+  canvas_y: number | null;
+  canvas_w: number | null;
+  canvas_h: number | null;
+  section_id: string | null;
+  supply_item_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MoodboardSection {
+  id: string;
+  moodboard_id: string;
+  title: string;
+  area_label: string | null;
+  canvas_x: number;
+  canvas_y: number;
+  canvas_w: number;
+  canvas_h: number;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MoodboardComment {
+  id: string;
+  moodboard_id: string;
+  item_id: string | null;
+  author_type: string;
+  author_name: string | null;
+  author_user_id: string | null;
+  content: string;
+  created_at: string;
+}
+
 // ======================== NOTIFICATION PREFERENCES ========================
 
 export type ScheduleType = 'any' | 'work_hours_weekend' | 'work_hours' | 'custom';

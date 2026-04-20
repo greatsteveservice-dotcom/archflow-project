@@ -1,0 +1,6 @@
+name = "archvoice-relay"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+
+# Secret is set via: npx wrangler secret put RELAY_SECRET
+# Value: 03cedd48e8ff73a8c9622fda4f2670ea

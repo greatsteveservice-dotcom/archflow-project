@@ -259,20 +259,35 @@ export default function DesignFileDetail({
         )}
         {isPdf(file.file_type) && (
           <div>
+            {/* PDF preview — CSS transform to fit entire A4 page */}
             <div
-              style={{ position: 'relative', cursor: 'pointer' }}
-              onClick={() => setPdfFullscreen(true)}
+              style={{ position: 'relative', cursor: 'pointer', width: '100%', height: 480, overflow: 'hidden', border: '0.5px solid #EBEBEB' }}
+              onClick={() => {
+                // On mobile, open in new tab — Safari native PDF viewer is far superior
+                const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || ('ontouchstart' in window && window.innerWidth < 768);
+                if (isMobile) {
+                  window.open(file.file_url, '_blank');
+                } else {
+                  setPdfFullscreen(true);
+                }
+              }}
             >
               <iframe
                 src={file.file_url}
-                style={{ width: '100%', height: 400, border: '0.5px solid #EBEBEB', pointerEvents: 'none' }}
+                style={{
+                  position: 'absolute', top: 0, left: 0,
+                  width: '250%', height: '250%',
+                  border: 'none', pointerEvents: 'none',
+                  transform: 'scale(0.4)',
+                  transformOrigin: 'top left',
+                }}
                 title={file.name}
               />
-              {/* Hover overlay */}
+              {/* Overlay */}
               <div
                 className="af-pdf-preview-overlay"
                 style={{
-                  position: 'absolute', inset: 0,
+                  position: 'absolute', inset: 0, zIndex: 1,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   background: 'rgba(0,0,0,0)',
                   transition: 'background 0.15s',
@@ -286,12 +301,19 @@ export default function DesignFileDetail({
                   color: '#111', background: '#fff', border: '0.5px solid #111',
                   padding: '6px 14px', opacity: 0.85,
                 }}>
-                  На весь экран
+                  Открыть
                 </span>
               </div>
             </div>
             <button
-              onClick={() => setPdfFullscreen(true)}
+              onClick={() => {
+                const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || ('ontouchstart' in window && window.innerWidth < 768);
+                if (isMobile) {
+                  window.open(file.file_url, '_blank');
+                } else {
+                  setPdfFullscreen(true);
+                }
+              }}
               style={{
                 fontFamily: 'var(--af-font-mono)', fontSize: 8,
                 color: '#111', background: 'none', border: 'none',
@@ -479,12 +501,21 @@ function CommentRow({ comment }: { comment: DesignFileCommentWithProfile }) {
 // PdfLightbox — fullscreen PDF viewer with page navigation & zoom
 // ============================================================================
 
-const ZOOM_LEVELS = [50, 75, 100, 125, 150, 200, 300];
+const ZOOM_LEVELS = [25, 50, 75, 100, 125, 150, 200];
 
 function PdfLightbox({ url, name, onClose }: { url: string; name: string; onClose: () => void }) {
   const [page, setPage] = useState(1);
-  const [zoomIdx, setZoomIdx] = useState(2); // index in ZOOM_LEVELS, default 100%
+  const [zoomIdx, setZoomIdx] = useState(2); // default 75%
   const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  // On mobile, open in new tab and close lightbox — Safari native PDF viewer is better
+  useEffect(() => {
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || ('ontouchstart' in window && window.innerWidth < 768);
+    if (isMobile) {
+      window.open(url, '_blank');
+      onClose();
+    }
+  }, [url, onClose]);
 
   const zoom = ZOOM_LEVELS[zoomIdx];
   const pdfSrc = `${url}#page=${page}&zoom=${zoom}`;
@@ -529,14 +560,14 @@ function PdfLightbox({ url, name, onClose }: { url: string; name: string; onClos
       zIndex: 1000,
       display: 'flex', flexDirection: 'column',
     }}>
-      {/* Close button */}
+      {/* Close button — safe area for iOS notch */}
       <button
         onClick={onClose}
         aria-label="Закрыть"
         style={{
           ...btnStyle,
-          position: 'absolute', top: 16, right: 16, zIndex: 3,
-          width: 40, height: 40, fontSize: 18,
+          position: 'absolute', top: 'max(16px, env(safe-area-inset-top, 16px))', right: 8, zIndex: 3,
+          width: 44, height: 44, fontSize: 20,
         }}
       >✕</button>
 
@@ -547,9 +578,9 @@ function PdfLightbox({ url, name, onClose }: { url: string; name: string; onClos
         aria-label="Предыдущая страница"
         style={{
           ...btnStyle,
-          position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', zIndex: 3,
-          width: 48, height: 48, fontSize: 22,
-          opacity: page <= 1 ? 0.3 : 1,
+          position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', zIndex: 3,
+          width: 40, height: 40, fontSize: 20,
+          opacity: page <= 1 ? 0.3 : 0.7,
         }}
       >←</button>
 
@@ -559,13 +590,14 @@ function PdfLightbox({ url, name, onClose }: { url: string; name: string; onClos
         aria-label="Следующая страница"
         style={{
           ...btnStyle,
-          position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', zIndex: 3,
-          width: 48, height: 48, fontSize: 22,
+          position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', zIndex: 3,
+          width: 40, height: 40, fontSize: 20,
+          opacity: 0.7,
         }}
       >→</button>
 
       {/* PDF iframe */}
-      <div style={{ flex: 1, padding: '16px 72px 0', overflow: 'hidden' }}>
+      <div style={{ flex: 1, padding: '16px 8px 0', overflow: 'hidden' }}>
         <iframe
           ref={iframeRef}
           key={`${page}-${zoom}`}
@@ -622,6 +654,18 @@ function PdfLightbox({ url, name, onClose }: { url: string; name: string; onClos
           >
             Скачать
           </a>
+          <button
+            onClick={onClose}
+            style={{
+              fontFamily: 'var(--af-font-mono)', fontSize: 8, color: '#fff',
+              border: '0.5px solid rgba(255,255,255,0.35)', padding: '3px 8px',
+              background: 'none', cursor: 'pointer',
+              textTransform: 'uppercase', letterSpacing: '0.08em',
+              whiteSpace: 'nowrap', flexShrink: 0,
+            }}
+          >
+            Закрыть
+          </button>
         </div>
 
         {/* Row 2: zoom controls */}

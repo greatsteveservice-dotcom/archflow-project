@@ -3411,3 +3411,263 @@ export async function fetchUpcomingTimeline(projectId: string): Promise<any[]> {
   items.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   return items;
 }
+
+// ======================== MOODBOARDS ========================
+
+import type { Moodboard, MoodboardWithStats, MoodboardItem, MoodboardComment, MoodboardSection } from './types';
+
+export async function fetchMoodboards(projectId: string): Promise<MoodboardWithStats[]> {
+  const { data, error } = await supabase
+    .from('moodboards')
+    .select('*')
+    .eq('project_id', projectId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  if (!data) return [];
+
+  // Get item counts per moodboard
+  const ids = data.map(m => m.id);
+  if (ids.length === 0) return [];
+
+  const { data: counts } = await supabase
+    .from('moodboard_items')
+    .select('moodboard_id')
+    .in('moodboard_id', ids);
+
+  const countMap: Record<string, number> = {};
+  (counts || []).forEach(c => {
+    countMap[c.moodboard_id] = (countMap[c.moodboard_id] || 0) + 1;
+  });
+
+  return data.map(m => ({ ...m, item_count: countMap[m.id] || 0 }));
+}
+
+export async function fetchMoodboard(moodboardId: string): Promise<Moodboard | null> {
+  const { data, error } = await supabase
+    .from('moodboards')
+    .select('*')
+    .eq('id', moodboardId)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function fetchMoodboardItems(moodboardId: string): Promise<MoodboardItem[]> {
+  const { data, error } = await supabase
+    .from('moodboard_items')
+    .select('*')
+    .eq('moodboard_id', moodboardId)
+    .order('position', { ascending: true });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function createMoodboard(input: {
+  project_id: string;
+  title: string;
+  description?: string;
+  room_type?: string;
+}): Promise<Moodboard> {
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data, error } = await supabase
+    .from('moodboards')
+    .insert({ ...input, created_by: user?.id })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function updateMoodboard(id: string, updates: Partial<Pick<Moodboard, 'title' | 'description' | 'room_type' | 'style_tags' | 'is_public' | 'public_token' | 'client_can_comment' | 'color_palette'>> & { canvas_viewport?: { x: number; y: number; scale: number } }): Promise<void> {
+  const { error } = await supabase
+    .from('moodboards')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+export async function deleteMoodboard(id: string): Promise<void> {
+  // First delete storage files for all items
+  const { data: items } = await supabase
+    .from('moodboard_items')
+    .select('file_path')
+    .eq('moodboard_id', id)
+    .not('file_path', 'is', null);
+  if (items && items.length > 0) {
+    const paths = items.map(i => i.file_path).filter(Boolean) as string[];
+    if (paths.length > 0) {
+      await supabase.storage.from('moodboard-images').remove(paths);
+    }
+  }
+  const { error } = await supabase.from('moodboards').delete().eq('id', id);
+  if (error) throw error;
+}
+
+export async function createMoodboardItem(input: {
+  moodboard_id: string;
+  type: string;
+  image_url?: string;
+  thumbnail_url?: string;
+  file_path?: string;
+  title?: string;
+  source_url?: string;
+  source_platform?: string;
+  text_content?: string;
+  text_color?: string;
+  bg_color?: string;
+  color_hex?: string;
+  color_name?: string;
+  canvas_x?: number;
+  canvas_y?: number;
+  canvas_w?: number;
+  canvas_h?: number;
+  section_id?: string;
+  supply_item_id?: string;
+}): Promise<MoodboardItem> {
+  // Auto-assign position (append to end)
+  const { data: last } = await supabase
+    .from('moodboard_items')
+    .select('position')
+    .eq('moodboard_id', input.moodboard_id)
+    .order('position', { ascending: false })
+    .limit(1)
+    .single();
+  const position = (last?.position ?? -1) + 1;
+
+  const { data, error } = await supabase
+    .from('moodboard_items')
+    .insert({ ...input, position })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function updateMoodboardItem(id: string, updates: Partial<Pick<MoodboardItem, 'title' | 'position' | 'text_content' | 'text_color' | 'bg_color' | 'color_hex' | 'color_name' | 'client_reaction' | 'client_comment' | 'dominant_colors' | 'canvas_x' | 'canvas_y' | 'canvas_w' | 'canvas_h' | 'section_id'>>): Promise<void> {
+  const { error } = await supabase
+    .from('moodboard_items')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+export async function deleteMoodboardItem(id: string, filePath?: string | null): Promise<void> {
+  if (filePath) {
+    await supabase.storage.from('moodboard-images').remove([filePath]);
+  }
+  const { error } = await supabase.from('moodboard_items').delete().eq('id', id);
+  if (error) throw error;
+}
+
+export async function reorderMoodboardItems(moodboardId: string, orderedIds: string[]): Promise<void> {
+  // Bulk update positions
+  const updates = orderedIds.map((id, i) => supabase
+    .from('moodboard_items')
+    .update({ position: i })
+    .eq('id', id)
+    .eq('moodboard_id', moodboardId)
+  );
+  await Promise.all(updates);
+}
+
+export async function toggleMoodboardPublic(moodboardId: string, isPublic: boolean): Promise<string | null> {
+  const updates: Record<string, unknown> = { is_public: isPublic, updated_at: new Date().toISOString() };
+  if (isPublic) {
+    updates.public_token = crypto.randomUUID().replace(/-/g, '').slice(0, 16);
+  }
+  const { data, error } = await supabase
+    .from('moodboards')
+    .update(updates)
+    .eq('id', moodboardId)
+    .select('public_token')
+    .single();
+  if (error) throw error;
+  return data?.public_token || null;
+}
+
+export async function fetchMoodboardComments(moodboardId: string): Promise<MoodboardComment[]> {
+  const { data, error } = await supabase
+    .from('moodboard_comments')
+    .select('*')
+    .eq('moodboard_id', moodboardId)
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  return data || [];
+}
+
+// ═══ SUPPLY SEARCH FOR CATALOG TOOL ═══
+
+export async function searchProjectSupplyItems(projectId: string, query: string): Promise<Array<{ id: string; name: string; budget: number; category: string | null; supplier: string | null }>> {
+  let q = supabase
+    .from('supply_items')
+    .select('id, name, budget, category, supplier')
+    .eq('project_id', projectId)
+    .order('name', { ascending: true })
+    .limit(50);
+  if (query.trim()) {
+    q = q.ilike('name', `%${query.trim()}%`);
+  }
+  const { data, error } = await q;
+  if (error) throw error;
+  return data || [];
+}
+
+// ═══ MOODBOARD SECTIONS (canvas room zones) ═══
+
+export async function fetchMoodboardSections(moodboardId: string): Promise<MoodboardSection[]> {
+  const { data, error } = await supabase
+    .from('moodboard_sections')
+    .select('*')
+    .eq('moodboard_id', moodboardId)
+    .order('sort_order', { ascending: true });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function createMoodboardSection(input: {
+  moodboard_id: string;
+  title?: string;
+  area_label?: string;
+  canvas_x?: number;
+  canvas_y?: number;
+  canvas_w?: number;
+  canvas_h?: number;
+}): Promise<MoodboardSection> {
+  const { data, error } = await supabase
+    .from('moodboard_sections')
+    .insert(input)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function updateMoodboardSection(id: string, updates: Partial<Pick<MoodboardSection, 'title' | 'area_label' | 'canvas_x' | 'canvas_y' | 'canvas_w' | 'canvas_h' | 'sort_order'>>): Promise<void> {
+  const { error } = await supabase
+    .from('moodboard_sections')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+export async function deleteMoodboardSection(id: string): Promise<void> {
+  const { error } = await supabase.from('moodboard_sections').delete().eq('id', id);
+  if (error) throw error;
+}
+
+export async function createMoodboardComment(moodboardId: string, content: string, itemId?: string): Promise<MoodboardComment> {
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data, error } = await supabase
+    .from('moodboard_comments')
+    .insert({
+      moodboard_id: moodboardId,
+      item_id: itemId || null,
+      author_type: 'designer',
+      author_user_id: user?.id,
+      content,
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
