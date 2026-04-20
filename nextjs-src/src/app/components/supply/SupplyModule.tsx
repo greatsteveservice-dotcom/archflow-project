@@ -15,6 +15,7 @@ import SupplyDocuments from "./SupplyDocuments";
 import SupplyPlan from "./SupplyPlan";
 import KindStageReconciliation from "./KindStageReconciliation";
 import SupplyOnboarding from "./SupplyOnboarding";
+import SupplySearch from "./SupplySearch";
 
 interface SupplyModuleProps {
   projectId: string;
@@ -45,6 +46,7 @@ export default function SupplyModule({ projectId, toast }: SupplyModuleProps) {
   const [activeSection, setActiveSection] = useState<SectionId>("items");
   const [activeItemTab, setActiveItemTab] = useState<ItemTabId>("spec");
   const [showImport, setShowImport] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
 
   const { data: stages, loading: loadingStages, error: errorStages, refetch: refetchStages } = useProjectStages(projectId);
   const { data: items, loading: loadingItems, error: errorItems, refetch: refetchItems } = useProjectSupplyItems(projectId);
@@ -108,17 +110,31 @@ export default function SupplyModule({ projectId, toast }: SupplyModuleProps) {
 
   return (
     <div>
-      {/* ── Section tabs ── */}
-      <div className="stab mb-5 w-fit">
-        {SECTIONS.map((section) => (
-          <button
-            key={section.id}
-            className={`stb ${activeSection === section.id ? "active" : ""}`}
-            onClick={() => setActiveSection(section.id)}
-          >
-            {section.label}
-          </button>
-        ))}
+      {/* ── Section tabs + Find product CTA ── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
+        <div className="stab w-fit">
+          {SECTIONS.map((section) => (
+            <button
+              key={section.id}
+              className={`stb ${activeSection === section.id ? "active" : ""}`}
+              onClick={() => setActiveSection(section.id)}
+            >
+              {section.label}
+            </button>
+          ))}
+        </div>
+        <button
+          className="af-btn-pill"
+          onClick={() => setShowSearch(true)}
+          type="button"
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+            <circle cx="6" cy="6" r="4" />
+            <line x1="9" y1="9" x2="12" y2="12" />
+          </svg>
+          Найти товар →
+        </button>
       </div>
 
       {/* ── Kind→Stage reconciliation banner ── */}
@@ -257,6 +273,13 @@ export default function SupplyModule({ projectId, toast }: SupplyModuleProps) {
           />
         )}
       </div>
+
+      {showSearch && (
+        <SupplySearch
+          projectId={projectId}
+          onClose={() => setShowSearch(false)}
+        />
+      )}
     </div>
   );
 }

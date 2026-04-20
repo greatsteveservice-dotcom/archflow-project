@@ -21,13 +21,25 @@ const nextConfig = {
       },
     ],
   },
+  // @sparticuz/chromium and puppeteer-core must not be bundled — they load
+  // native binaries at runtime and expect to be found in node_modules.
+  experimental: {
+    serverComponentsExternalPackages: ['@sparticuz/chromium', 'puppeteer-core'],
+  },
   // Konva imports node-canvas for SSR fallback; we don't use SSR for canvas
   // components (all wrapped in dynamic({ ssr: false })), so alias it out.
-  webpack: (config) => {
+  webpack: (config, { isServer }) => {
     config.resolve.alias = {
       ...config.resolve.alias,
       canvas: false,
     };
+    if (isServer) {
+      // Ensure puppeteer-core and @sparticuz/chromium stay external in server bundle
+      config.externals = config.externals || [];
+      if (Array.isArray(config.externals)) {
+        config.externals.push('@sparticuz/chromium', 'puppeteer-core');
+      }
+    }
     return config;
   },
 };
