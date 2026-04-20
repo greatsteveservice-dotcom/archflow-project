@@ -15,6 +15,10 @@ const nextConfig = {
         protocol: 'https',
         hostname: '*.beget.app',
       },
+      {
+        protocol: 'https',
+        hostname: 'db.archflow.ru',
+      },
     ],
   },
   // Konva imports node-canvas for SSR fallback; we don't use SSR for canvas
