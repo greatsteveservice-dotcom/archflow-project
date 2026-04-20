@@ -23,7 +23,6 @@ export default function BottomTabBar({ onSearchOpen }: Props) {
   const currentProjectId = useCurrentProjectId();
   const { data: projects } = useProjects();
 
-  // Fallback project: first active project if user isn't currently in one
   const fallbackProjectId = useMemo(() => {
     if (!projects) return null;
     const active = projects.find(p => p.status === 'active');
@@ -33,7 +32,6 @@ export default function BottomTabBar({ onSearchOpen }: Props) {
   const targetProjectId = currentProjectId || fallbackProjectId;
   const isDesigner = profile?.role === 'designer';
 
-  // Don't render if not authenticated
   if (!session) return null;
 
   const goToProjectTab = (tab: string) => {
@@ -44,9 +42,7 @@ export default function BottomTabBar({ onSearchOpen }: Props) {
     router.push(`/projects/${targetProjectId}/${tab}`);
   };
 
-  const isActive = (tab: string) => {
-    return pathname === `/projects/${targetProjectId}/${tab}`;
-  };
+  const isActive = (tab: string) => pathname === `/projects/${targetProjectId}/${tab}`;
 
   return (
     <nav className="af-tabbar" aria-label="Навигация">
@@ -55,8 +51,8 @@ export default function BottomTabBar({ onSearchOpen }: Props) {
         onClick={() => goToProjectTab('chat')}
         aria-label="Чат"
       >
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round">
-          <path d="M3 4 H17 V14 H10 L5 17.5 V14 H3 Z" />
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round">
+          <path d="M4 5 H20 V16 H12 L6 20 V16 H4 Z" />
         </svg>
         <span className="af-tabbar-label">Чат</span>
       </button>
@@ -66,9 +62,9 @@ export default function BottomTabBar({ onSearchOpen }: Props) {
         onClick={onSearchOpen}
         aria-label="Поиск"
       >
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4">
-          <circle cx="8.5" cy="8.5" r="5.5" />
-          <line x1="13" y1="13" x2="17" y2="17" strokeLinecap="round" />
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+          <circle cx="10.5" cy="10.5" r="6.5" />
+          <line x1="15.5" y1="15.5" x2="20" y2="20" />
         </svg>
         <span className="af-tabbar-label">Поиск</span>
       </button>
@@ -78,11 +74,11 @@ export default function BottomTabBar({ onSearchOpen }: Props) {
         onClick={() => goToProjectTab('supervision')}
         aria-label="Задачи"
       >
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round">
-          <rect x="4" y="3" width="12" height="14" />
-          <line x1="7" y1="7" x2="13" y2="7" />
-          <line x1="7" y1="10" x2="13" y2="10" />
-          <line x1="7" y1="13" x2="11" y2="13" />
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round">
+          <rect x="5" y="4" width="14" height="17" rx="1" />
+          <line x1="8" y1="9" x2="16" y2="9" />
+          <line x1="8" y1="13" x2="16" y2="13" />
+          <line x1="8" y1="17" x2="13" y2="17" />
         </svg>
         <span className="af-tabbar-label">Задачи</span>
       </button>
@@ -93,11 +89,11 @@ export default function BottomTabBar({ onSearchOpen }: Props) {
           onClick={() => goToProjectTab('assistant')}
           aria-label="Ассистент"
         >
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round">
-            <circle cx="10" cy="10" r="7" />
-            <circle cx="7.5" cy="9" r="0.9" fill="currentColor" />
-            <circle cx="12.5" cy="9" r="0.9" fill="currentColor" />
-            <path d="M7 13 Q10 15 13 13" fill="none" strokeLinecap="round" />
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round">
+            <path d="M5 7 L12 3 L19 7 L19 13 Q12 18 5 13 Z" />
+            <circle cx="10" cy="10.5" r="1" fill="currentColor" stroke="none" />
+            <circle cx="14" cy="10.5" r="1" fill="currentColor" stroke="none" />
+            <path d="M10 13.5 Q12 15 14 13.5" />
           </svg>
           <span className="af-tabbar-label">Ассистент</span>
         </button>

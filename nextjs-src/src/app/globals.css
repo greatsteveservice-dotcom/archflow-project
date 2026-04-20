@@ -668,7 +668,8 @@ body {
 /* ═══ Moodboard Canvas ═══ */
 .af-canvas-workspace {
   display: flex;
-  height: calc(100vh - 56px - 40px); /* viewport minus topbar and feedbackbar */
+  /* viewport minus topbar (56) and bottom tabbar (56) + safe-area */
+  height: calc(100vh - 56px - 56px - env(safe-area-inset-bottom));
   position: relative;
   overflow: hidden;
   background: var(--af-offwhite);
@@ -888,7 +889,7 @@ body {
 @media (max-width: 768px) {
   .af-canvas-workspace {
     flex-direction: column;
-    height: calc(100dvh - 56px - 40px);
+    height: calc(100dvh - 56px - 56px - env(safe-area-inset-bottom));
   }
   .af-canvas-toolbar {
     width: 100%;
@@ -992,27 +993,32 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 4px;
   background: transparent;
   border: none;
-  color: #999;
+  color: #555;
   cursor: pointer;
   padding: 6px 4px;
   font-family: var(--af-font);
   transition: color 0.1s;
   min-width: 44px;
 }
+.af-tabbar-btn svg { color: inherit; }
 .af-tabbar-btn:hover,
 .af-tabbar-btn:active,
 .af-tabbar-btn.active {
   color: var(--af-black);
 }
+.af-tabbar-btn.active svg { stroke-width: 1.8; }
 .af-tabbar-label {
-  font-size: 9px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-size: 11px;
+  font-weight: 600;
+  color: inherit;
+  letter-spacing: 0.02em;
   user-select: none;
+  line-height: 1;
 }
+.af-tabbar-btn.active .af-tabbar-label { color: var(--af-black); }
 
 /* ═══ Chat channel pills (rounded widgets) ═══ */
 .af-chat-channels {
