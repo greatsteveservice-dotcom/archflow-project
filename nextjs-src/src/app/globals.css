@@ -942,6 +942,136 @@ body {
   .af-canvas-minimap { display: none; }
 }
 
+/* ═══ Pill button (rounded CTA, one of the few rounded exceptions) ═══ */
+.af-btn-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 20px;
+  border: 1px solid var(--af-black);
+  border-radius: 999px;
+  background: var(--af-white);
+  color: var(--af-black);
+  font-family: var(--af-font);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+  white-space: nowrap;
+}
+.af-btn-pill:hover {
+  background: var(--af-black);
+  color: var(--af-white);
+}
+.af-btn-pill.small {
+  height: 32px;
+  padding: 0 14px;
+  font-size: 10px;
+}
+
+/* ═══ Bottom TabBar ═══ */
+.af-tabbar {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  height: 56px;
+  padding-bottom: env(safe-area-inset-bottom);
+  background: var(--af-white);
+  border-top: 0.5px solid var(--af-border);
+  display: flex;
+  align-items: stretch;
+  justify-content: space-around;
+  z-index: 100;
+}
+.af-tabbar-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  background: transparent;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  padding: 6px 4px;
+  font-family: var(--af-font);
+  transition: color 0.1s;
+  min-width: 44px;
+}
+.af-tabbar-btn:hover,
+.af-tabbar-btn:active,
+.af-tabbar-btn.active {
+  color: var(--af-black);
+}
+.af-tabbar-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  user-select: none;
+}
+
+/* ═══ Chat channel pills (rounded widgets) ═══ */
+.af-chat-channels {
+  display: flex;
+  gap: 6px;
+  padding: 10px 12px;
+  overflow-x: auto;
+  border-bottom: 0.5px solid var(--af-border);
+  background: var(--af-white);
+  scrollbar-width: none;
+}
+.af-chat-channels::-webkit-scrollbar { display: none; }
+.af-chat-channel-pill {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 14px;
+  border: 0.5px solid var(--af-border);
+  border-radius: 999px;
+  background: var(--af-white);
+  color: var(--af-black);
+  font-family: var(--af-font);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.1s, color 0.1s, border-color 0.1s;
+}
+.af-chat-channel-pill:hover { background: var(--af-offwhite); }
+.af-chat-channel-pill.active {
+  background: var(--af-black);
+  color: var(--af-white);
+  border-color: var(--af-black);
+}
+.af-chat-channel-pill-new { color: #777; }
+.af-chat-channel-pill-new:hover {
+  color: var(--af-black);
+  border-color: var(--af-black);
+}
+.af-chat-channel-unread {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px; height: 16px;
+  padding: 0 4px;
+  background: var(--af-black);
+  color: var(--af-white);
+  font-size: 9px;
+  border-radius: 999px;
+  margin-left: 4px;
+}
+.af-chat-channel-pill.active .af-chat-channel-unread {
+  background: var(--af-white);
+  color: var(--af-black);
+}
+
 .af-table { width: 100%; border-collapse: collapse; font-family: var(--af-font-mono); font-size: 12px; }
 .af-table th {
   font-size: 8px; letter-spacing: 0.15em;

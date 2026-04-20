@@ -93,6 +93,21 @@ const S: Record<string, CSSProperties> = {
 export default function PrivacyPage() {
   return (
     <div style={S.wrap}>
+      <a
+        href="/login"
+        aria-label="Закрыть"
+        style={{
+          position: 'fixed', top: 16, right: 16,
+          width: 44, height: 44,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'var(--af-white)', border: '0.5px solid var(--af-border)',
+          color: 'var(--af-black)', textDecoration: 'none',
+          fontFamily: 'var(--af-font)', fontSize: 20,
+          zIndex: 50,
+        }}
+      >
+        ×
+      </a>
       <span style={S.label}>Archflow</span>
       <h1 style={S.h1}>
         Политика<br />конфиденциальности
@@ -177,7 +192,7 @@ export default function PrivacyPage() {
       <h2 style={S.h2}>6. Права пользователя</h2>
       <p style={S.p}>Вы вправе в любой момент:</p>
       <ul style={S.ul}>
-        <li style={S.li}>— Получить копию всех своих данных (запрос на privacy@archflow.ru)</li>
+        <li style={S.li}>— Получить копию всех своих данных (запрос на archflow.office@gmail.com)</li>
         <li style={S.li}>— Исправить или обновить данные аккаунта</li>
         <li style={S.li}>— Удалить аккаунт и все связанные данные безвозвратно</li>
         <li style={S.li}>— Отозвать согласие на обработку данных</li>
@@ -213,14 +228,14 @@ export default function PrivacyPage() {
       <h2 style={S.h2}>10. Контакты</h2>
       <p style={S.p}>
         По вопросам конфиденциальности:{" "}
-        <a href="mailto:privacy@archflow.ru" style={S.link}>
-          privacy@archflow.ru
+        <a href="mailto:archflow.office@gmail.com" style={S.link}>
+          archflow.office@gmail.com
         </a>
       </p>
       <p style={S.p}>
         По общим вопросам:{" "}
-        <a href="mailto:support@archflow.ru" style={S.link}>
-          support@archflow.ru
+        <a href="mailto:archflow.office@gmail.com" style={S.link}>
+          archflow.office@gmail.com
         </a>
       </p>
 

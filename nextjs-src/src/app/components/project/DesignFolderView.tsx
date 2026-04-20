@@ -422,27 +422,11 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
           {folderLabel}
         </h3>
         {canUpload && (
-          <div style={{ display: 'flex', gap: 4 }}>
-            <button
-              onClick={handleCreateSubfolder}
-              style={{
-                fontFamily: 'var(--af-font-mono)', fontSize: 8,
-                textTransform: 'uppercase', letterSpacing: '0.14em',
-                color: '#111', background: 'none', border: '0.5px solid #EBEBEB',
-                padding: '6px 12px', cursor: 'pointer',
-              }}
-            >
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="af-btn-pill small" onClick={handleCreateSubfolder} type="button">
               + Папка
             </button>
-            <button
-              onClick={() => { setActiveSubfolder(null); fileInputRef.current?.click(); }}
-              style={{
-                fontFamily: 'var(--af-font-mono)', fontSize: 8,
-                textTransform: 'uppercase', letterSpacing: '0.14em',
-                color: '#111', background: 'none', border: '0.5px solid #EBEBEB',
-                padding: '6px 12px', cursor: 'pointer',
-              }}
-            >
+            <button className="af-btn-pill small" onClick={() => { setActiveSubfolder(null); fileInputRef.current?.click(); }} type="button">
               + Загрузить
             </button>
           </div>
@@ -495,13 +479,10 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
           </div>
           {canUpload && (
             <button
+              className="af-btn-pill"
+              style={{ marginTop: 16 }}
               onClick={() => fileInputRef.current?.click()}
-              style={{
-                fontFamily: 'var(--af-font-mono)', fontSize: 8,
-                textTransform: 'uppercase', letterSpacing: '0.14em',
-                color: '#111', background: 'none', border: '0.5px solid #EBEBEB',
-                padding: '8px 16px', cursor: 'pointer', marginTop: 16,
-              }}
+              type="button"
             >
               + Загрузить файл
             </button>

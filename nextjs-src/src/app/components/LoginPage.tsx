@@ -427,17 +427,17 @@ export default function LoginPage({ inviteHint = false }: { inviteHint?: boolean
         {/* Mode switches */}
         <div className="mt-8 pt-6" style={{ borderTop: '0.5px solid #EBEBEB' }}>
           {mode === "login" && (
-            <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 11 }}>
-              <span style={{ color: '#111' }}>Нет аккаунта? </span>
-              <button onClick={() => switchMode("register")} className="af-crumb active" style={{ fontSize: 11 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', fontFamily: 'var(--af-font-mono)', fontSize: 11 }}>
+              <span style={{ color: '#111' }}>Нет аккаунта?</span>
+              <button onClick={() => switchMode("register")} className="af-btn-pill" type="button">
                 Регистрация
               </button>
             </div>
           )}
           {mode === "register" && (
-            <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 11 }}>
-              <span style={{ color: '#111' }}>Уже есть аккаунт? </span>
-              <button onClick={() => switchMode("login")} className="af-crumb active" style={{ fontSize: 11 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', fontFamily: 'var(--af-font-mono)', fontSize: 11 }}>
+              <span style={{ color: '#111' }}>Уже есть аккаунт?</span>
+              <button onClick={() => switchMode("login")} className="af-btn-pill" type="button">
                 Вход
               </button>
             </div>

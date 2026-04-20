@@ -104,27 +104,8 @@ export default function ProjectsPage({ onNavigate, onCreateProject, refreshKey =
         </button>
       </div>
 
-      {/* Search + filters */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-5">
-        <div className="relative flex-1 max-w-[340px] w-full">
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Поиск..."
-            className="af-input"
-            style={{ height: 44, fontSize: 12 }}
-          />
-          {search && (
-            <button
-              className="absolute right-3 top-1/2 -translate-y-1/2"
-              onClick={() => setSearch("")}
-              style={{ fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-10)', color: '#EBEBEB' }}
-            >
-              ✕
-            </button>
-          )}
-        </div>
+      {/* Status filters only (search moved to bottom tabbar) */}
+      <div className="flex items-center gap-3 mb-5">
         <div className="stab">
           <button className={`stb ${statusFilter === "all" ? "active" : ""}`} onClick={() => setStatusFilter("all")}>
             Все ({total})

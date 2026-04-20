@@ -251,19 +251,6 @@ export default function ProjectPage({ projectId, initialTab, onNavigate, toast, 
               </div>
             )}
 
-            {/* Assistant — designer only */}
-            {isDesigner && (
-              <div
-                className="af-tab-row"
-                onClick={() => onNavigate("project", { id: projectId, tab: "assistant" })}
-              >
-                <span className="af-tab-index">06</span>
-                <span className="af-tab-name">Ассистент</span>
-                <span className="af-tab-sub">Анализ и напоминания</span>
-                <span className="af-tab-arrow">→</span>
-              </div>
-            )}
-
             {/* Settings — dark block */}
             {permissions.canViewSettings && (
               <div

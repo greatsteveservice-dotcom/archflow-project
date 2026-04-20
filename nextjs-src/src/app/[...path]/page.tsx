@@ -12,7 +12,7 @@ import ProfilePage from "../components/ProfilePage";
 import CreateProjectModal from "../components/CreateProjectModal";
 import Topbar from "../components/Topbar";
 import Toast from "../components/Toast";
-import FeedbackBar from "../components/FeedbackBar";
+import BottomTabBar from "../components/BottomTabBar";
 import OfflineBanner from "../components/OfflineBanner";
 import DatabaseBanner from "../components/DatabaseBanner";
 import SearchModal from "../components/SearchModal";
@@ -362,13 +362,6 @@ export default function AppShell() {
               depth={1}
               onSearchOpen={openSearch}
               onLogoClick={goHome}
-              actions={
-                canCreateProject ? (
-                  <button className="btn btn-primary" onClick={() => setShowCreateProject(true)}>
-                    + <span className="hidden sm:inline">Новый проект</span>
-                  </button>
-                ) : undefined
-              }
             />
             <div className="af-layout">
               <div className="af-content">
@@ -417,7 +410,7 @@ export default function AppShell() {
       {/* Sidebar kept as no-op for compat */}
       <Sidebar currentPage={page} onNavigate={navigate} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <div className="overflow-x-hidden" style={{ paddingBottom: 56 }}>
+      <div className="overflow-x-hidden" style={{ paddingBottom: 'calc(56px + env(safe-area-inset-bottom))' }}>
         {showWelcome ? (
           <WelcomeScreen
             onCreateProject={() => { localStorage.setItem('archflow-welcome-seen', '1'); setWelcomeDismissed(true); setShowCreateProject(true); }}
@@ -448,7 +441,7 @@ export default function AppShell() {
         onNavigate={navigate}
       />
 
-      <FeedbackBar />
+      <BottomTabBar onSearchOpen={openSearch} />
 
       {toastMsg && <Toast msg={toastMsg} onClose={() => setToastMsg(null)} />}
     </div>

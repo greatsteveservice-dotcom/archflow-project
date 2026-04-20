@@ -29,7 +29,11 @@ export default function Topbar({ title, breadcrumbs, actions, depth = 1, context
     assistant: 'Ассистент',
   };
 
-  const ctx = contextLabel || roleLabel[profile?.role || ''] || '';
+  // Only show explicit contextLabel; role chip hidden on logged-in screens
+  // (user request: убрать "+" и "ДИЗАЙНЕР" с топбара, создание проекта — снизу)
+  // Suppress unused-var lint for removed role map
+  void roleLabel; void profile;
+  const ctx = contextLabel || '';
 
   return (
     <div className="af-topbar-wrapper">
@@ -40,7 +44,7 @@ export default function Topbar({ title, breadcrumbs, actions, depth = 1, context
         </span>
         <div className="af-topbar-right">
           {actions}
-          <span className="af-topbar-context">{ctx}</span>
+          {ctx && <span className="af-topbar-context">{ctx}</span>}
         </div>
       </div>
 

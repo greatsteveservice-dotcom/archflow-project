@@ -1402,88 +1402,36 @@ export default function ChatView({ projectId, toast }: ChatViewProps) {
     return isClientOnly ? 'С дизайнером' : 'Основной';
   };
 
-  // Channel button style
-  const channelBtnStyle = (isActive: boolean): React.CSSProperties => ({
-    display: 'flex', alignItems: 'center', gap: 6,
-    width: '100%', textAlign: 'left' as const,
-    padding: '6px 12px',
-    fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-9)',
-    letterSpacing: '0.08em',
-    color: '#111',
-    fontWeight: isActive ? 600 : 400,
-    background: isActive ? '#F6F6F4' : 'transparent',
-    border: 'none', cursor: 'pointer',
-    borderLeft: isActive ? '2px solid #111' : '2px solid transparent',
-  });
-
-  // Render a chat section (team or client)
-  const renderSection = (group: ChatType, label: string, channelList: ChatChannel[], unread: number) => (
-    <div>
-      {/* Section header */}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '8px 12px 4px',
-      }}>
-        <span style={{
-          fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-7)',
-          letterSpacing: '0.16em', textTransform: 'uppercase',
-          color: '#111', fontWeight: 600,
-        }}>
-          {label}
-        </span>
-        {canManageChannels && (
-          <button
-            onClick={() => handleCreateChannel(group)}
-            style={{
-              fontFamily: 'var(--af-font-mono)', fontSize: 'var(--af-fs-8)',
-              color: '#111', background: 'none', border: 'none', cursor: 'pointer',
-              padding: '0 4px',
-            }}
-            title="Новый чат"
-          >+</button>
-        )}
-      </div>
-
-      {/* Default channel */}
+  // Pill for a single channel or default chat
+  const renderPill = (
+    group: ChatType,
+    channelId: string | undefined,
+    label: string,
+    unread: number,
+    onDelete?: () => void,
+  ) => {
+    const isActive = activeTab === group && activeChannelId === channelId;
+    const showUnread = !isActive && unread > 0;
+    return (
       <button
-        onClick={() => handleSelectChat(group, undefined)}
-        style={channelBtnStyle(activeTab === group && !activeChannelId)}
+        key={`${group}-${channelId || 'default'}`}
+        onClick={() => handleSelectChat(group, channelId)}
+        className={`af-chat-channel-pill${isActive ? ' active' : ''}`}
+        type="button"
       >
-        <span style={{ flex: 1 }}>{getDefaultLabel(group)}</span>
-        {activeTab !== group && unread > 0 && (
-          <span style={{
-            width: 5, height: 5, background: '#111',
-            borderRadius: '50%', flexShrink: 0,
-          }} />
+        <span>{label}</span>
+        {showUnread && <span className="af-chat-channel-unread">{unread > 99 ? '99+' : unread}</span>}
+        {onDelete && canManageChannels && isActive && (
+          <span
+            role="button"
+            aria-label="Удалить чат"
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            style={{ marginLeft: 4, cursor: 'pointer', fontSize: 11, opacity: 0.8 }}
+          >×</span>
         )}
       </button>
-
-      {/* User-created channels */}
-      {channelList.map(ch => {
-        const isSel = activeTab === group && activeChannelId === ch.id;
-        return (
-          <div key={ch.id} style={{ display: 'flex', alignItems: 'center' }}>
-            <button
-              onClick={() => handleSelectChat(group, ch.id)}
-              style={{ ...channelBtnStyle(isSel), flex: 1 }}
-            >
-              {ch.name}
-            </button>
-            {canManageChannels && (
-              <button
-                onClick={() => handleDeleteChannel(ch)}
-                style={{
-                  fontFamily: 'var(--af-font-mono)', fontSize: 10, color: '#999',
-                  background: 'none', border: 'none', cursor: 'pointer', padding: '0 6px',
-                }}
-                title="Удалить чат"
-              >✕</button>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
+    );
+  };
 
   return (
     <div style={{
@@ -1497,29 +1445,29 @@ export default function ChatView({ projectId, toast }: ChatViewProps) {
       {/* Push notification permission banner */}
       <PushPermissionBanner />
 
-      {/* Channel navigation — sections with divider */}
-      <div style={{
-        borderBottom: '0.5px solid #EBEBEB',
-        background: '#FFFFFF',
-        flexShrink: 0,
-        overflowX: 'auto',
-      }}>
-        {/* Team section */}
-        {availableTabs.includes('team') && renderSection('team', 'Команда', teamChannels, teamUnread)}
-
-        {/* Divider */}
-        {availableTabs.length > 1 && (
-          <div style={{
-            height: 3, background: '#111', margin: '4px 12px',
-          }} />
+      {/* Channel navigation — rounded pills (Заказчик / Команда / + новый чат) */}
+      <div className="af-chat-channels">
+        {availableTabs.includes('client') && (
+          <>
+            {renderPill('client', undefined, isClientOnly ? 'С дизайнером' : 'Заказчик', clientUnread)}
+            {clientChannels.map(ch => renderPill('client', ch.id, ch.name, 0, () => handleDeleteChannel(ch)))}
+          </>
         )}
-
-        {/* Client section */}
-        {availableTabs.includes('client') && renderSection(
-          'client',
-          isClientOnly ? 'С дизайнером' : 'Заказчик',
-          clientChannels,
-          clientUnread,
+        {availableTabs.includes('team') && (
+          <>
+            {renderPill('team', undefined, 'Команда', teamUnread)}
+            {teamChannels.map(ch => renderPill('team', ch.id, ch.name, 0, () => handleDeleteChannel(ch)))}
+          </>
+        )}
+        {canManageChannels && (
+          <button
+            className="af-chat-channel-pill af-chat-channel-pill-new"
+            onClick={() => handleCreateChannel(activeTab)}
+            type="button"
+            title="Новый чат"
+          >
+            + Новый чат
+          </button>
         )}
       </div>
 
