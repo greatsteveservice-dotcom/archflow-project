@@ -17,6 +17,15 @@ const nextConfig = {
       },
     ],
   },
+  // Konva imports node-canvas for SSR fallback; we don't use SSR for canvas
+  // components (all wrapped in dynamic({ ssr: false })), so alias it out.
+  webpack: (config) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      canvas: false,
+    };
+    return config;
+  },
 };
 
 module.exports = nextConfig;
