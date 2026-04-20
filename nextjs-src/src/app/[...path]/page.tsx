@@ -13,6 +13,7 @@ import CreateProjectModal from "../components/CreateProjectModal";
 import Topbar from "../components/Topbar";
 import Toast from "../components/Toast";
 import BottomTabBar from "../components/BottomTabBar";
+import SupportPanel from "../components/SupportPanel";
 import OfflineBanner from "../components/OfflineBanner";
 import DatabaseBanner from "../components/DatabaseBanner";
 import SearchModal from "../components/SearchModal";
@@ -134,6 +135,7 @@ export default function AppShell() {
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
   const { data: projects, loading: projectsLoading, refetch: refetchProjects } = useProjects();
   const [welcomeDismissed, setWelcomeDismissed] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -441,7 +443,8 @@ export default function AppShell() {
         onNavigate={navigate}
       />
 
-      <BottomTabBar onSearchOpen={openSearch} />
+      <BottomTabBar onSearchOpen={openSearch} onHelpOpen={() => setSupportOpen(true)} />
+      <SupportPanel open={supportOpen} onClose={() => setSupportOpen(false)} />
 
       {toastMsg && <Toast msg={toastMsg} onClose={() => setToastMsg(null)} />}
     </div>

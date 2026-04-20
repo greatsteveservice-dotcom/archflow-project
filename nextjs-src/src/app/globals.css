@@ -993,32 +993,38 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 2px;
   background: transparent;
   border: none;
-  color: #555;
+  color: #666;
   cursor: pointer;
-  padding: 6px 4px;
+  padding: 4px 2px;
   font-family: var(--af-font);
   transition: color 0.1s;
   min-width: 44px;
 }
-.af-tabbar-btn svg { color: inherit; }
-.af-tabbar-btn:hover,
-.af-tabbar-btn:active,
-.af-tabbar-btn.active {
-  color: var(--af-black);
+.af-tabbar-btn:hover { color: #333; }
+.af-tabbar-btn.active { color: var(--af-black); }
+.af-tabbar-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  transition: background 0.12s;
 }
-.af-tabbar-btn.active svg { stroke-width: 1.8; }
+.af-tabbar-btn.active .af-tabbar-icon { background: var(--af-offwhite); }
+.af-tabbar-icon svg { color: inherit; display: block; }
 .af-tabbar-label {
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 500;
   color: inherit;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
   user-select: none;
   line-height: 1;
 }
-.af-tabbar-btn.active .af-tabbar-label { color: var(--af-black); }
+.af-tabbar-btn.active .af-tabbar-label { font-weight: 700; }
 
 /* ═══ Chat channel pills (rounded widgets) ═══ */
 .af-chat-channels {
