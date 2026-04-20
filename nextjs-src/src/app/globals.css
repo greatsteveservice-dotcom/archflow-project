@@ -669,7 +669,7 @@ body {
 .af-canvas-workspace {
   display: flex;
   /* viewport minus topbar (56) and bottom tabbar (56) + safe-area */
-  height: calc(100vh - 56px - 56px - env(safe-area-inset-bottom));
+  height: calc(100vh - 56px - 68px - env(safe-area-inset-bottom));
   position: relative;
   overflow: hidden;
   background: var(--af-offwhite);
@@ -889,11 +889,12 @@ body {
 @media (max-width: 768px) {
   .af-canvas-workspace {
     flex-direction: column;
-    height: calc(100dvh - 56px - 56px - env(safe-area-inset-bottom));
+    height: calc(100dvh - 56px - 68px - env(safe-area-inset-bottom));
   }
   .af-canvas-toolbar {
     width: 100%;
-    height: auto;
+    height: 56px;
+    min-height: 56px;
     flex-direction: row;
     border-right: none;
     border-top: 0.5px solid var(--af-border);
@@ -905,6 +906,8 @@ body {
     justify-content: flex-start;
     align-items: center;
     flex-wrap: nowrap;
+    flex-shrink: 0;
+    background: var(--af-white);
   }
   .af-canvas-toolbar-group {
     flex-direction: row;
@@ -978,14 +981,15 @@ body {
 .af-tabbar {
   position: fixed;
   left: 0; right: 0; bottom: 0;
-  height: 56px;
-  padding-bottom: env(safe-area-inset-bottom);
+  height: 68px;
+  padding: 6px 0 calc(env(safe-area-inset-bottom) + 4px);
   background: var(--af-white);
   border-top: 0.5px solid var(--af-border);
   display: flex;
   align-items: stretch;
   justify-content: space-around;
   z-index: 100;
+  box-sizing: content-box;
 }
 .af-tabbar-btn {
   flex: 1;
@@ -993,15 +997,17 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 4px;
   background: transparent;
   border: none;
+  outline: none;
   color: #666;
   cursor: pointer;
-  padding: 4px 2px;
+  padding: 2px;
   font-family: var(--af-font);
   transition: color 0.1s;
   min-width: 44px;
+  -webkit-tap-highlight-color: transparent;
 }
 .af-tabbar-btn:hover { color: #333; }
 .af-tabbar-btn.active { color: var(--af-black); }
@@ -1009,13 +1015,14 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 30px;
   border-radius: 999px;
   transition: background 0.12s;
+  padding: 0 10px;
 }
 .af-tabbar-btn.active .af-tabbar-icon { background: var(--af-offwhite); }
-.af-tabbar-icon svg { color: inherit; display: block; }
+.af-tabbar-icon svg { color: inherit; display: block; width: 22px; height: 22px; }
 .af-tabbar-label {
   font-size: 11px;
   font-weight: 500;

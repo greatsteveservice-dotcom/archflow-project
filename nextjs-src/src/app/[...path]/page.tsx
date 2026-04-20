@@ -412,7 +412,7 @@ export default function AppShell() {
       {/* Sidebar kept as no-op for compat */}
       <Sidebar currentPage={page} onNavigate={navigate} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <div className="overflow-x-hidden" style={{ paddingBottom: 'calc(56px + env(safe-area-inset-bottom))' }}>
+      <div className="overflow-x-hidden" style={{ paddingBottom: 'calc(68px + env(safe-area-inset-bottom))' }}>
         {showWelcome ? (
           <WelcomeScreen
             onCreateProject={() => { localStorage.setItem('archflow-welcome-seen', '1'); setWelcomeDismissed(true); setShowCreateProject(true); }}

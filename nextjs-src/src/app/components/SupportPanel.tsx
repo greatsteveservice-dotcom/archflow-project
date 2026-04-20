@@ -176,7 +176,7 @@ export default function SupportPanel({ open, onClose }: Props) {
           width: "100%", maxWidth: 480,
           height: "min(560px, 85dvh)",
           display: "flex", flexDirection: "column",
-          marginBottom: `calc(56px + env(safe-area-inset-bottom))`,
+          marginBottom: `calc(68px + env(safe-area-inset-bottom))`,
           animation: "slideUp 0.2s ease",
         }}
       >
