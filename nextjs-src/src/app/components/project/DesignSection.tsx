@@ -1,12 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useDesignFileCounts } from '../../lib/hooks';
 import { DESIGN_FOLDERS } from '../../lib/types';
 import type { DesignFolder } from '../../lib/types';
 import DesignFolderView from './DesignFolderView';
 import DesignFileDetail from './DesignFileDetail';
-import MoodboardSection from './MoodboardSection';
+
+const MoodboardCanvas = dynamic(() => import('../moodboard/MoodboardCanvas'), { loading: () => null, ssr: false });
 
 interface DesignSectionProps {
   projectId: string;
@@ -16,13 +18,13 @@ interface DesignSectionProps {
   canComment?: boolean;
 }
 
-function pluralFiles(n: number): string {
+function pluralFilesLabel(n: number): string {
   if (n === 0) return 'пусто';
   const mod10 = n % 10;
   const mod100 = n % 100;
-  if (mod10 === 1 && mod100 !== 11) return `${n} файл`;
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return `${n} файла`;
-  return `${n} файлов`;
+  if (mod10 === 1 && mod100 !== 11) return 'файл';
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return 'файла';
+  return 'файлов';
 }
 
 export default function DesignSection({ projectId, toast, canUpload = true, canDelete = true, canComment = true }: DesignSectionProps) {
@@ -31,15 +33,24 @@ export default function DesignSection({ projectId, toast, canUpload = true, canD
   const [activeFileId, setActiveFileId] = useState<string | null>(null);
   const [showMoodboards, setShowMoodboards] = useState(false);
 
-  // Moodboards view
+  // Moodboard (canvas workspace inside Design → 07)
   if (showMoodboards) {
     return (
-      <MoodboardSection
-        projectId={projectId}
-        toast={toast}
-        canEdit={canUpload}
-        onBack={() => setShowMoodboards(false)}
-      />
+      <div>
+        <div style={{ padding: '12px 16px', borderBottom: '0.5px solid #EBEBEB' }}>
+          <button
+            onClick={() => setShowMoodboards(false)}
+            style={{
+              fontFamily: 'var(--af-font)', fontSize: 10,
+              textTransform: 'uppercase', letterSpacing: '0.08em',
+              color: '#111', background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+            }}
+          >
+            ← Дизайн
+          </button>
+        </div>
+        <MoodboardCanvas projectId={projectId} toast={toast} />
+      </div>
     );
   }
 
@@ -87,16 +98,10 @@ export default function DesignSection({ projectId, toast, canUpload = true, canD
             >
               <span className="af-tab-index">{folder.index}</span>
               <span className="af-tab-name">{folder.label}</span>
-              <span style={{
-                fontFamily: 'var(--af-font-mono)',
-                fontSize: 8,
-                textTransform: 'uppercase',
-                letterSpacing: '0.16em',
-                color: '#111',
-                marginTop: 6,
-              }}>
-                {pluralFiles(count)}
-              </span>
+              <div className="af-tab-metric">
+                <span className="af-tab-metric-value">{count}</span>
+                <span className="af-tab-metric-label">{pluralFilesLabel(count)}</span>
+              </div>
               <span className="af-tab-arrow">→</span>
             </div>
           );
@@ -108,16 +113,6 @@ export default function DesignSection({ projectId, toast, canUpload = true, canD
         >
           <span className="af-tab-index">07</span>
           <span className="af-tab-name">Мудборды</span>
-          <span style={{
-            fontFamily: 'var(--af-font-mono)',
-            fontSize: 8,
-            textTransform: 'uppercase',
-            letterSpacing: '0.16em',
-            color: '#111',
-            marginTop: 6,
-          }}>
-            концепции
-          </span>
           <span className="af-tab-arrow">→</span>
         </div>
       </div>

@@ -26,28 +26,45 @@ function getFirstDayOfMonth(year: number, month: number) {
   return day === 0 ? 6 : day - 1; // Monday = 0
 }
 
-// ── Icon SVGs ────────────────────────────────────────────────
+// ── Event chip (plazhka) ─────────────────────────────────────
 
-/** Notebook icon (7×7, rectangle with 2 lines) */
-function VisitIcon({ color = '#111' }: { color?: string }) {
+/** Full-width event chip: black bg + white label */
+function EventChip({ label, inverted = false }: { label: string; inverted?: boolean }) {
   return (
-    <svg width="7" height="7" viewBox="0 0 7 7" fill="none" style={{ display: 'block' }}>
-      <rect x="0.5" y="1.5" width="6" height="4" rx="0.5" stroke={color} strokeWidth="0.8" />
-      <path d="M2 3.5h3M2 4.5h2" stroke={color} strokeWidth="0.6" />
-    </svg>
+    <div style={{
+      width: '100%',
+      background: inverted ? '#FFFFFF' : '#111111',
+      color: inverted ? '#111111' : '#FFFFFF',
+      fontFamily: 'var(--af-font-mono)',
+      fontSize: 9,
+      fontWeight: 600,
+      letterSpacing: '0.08em',
+      textTransform: 'uppercase',
+      textAlign: 'center',
+      padding: '2px 0',
+      lineHeight: 1,
+    }}>
+      {label}
+    </div>
   );
 }
 
-/** Payment icon (7×7 circle with ₽) */
-function PaymentIcon() {
+/** Compact chip for legend (icon-size) */
+function LegendChip({ label }: { label: string }) {
   return (
-    <svg width="7" height="7" viewBox="0 0 7 7" fill="none" style={{ display: 'block' }}>
-      <circle cx="3.5" cy="3.5" r="3.5" fill="#111" />
-      <text x="3.5" y="5.2" textAnchor="middle"
-        style={{ fontSize: 5, fontFamily: 'var(--af-font-mono)', fontWeight: 700, fill: '#fff' }}>
-        ₽
-      </text>
-    </svg>
+    <div style={{
+      background: '#111111',
+      color: '#FFFFFF',
+      fontFamily: 'var(--af-font-mono)',
+      fontSize: 8,
+      fontWeight: 600,
+      letterSpacing: '0.08em',
+      textTransform: 'uppercase',
+      padding: '2px 6px',
+      lineHeight: 1,
+    }}>
+      {label}
+    </div>
   );
 }
 
@@ -326,34 +343,32 @@ export default function CalendarView({ projectId, visits, toast, refetchVisits, 
             const hasPaymentReminder = hasConfig && paymentReminderDates.has(day);
             const hasIcons = hasScheduledVisit || hasPaymentReminder;
 
+            const inverted = isToday || isSelected;
             return (
               <div
                 key={day}
-                className="aspect-square md:aspect-auto md:h-[52px] flex flex-col items-center justify-center cursor-pointer transition-all text-[13px]"
+                className="h-[84px] md:h-[96px] flex flex-col cursor-pointer transition-all"
                 style={{
                   fontFamily: 'var(--af-font-mono)',
-                  background: (isToday || isSelected) ? '#111111' : '#FFFFFF',
-                  color: (isToday || isSelected) ? '#FFFFFF' : '#111111',
-                  fontWeight: isToday ? 600 : 400,
+                  background: inverted ? '#111111' : '#FFFFFF',
+                  color: inverted ? '#FFFFFF' : '#111111',
+                  padding: '6px 4px 4px',
+                  gap: 3,
                 }}
                 onClick={() => handleDayClick(day)}
               >
-                <span>{day}</span>
-                {/* Icons row */}
-                {hasIcons && (
-                  <div style={{ display: 'flex', gap: 2, marginTop: 1, alignItems: 'center' }}>
-                    {hasScheduledVisit && <VisitIcon color={(isToday || isSelected) ? '#FFF' : '#111'} />}
-                    {hasPaymentReminder && <PaymentIcon />}
-                  </div>
-                )}
-                {/* Existing visit dots (for manually added visits without config) */}
-                {!hasIcons && dayVisits.length > 0 && (
-                  <div className="flex gap-0.5 mt-0.5">
-                    {dayVisits.slice(0, 3).map((_, idx) => (
-                      <div key={idx} style={{ width: 5, height: 5, background: (isToday || isSelected) ? '#FFFFFF' : '#111111' }} />
-                    ))}
-                  </div>
-                )}
+                <span style={{
+                  fontSize: 14,
+                  fontWeight: isToday ? 700 : 500,
+                  padding: '0 4px',
+                }}>{day}</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 'auto' }}>
+                  {hasScheduledVisit && <EventChip label="Визит" inverted={inverted} />}
+                  {hasPaymentReminder && <EventChip label="Счёт" inverted={inverted} />}
+                  {!hasIcons && dayVisits.length > 0 && (
+                    <EventChip label={`${dayVisits.length} визит${dayVisits.length > 1 ? 'а' : ''}`} inverted={inverted} />
+                  )}
+                </div>
               </div>
             );
           })}
@@ -362,25 +377,11 @@ export default function CalendarView({ projectId, visits, toast, refetchVisits, 
         {/* Legend */}
         {hasConfig && (
           <div style={{
-            display: 'flex', alignItems: 'center', gap: 12,
-            marginTop: 12, paddingTop: 8,
+            display: 'flex', alignItems: 'center', gap: 10,
+            marginTop: 14, paddingTop: 8,
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <VisitIcon />
-              <span style={{
-                fontFamily: 'var(--af-font-mono)',
-                fontSize: 'var(--af-fs-7)', textTransform: 'uppercase',
-                letterSpacing: '0.08em', color: '#111',
-              }}>Визит</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <PaymentIcon />
-              <span style={{
-                fontFamily: 'var(--af-font-mono)',
-                fontSize: 'var(--af-fs-7)', textTransform: 'uppercase',
-                letterSpacing: '0.08em', color: '#111',
-              }}>Счёт</span>
-            </div>
+            <LegendChip label="Визит" />
+            <LegendChip label="Счёт" />
           </div>
         )}
       </div>

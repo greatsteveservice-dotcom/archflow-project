@@ -52,11 +52,11 @@ export default function BottomTabBar({ onSearchOpen, onHelpOpen }: Props) {
       >
         <span className="af-tabbar-icon">
           {isChatActive ? (
-            <svg width="26" height="26" viewBox="0 0 26 26" fill="currentColor" aria-hidden="true">
+            <svg width="28" height="28" viewBox="0 0 26 26" fill="currentColor" aria-hidden="true">
               <path d="M4 5 H22 V18 H13 L7 22 V18 H4 Z" />
             </svg>
           ) : (
-            <svg width="26" height="26" viewBox="0 0 26 26" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" aria-hidden="true">
+            <svg width="28" height="28" viewBox="0 0 26 26" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinejoin="round" aria-hidden="true">
               <path d="M4 5 H22 V18 H13 L7 22 V18 H4 Z" />
             </svg>
           )}
@@ -71,7 +71,7 @@ export default function BottomTabBar({ onSearchOpen, onHelpOpen }: Props) {
         aria-label="Поиск"
       >
         <span className="af-tabbar-icon">
-          <svg width="26" height="26" viewBox="0 0 26 26" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 26 26" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
             <circle cx="11" cy="11" r="6.5" />
             <line x1="16" y1="16" x2="22" y2="22" />
           </svg>
@@ -86,7 +86,7 @@ export default function BottomTabBar({ onSearchOpen, onHelpOpen }: Props) {
         aria-label="Помощь"
       >
         <span className="af-tabbar-icon">
-          <svg width="26" height="26" viewBox="0 0 26 26" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 26 26" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <circle cx="13" cy="13" r="9" />
             <path d="M10 10 Q10 7.5 13 7.5 Q16 7.5 16 10 Q16 11.5 13 13 L13 15" />
             <circle cx="13" cy="18" r="0.9" fill="currentColor" stroke="none" />
@@ -104,12 +104,12 @@ export default function BottomTabBar({ onSearchOpen, onHelpOpen }: Props) {
         >
           <span className="af-tabbar-icon">
             {isAssistantActive ? (
-              <svg width="26" height="26" viewBox="0 0 26 26" fill="currentColor" aria-hidden="true">
+              <svg width="28" height="28" viewBox="0 0 26 26" fill="currentColor" aria-hidden="true">
                 <path d="M13 3 L14.7 9.3 L21 11 L14.7 12.7 L13 19 L11.3 12.7 L5 11 L11.3 9.3 Z" />
                 <circle cx="20" cy="20" r="2.5" />
               </svg>
             ) : (
-              <svg width="26" height="26" viewBox="0 0 26 26" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" aria-hidden="true">
+              <svg width="28" height="28" viewBox="0 0 26 26" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinejoin="round" aria-hidden="true">
                 <path d="M13 3 L14.7 9.3 L21 11 L14.7 12.7 L13 19 L11.3 12.7 L5 11 L11.3 9.3 Z" />
                 <circle cx="20" cy="20" r="2.5" />
               </svg>
