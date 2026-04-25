@@ -88,9 +88,15 @@ export default function RootLayout({
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
       </head>
       <body className="antialiased">
+        <ThemeProvider>
+          <AuthProvider>{children}</AuthProvider>
+        </ThemeProvider>
+
         {/*
-          Server-rendered fallback screen. Visible on initial HTML load;
-          HydrationGate hides it once React successfully hydrates.
+          Server-rendered fallback screen. Placed AFTER children so that
+          HTML text extractors (search engine crawlers, web_fetch summarizers)
+          read the actual page content first. Visually still covers everything
+          via position:fixed + z-index:9999 until HydrationGate hides it.
           If JS fails to run at all (stale cache, blocked chunks, disabled
           JS, antivirus filter, etc.), this stays visible so the user sees
           a helpful message + a link to /reset instead of a silent white page.
@@ -113,7 +119,7 @@ export default function RootLayout({
           }}
         >
           <div style={{ maxWidth: 480, width: "100%" }}>
-            <h1
+            <p
               style={{
                 fontFamily: "'Vollkorn SC', serif",
                 fontSize: 32,
@@ -124,7 +130,7 @@ export default function RootLayout({
               }}
             >
               Archflow
-            </h1>
+            </p>
             <p style={{ fontSize: 12, color: "#666", margin: 0, marginBottom: 24 }}>
               Платформа для управления дизайн-проектами
             </p>
@@ -182,9 +188,6 @@ export default function RootLayout({
           </div>
         </div>
 
-        <ThemeProvider>
-          <AuthProvider>{children}</AuthProvider>
-        </ThemeProvider>
         <YandexMetrika />
         <ServiceWorkerRegistration />
         <HydrationGate />
