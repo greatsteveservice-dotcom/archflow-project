@@ -1,12 +1,7 @@
-// Public landing page. Redirects authenticated users to /projects client-side.
-import Landing from "./landing/Landing";
+import { redirect } from "next/navigation";
 
-export const metadata = {
-  title: "Archflow — Дизайн без рутины",
-  description:
-    "Рабочее пространство для дизайнеров интерьера: авторский надзор, комплектация, электронная подпись, кабинет заказчика.",
-};
-
+// Root redirects to /projects. /projects handles auth (redirects to /login if no session).
+// Public landing lives at /welcome — see src/app/welcome/page.tsx.
 export default function HomePage() {
-  return <Landing />;
+  redirect("/projects");
 }

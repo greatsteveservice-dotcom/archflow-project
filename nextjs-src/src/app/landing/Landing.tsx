@@ -1,374 +1,198 @@
 "use client";
 
-import { useState } from "react";
-import AuthRedirect from "./AuthRedirect";
-import {
-  HeroComic,
-  BeforeFiles, AfterFiles,
-  BeforeChats, AfterChats,
-  BeforeSign, AfterSign,
-  BeforeSchedule, AfterSchedule,
-  ClientCabinetArt,
-} from "./illustrations";
+import { Fragment, useState } from "react";
 
-// ── Mockup (placeholder for product screenshots) ─────────────
-
-function Mockup({
-  label,
-  src,
-  art,
-  aspect = "16/10",
-}: {
-  label: string;
-  src?: string;
-  art?: React.ReactNode;
-  aspect?: string;
-}) {
-  const useNaturalAspect = aspect === "auto";
-  return (
-    <div
-      className="lp-mockup"
-      style={{
-        aspectRatio: useNaturalAspect ? undefined : aspect,
-        padding: 0,
-        background: "#F6F6F4",
-        maxHeight: useNaturalAspect ? "75vh" : undefined,
-        overflow: useNaturalAspect ? "hidden" : undefined,
-        display: useNaturalAspect ? "flex" : undefined,
-        alignItems: useNaturalAspect ? "flex-start" : undefined,
-        justifyContent: useNaturalAspect ? "center" : undefined,
-      }}
-    >
-      {src ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={src}
-          alt={label}
-          loading="lazy"
-          style={{
-            width: useNaturalAspect ? "auto" : "100%",
-            height: useNaturalAspect ? "100%" : "100%",
-            maxWidth: useNaturalAspect ? "100%" : undefined,
-            maxHeight: useNaturalAspect ? "75vh" : undefined,
-            objectFit: useNaturalAspect ? "contain" : "cover",
-            objectPosition: "top center",
-            display: "block",
-          }}
-        />
-      ) : art ? (
-        <div style={{ width: "100%", height: "100%", padding: "24px 32px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          {art}
-        </div>
-      ) : (
-        <div className="lp-mockup-label">[ {label} ]</div>
-      )}
-    </div>
-  );
-}
-
-// ── Main ──────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────
+// Editorial Issue 01 — 13 numbered sections + footer.
+// 80px rail-column on the left of every section, marked 01–13.
+// Single-font system: Vollkorn SC (var(--af-font)).
+// ─────────────────────────────────────────────────────────
 
 export default function Landing() {
   return (
-    <div className="lp-root">
-      <AuthRedirect />
-      <Header />
-      <Hero />
-      <HowItWorks />
-      <Modules />
-      <BeforeAfter />
-      <Trust />
-      <Pricing />
-      <FAQ />
-      <FinalCTA />
-      <Footer />
+    <div className="afl-root">
+      <Topbar />
+      <main className="afl-page">
+        <Hero />
+        <HeroShot />
+        <How />
+        <Modules />
+        <BeforeAfter />
+        <Trust />
+        <Pricing />
+        <FAQ />
+        <FinalCTA />
+        <Footer />
+      </main>
     </div>
   );
 }
 
-// ── 0 · Header ────────────────────────────────────────────
-
-function Header() {
+// ── Topbar ────────────────────────────────────────────────
+function Topbar() {
   const [open, setOpen] = useState(false);
   return (
-    <header
-      style={{
-        position: "sticky",
-        top: 0,
-        zIndex: 100,
-        background: "#fff",
-        borderBottom: "0.5px solid #EBEBEB",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: 1280,
-          margin: "0 auto",
-          padding: "16px 24px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 16,
-        }}
-      >
-        <a
-          href="/"
-          aria-label="Archflow"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            textDecoration: "none",
-          }}
-        >
+    <>
+      <header className="afl-topbar">
+        <a href="/welcome" className="afl-logo" aria-label="Archflow">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/logo.png"
-            alt="Archflow"
-            style={{ height: 32, width: "auto", display: "block" }}
-          />
+          <img src="/logo.png" alt="" />
+          <span className="afl-logo-word">Archflow</span>
         </a>
-
-        <nav className="lp-hide-mobile" style={{ display: "flex", gap: 28 }}>
-          <a href="#modules" className="lp-nav-link">Модули</a>
-          <a href="#pricing" className="lp-nav-link">Тарифы</a>
-          <a href="#faq" className="lp-nav-link">Вопросы</a>
+        <nav className="afl-nav">
+          <a href="#modules"><span className="num">01</span>Модули</a>
+          <a href="#pricing"><span className="num">02</span>Тарифы</a>
+          <a href="#faq"><span className="num">03</span>Вопросы</a>
         </nav>
-
-        <div className="lp-hide-mobile" style={{ display: "flex", gap: 8 }}>
-          <a href="/login" className="lp-btn lp-btn-ghost">Войти</a>
-          <a href="/login?mode=register" className="lp-btn lp-btn-primary">Попробовать</a>
+        <div className="afl-topbar-right">
+          <a href="/login" className="afl-topbar-trial">Войти</a>
+          <a href="/login?mode=register" className="afl-btn inverted compact">Попробовать →</a>
+          <button
+            type="button"
+            className="afl-burger"
+            aria-label="Меню"
+            onClick={() => setOpen((v) => !v)}
+          >
+            {open ? "закрыть" : "меню"}
+          </button>
         </div>
-
-        <button
-          className="lp-hide-desktop"
-          type="button"
-          aria-label="Меню"
-          onClick={() => setOpen((v) => !v)}
-          style={{
-            background: "none",
-            border: "0.5px solid #111",
-            padding: "8px 14px",
-            fontFamily: "var(--af-font-mono)",
-            fontSize: 10,
-            letterSpacing: "0.12em",
-            textTransform: "uppercase",
-            cursor: "pointer",
-            color: "#111",
-          }}
-        >
-          {open ? "закрыть" : "меню"}
-        </button>
+      </header>
+      <div className={`afl-mobile-menu${open ? " open" : ""}`}>
+        <a href="#modules" onClick={() => setOpen(false)} style={navLinkStyle}>01 — Модули</a>
+        <a href="#pricing" onClick={() => setOpen(false)} style={navLinkStyle}>02 — Тарифы</a>
+        <a href="#faq" onClick={() => setOpen(false)} style={navLinkStyle}>03 — Вопросы</a>
+        <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+          <a href="/login" className="afl-btn" style={{ flex: 1, justifyContent: "center" }}>Войти</a>
+          <a href="/login?mode=register" className="afl-btn inverted" style={{ flex: 1, justifyContent: "center" }}>Попробовать</a>
+        </div>
       </div>
+    </>
+  );
+}
+const navLinkStyle: React.CSSProperties = {
+  fontFamily: "var(--af-font)",
+  fontSize: 11, letterSpacing: "0.16em",
+  textTransform: "uppercase", color: "#111", textDecoration: "none",
+};
 
-      {open && (
-        <div
-          className="lp-hide-desktop"
-          style={{
-            background: "#fff",
-            borderTop: "0.5px solid #EBEBEB",
-            padding: "16px 24px 24px",
-            display: "flex",
-            flexDirection: "column",
-            gap: 14,
-          }}
-        >
-          <a href="#modules" onClick={() => setOpen(false)} className="lp-nav-link">Модули</a>
-          <a href="#pricing" onClick={() => setOpen(false)} className="lp-nav-link">Тарифы</a>
-          <a href="#faq" onClick={() => setOpen(false)} className="lp-nav-link">Вопросы</a>
-          <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-            <a href="/login" className="lp-btn lp-btn-ghost" style={{ flex: 1 }}>Войти</a>
-            <a href="/login?mode=register" className="lp-btn lp-btn-primary" style={{ flex: 1 }}>Попробовать</a>
-          </div>
-        </div>
-      )}
-    </header>
+// ── Rail (left column shared by all sections) ─────────────
+function Rail({ index, label }: { index: string; label: string }) {
+  return (
+    <div className="afl-rail">
+      <div className="top">
+        <span className="afl-micro">{index}</span>
+      </div>
+      <div className="vert">{label}</div>
+      <div className="bot">
+        <span className="afl-micro faint">↓</span>
+      </div>
+    </div>
   );
 }
 
-// ── 1 · Hero ──────────────────────────────────────────────
-
+// ── 01 · Hero — Манифест ──────────────────────────────────
 function Hero() {
   return (
-    <section
-      style={{
-        maxWidth: 1280,
-        margin: "0 auto",
-        padding: "56px 24px 80px",
-        display: "grid",
-        gridTemplateColumns: "minmax(0, 1fr)",
-        gap: 40,
-      }}
-    >
-      <style>{`
-        @media (min-width: 900px) {
-          .lp-hero-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important; gap: 64px !important; align-items: center; }
-        }
-      `}</style>
-      <div className="lp-hero-grid" style={{ display: "contents" }}>
-        <div>
-          <blockquote
-            style={{
-              fontFamily: "var(--af-font-display)",
-              fontSize: "clamp(28px, 5vw, 48px)",
-              fontWeight: 900,
-              lineHeight: 1.1,
-              margin: 0,
-              marginBottom: 14,
-              letterSpacing: "-0.01em",
-            }}
-          >
-            «... Да каждый день!»
-          </blockquote>
-          <p
-            style={{
-              fontSize: 14,
-              color: "#333",
-              lineHeight: 1.55,
-              marginBottom: 40,
-              maxWidth: 520,
-            }}
-          >
-            Так отвечают 9 из 10 дизайнеров на вопрос «когда в последний раз что-то пошло не так».
-          </p>
-
-          <h1
-            style={{
-              fontFamily: "var(--af-font-display)",
-              fontSize: "clamp(42px, 9vw, 88px)",
-              fontWeight: 900,
-              lineHeight: 0.95,
-              margin: 0,
-              marginBottom: 20,
-              letterSpacing: "-0.02em",
-            }}
-          >
-            Дизайн<br />без рутины.
-          </h1>
-          <p
-            style={{
-              fontSize: 15,
-              lineHeight: 1.6,
-              color: "#111",
-              marginBottom: 28,
-              maxWidth: 520,
-            }}
-          >
-            Archflow — рабочее пространство для управления проектами и коммуникации с заказчиком.
-          </p>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <a href="/login?mode=register" className="lp-btn lp-btn-primary">
-              Попробовать 7 дней
-            </a>
-          </div>
-          <p
-            style={{
-              fontFamily: "var(--af-font-mono)",
-              fontSize: 10,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-              color: "#646464",
-              marginTop: 14,
-            }}
-          >
-            Не требует обучения
-          </p>
+    <section className="afl-sect afl-h-hero">
+      <Rail index="01" label="Манифест" />
+      <div className="afl-body">
+        <blockquote className="quote">«... Да каждый день!»</blockquote>
+        <p className="credit">
+          Так отвечают 9 из 10 дизайнеров на вопрос «когда в последний раз что-то пошло не так».
+        </p>
+        <h1>
+          <span className="row">Дизайн</span>
+          <span className="row">без рутины.</span>
+        </h1>
+        <p className="lede">
+          Archflow — рабочее пространство для управления проектами и коммуникации с заказчиком.
+        </p>
+        <div className="ctas">
+          <a href="/login?mode=register" className="afl-btn inverted">Попробовать 7 дней →</a>
         </div>
+        <div className="afl-micro muted reassure">Не требует обучения</div>
+      </div>
+    </section>
+  );
+}
 
-        <div>
-          <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
-            <HeroComic size={180} />
+// ── 02 · Главный экран — типографический «скриншот» ────────
+const HERO_PROJECTS = [
+  { ix: "01", name: "ЖК «Сетунь», 142 м²",        stage: "Стройка · этап II",        budget: "4,2 М ₽ · 62 %",  due: "28.III.2027" },
+  { ix: "02", name: "Никитский, 86 м²",            stage: "Дизайн-проект · v04",     budget: "2,8 М ₽ · 18 %",  due: "14.V.2027" },
+  { ix: "03", name: "Дом · Барвиха, 320 м²",      stage: "Комплектация · 142 поз.", budget: "12,4 М ₽ · 41 %", due: "10.IX.2027" },
+  { ix: "04", name: "Студия · Хамовники, 38 м²",  stage: "Сдача · 2 акта",          budget: "980 К ₽ · 95 %",  due: "02.XII.2026" },
+];
+
+function HeroShot() {
+  return (
+    <section className="afl-sect afl-shot-sect">
+      <Rail index="02" label="Главный экран" />
+      <div className="afl-body">
+        <div className="afl-frame">
+          <div className="afl-frame-tab">
+            <span className="afl-logo">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo.png" alt="" style={{ height: 14 }} />
+              <span className="afl-logo-word" style={{ fontSize: 11 }}>Archflow</span>
+            </span>
+            <span className="afl-micro muted">Иванова М. · 4 проекта · 2 архивных</span>
           </div>
-          <Mockup label="Список проектов · стартовый экран" src="/landing/01-projects.png" aspect="auto" />
-          <p
-            style={{
-              fontFamily: "var(--af-font-mono)",
-              fontSize: 10,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-              color: "#646464",
-              marginTop: 10,
-              textAlign: "center",
-            }}
-          >
-            Главный экран — все проекты в одном списке
-          </p>
+          <div className="afl-frame-body" style={{ padding: 20 }}>
+            <div className="afl-proj-toolbar">
+              <span style={{ fontFamily: "var(--af-font)", fontSize: 22, fontWeight: 700 }}>Проекты</span>
+              <span className="afl-micro muted">Активные · 4</span>
+            </div>
+            <div className="afl-proj-table">
+              <div className="h">№</div>
+              <div className="h">Адрес</div>
+              <div className="h">Этап</div>
+              <div className="h">Бюджет</div>
+              <div className="h">Дедлайн</div>
+              <div className="h" style={{ textAlign: "right" }}>—</div>
+              {HERO_PROJECTS.map((p) => (
+                <Fragment key={p.ix}>
+                  <div className="c ix">{p.ix}</div>
+                  <div className="c name">{p.name}</div>
+                  <div className="c">{p.stage}</div>
+                  <div className="c muted">{p.budget}</div>
+                  <div className="c muted">{p.due}</div>
+                  <div className="c right arr">→</div>
+                </Fragment>
+              ))}
+            </div>
+          </div>
+          <div className="afl-frame-cap afl-micro">Главный экран · все проекты в одном списке</div>
         </div>
       </div>
     </section>
   );
 }
 
-// ── 2 · How it works ──────────────────────────────────────
+// ── 03 · Как это работает ─────────────────────────────────
+const STEPS = [
+  { n: "01", title: "Заводите проект", desc: "Адрес, площадь, сроки, бюджет. Можно импортировать комплектацию из Excel — прежние таблицы не придётся переписывать." },
+  { n: "02", title: "Настраиваете, кто что видит", desc: "Дизайнер, заказчик, прораб, поставщик, ассистент. Каждый видит свою часть проекта." },
+  { n: "03", title: "Ведёте всё в одном месте", desc: "Файлы, визиты, переписка, сроки поставок, подписи актов. Telegram оставьте для дружеских чатов. Рабочее — здесь." },
+];
 
-function HowItWorks() {
-  const steps = [
-    {
-      n: "01",
-      title: "Заводите проект",
-      desc: "Адрес, площадь, сроки, бюджет. Можно импортировать комплектацию из Excel — прежние таблицы не придётся переписывать.",
-    },
-    {
-      n: "02",
-      title: "Настраиваете, кто что видит",
-      desc: "Дизайнер, заказчик, прораб, поставщик, ассистент. Каждый видит свою часть проекта.",
-    },
-    {
-      n: "03",
-      title: "Ведёте всё в одном месте",
-      desc: "Файлы, визиты, переписка, сроки поставок, подписи актов. Telegram может остаться для дружеских чатов. Рабочее — здесь.",
-    },
-  ];
+function How() {
   return (
-    <section
-      style={{
-        background: "#F6F6F4",
-        padding: "72px 24px",
-      }}
-    >
-      <div style={{ maxWidth: 1280, margin: "0 auto" }}>
-        <SectionLabel>Как это работает</SectionLabel>
-        <h2 style={sectionTitleStyle}>Первый проект<br />за минуту.</h2>
-        <p style={{ ...sectionSubtitleStyle, marginBottom: 56 }}>
-          Открываете сайт и начинаете работать. Без установки и обучения.
-        </p>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-            gap: 2,
-          }}
-        >
-          {steps.map((s) => (
-            <div key={s.n} style={{ background: "#fff", padding: "32px 28px" }}>
-              <div
-                style={{
-                  fontFamily: "var(--af-font-mono)",
-                  fontSize: 10,
-                  letterSpacing: "0.16em",
-                  textTransform: "uppercase",
-                  color: "#646464",
-                  marginBottom: 16,
-                }}
-              >
-                Шаг {s.n}
-              </div>
-              <h3
-                style={{
-                  fontFamily: "var(--af-font-display)",
-                  fontSize: 22,
-                  fontWeight: 900,
-                  lineHeight: 1.15,
-                  margin: 0,
-                  marginBottom: 12,
-                  letterSpacing: "-0.01em",
-                }}
-              >
-                {s.title}
-              </h3>
-              <p style={{ fontSize: 14, lineHeight: 1.6, color: "#333", margin: 0 }}>
-                {s.desc}
-              </p>
+    <section className="afl-sect afl-how">
+      <Rail index="03" label="Как это работает" />
+      <div className="afl-body">
+        <div className="head">
+          <span className="afl-micro muted">Как это работает</span>
+          <h2>Первый проект<br />за минуту.</h2>
+          <p className="lede">Открываете сайт и начинаете работать. Без установки и обучения.</p>
+        </div>
+        <div className="afl-how-grid">
+          {STEPS.map((s) => (
+            <div key={s.n} className="afl-how-step">
+              <div className="mark">{s.n}</div>
+              <span className="num">Шаг {s.n}</span>
+              <h3>{s.title}</h3>
+              <p>{s.desc}</p>
             </div>
           ))}
         </div>
@@ -377,271 +201,481 @@ function HowItWorks() {
   );
 }
 
-// ── 3 · Modules ───────────────────────────────────────────
-
-interface ModuleItem {
-  n: string;
-  tag: string;
-  title: string;
+// ── 04–08 · Модули ────────────────────────────────────────
+type ModuleDef = {
+  id: string;
+  rail: string; // 04…08
+  vert: string;
+  kicker: string;
+  name: string;
+  claim: string;
   desc: string;
-  features: string[];
-  why?: string[];
-  mockup: string;
-  mockupSrc?: string;
-  mockupArt?: "client-cabinet";
-}
+  bullets: string[];
+  why: string[];
+  shotSrc: string;
+  shotTab: string;
+  shotMeta: string;
+  shotCaption: string;
+  reverse: boolean; // copy left vs right
+  order: number; // visual order within #modules wrapper
+};
 
-const MODULES: ModuleItem[] = [
+const MODULES: ModuleDef[] = [
+  // DOM order = cabinet → design → supervision → supply → chat
+  // Visual order via CSS order: design=1, supervision=2, supply=3, chat=4, cabinet=5
   {
-    n: "01",
-    tag: "Модуль · Дизайн",
-    title: "Документы и файлы по проекту",
-    desc: "Структурированное хранилище чертежей, визуализаций, документов — в одном проекте. Плюс визуальный канвас для сбора референсов.",
-    features: [
-      "Электронная подпись документов по СМС (63-ФЗ)",
-      "Мудборд-канвас с группировкой по зонам",
-      "Файлы в шести категориях: проект, визуализации, чертежи, мебель, инженерия, документы",
+    id: "cabinet", rail: "07", vert: "Кабинет заказчика", order: 5, reverse: true,
+    kicker: "Заказчик в проекте",
+    name: "Кабинет заказчика",
+    claim: "Заказчик видит проект, а не ваши файлы.",
+    desc: "Утверждённые сметы, графики, акты, прогресс стройки — со своим логином. Без доступа к вашей переписке с командой, себестоимости, внутренним заметкам.",
+    bullets: [
+      "Отдельный интерфейс заказчика — со своим логином, без рабочего хаоса",
+      "Согласования и платежи — в одном месте, всё подписано в СМС",
+      "История решений — нечего вспоминать «мы же договаривались»",
+      "Делитесь только тем, что должны — себестоимость остаётся у вас",
+    ],
+    why: [
+      "«Бывает так, что некоторым людям, творческим натурам, неудобно говорить заказчику о том, что он должен денег. Особенно если до этого был неприятный разговор».",
+      "Труд дизайнера по большей части невидимый. Заказчик не знает, сколько часов ушло на согласование поставщика, на переписку с прорабом, на выбор материалов. У него нет ощущения, что он платит за реальную работу.",
+      "В кабинете заказчика видно, что вы делаете, на каком этапе проект и что он должен по графику оплат. Напоминания приходят от сервиса, а не от вас.",
+    ],
+    shotSrc: "/landing/07-client-cabinet.png",
+    shotTab: "Кабинет · Иванова М.",
+    shotMeta: "Issue 03",
+    shotCaption: "Главный экран кабинета · вид заказчика",
+  },
+  {
+    id: "design", rail: "04", vert: "Дизайн", order: 1, reverse: false,
+    kicker: "Документы и файлы",
+    name: "Дизайн",
+    claim: "Все версии в одном месте.",
+    desc: "Структурированное хранилище чертежей, визуализаций и документов в одном проекте.",
+    bullets: [
+      "Электронная подпись по СМС — 63-ФЗ, не требует ЭЦП и КриптоПро",
+      "Мудборд-канвас с группировкой по зонам комнаты",
+      "Файлы в шести категориях — проект, визуализации, чертежи, мебель, инженерия, документы",
       "Прежние версии сохраняются — можно откатиться",
     ],
     why: [
-      "Проект дизайнера — десятки артефактов: планировки, визуализации, рабочие чертежи, спецификации мебели, инженерия, договоры и допники. У большинства всё лежит в пяти местах: часть на Яндекс.Диске, часть в почте, часть в распечатках на столе. Плюс мудборд в Pinterest или Figma.",
-      "Документы, которые нужно подписывать: ТЗ уточняется, сметы меняются, допники согласовываются. Каждая подпись — распечатать, сканировать, отправить, ждать.",
+      "Проект дизайнера — десятки артефактов: планировки, визуализации, рабочие чертежи, спецификации мебели, инженерия и договора. И всё это в разных местах и чатах.",
+      "ТЗ уточняется, сметы меняются, допники согласовываются. Каждая подпись — распечатать, сканировать, отправить, подождать.",
       "В модуле «Дизайн» — полный архив проекта в одном месте: чертежи, визуализации, мудборды, документы по шести категориям с версионностью. Любой документ — договор, акт, допник — подписывается прямо в сервисе через СМС за минуту. Юридически значимо. Без курьеров.",
     ],
-    mockup: "Структура папок + мудборд-канвас",
-    mockupSrc: "/landing/02-design.png",
+    shotSrc: "/landing/02-design.png",
+    shotTab: "Дизайн · Файлы проекта",
+    shotMeta: "v04",
+    shotCaption: "Модуль «Дизайн» · структура папок",
   },
   {
-    n: "02",
-    tag: "Модуль · Авторский надзор",
-    title: "Фотоотчёт с объекта и задачи подрядчику",
-    desc: "Каждый визит — запись, которую не получится стереть или «не получить». Фото, отчёт, задачи строителям.",
-    features: [
+    id: "supervision", rail: "05", vert: "Надзор", order: 2, reverse: true,
+    kicker: "Фотоотчёт и задачи",
+    name: "Авторский надзор",
+    claim: "Каждый визит — фиксация.",
+    desc: "Запись, которую не получится стереть или «не получить». Фото, отчёт, задачи строителям с геометкой и временем.",
+    bullets: [
       "Фиксация визитов с фото и геометкой",
-      "Отчёты и задачи подрядчикам на месте",
-      "История визитов с фильтром по статусам",
+      "Отчёты и задачи подрядчикам прямо на месте",
+      "История визитов с фильтром по статусам и датам",
+      "Заказчик видит хронологию работ — без вашего участия",
     ],
     why: [
       "Большинство дизайнеров не ведут журнал авторского надзора в живую — потому что бумажный журнал неудобно таскать, а переписка в чатах со временем теряется. Но большинство об этом жалеет, когда возникает конфликт.",
       "Разница между «слово против слова» и «вот визиты, которые вы подписали» — стоит реальных денег.",
       "Именно поэтому мы сделали журнал цифровым: фото, отчёт и подпись строителей — прямо на объекте, за минуту.",
     ],
-    mockup: "Календарь визитов · фотоотчёт · задачи",
-    mockupSrc: "/landing/03-supervision.png",
+    shotSrc: "/landing/03-supervision.png",
+    shotTab: "Надзор · Визиты",
+    shotMeta: "Этап II",
+    shotCaption: "Хроника визитов · модуль «Авторский надзор»",
   },
   {
-    n: "03",
-    tag: "Модуль · Комплектация",
-    title: "Единый список поставок со сроками и оплатами",
-    desc: "Вместо таблицы в Excel — живой список позиций с датами заказа и поставки, предоплатами и постоплатами, статусами. Все суммы считаются сами.",
-    features: [
-      "Импорт существующей комплектации из Excel",
-      "Поля предоплаты и постоплаты с дедлайнами",
+    id: "supply", rail: "06", vert: "Комплектация", order: 3, reverse: false,
+    kicker: "Список поставок",
+    name: "Комплектация",
+    claim: "Со сроками и оплатами — в одном месте.",
+    desc: "Живой список позиций с датами заказа и поставки, предоплатами и постоплатами, статусами. Все суммы считаются сами.",
+    bullets: [
+      "Импорт существующей комплектации из Excel — без переписывания",
+      "Поля предоплаты и постоплаты с дедлайнами и автонапоминаниями",
       "Месячный план платежей и график поставок",
+      "Заказчик видит свой бюджет по своей ссылке — без вашей себестоимости",
     ],
     why: [
       "Главный вопрос в комплектации — когда заказать, чтобы материал пришёл к нужному этапу стройки с учётом сроков изготовления, доставки, возможных задержек. Итальянская сантехника идёт 8 недель, кухня — 12, плитка из партии может закончиться в любой момент. Ошиблись на две недели — стройка встала, подрядчики сидят без работы, заказчик звонит каждый день.",
-      "Именно поэтому комплектация у нас — живая: позиции привязаны к графику стройки, дедлайны предоплат считаются сами, о критичных датах система напоминает заранее.",
+      "Именно поэтому комплектация у нас живая: позиции привязаны к графику стройки, дедлайны предоплат считаются сами, о критичных датах система напоминает заранее.",
     ],
-    mockup: "Список позиций · график поставок · платежи",
-    mockupSrc: "/landing/04-supply.png",
+    shotSrc: "/landing/04-supply.png",
+    shotTab: "Комплектация · Список",
+    shotMeta: "142 позиции",
+    shotCaption: "Список поставок · модуль «Комплектация»",
   },
   {
-    n: "04",
-    tag: "Модуль · Кабинет заказчика",
-    title: "Заказчик видит только то, что должен",
-    desc: "Утверждённые сметы, графики, акты, прогресс стройки. Без доступа к вашей переписке с командой, себестоимости, внутренним заметкам.",
-    features: [
-      "Отдельный интерфейс для заказчика с его логином",
-      "Согласования и платежи — в одном месте",
-      "История решений и подписанных документов",
-    ],
-    why: [
-      "«Бывает так, что некоторым людям, творческим натурам, неудобно говорить заказчику о том, что он должен денег. Особенно если до этого был неприятный разговор».",
-      "Труд дизайнера по большей части невидимый. Заказчик не знает, сколько часов ушло на согласование поставщика, на переписку с прорабом, на выбор материалов. У него нет ощущения, что он платит за реальную работу, — а у дизайнера нет удобного способа про эту работу напомнить без звонка и неловкости.",
-      "В кабинете заказчика видно, что вы делаете, на каком этапе проект и что он должен по графику оплат. Напоминания приходят от сервиса, а не от вас.",
-    ],
-    mockup: "Интерфейс клиента · акты на подпись · платежи",
-    mockupSrc: "/landing/07-client-cabinet.png",
-  },
-  {
-    n: "05",
-    tag: "Модуль · Чат и ассистент",
-    title: "Внутренний мессенджер без танцев с VPN",
-    desc: "Переключайтесь между чатами в одном окне, умный ассистент найдёт нужную информацию или подсветит неназначенную задачу.",
-    features: [
-      "Расшифровка голосовых в текст без «эмм, нууу, как бы»",
-      "Поиск по чату",
-      "Сохранность переписки — заказчик не сможет удалить чат в одностороннем порядке",
+    id: "chat", rail: "08", vert: "Чат", order: 4, reverse: false,
+    kicker: "Внутренний мессенджер",
+    name: "Чат и ассистент",
+    claim: "Без танцев с VPN.",
+    desc: "Внутренний мессенджер с поиском по истории. Умный ассистент найдёт нужную информацию или подсветит неназначенную задачу.",
+    bullets: [
+      "Расшифровка голосовых в текст — без «эмм, нууу, как бы»",
+      "Поиск по всей переписке проекта — без выгрузки в архив",
+      "Заказчик не сможет удалить чат в одностороннем порядке",
+      "Ассистент подсвечивает неназначенные задачи и протухшие сроки",
     ],
     why: [
       "Telegram, WhatsApp, MAX, почта — у каждого заказчика свой любимый канал, и в какой-то момент становится невозможно вспомнить, кому куда писать. А ещё заказчик или подрядчик может в любой момент удалить чат — и вы останетесь без доказательств.",
       "Оставьте мессенджеры для дружеских разговоров. Рабочая коммуникация — в одном окне, с поиском, расшифровкой голосовых и гарантией, что переписку не сотрут задним числом.",
     ],
-    mockup: "Чат по проекту · голосовые · ассистент",
-    mockupSrc: "/landing/06-chat.png",
+    shotSrc: "/landing/06-chat.png",
+    shotTab: "Чат · ЖК «Сетунь»",
+    shotMeta: "3 участника",
+    shotCaption: "Чат проекта · модуль «Чат и ассистент»",
   },
 ];
 
 function Modules() {
   return (
-    <section id="modules" style={{ padding: "88px 24px" }}>
-      <div style={{ maxWidth: 1280, margin: "0 auto" }}>
-        <SectionLabel>Что внутри</SectionLabel>
-        <h2 style={{ ...sectionTitleStyle, marginBottom: 56 }}>
-          Пять рабочих<br />областей.
-        </h2>
+    <div id="modules" className="afl-modules">
+      {MODULES.map((m) => <ModuleSection key={m.id} m={m} />)}
+    </div>
+  );
+}
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 80 }}>
-          {MODULES.map((m) => (
-            <ModuleBlock key={m.n} m={m} />
-          ))}
-        </div>
+function ModuleSection({ m }: { m: ModuleDef }) {
+  return (
+    <section
+      className={`afl-sect afl-mod${m.reverse ? " reverse" : ""}`}
+      id={m.id}
+      style={{ order: m.order }}
+    >
+      <Rail index={m.rail} label={m.vert} />
+      <div className="afl-body">
+        {m.reverse ? (
+          <>
+            <ModuleCopy m={m} />
+            <ModuleShot m={m} />
+          </>
+        ) : (
+          <>
+            <ModuleShot m={m} />
+            <ModuleCopy m={m} />
+          </>
+        )}
       </div>
     </section>
   );
 }
 
-function ModuleBlock({ m }: { m: ModuleItem }) {
+function ModuleCopy({ m }: { m: ModuleDef }) {
   const [whyOpen, setWhyOpen] = useState(false);
   return (
-    <div>
-      {/* Header: tag + title + description — narrow text column, centered */}
-      <div style={{ maxWidth: 760, marginBottom: 28 }}>
-        <div
-          style={{
-            fontFamily: "var(--af-font-mono)",
-            fontSize: 10,
-            letterSpacing: "0.16em",
-            textTransform: "uppercase",
-            color: "#646464",
-            marginBottom: 14,
-          }}
-        >
-          {m.tag}
+    <div className="copy">
+      <div className="kicker">{m.kicker}</div>
+      <h2>{m.name}</h2>
+      <h3 className="claim">{m.claim}</h3>
+      <p className="desc">{m.desc}</p>
+      <ul className="bullets">
+        {m.bullets.map((b, i) => (
+          <li key={i}>
+            <span className="ix">{String(i + 1).padStart(2, "0")}</span>
+            <span className="b">{b}</span>
+          </li>
+        ))}
+      </ul>
+      <button
+        type="button"
+        className={`afl-why-toggle${whyOpen ? " open" : ""}`}
+        aria-expanded={whyOpen}
+        onClick={() => setWhyOpen((v) => !v)}
+      >
+        <span>Почему мы это сделали</span>
+        <span className="pm">+</span>
+      </button>
+      {whyOpen && (
+        <div className="why">
+          {m.why.map((p, i) => <p key={i}>{p}</p>)}
         </div>
-        <h3
-          style={{
-            fontFamily: "var(--af-font-display)",
-            fontSize: "clamp(26px, 3.5vw, 38px)",
-            fontWeight: 900,
-            lineHeight: 1.1,
-            margin: 0,
-            marginBottom: 18,
-            letterSpacing: "-0.01em",
-          }}
-        >
-          {m.title}
-        </h3>
-        <p style={{ fontSize: 15, lineHeight: 1.6, color: "#111", margin: 0 }}>
-          {m.desc}
-        </p>
+      )}
+    </div>
+  );
+}
+
+function ModuleShot({ m }: { m: ModuleDef }) {
+  return (
+    <div className="shot">
+      <div className="shot-tab">
+        <span className="afl-micro">{m.shotTab}</span>
+        <span className="afl-micro muted">{m.shotMeta}</span>
       </div>
-
-      {/* Mockup — full width for readability on big screens */}
-      <div style={{ marginBottom: 28 }}>
-        <Mockup
-          label={m.mockup}
-          src={m.mockupSrc}
-          art={m.mockupArt === "client-cabinet" ? <ClientCabinetArt /> : undefined}
-          aspect="auto"
-        />
+      <div className="shot-body">
+        {m.id === "design"      && <DesignShot />}
+        {m.id === "supervision" && <SupervisionShot />}
+        {m.id === "supply"      && <SupplyShot />}
+        {m.id === "chat"        && <ChatShot />}
+        {m.id === "cabinet"     && <CabinetShot />}
       </div>
+      <div className="shot-caption afl-micro muted">{m.shotCaption}</div>
+    </div>
+  );
+}
 
-      {/* Features + why — narrow column below mockup */}
-      <div style={{ maxWidth: 760 }}>
-        <ul style={{ listStyle: "none", padding: 0, margin: 0, marginBottom: m.why ? 24 : 0 }}>
-          {m.features.map((f, i) => (
-            <li
-              key={i}
-              style={{
-                fontSize: 14,
-                lineHeight: 1.6,
-                padding: "8px 0",
-                borderTop: "0.5px solid #EBEBEB",
-              }}
-            >
-              — {f}
-            </li>
-          ))}
-        </ul>
+// ── Module screenshot fakes — typographic, no real PNGs ──
+const DESIGN_FOLDERS = [
+  { ix: "01", nm: "Проект",        sb: "12 файлов" },
+  { ix: "02", nm: "Визуализации",  sb: "28 файлов" },
+  { ix: "03", nm: "Чертежи",       sb: "9 файлов" },
+  { ix: "04", nm: "Мебель",        sb: "14 позиций" },
+  { ix: "05", nm: "Инженерия",     sb: "6 файлов" },
+  { ix: "06", nm: "Документы",     sb: "7 + 2 на подпись" },
+];
 
-        {m.why && (
-          <div style={{ marginTop: 10 }}>
-            <button
-              type="button"
-              className={`lp-why-btn${whyOpen ? " open" : ""}`}
-              onClick={() => setWhyOpen((v) => !v)}
-              aria-expanded={whyOpen}
-            >
-              {whyOpen ? "Свернуть" : "Почему мы это сделали"}
-              <span className="lp-why-chev">↓</span>
-            </button>
-            {whyOpen && (
-              <div className="lp-why-box">
-                <div className="lp-why-label">Почему мы это сделали</div>
-                {m.why.map((p, i) => (
-                  <p key={i} className="lp-why-p">{p}</p>
-                ))}
-              </div>
-            )}
+function DesignShot() {
+  return (
+    <>
+      <div className="afl-plate-grid g3" style={{ flex: 1 }}>
+        {DESIGN_FOLDERS.map((f) => (
+          <div key={f.ix} className="afl-cell afl-folder">
+            <div>
+              <span className="ix">{f.ix}</span>
+              <div className="nm">{f.nm}</div>
+            </div>
+            <div className="sb afl-micro">{f.sb}</div>
           </div>
-        )}
+        ))}
+      </div>
+      <div className="afl-plate" style={{ marginTop: 2 }}>
+        <div className="afl-plate-h">
+          <span className="afl-micro muted">Мудборд · кухня-гостиная</span>
+          <span className="afl-micro faint">→ Развернуть</span>
+        </div>
+        <div className="afl-mood-swatches">
+          <div className="s1" />
+          <div className="s2" />
+          <div className="s3" />
+        </div>
+      </div>
+    </>
+  );
+}
+
+const VISITS = [
+  { date: "15.X.2026", time: "14:42", n: "04", desc: "Стяжка готова · 12 фото · 2 задачи", dark: false },
+  { date: "08.X.2026", time: "11:08", n: "03", desc: "Электрика — отклонения от чертежа · 8 фото · 5 задач", dark: false },
+  { date: "01.X.2026", time: "10:15", n: "02", desc: "Сан. узел — задачи закрыты · 14 фото", dark: true },
+];
+
+function SupervisionShot() {
+  return (
+    <div className="afl-plate-grid" style={{ gridTemplateColumns: "1fr", flex: 1 }}>
+      {VISITS.map((v) => (
+        <div key={v.n} className={`afl-visit${v.dark ? " dark" : ""}`}>
+          <div className="when afl-micro">{v.date}<br />{v.time}</div>
+          <div>
+            <div className="afl-cell-name">Визит № {v.n} · Сетунь</div>
+            <div className="afl-cell-sub afl-micro">{v.desc}</div>
+          </div>
+          <div className="afl-micro" style={{ textAlign: "right", color: v.dark ? "rgba(255,255,255,0.55)" : "rgb(150,150,150)" }}>→</div>
+        </div>
+      ))}
+      <div className="afl-plate">
+        <div className="afl-plate-h">
+          <span className="afl-micro muted">Фото со стройки · 15.X.2026</span>
+          <span className="afl-micro faint">12</span>
+        </div>
+        <div className="afl-photos">
+          <div className="p1" />
+          <div className="p2" />
+          <div className="p3" />
+        </div>
       </div>
     </div>
   );
 }
 
-// ── Before / After ─────────────────────────────────────────
+const SUPPLY_ROWS = [
+  { ix: "01", name: "Кухня · Schmidt",          delivery: "28.XI", pre: "оплачено",  post: "15.XII",     postMuted: true },
+  { ix: "02", name: "Диван · Eichholtz",        delivery: "10.XII", pre: "15 / XI",  post: "28.XII",     postMuted: true },
+  { ix: "03", name: "Сантехника · Hansgrohe",   delivery: "02.XII", pre: "оплачено", post: "по факту",   postMuted: true },
+  { ix: "04", name: "Свет · Vibia × 12",        delivery: "14.I",   pre: "просрочка", post: "—",          postMuted: true, preStrike: true },
+];
 
-interface PairItem {
-  title: string;
-  beforeLabel: string;
-  afterLabel: string;
-  Before: (p: { size?: number }) => JSX.Element;
-  After: (p: { size?: number }) => JSX.Element;
+function SupplyShot() {
+  return (
+    <>
+      <div className="afl-supply-grid">
+        <div className="h">№</div>
+        <div className="h">Позиция</div>
+        <div className="h">Поставка</div>
+        <div className="h">Предопл.</div>
+        <div className="h">Постопл.</div>
+        <div className="h"> </div>
+        {SUPPLY_ROWS.map((r) => (
+          <Fragment key={r.ix}>
+            <div className="c ix">{r.ix}</div>
+            <div className="c name">{r.name}</div>
+            <div className="c muted">{r.delivery}</div>
+            <div className={`c ${r.preStrike ? "strike" : "muted"}`}>{r.pre}</div>
+            <div className={`c ${r.postMuted ? "muted" : ""}`}>{r.post}</div>
+            <div className="c arr">→</div>
+          </Fragment>
+        ))}
+      </div>
+      <div className="afl-plate" style={{ marginTop: 2 }}>
+        <div className="afl-plate-h">
+          <span className="afl-micro muted">План платежей · ноябрь</span>
+          <span style={{ fontFamily: "var(--af-font)", fontWeight: 900, fontSize: 18 }}>1 240 000 ₽</span>
+        </div>
+        <div className="afl-bar">
+          <div style={{ background: "#111", width: "42%" }} />
+          <div style={{ background: "rgb(200,200,200)", width: "28%" }} />
+          <div style={{ background: "#F6F6F4", width: "30%" }} />
+        </div>
+        <div className="afl-bar-legend">
+          <span className="afl-micro faint">оплачено · 520 К</span>
+          <span className="afl-micro muted">в работе · 350 К</span>
+          <span className="afl-micro faint">план · 370 К</span>
+        </div>
+      </div>
+    </>
+  );
 }
 
-const BEFORE_AFTER_ITEMS: PairItem[] = [
+const CHAT_MSGS = [
+  { who: "Иванова М.", time: "15.X · 14:08", text: "Этап II — черновая отделка завершается на следующей неделе. По срокам идём, по бюджету — тоже.", assist: false },
+  { who: "Заказчик",    time: "15.X · 14:42", text: "Спасибо! Когда будут готовы фото после стяжки?", assist: false },
+  { who: "Прораб",      time: "15.X · 15:01", text: "Загружаю в надзор → визит № 04. Готово к концу дня.", assist: false },
+  { who: "Ассистент Archflow", time: "", text: "Я подсветил две задачи без исполнителей: «согласовать сантехнику» и «утвердить освещение в гостиной». Хотите назначить?", assist: true },
+];
+
+function ChatShot() {
+  return (
+    <div className="afl-chat" style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+      {CHAT_MSGS.map((m, i) => (
+        <div key={i} className={`afl-chat-msg${m.assist ? " assist" : ""}`}>
+          <div className="afl-chat-meta afl-micro muted">
+            {m.assist ? m.who : `${m.time} · ${m.who}`}
+          </div>
+          <div className="afl-chat-text">{m.text}</div>
+        </div>
+      ))}
+      <div className="afl-chat-input">
+        <span className="afl-micro muted">Сообщение или голосовое →</span>
+        <span className="afl-micro faint">⌘ + ↵</span>
+      </div>
+    </div>
+  );
+}
+
+const CAB_CELLS = [
+  { ix: "01", nm: "Дизайн-проект", sb: "согласовано · 4 раздела" },
+  { ix: "02", nm: "Стройка",        sb: "этап 2 из 5" },
+  { ix: "03", nm: "Документы",      sb: "2 на подпись" },
+  { ix: "04", nm: "Бюджет",         sb: "62 % из плана" },
+];
+
+function CabinetShot() {
+  return (
+    <>
+      <div className="afl-plate">
+        <div className="afl-cab-head">
+          <div>
+            <div className="afl-plate-title">ЖК «Сетунь», 142 м²</div>
+            <div className="afl-micro muted" style={{ marginTop: 6 }}>
+              Дизайн-проект · этап стройки · надзор
+            </div>
+          </div>
+          <div className="afl-cab-bignum">02</div>
+        </div>
+      </div>
+      <div className="afl-plate-grid g2">
+        {CAB_CELLS.map((c) => (
+          <div key={c.ix} className="afl-cell">
+            <div className="afl-cell-h">
+              <span className="afl-micro muted">{c.ix}</span>
+              <span className="afl-micro faint">→</span>
+            </div>
+            <div>
+              <div className="afl-cell-name">{c.nm}</div>
+              <div className="afl-cell-sub afl-micro">{c.sb}</div>
+            </div>
+          </div>
+        ))}
+        <div className="afl-cell dark" style={{ gridColumn: "1 / -1" }}>
+          <div className="afl-cell-h">
+            <span className="afl-micro">сейчас</span>
+            <span className="afl-micro">15 / X / 2026</span>
+          </div>
+          <div>
+            <div className="afl-cell-name">Прораб загрузил отчёт со стройки</div>
+            <div className="afl-cell-sub afl-micro">Этап II — черновая отделка · 12 фото</div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ── 09 · До / После ───────────────────────────────────────
+const BA_ITEMS = [
   {
-    title: "Файлы проекта",
-    beforeLabel: "5 мест, почта, распечатки",
-    afterLabel: "Один архив с версиями",
-    Before: BeforeFiles, After: AfterFiles,
+    title: ["Файлы", "проекта"],
+    before: "5 мест · почта · распечатки · WhatsApp",
+    beforeExtra: "Файлы где-то, версии где-то, версии-версий тоже где-то",
+    after: "Один архив с версиями",
+    afterExtra: "Шесть категорий, история ревизий, никто ничего не теряет",
   },
   {
-    title: "Переписка",
-    beforeLabel: "WhatsApp, Telegram, MAX, почта",
-    afterLabel: "Один чат с поиском",
-    Before: BeforeChats, After: AfterChats,
+    title: ["Переписка"],
+    before: "WhatsApp · Telegram · MAX · почта",
+    beforeExtra: "Что мы решили — где? «Кажется, в Telegram, но я не уверена»",
+    after: "Один чат с поиском",
+    afterExtra: "Расшифровки голосовых, поиск по истории, нельзя удалить в одну сторону",
   },
   {
-    title: "Подпись документов",
-    beforeLabel: "Распечатать · сканировать · послать",
-    afterLabel: "Код из СМС · 2 минуты",
-    Before: BeforeSign, After: AfterSign,
+    title: ["Подпись", "документов"],
+    before: "Распечатать · сканировать · послать",
+    beforeExtra: "Курьеры, нотариусы, пересланные jpg-файлы",
+    after: "Код из СМС · 2 минуты",
+    afterExtra: "Электронная подпись по 63-ФЗ — без ЭЦП и КриптоПро",
   },
   {
-    title: "Визиты и дедлайны",
-    beforeLabel: "Пропущенные даты, забытые платежи",
-    afterLabel: "Календарь с автонапоминаниями",
-    Before: BeforeSchedule, After: AfterSchedule,
+    title: ["Визиты", "и дедлайны"],
+    before: "Пропущенные даты · забытые платежи",
+    beforeExtra: "«А когда был аванс? Кажется, в начале месяца»",
+    after: "Календарь с автонапоминаниями",
+    afterExtra: "Поставки, авансы, визиты — все в одной хронологии",
   },
 ];
 
 function BeforeAfter() {
   return (
-    <section style={{ padding: "88px 24px", background: "#fff" }}>
-      <div style={{ maxWidth: 1080, margin: "0 auto" }}>
-        <SectionLabel>До / После</SectionLabel>
-        <h2 style={sectionTitleStyle}>Жизнь дизайнера<br />меняется.</h2>
-        <p style={{ ...sectionSubtitleStyle, marginBottom: 48 }}>
-          Не всё сразу, но по одному пункту в неделю. Главное — хаоса становится меньше.
-        </p>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          {BEFORE_AFTER_ITEMS.map((it, i) => (
-            <BeforeAfterRow key={i} item={it} />
+    <section className="afl-sect afl-ba">
+      <Rail index="09" label="До · После" />
+      <div className="afl-body">
+        <div className="head">
+          <h2>Жизнь дизайнера<br />меняется.</h2>
+          <p className="lede">
+            Не всё сразу, но по одному пункту в неделю. Главное — хаоса становится меньше, а доказательств работы — больше.
+          </p>
+        </div>
+        <div className="afl-ba-table">
+          {BA_ITEMS.map((it, i) => (
+            <div key={i} className="afl-ba-row">
+              <div className="afl-ba-cell before">
+                <div className="tag afl-micro">До</div>
+                <div className="stuff">{it.before}</div>
+                <div className="extra">{it.beforeExtra}</div>
+              </div>
+              <div className="afl-ba-cell label">
+                <div className="label-head">{it.title.map((t, j) => <span key={j}>{t}<br /></span>)}</div>
+                <div className="label-arr">→</div>
+              </div>
+              <div className="afl-ba-cell after">
+                <div className="tag afl-micro">После</div>
+                <div className="stuff">{it.after}</div>
+                <div className="extra">{it.afterExtra}</div>
+              </div>
+            </div>
           ))}
         </div>
       </div>
@@ -649,330 +683,122 @@ function BeforeAfter() {
   );
 }
 
-function BeforeAfterRow({ item }: { item: PairItem }) {
-  const { title, beforeLabel, afterLabel, Before, After } = item;
-  return (
-    <div style={{ background: "#F6F6F4", padding: "24px 24px" }}>
-      <style>{`
-        @media (min-width: 768px) {
-          .lp-ba-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) !important; align-items: center; }
-        }
-      `}</style>
-      <div className="lp-ba-row" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 24 }}>
-        <div>
-          <div style={{
-            fontFamily: "var(--af-font-mono)", fontSize: 10,
-            letterSpacing: "0.14em", textTransform: "uppercase",
-            color: "#646464", marginBottom: 6,
-          }}>
-            ДО
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            <Before size={120} />
-            <div style={{ fontSize: 13, lineHeight: 1.5, color: "#111" }}>
-              {beforeLabel}
-            </div>
-          </div>
-        </div>
-
-        <div style={{ textAlign: "center", padding: "8px 0" }}>
-          <div style={{
-            fontFamily: "var(--af-font-display)",
-            fontSize: 20, fontWeight: 700,
-            marginBottom: 4,
-          }}>
-            {title}
-          </div>
-          <div style={{
-            fontFamily: "var(--af-font-mono)", fontSize: 18,
-            color: "#111",
-          }}>
-            →
-          </div>
-        </div>
-
-        <div>
-          <div style={{
-            fontFamily: "var(--af-font-mono)", fontSize: 10,
-            letterSpacing: "0.14em", textTransform: "uppercase",
-            color: "#111", marginBottom: 6, fontWeight: 600,
-          }}>
-            ПОСЛЕ
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            <After size={120} />
-            <div style={{ fontSize: 13, lineHeight: 1.5, color: "#111", fontWeight: 600 }}>
-              {afterLabel}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Trust ──────────────────────────────────────────────────
+// ── 10 · Надёжность ───────────────────────────────────────
+const TRUST = [
+  { tag: "01 · Хранение", name: "Данные в России", desc: "Yandex Cloud, ЦОД во Владимире. Оператор персональных данных зарегистрирован в реестре РКН." },
+  { tag: "02 · Резерв", name: "Ежедневный бэкап", desc: "Копии в 03:00 МСК, хранение 7 дней. Контроль через Telegram-оповещения, восстановление за час." },
+  { tag: "03 · Свобода", name: "Экспорт в любой момент", desc: "Все файлы проекта выгружаются архивом. Переписка, документы, фотоотчёт — всё ваше." },
+];
 
 function Trust() {
-  const items = [
-    {
-      title: "Данные в России",
-      desc: "Yandex Cloud, ЦОД во Владимире. Оператор ПДн зарегистрирован в реестре РКН.",
-    },
-    {
-      title: "Ежедневный бэкап",
-      desc: "Резервные копии в 03:00 МСК. Хранение 7 дней, контроль через Telegram-оповещения.",
-    },
-    {
-      title: "Экспорт в любой момент",
-      desc: "Все файлы проекта выгружаются архивом. Переписка, документы, фотоотчёт — всё ваше.",
-    },
-    {
-      title: "Шифрование TLS 1.3",
-      desc: "Передача данных и подписи документов защищены. Доступ по ролям, Row Level Security.",
-    },
-  ];
   return (
-    <section className="lp-trust">
-      <div style={{ maxWidth: 1080, margin: "0 auto", marginBottom: 32 }}>
-        <div
-          style={{
-            fontFamily: "var(--af-font-mono)",
-            fontSize: 11,
-            letterSpacing: "0.16em",
-            textTransform: "uppercase",
-            color: "#888",
-            marginBottom: 14,
-          }}
-        >
-          Надёжность
+    <section className="afl-sect afl-trust">
+      <Rail index="10" label="Надёжность" />
+      <div className="afl-body">
+        <div className="head">
+          <h2>Ваши проекты<br />под защитой.</h2>
+          <p className="lede">
+            Российская инфраструктура с ежедневным резервным копированием. В любой момент можно выгрузить всё и уйти.
+          </p>
         </div>
-        <h2
-          style={{
-            fontFamily: "var(--af-font-display)",
-            fontSize: "clamp(28px, 5vw, 44px)",
-            fontWeight: 900,
-            lineHeight: 1.05,
-            margin: 0,
-            marginBottom: 10,
-            letterSpacing: "-0.02em",
-            color: "#fff",
-          }}
-        >
-          Ваши проекты<br />под защитой.
-        </h2>
-        <p
-          style={{
-            fontSize: 14,
-            lineHeight: 1.6,
-            color: "#bbb",
-            margin: 0,
-            maxWidth: 560,
-          }}
-        >
-          Инфраструктура на российских серверах с ежедневным резервным копированием.
-          В любой момент можно выгрузить всё и уйти.
-        </p>
-      </div>
-      <div className="lp-trust-grid">
-        {items.map((it, i) => (
-          <div key={i} className="lp-trust-cell">
-            <div className="lp-trust-icon">{String(i + 1).padStart(2, "0")}</div>
-            <div className="lp-trust-title">{it.title}</div>
-            <p className="lp-trust-desc">{it.desc}</p>
-          </div>
-        ))}
+        <div className="afl-trust-grid">
+          {TRUST.map((t) => (
+            <div key={t.tag} className="afl-trust-cell">
+              <span className="tag afl-micro">{t.tag}</span>
+              <div className="name">{t.name}</div>
+              <p className="desc">{t.desc}</p>
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );
 }
 
-// ── 6 · Pricing ────────────────────────────────────────────
-
+// ── 11 · Тарифы ───────────────────────────────────────────
 const PRICING = [
-  { id: "month", label: "Месяц", price: 1500, monthly: 1500, save: 0, highlighted: false, btn: "Выбрать месяц" },
-  { id: "halfyear", label: "Полгода", price: 6000, monthly: 1000, save: 3000, highlighted: true, btn: "Выбрать полгода" },
-  { id: "year", label: "Год", price: 10000, monthly: 833, save: 8000, highlighted: false, btn: "Выбрать год" },
+  { id: "month",    label: "Месяц",   price: 1500,  monthly: 1500, save: 0,    featured: false, btn: "Выбрать месяц" },
+  { id: "halfyear", label: "Полгода", price: 6000,  monthly: 1000, save: 3000, featured: true,  btn: "Выбрать полгода" },
+  { id: "year",     label: "Год",     price: 10000, monthly: 833,  save: 8000, featured: false, btn: "Выбрать год" },
 ];
 
 function Pricing() {
   return (
-    <section id="pricing" style={{ background: "#F6F6F4", padding: "88px 24px" }}>
-      <div style={{ maxWidth: 1280, margin: "0 auto" }}>
-        <SectionLabel>Тарифы</SectionLabel>
-        <h2 style={sectionTitleStyle}>Одна подписка.<br />Без скрытых платежей.</h2>
-        <p style={{ ...sectionSubtitleStyle, marginBottom: 56 }}>
-          Все модули включены. Электронная подпись — тоже. Количество проектов,
-          заказчиков и размер студии — без ограничений. Семь дней, чтобы убедиться.
-        </p>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-            gap: 2,
-            marginBottom: 24,
-          }}
-        >
+    <section id="pricing" className="afl-sect afl-pri">
+      <Rail index="11" label="Тарифы" />
+      <div className="afl-body">
+        <div className="head">
+          <h2>Одна подписка.<br />Без скрытых платежей.</h2>
+          <p className="lede">
+            Все модули включены. Электронная подпись — тоже. Количество проектов, заказчиков и размер студии — без ограничений.
+          </p>
+        </div>
+        <div className="trial">
+          <span className="afl-micro" style={{ color: "rgba(255,255,255,0.55)" }}>Триал</span>
+          <span className="b">7 дней полного доступа · без платёжных данных</span>
+        </div>
+        <div className="afl-pri-grid">
           {PRICING.map((p) => (
-            <div
-              key={p.id}
-              style={{
-                background: p.highlighted ? "#111" : "#fff",
-                color: p.highlighted ? "#fff" : "#111",
-                padding: "36px 28px 28px",
-                display: "flex",
-                flexDirection: "column",
-                position: "relative",
-              }}
-            >
-              {p.highlighted && (
-                <span
-                  style={{
-                    position: "absolute",
-                    top: 20,
-                    right: 20,
-                    fontFamily: "var(--af-font-mono)",
-                    fontSize: 10,
-                    fontWeight: 600,
-                    letterSpacing: "0.14em",
-                    textTransform: "uppercase",
-                    padding: "3px 8px",
-                    background: "#fff",
-                    color: "#111",
-                  }}
-                >
-                  Популярный
-                </span>
-              )}
-              <div
-                style={{
-                  fontFamily: "var(--af-font-mono)",
-                  fontSize: 11,
-                  letterSpacing: "0.14em",
-                  textTransform: "uppercase",
-                  color: p.highlighted ? "#bbb" : "#646464",
-                  marginBottom: 14,
-                }}
-              >
-                Тариф · {p.label}
+            <div key={p.id} className={`afl-pri-card${p.featured ? " featured" : ""}`}>
+              {p.featured && <span className="ribbon">Популярный</span>}
+              <span className="name afl-micro">Тариф · {p.label}</span>
+              <div className="price">
+                <span className="num">{p.price.toLocaleString("ru-RU")}</span>
+                <span className="cur">₽</span>
               </div>
-              <div
-                style={{
-                  fontFamily: "var(--af-font-display)",
-                  fontSize: 44,
-                  fontWeight: 900,
-                  lineHeight: 1,
-                  marginBottom: 6,
-                }}
-              >
-                {p.price.toLocaleString("ru-RU")} ₽
-              </div>
-              <div
-                style={{
-                  fontFamily: "var(--af-font-mono)",
-                  fontSize: 11,
-                  color: p.highlighted ? "#bbb" : "#646464",
-                  marginBottom: 22,
-                }}
-              >
-                {p.monthly.toLocaleString("ru-RU")} ₽/мес
-                {p.save > 0 && ` · экономия ${p.save.toLocaleString("ru-RU")} ₽`}
-              </div>
-              <ul style={{ listStyle: "none", padding: 0, margin: 0, marginBottom: 24, flex: 1 }}>
-                {[
-                  "Все модули",
-                  "Неограниченные проекты",
-                  "Электронная подпись включена",
-                  p.highlighted || p.id === "year" ? "Приоритетная поддержка" : "Поддержка в чате",
-                ].map((f, i) => (
-                  <li
-                    key={i}
-                    style={{
-                      fontSize: 13,
-                      lineHeight: 1.6,
-                      padding: "8px 0",
-                      borderTop: `0.5px solid ${p.highlighted ? "#333" : "#EBEBEB"}`,
-                    }}
-                  >
-                    — {f}
-                  </li>
-                ))}
+              <div className="month">{p.monthly.toLocaleString("ru-RU")} ₽ / месяц</div>
+              {p.save > 0 && <div className="save afl-micro">экономия {p.save.toLocaleString("ru-RU")} ₽</div>}
+              <ul>
+                <li>Все модули</li>
+                <li>Неограниченные проекты</li>
+                <li>Электронная подпись включена</li>
+                <li>{p.featured || p.id === "year" ? "Приоритетная поддержка" : "Поддержка в чате"}</li>
               </ul>
-              <a
-                href="/login?mode=register"
-                className={p.highlighted ? "lp-btn lp-btn-ghost-invert" : "lp-btn lp-btn-primary"}
-                style={{ width: "100%" }}
-              >
-                {p.btn}
-              </a>
+              <div className="cta">
+                <a href="/login?mode=register" className="afl-btn">{p.btn} →</a>
+              </div>
             </div>
           ))}
         </div>
-
-        <p style={{ fontSize: 13, color: "#646464", lineHeight: 1.6, maxWidth: 720 }}>
-          Триал 7 дней — полный доступ, без платёжных данных. После триала, если
-          не оплатили, данные сохраняются в режиме чтения.
+        <p className="afl-micro muted" style={{ marginTop: 24 }}>
+          После триала, если не оплатили, данные сохраняются в режиме чтения. Удалить — только по вашему запросу.
         </p>
       </div>
     </section>
   );
 }
 
-// ── 7 · FAQ ────────────────────────────────────────────────
-
+// ── 12 · FAQ ──────────────────────────────────────────────
 const FAQ_ITEMS = [
-  {
-    q: "Я уже пробовала Notion, Trello, Bitrix. Не прижилось. Почему Archflow будет другим?",
-    a: "Все эти инструменты — универсальные. Archflow построен под рабочий процесс дизайнера интерьера, поэтому в нём не нужно ничего «допиливать». Вы открываете проект — и всё уже на своих местах.",
-  },
-  {
-    q: "Где хранятся данные? Это безопасно?",
-    a: "Все данные хранятся на серверах в России (Яндекс.Облако). Мы зарегистрированы в реестре операторов персональных данных РКН. Переписка и документы шифруются. Вы можете в любой момент выгрузить все данные проекта архивом.",
-  },
-  {
-    q: "Можно ли перенести проекты из Excel?",
-    a: "Да. В модуле комплектации есть импорт — вы загружаете свою таблицу, мы подхватываем позиции, сроки и цены. Переписывать заново ничего не надо.",
-  },
-  {
-    q: "Есть мобильное приложение?",
-    a: "Archflow — PWA. Открываете сайт на телефоне, нажимаете «Добавить на главный экран» — и у вас полноценное приложение. Без установки из App Store или Google Play. Работает на iOS, Android и десктопе.",
-  },
-  {
-    q: "Что будет с данными, если я перестану пользоваться?",
-    a: "После окончания подписки ваши данные переходят в режим чтения — вы можете зайти, посмотреть историю проектов, скачать документы. Ничего не удаляется автоматически. Полное удаление — только по вашему запросу.",
-  },
-  {
-    q: "А если я работаю со студией из десяти человек?",
-    a: "Цена не зависит от размера команды. Вы платите за рабочее пространство, а не за пользователей. Добавляйте ассистентов, партнёров и подрядчиков — доступы гибко настраиваются по ролям.",
-  },
+  { q: "Где хранятся данные? Это безопасно?", a: "На серверах Yandex Cloud в дата-центре во Владимире. Ежедневный бэкап в 03:00 МСК с хранением 7 дней. Передача — TLS 1.3, доступ — Row Level Security. Зарегистрированы как оператор персональных данных в реестре РКН." },
+  { q: "Можно ли перенести проекты из Excel?", a: "Да. Импорт комплектации поддерживает .xlsx и .csv с автоматическим маппингом колонок. Старые таблицы переписывать не придётся — система сама подскажет, где какое поле." },
+  { q: "Есть мобильное приложение?", a: "Веб-приложение работает в браузере телефона как отдельная иконка (PWA). Авторский надзор оптимизирован для мобильного — фото, геометка, голосовые задачи прорабу. Натив-приложения для iOS и Android в работе." },
+  { q: "Что будет с данными, если я перестану пользоваться?", a: "После триала, если не оплатили — данные сохраняются в режиме чтения. После окончания платной подписки — 30 дней, чтобы выгрузить архивом. Удалить можем только по вашему запросу — не списываем без предупреждения." },
+  { q: "А если я работаю со студией из десяти человек?", a: "Подписка не зависит от числа людей. Подключайте дизайнеров, ассистентов, прорабов, поставщиков — каждый видит свою часть проекта. Заказчик подключается отдельно, своим логином, в свой кабинет." },
+  { q: "Я уже пробовала Notion / Trello / Bitrix — почему здесь будет иначе?", a: "Notion и Trello — пустые конструкторы: их сначала нужно настроить под себя, а потом ещё научить заказчика пользоваться. Bitrix — система для отделов продаж в офисе, а не для дизайнера на стройке. Archflow создан под конкретный workflow интерьера и работает «из коробки»: открыли — и завели первый проект." },
 ];
 
 function FAQ() {
   const [open, setOpen] = useState<number>(0);
   return (
-    <section id="faq" style={{ padding: "88px 24px" }}>
-      <div style={{ maxWidth: 880, margin: "0 auto" }}>
-        <SectionLabel>Вопросы, которые задают</SectionLabel>
-        <h2 style={{ ...sectionTitleStyle, marginBottom: 48 }}>
-          Честные ответы.
-        </h2>
-
-        <div>
-          {FAQ_ITEMS.map((item, i) => (
-            <div key={i} className="lp-faq-item">
+    <section id="faq" className="afl-sect afl-faq">
+      <Rail index="12" label="Вопросы" />
+      <div className="afl-body">
+        <div className="head"><h2>Честные ответы.</h2></div>
+        <div className="afl-faq-list">
+          {FAQ_ITEMS.map((it, i) => (
+            <div key={i} className="afl-faq-item">
               <button
                 type="button"
-                className="lp-faq-q"
-                onClick={() => setOpen(open === i ? -1 : i)}
+                className={`afl-faq-q${open === i ? " open" : ""}`}
                 aria-expanded={open === i}
+                onClick={() => setOpen(open === i ? -1 : i)}
               >
-                <span className="lp-faq-q-text">{item.q}</span>
-                <span className={`lp-faq-q-sign${open === i ? " open" : ""}`}>+</span>
+                <span className="ix">Q · {String(i + 1).padStart(2, "0")}</span>
+                <span className="text">{it.q}</span>
+                <span className="pm">+</span>
               </button>
-              {open === i && (
-                <div className="lp-faq-a">{item.a}</div>
-              )}
+              {open === i && <div className="afl-faq-a">{it.a}</div>}
             </div>
           ))}
         </div>
@@ -981,214 +807,90 @@ function FAQ() {
   );
 }
 
-// ── 8 · Final CTA ─────────────────────────────────────────
-
+// ── 13 · Final CTA ────────────────────────────────────────
 function FinalCTA() {
   return (
-    <section
-      style={{
-        background: "#111",
-        color: "#fff",
-        padding: "100px 24px",
-        textAlign: "center",
-      }}
-    >
-      <div style={{ maxWidth: 720, margin: "0 auto" }}>
-        <h2
-          style={{
-            fontFamily: "var(--af-font-display)",
-            fontSize: "clamp(36px, 7vw, 64px)",
-            fontWeight: 900,
-            lineHeight: 1,
-            margin: 0,
-            marginBottom: 20,
-            letterSpacing: "-0.02em",
-          }}
-        >
-          Семь дней,<br />чтобы проверить.
-        </h2>
-        <p
-          style={{
-            fontSize: 15,
-            lineHeight: 1.7,
-            color: "#ccc",
-            margin: 0,
-            marginBottom: 36,
-          }}
-        >
-          Заведите один живой проект. Пригласите заказчика. Зафиксируйте визит
-          на объекте. Если через неделю не увидите разницы — просто не продлевайте
-          подписку.
-        </p>
-        <a href="/login?mode=register" className="lp-btn lp-btn-ghost-invert">
-          Попробовать 7 дней
-        </a>
+    <section className="afl-sect afl-final">
+      <Rail index="13" label="Триал" />
+      <div className="afl-body">
+        <div>
+          <h2>Семь дней,<br /><span className="ghost">чтобы проверить.</span></h2>
+        </div>
+        <div>
+          <p className="body">
+            Заведите один живой проект. Пригласите заказчика. Зафиксируйте визит на объекте. Если через неделю не увидите разницы — просто не продлевайте подписку.
+          </p>
+          <a href="/login?mode=register" className="afl-btn">Попробовать 7 дней →</a>
+          <div className="afl-micro reassure">Без карты · полный доступ ко всем модулям</div>
+        </div>
       </div>
     </section>
   );
 }
 
-// ── 9 · Footer ────────────────────────────────────────────
-
+// ── Footer ────────────────────────────────────────────────
 function Footer() {
   return (
-    <footer
-      style={{
-        background: "#111",
-        color: "#fff",
-        padding: "56px 24px 32px",
-        borderTop: "0.5px solid #333",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: 1280,
-          margin: "0 auto",
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-          gap: 40,
-          marginBottom: 40,
-        }}
-      >
-        <div>
-          <div
-            style={{
-              fontFamily: "var(--af-font-display)",
-              fontSize: 18,
-              fontWeight: 900,
-              letterSpacing: "0.02em",
-              marginBottom: 12,
-            }}
-          >
-            ARCHFLOW
-          </div>
-          <p
-            style={{
-              fontSize: 12,
-              lineHeight: 1.6,
-              color: "#888",
-              margin: 0,
-              maxWidth: 260,
-            }}
-          >
-            Рабочее пространство для проектирования, авторского надзора и
-            комплектации интерьерных проектов.
+    <section className="afl-sect afl-footer">
+      <div className="afl-rail">
+        <div className="top"><span className="afl-micro muted">∞</span></div>
+        <div className="vert">archflow · 2026</div>
+        <div className="bot" />
+      </div>
+      <div className="afl-body">
+        <div className="brand">
+          <a href="/welcome" className="afl-logo" aria-label="Archflow">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt="" />
+            <span className="word">Archflow</span>
+          </a>
+          <p className="desc">
+            Рабочее пространство для проектирования, авторского надзора и комплектации интерьерных проектов.
           </p>
         </div>
-
         <FooterCol
           title="Продукт"
           links={[
-            { href: "#modules", label: "Модули" },
+            { href: "#cabinet", label: "Кабинет заказчика" },
+            { href: "#design", label: "Дизайн" },
+            { href: "#supervision", label: "Авторский надзор" },
+            { href: "#supply", label: "Комплектация" },
+            { href: "#chat", label: "Чат и ассистент" },
             { href: "#pricing", label: "Тарифы" },
-            { href: "#faq", label: "Вопросы" },
           ]}
         />
         <FooterCol
           title="Компания"
           links={[
-            { href: "mailto:archflow.office@gmail.com", label: "Контакты" },
+            { href: "mailto:archflow.office@gmail.com", label: "archflow.office@gmail.com" },
             { href: "/privacy", label: "Политика конфиденциальности" },
             { href: "/pricing", label: "Условия оплаты" },
           ]}
         />
         <FooterCol
-          title="Поддержка"
-          links={[{ href: "mailto:archflow.office@gmail.com", label: "archflow.office@gmail.com" }]}
+          title="Юридическое"
+          links={[
+            { href: "#", label: "ИП Колунов Е. Е." },
+            { href: "#", label: "Оператор ПДн" },
+            { href: "#", label: "63-ФЗ · подпись" },
+          ]}
         />
+        <div className="copyright">
+          <span className="afl-micro">© 2026 · Archflow</span>
+          <span className="afl-micro">Editorial Issue 01</span>
+        </div>
       </div>
-
-      <div
-        style={{
-          maxWidth: 1280,
-          margin: "0 auto",
-          paddingTop: 24,
-          borderTop: "0.5px solid #333",
-          fontSize: 10,
-          fontFamily: "var(--af-font-mono)",
-          letterSpacing: "0.12em",
-          textTransform: "uppercase",
-          color: "#666",
-          display: "flex",
-          justifyContent: "space-between",
-          flexWrap: "wrap",
-          gap: 16,
-        }}
-      >
-        <span>ИП Колунов Е. Е.</span>
-        <span>© 2026 Archflow</span>
-      </div>
-    </footer>
+    </section>
   );
 }
 
 function FooterCol({ title, links }: { title: string; links: { href: string; label: string }[] }) {
   return (
     <div>
-      <div
-        style={{
-          fontFamily: "var(--af-font-mono)",
-          fontSize: 10,
-          letterSpacing: "0.14em",
-          textTransform: "uppercase",
-          color: "#888",
-          marginBottom: 14,
-        }}
-      >
-        {title}
-      </div>
-      <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 10 }}>
-        {links.map((l) => (
-          <li key={l.href}>
-            <a
-              href={l.href}
-              style={{ color: "#fff", fontSize: 13, textDecoration: "none" }}
-              onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.6")}
-              onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
-            >
-              {l.label}
-            </a>
-          </li>
-        ))}
+      <h4>{title}</h4>
+      <ul>
+        {links.map((l) => <li key={l.label}><a href={l.href}>{l.label}</a></li>)}
       </ul>
-    </div>
-  );
-}
-
-// ── Shared styles ─────────────────────────────────────────
-
-const sectionTitleStyle: React.CSSProperties = {
-  fontFamily: "var(--af-font-display)",
-  fontSize: "clamp(34px, 6vw, 56px)",
-  fontWeight: 900,
-  lineHeight: 1,
-  margin: 0,
-  marginBottom: 20,
-  letterSpacing: "-0.02em",
-};
-
-const sectionSubtitleStyle: React.CSSProperties = {
-  fontSize: 15,
-  lineHeight: 1.6,
-  color: "#333",
-  margin: 0,
-  marginBottom: 40,
-  maxWidth: 640,
-};
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <div
-      style={{
-        fontFamily: "var(--af-font-mono)",
-        fontSize: 11,
-        letterSpacing: "0.16em",
-        textTransform: "uppercase",
-        color: "#646464",
-        marginBottom: 16,
-      }}
-    >
-      {children}
     </div>
   );
 }
