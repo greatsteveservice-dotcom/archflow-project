@@ -1,6 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import { useAuth } from '../lib/auth';
+import ProfileCabinet from './ProfileCabinet';
 
 interface BreadcrumbItem {
   label: string;
@@ -29,11 +31,14 @@ export default function Topbar({ title, breadcrumbs, actions, depth = 1, context
     assistant: 'Ассистент',
   };
 
-  // Only show explicit contextLabel; role chip hidden on logged-in screens
-  // (user request: убрать "+" и "ДИЗАЙНЕР" с топбара, создание проекта — снизу)
-  // Suppress unused-var lint for removed role map
-  void roleLabel; void profile;
+  void roleLabel;
   const ctx = contextLabel || '';
+  const [showCabinet, setShowCabinet] = useState<false | 'main' | 'billing' | 'settings' | 'profile'>(false);
+
+  const firstName = (profile?.full_name || '').split(' ')[0] || '';
+  const lastName = (profile?.full_name || '').split(' ')[1] || '';
+  const initials = (firstName.charAt(0) + (lastName.charAt(0) || '')).toUpperCase() || 'A';
+  const shortName = lastName ? `${firstName} ${lastName.charAt(0)}.` : firstName;
 
   return (
     <div className="af-topbar-wrapper">
@@ -45,8 +50,50 @@ export default function Topbar({ title, breadcrumbs, actions, depth = 1, context
         <div className="af-topbar-right">
           {actions}
           {ctx && <span className="af-topbar-context">{ctx}</span>}
+          {profile && (
+            <button
+              type="button"
+              onClick={() => setShowCabinet('main')}
+              aria-label="Личный кабинет"
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                background: 'none', border: 'none', cursor: 'pointer',
+                padding: 0, marginLeft: 8,
+              }}
+            >
+              <span style={{
+                fontFamily: 'var(--af-font)', fontSize: 11,
+                fontWeight: 700, color: '#111',
+                whiteSpace: 'nowrap', maxWidth: 120,
+                overflow: 'hidden', textOverflow: 'ellipsis',
+                display: 'none',
+              }}
+              className="af-topbar-user-name">
+                {shortName}
+              </span>
+              <span style={{
+                width: 30, height: 30, background: '#111',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
+              }}>
+                <span style={{
+                  fontFamily: 'var(--af-font)', fontSize: 10,
+                  fontWeight: 700, color: '#F6F6F4',
+                  letterSpacing: '0.04em',
+                }}>
+                  {initials}
+                </span>
+              </span>
+            </button>
+          )}
         </div>
       </div>
+      {showCabinet && (
+        <ProfileCabinet
+          initialScreen={showCabinet}
+          onClose={() => setShowCabinet(false)}
+        />
+      )}
 
       {/* Progress indicator */}
       <div className="af-progress">
