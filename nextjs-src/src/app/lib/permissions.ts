@@ -78,10 +78,7 @@ function resolvePermissions(role: UserRole, accessLevel: AccessLevel | null): Pr
 
   // Access-level based resolution (for all non-designer roles)
   if (accessLevel === 'full') {
-    const full = { ...fullAccess(), canDeleteProject: false };
-    // Clients never see Supply, even with 'full' access — it's a designer/supplier concern
-    if (role === 'client') full.canViewSupply = false;
-    return full;
+    return { ...fullAccess(), canDeleteProject: false };
   }
 
   // Role-based defaults
@@ -93,7 +90,7 @@ function resolvePermissions(role: UserRole, accessLevel: AccessLevel | null): Pr
         canViewOverview: true,
         canViewJournal: true,
         canViewVisits: true,
-        canViewSupply: false,
+        canViewSupply: true,
         canViewDocs: true,
         canViewSettings: false,
         canCreateProject: false,

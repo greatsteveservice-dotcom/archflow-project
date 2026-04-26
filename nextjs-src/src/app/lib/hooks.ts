@@ -891,6 +891,38 @@ export function sendPushNotification(
   });
 }
 
+// ======================== CLIENT HOME ========================
+
+import type { DocumentSignature, ContractPayment } from './types';
+import {
+  fetchPendingSignatures,
+  fetchDuePayments,
+  fetchProjectActivity,
+} from './queries';
+
+export function usePendingSignatures(projectId: string | null, userId: string | null) {
+  return useQuery<DocumentSignature[]>(
+    () => (projectId && userId) ? fetchPendingSignatures(projectId, userId) : Promise.resolve([]),
+    [projectId, userId]
+  );
+}
+
+export function useDuePayments(projectId: string | null, days: number = 30) {
+  return useQuery<ContractPayment[]>(
+    () => projectId ? fetchDuePayments(projectId, days) : Promise.resolve([]),
+    [projectId, days]
+  );
+}
+
+export function useProjectActivity(projectId: string | null, limit: number = 8) {
+  return useQuery<Awaited<ReturnType<typeof fetchProjectActivity>>>(
+    () => projectId ? fetchProjectActivity(projectId, limit) : Promise.resolve([]),
+    [projectId, limit]
+  );
+}
+
+// useUpcomingTimeline already defined earlier at line 843
+
 // ======================== MOODBOARDS ========================
 
 import type { MoodboardWithStats, MoodboardItem, MoodboardComment, MoodboardSection } from './types';

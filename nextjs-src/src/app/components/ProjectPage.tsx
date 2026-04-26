@@ -16,6 +16,7 @@ import SupplyModule from "./supply/SupplyModule";
 import DesignSection from "./project/DesignSection";
 import SupervisionTab from "./project/SupervisionTab";
 import SettingsTab from "./project/SettingsTab";
+import ClientProjectHome from "./project/ClientProjectHome";
 
 const ChatView = dynamic(() => import("./project/ChatView"), { loading: () => null, ssr: false });
 const AssistantView = dynamic(() => import("./project/AssistantView"), { loading: () => null, ssr: false });
@@ -38,9 +39,7 @@ const SECTION_CONFIG: { id: ProjectTab; label: string; permKey: keyof ProjectPer
 ];
 
 /** Client-friendly labels: renames professional jargon for client role */
-const CLIENT_LABELS: Partial<Record<ProjectTab, string>> = {
-  supervision: "Ход работ",
-};
+const CLIENT_LABELS: Partial<Record<ProjectTab, string>> = {};
 
 export default function ProjectPage({ projectId, initialTab, onNavigate, toast, onMenuToggle, onSearchOpen }: ProjectPageProps) {
   const { data: project, loading: loadingProject, error: errorProject, refetch: refetchProject } = useProject(projectId);
@@ -212,9 +211,19 @@ export default function ProjectPage({ projectId, initialTab, onNavigate, toast, 
       )}
 
       <div className="af-layout">
-        {/* ═══ LEVEL 2: Section grid (2×3 like Design sub-sections) ═══ */}
-        {activeTab === null && (
-          <div className={`af-tab-list${isClient ? ' af-tab-list-large' : ''}`}>
+        {/* ═══ LEVEL 2: CLIENT — rich project home ═══ */}
+        {activeTab === null && isClient && (
+          <ClientProjectHome
+            project={project}
+            projectId={projectId}
+            members={membersWithProfiles || []}
+            toast={toast}
+          />
+        )}
+
+        {/* ═══ LEVEL 2: NON-CLIENT — Section grid ═══ */}
+        {activeTab === null && !isClient && (
+          <div className="af-tab-list">
             {visibleSections.map((section) => {
               const displayLabel = getSectionLabel(section.id);
               let metricValue: string | number | null = null;

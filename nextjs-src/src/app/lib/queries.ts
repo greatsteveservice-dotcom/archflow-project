@@ -3412,6 +3412,173 @@ export async function fetchUpcomingTimeline(projectId: string): Promise<any[]> {
   return items;
 }
 
+// ======================== CLIENT HOME (project-scoped) ========================
+
+import type { DocumentSignature } from './types';
+
+/** Pending signatures for a project — for the current authed user (client) */
+export async function fetchPendingSignatures(projectId: string, userId: string): Promise<DocumentSignature[]> {
+  const { data, error } = await supabase
+    .from('document_signatures')
+    .select('*')
+    .eq('project_id', projectId)
+    .eq('user_id', userId)
+    .in('status', ['sent', 'viewed'])
+    .order('sent_at', { ascending: true });
+  if (error) throw error;
+  return (data || []) as DocumentSignature[];
+}
+
+/** Contract payments due in next N days, not yet paid */
+export async function fetchDuePayments(projectId: string, days: number = 30): Promise<ContractPayment[]> {
+  const now = new Date();
+  const horizon = new Date(now.getTime() + days * 86400000).toISOString().split('T')[0];
+  const today = now.toISOString().split('T')[0];
+
+  const { data, error } = await supabase
+    .from('contract_payments')
+    .select('*')
+    .eq('project_id', projectId)
+    .neq('status', 'paid')
+    .not('next_due', 'is', null)
+    .gte('next_due', today)
+    .lte('next_due', horizon)
+    .order('next_due', { ascending: true });
+  if (error) throw error;
+  return (data || []) as ContractPayment[];
+}
+
+/**
+ * Project-scoped activity feed: design uploads, photos, visits, invoices, supply changes.
+ * Each item has a `who` (display name) when available so client sees "Анна загрузила…"
+ */
+export async function fetchProjectActivity(projectId: string, limit: number = 8): Promise<Array<{
+  id: string;
+  kind: 'design' | 'photo' | 'visit' | 'invoice' | 'supply';
+  text: string;
+  who: string | null;
+  whoInitials: string | null;
+  time: string;
+  relativeTime: string;
+}>> {
+  const items: Array<any> = [];
+  const per = Math.max(3, Math.ceil(limit / 2));
+
+  const [designsRes, photosRes, visitsRes, invoicesRes, suppliesRes] = await Promise.all([
+    supabase
+      .from('design_files')
+      .select('id, name, folder, created_at, uploaded_by')
+      .eq('project_id', projectId)
+      .order('created_at', { ascending: false })
+      .limit(per),
+    supabase
+      .from('photo_records')
+      .select('id, comment, status, zone, created_at')
+      .eq('project_id', projectId)
+      .order('created_at', { ascending: false })
+      .limit(per),
+    supabase
+      .from('visits')
+      .select('id, title, status, created_at')
+      .eq('project_id', projectId)
+      .order('created_at', { ascending: false })
+      .limit(per),
+    supabase
+      .from('invoices')
+      .select('id, title, amount, status, created_at')
+      .eq('project_id', projectId)
+      .order('created_at', { ascending: false })
+      .limit(Math.max(2, Math.ceil(per / 2))),
+    supabase
+      .from('supply_items')
+      .select('id, name, status, created_at')
+      .eq('project_id', projectId)
+      .order('created_at', { ascending: false })
+      .limit(Math.max(2, Math.ceil(per / 2))),
+  ]);
+
+  // Resolve uploader profiles for design files
+  const uploaderIds = Array.from(new Set((designsRes.data || []).map(d => d.uploaded_by).filter(Boolean) as string[]));
+  let profileMap: Record<string, string> = {};
+  if (uploaderIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, full_name')
+      .in('id', uploaderIds);
+    (profiles || []).forEach(p => { profileMap[p.id] = p.full_name; });
+  }
+
+  const initials = (name: string | null): string => {
+    if (!name) return '·';
+    const parts = name.trim().split(/\s+/);
+    return (parts[0]?.[0] || '') + (parts[1]?.[0] || '');
+  };
+
+  const folderLabel: Record<string, string> = {
+    design_project: 'Дизайн-проект',
+    visuals: 'Визуализации',
+    drawings: 'Чертежи',
+    furniture: 'Мебель',
+    engineering: 'Инженерия',
+    documents: 'Документы',
+  };
+
+  (designsRes.data || []).forEach(f => {
+    const who = f.uploaded_by ? profileMap[f.uploaded_by] || null : null;
+    const folder = folderLabel[f.folder] || f.folder || 'Дизайн';
+    items.push({
+      id: `df-${f.id}`, kind: 'design',
+      text: `загрузил${who?.match(/а\s*$/) ? 'а' : ''} файл «${f.name}» в раздел «${folder}»`,
+      who, whoInitials: initials(who),
+      time: f.created_at,
+    });
+  });
+
+  (photosRes.data || []).forEach(p => {
+    const zone = p.zone || 'Без зоны';
+    const stub = p.comment ? `«${p.comment.slice(0, 40)}»` : zone;
+    let text = '';
+    if (p.status === 'issue') text = `Замечание · ${stub}`;
+    else if (p.status === 'approved') text = `Принято фото · ${stub}`;
+    else if (p.status === 'in_progress') text = `В работе · ${stub}`;
+    else text = `Новое фото · ${stub}`;
+    items.push({ id: `ph-${p.id}`, kind: 'photo', text, who: null, whoInitials: null, time: p.created_at });
+  });
+
+  (visitsRes.data || []).forEach(v => {
+    let text = '';
+    if (v.status === 'planned') text = `Запланирован визит · ${v.title}`;
+    else if (v.status === 'approved') text = `Визит завершён · ${v.title}`;
+    else text = `Визит с замечаниями · ${v.title}`;
+    items.push({ id: `vi-${v.id}`, kind: 'visit', text, who: null, whoInitials: null, time: v.created_at });
+  });
+
+  (invoicesRes.data || []).forEach(inv => {
+    const amt = new Intl.NumberFormat('ru-RU').format(inv.amount) + ' ₽';
+    const text = inv.status === 'paid'
+      ? `Оплачен счёт · ${inv.title} (${amt})`
+      : `Выставлен счёт · ${inv.title} (${amt})`;
+    items.push({ id: `inv-${inv.id}`, kind: 'invoice', text, who: null, whoInitials: null, time: inv.created_at });
+  });
+
+  (suppliesRes.data || []).forEach(si => {
+    const action: Record<string, string> = {
+      ordered: 'заказана', delivered: 'доставлена', in_production: 'в производстве',
+      approved: 'согласована', in_review: 'на проверке',
+    };
+    items.push({
+      id: `si-${si.id}`, kind: 'supply',
+      text: `Позиция ${action[si.status] || 'добавлена'} · ${si.name}`,
+      who: null, whoInitials: null, time: si.created_at,
+    });
+  });
+
+  return items
+    .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
+    .slice(0, limit)
+    .map(item => ({ ...item, relativeTime: formatRelativeDate(item.time) }));
+}
+
 // ======================== MOODBOARDS ========================
 
 import type { Moodboard, MoodboardWithStats, MoodboardItem, MoodboardComment, MoodboardSection } from './types';
