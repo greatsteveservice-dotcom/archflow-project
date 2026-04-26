@@ -28,6 +28,14 @@ const nextConfig = {
   },
   // Konva imports node-canvas for SSR fallback; we don't use SSR for canvas
   // components (all wrapped in dynamic({ ssr: false })), so alias it out.
+  // Server-level redirect: avoids the prerendered-redirect bug where Next 14
+  // caches a 307 response without a Location header (causes white screen +
+  // "Application error: a client-side exception").
+  async redirects() {
+    return [
+      { source: '/', destination: '/projects', permanent: false },
+    ];
+  },
   webpack: (config, { isServer }) => {
     config.resolve.alias = {
       ...config.resolve.alias,
