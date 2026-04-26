@@ -203,7 +203,7 @@ interface DesignerStats {
   full_name: string;
   email: string;
   projects: number;
-  invited: number;
+  clients: number;
   registered_at: string;
   last_sign_in_at: string | null;
   days_active: number;
@@ -274,17 +274,15 @@ async function fetchDesignersStats(
     const projects: { id: string }[] = await projectsRes.json();
     const projectsCount = projects.length;
 
-    // Members invited to designer's projects (excluding designer themselves)
-    let invited = 0;
+    // Clients invited to designer's projects (role='client', unique users)
+    let clients = 0;
     if (projectsCount > 0) {
       const projectIds = projects.map((p) => p.id).join(",");
       const membersRes = await sbFetch(
-        `/rest/v1/project_members?project_id=in.(${projectIds})&user_id=neq.${d.id}&select=user_id`,
-        { Prefer: "count=exact" }
+        `/rest/v1/project_members?project_id=in.(${projectIds})&role=eq.client&user_id=neq.${d.id}&select=user_id`
       );
       const members: { user_id: string }[] = await membersRes.json();
-      // Unique users only
-      invited = new Set(members.map((m) => m.user_id)).size;
+      clients = new Set(members.map((m) => m.user_id)).size;
     }
 
     const daysActive = Math.max(
@@ -297,7 +295,7 @@ async function fetchDesignersStats(
       full_name: d.full_name || "—",
       email: d.email || "—",
       projects: projectsCount,
-      invited,
+      clients,
       registered_at: d.created_at,
       last_sign_in_at: authUsersMap.get(d.id) || null,
       days_active: daysActive,
@@ -420,10 +418,10 @@ function buildReport(
   // Designers section
   if (designers.length > 0) {
     const totalProjects = designers.reduce((s, d) => s + d.projects, 0);
-    const totalInvited = designers.reduce((s, d) => s + d.invited, 0);
+    const totalClients = designers.reduce((s, d) => s + d.clients, 0);
 
     lines.push(`─────────────────`);
-    lines.push(`👤 Дизайнеры: ${designers.length} (проектов: ${totalProjects}, приглашено: ${totalInvited})`);
+    lines.push(`👤 Дизайнеры: ${designers.length} (проектов: ${totalProjects}, заказчиков: ${totalClients})`);
 
     designers.forEach((d, i) => {
       const name = d.full_name.length > 22 ? d.full_name.slice(0, 20) + "…" : d.full_name;
@@ -433,7 +431,7 @@ function buildReport(
       lines.push(``);
       lines.push(`${i + 1}. ${name}`);
       lines.push(`   ✉ ${d.email}`);
-      lines.push(`   📁 Проектов: ${d.projects} · 👥 Приглашено: ${d.invited}`);
+      lines.push(`   📁 Проектов: ${d.projects} · 👥 Заказчиков: ${d.clients}`);
       lines.push(`   📅 Регистрация: ${d.days_active} дн назад · Был: ${lastSeen}`);
       lines.push(`   ⏱ За период: ${periodTime} · Всего: ${totalTime}`);
     });
