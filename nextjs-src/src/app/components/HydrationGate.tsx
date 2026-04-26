@@ -12,11 +12,13 @@ export default function HydrationGate() {
   useEffect(() => {
     const el = document.getElementById('af-fallback-screen');
     if (el) {
+      // Hide only — DO NOT remove(). The node is part of the server-rendered
+      // React tree (rendered inside layout.tsx JSX), so detaching it from the
+      // DOM orphans React's internal references. On the next <body> update,
+      // React's insertBefore() throws NotFoundError, which cascades into
+      // React error #185 (recovery loop) and #327 (Suspense hydration fail) —
+      // user sees "Application error: a client-side exception has occurred".
       el.style.display = 'none';
-      // Remove it after a short delay to free the DOM node
-      setTimeout(() => {
-        try { el.remove(); } catch {}
-      }, 100);
     }
   }, []);
   return null;
