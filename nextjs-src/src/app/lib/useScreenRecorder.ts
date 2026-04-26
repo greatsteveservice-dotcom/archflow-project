@@ -162,7 +162,18 @@ export function useScreenRecorder(): UseScreenRecorder {
     } catch (e: any) {
       cleanup();
       setState("idle");
-      setError(e?.message || "Не удалось начать запись");
+      const raw = e?.message || "";
+      let msg = "Не удалось начать запись";
+      if (e?.name === "NotAllowedError" || /not allowed/i.test(raw)) {
+        msg = "Доступ к экрану или камере запрещён. Разрешите в настройках браузера и попробуйте снова.";
+      } else if (e?.name === "NotFoundError" || /no.*device|not found/i.test(raw)) {
+        msg = "Не найдена камера или микрофон. Подключите устройство и попробуйте снова.";
+      } else if (/abort|cancel/i.test(raw)) {
+        msg = "Выбор окна отменён.";
+      } else if (/getDisplayMedia is not/i.test(raw)) {
+        msg = "Браузер не поддерживает запись экрана. Используйте Chrome или Edge на десктопе.";
+      }
+      setError(msg);
     }
   }, [cleanup]);
 
