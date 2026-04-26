@@ -9,7 +9,8 @@ import { useCallback, useRef, useState } from "react";
 //
 // Ограничения:
 // - Только в Chrome/Edge на десктопе (Safari getDisplayMedia ограничен)
-// - Лимит длины 5 минут (300 сек) — иначе блобы становятся слишком тяжёлыми
+// - Лимит длины 20 минут (1200 сек). При битрейте 1 Мбит/с это ~150 МБ
+//   за полные 20 мин — укладывается в 350 МБ upload-cap с запасом.
 
 export interface RecordingResult {
   blob: Blob;
@@ -27,7 +28,7 @@ export interface UseScreenRecorder {
   error: string | null;
 }
 
-const MAX_DURATION = 300; // 5 min
+const MAX_DURATION = 1200; // 20 min
 
 export function useScreenRecorder(): UseScreenRecorder {
   const [state, setState] = useState<UseScreenRecorder["state"]>("idle");
@@ -149,7 +150,7 @@ export function useScreenRecorder(): UseScreenRecorder {
       const mimeType = mimeCandidates.find((m) => MediaRecorder.isTypeSupported(m)) || "";
       if (!mimeType) throw new Error("Браузер не поддерживает запись видео");
 
-      const recorder = new MediaRecorder(canvasStream, { mimeType, videoBitsPerSecond: 1_500_000 });
+      const recorder = new MediaRecorder(canvasStream, { mimeType, videoBitsPerSecond: 1_000_000 });
       chunksRef.current = [];
       recorder.ondataavailable = (e) => {
         if (e.data.size > 0) chunksRef.current.push(e.data);

@@ -6,6 +6,7 @@ import VideoRecorderModal from "./VideoRecorderModal";
 
 interface VideoRecord {
   id: string;
+  title: string | null;
   duration_sec: number | null;
   size_bytes: number | null;
   transcript: string | null;
@@ -34,12 +35,14 @@ export default function FileVideoSection({ fileId, canRecord, toast }: Props) {
   const [playerVideoId, setPlayerVideoId] = useState<string | null>(null);
   const [playerUrl, setPlayerUrl] = useState<string | null>(null);
   const [showTranscriptId, setShowTranscriptId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
 
   const refetch = useCallback(async () => {
     setLoading(true);
     const { data } = await supabase
       .from("design_file_videos")
-      .select("id, duration_sec, size_bytes, transcript, transcript_status, created_by, created_at")
+      .select("id, title, duration_sec, size_bytes, transcript, transcript_status, created_by, created_at")
       .eq("file_id", fileId)
       .order("created_at", { ascending: false });
     setVideos((data as VideoRecord[]) || []);
@@ -74,6 +77,36 @@ export default function FileVideoSection({ fileId, canRecord, toast }: Props) {
   const closePlayer = () => {
     setPlayerVideoId(null);
     setPlayerUrl(null);
+  };
+
+  const startEditTitle = (v: VideoRecord) => {
+    setEditingId(v.id);
+    setEditTitle(v.title || "");
+  };
+
+  const cancelEditTitle = () => {
+    setEditingId(null);
+    setEditTitle("");
+  };
+
+  const saveTitle = async (id: string) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const r = await fetch(`/api/videos/${id}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session?.access_token}`,
+      },
+      body: JSON.stringify({ title: editTitle.trim() || null }),
+    });
+    if (r.ok) {
+      toast(editTitle.trim() ? "Название сохранено" : "Название убрано");
+      cancelEditTitle();
+      refetch();
+    } else {
+      const j = await r.json().catch(() => ({}));
+      toast(j.error || "Не удалось сохранить");
+    }
   };
 
   const deleteVideo = async (id: string) => {
@@ -134,9 +167,53 @@ export default function FileVideoSection({ fileId, canRecord, toast }: Props) {
                 ▶
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontSize: 13, margin: 0, marginBottom: 4 }}>
-                  Видеообзор · {formatDuration(v.duration_sec)}
-                </p>
+                {editingId === v.id ? (
+                  <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 4 }}>
+                    <input
+                      autoFocus
+                      type="text"
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") saveTitle(v.id);
+                        if (e.key === "Escape") cancelEditTitle();
+                      }}
+                      placeholder="Название видеообзора"
+                      maxLength={200}
+                      style={{
+                        flex: 1, fontSize: 13, padding: "4px 6px",
+                        border: "0.5px solid #111", outline: "none",
+                        fontFamily: "var(--af-font)",
+                      }}
+                    />
+                    <button
+                      onClick={() => saveTitle(v.id)}
+                      style={{ fontSize: 10, padding: "4px 8px", background: "#111", color: "#fff", border: "none", cursor: "pointer", fontFamily: "var(--af-font-mono)", letterSpacing: "0.1em", textTransform: "uppercase" }}
+                    >Сохр.</button>
+                    <button
+                      onClick={cancelEditTitle}
+                      style={{ fontSize: 10, padding: "4px 8px", background: "none", color: "#646464", border: "0.5px solid #EBEBEB", cursor: "pointer", fontFamily: "var(--af-font-mono)", letterSpacing: "0.1em", textTransform: "uppercase" }}
+                    >×</button>
+                  </div>
+                ) : (
+                  <p style={{ fontSize: 13, margin: 0, marginBottom: 4, display: "flex", alignItems: "baseline", gap: 8 }}>
+                    <span style={{ fontWeight: v.title ? 600 : 400 }}>
+                      {v.title || "Видеообзор"}
+                    </span>
+                    <span style={{ color: "#888" }}>· {formatDuration(v.duration_sec)}</span>
+                    {canRecord && (
+                      <button
+                        onClick={() => startEditTitle(v)}
+                        title="Переименовать"
+                        style={{
+                          fontSize: 9, color: "#888", background: "none", border: "none",
+                          cursor: "pointer", padding: "0 4px", fontFamily: "var(--af-font-mono)",
+                          letterSpacing: "0.1em", textTransform: "uppercase",
+                        }}
+                      >Перенаименовать</button>
+                    )}
+                  </p>
+                )}
                 <p style={{ fontSize: 10, color: "#888", margin: 0, fontFamily: "var(--af-font-mono)" }}>
                   {new Date(v.created_at).toLocaleDateString("ru-RU", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
                   {v.transcript_status === "processing" && " · расшифровка..."}
@@ -155,7 +232,7 @@ export default function FileVideoSection({ fileId, canRecord, toast }: Props) {
                   </button>
                 )}
               </div>
-              {canRecord && (
+              {canRecord && editingId !== v.id && (
                 <button
                   onClick={() => deleteVideo(v.id)}
                   style={{

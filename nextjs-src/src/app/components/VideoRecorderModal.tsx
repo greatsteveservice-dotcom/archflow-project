@@ -90,9 +90,9 @@ export default function VideoRecorderModal({ fileId, open, onClose, onUploaded, 
       toast("Это не видеофайл");
       return;
     }
-    // Лимит размера — 200 МБ (примерно 5 минут h264 1080p)
-    if (file.size > 200 * 1024 * 1024) {
-      toast("Файл больше 200 МБ. Сожмите видео или запишите короче.");
+    // Лимит размера — 350 МБ (примерно 20 минут h264 1080p при умеренном битрейте)
+    if (file.size > 350 * 1024 * 1024) {
+      toast("Файл больше 350 МБ. Сожмите видео или запишите короче.");
       return;
     }
     // Пробуем определить длительность через временный <video>
@@ -284,7 +284,7 @@ export default function VideoRecorderModal({ fileId, open, onClose, onUploaded, 
               <li><b>На Android</b> — встроенная запись экрана из шторки.</li>
             </ul>
             <p style={{ fontSize: 11, color: "#888", margin: 0, marginBottom: 18 }}>
-              Готовый файл (mp4/mov/webm, до 200 МБ) загрузите сюда — он появится рядом с проектным файлом, как обычная запись.
+              Готовый файл (mp4/mov/webm, до 350 МБ) загрузите сюда — он появится рядом с проектным файлом, как обычная запись.
             </p>
             <input
               ref={fileInputRef}
@@ -327,7 +327,7 @@ export default function VideoRecorderModal({ fileId, open, onClose, onUploaded, 
         ) : (
           <>
             <p style={{ fontSize: 13, lineHeight: 1.5, color: "#333", marginBottom: 14 }}>
-              Запишите 1–3 минуты с пояснением: открыть чертёж/визуализацию на экране и проговорить решения. Заказчик увидит видео рядом с файлом. Максимум 5 минут.
+              Запишите пояснение: открыть чертёж/визуализацию на экране и проговорить решения. Заказчик увидит видео рядом с файлом. Максимум 20 минут.
             </p>
             <p style={{ fontSize: 12, lineHeight: 1.5, color: "#646464", marginBottom: 8, fontWeight: 600 }}>
               Дальше браузер спросит:
