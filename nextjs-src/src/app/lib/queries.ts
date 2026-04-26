@@ -501,7 +501,7 @@ export async function uploadPhoto(
   const { error } = await supabase.storage
     .from('photos')
     .upload(filePath, file, {
-      cacheControl: '3600',
+      cacheControl: '31536000',
       contentType: file.type,
     });
 
@@ -1260,7 +1260,7 @@ export async function uploadDocument(file: File, projectId: string): Promise<str
   const { error } = await supabase.storage
     .from('documents')
     .upload(filePath, file, {
-      cacheControl: '3600',
+      cacheControl: '31536000',
       contentType: file.type,
     });
 
@@ -1755,7 +1755,7 @@ export async function uploadReportFile(file: File, projectId: string, reportId: 
   const { error } = await supabase.storage
     .from('documents')
     .upload(filePath, file, {
-      cacheControl: '3600',
+      cacheControl: '31536000',
       contentType: file.type,
     });
 

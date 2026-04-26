@@ -117,7 +117,7 @@ export default function SupplyDocuments({ projectId, toast }: SupplyDocumentsPro
         const { error } = await supabase.storage
           .from('supply-docs')
           .upload(filePath, file, {
-            cacheControl: '3600',
+            cacheControl: '31536000',
             contentType: file.type,
           });
 

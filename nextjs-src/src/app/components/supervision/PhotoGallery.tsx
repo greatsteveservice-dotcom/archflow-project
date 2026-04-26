@@ -7,6 +7,7 @@ import type { PhotoRecordWithVisit, PhotoStatus, VisitWithStats } from '../../li
 import { useProjectPhotos } from '../../lib/hooks';
 import { formatDate, updatePhotoStatus, updatePhotoRecord, uploadPhoto, createPhotoRecord, createVisit, deletePhotoRecord } from '../../lib/queries';
 import { PHOTO_STATUS_CONFIG } from '../../lib/types';
+import { thumb, preview } from '../../lib/imgUrl';
 
 const ZONES = ['Спальня', 'Гостиная', 'Кухня', 'Ванная', 'Детская', 'Прихожая', 'Коридор', 'Балкон', 'Гардеробная'];
 
@@ -320,7 +321,7 @@ export default function PhotoGallery({ projectId, toast, canChangePhotoStatus = 
                     >
                       {photo.photo_url ? (
                         <div className="aspect-square bg-srf-secondary relative">
-                          <Image src={photo.photo_url} alt="" fill sizes="(max-width: 640px) 50vw, 25vw" className="object-cover" />
+                          <Image src={thumb(photo.photo_url)} alt="" fill sizes="(max-width: 640px) 50vw, 25vw" className="object-cover" unoptimized />
                           <div className="absolute top-2 right-2">
                             <span className={`text-[10px] font-medium px-1.5 py-0.5 ${cfg.bg} ${cfg.color}`}>
                               {cfg.label}
@@ -374,7 +375,7 @@ export default function PhotoGallery({ projectId, toast, canChangePhotoStatus = 
         {selectedPhoto && (
           <div className="space-y-4">
             {selectedPhoto.photo_url && (
-              <Image src={selectedPhoto.photo_url} alt="" width={960} height={720} sizes="(max-width: 480px) 92vw, 448px" className="w-full" style={{ height: 'auto' }} />
+              <Image src={preview(selectedPhoto.photo_url)} alt="" width={960} height={720} sizes="(max-width: 480px) 92vw, 448px" className="w-full" style={{ height: 'auto' }} unoptimized />
             )}
             {isEditing ? (
               <div className="space-y-3">

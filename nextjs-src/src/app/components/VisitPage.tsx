@@ -8,6 +8,7 @@ import { ErrorMessage } from "./Loading";
 import { VisitPageSkeleton } from "./Skeleton";
 import ConfirmDialog from "./ConfirmDialog";
 import { useVisit, useVisitPhotos, useProject } from "../lib/hooks";
+import { thumb } from "../lib/imgUrl";
 import { usePermissions } from "../lib/permissions";
 import { formatDate, uploadPhoto, createPhotoRecord, updatePhotoStatus, deletePhotoRecord } from "../lib/queries";
 import { PHOTO_STATUS_CONFIG } from "../lib/types";
@@ -202,7 +203,7 @@ export default function VisitPage({ projectId, visitId, onNavigate, toast, onMen
               return (
                 <div key={photo.id} className="af-file-thumb group" style={{ aspectRatio: '1/1' }}>
                   {photo.photo_url ? (
-                    <Image src={photo.photo_url} alt={photo.comment || 'Фото'} fill sizes="33vw" style={{ objectFit: 'cover' }} />
+                    <Image src={thumb(photo.photo_url)} alt={photo.comment || 'Фото'} fill sizes="33vw" style={{ objectFit: 'cover' }} unoptimized />
                   ) : (
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', color: '#EBEBEB' }}>
                       —

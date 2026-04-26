@@ -5,6 +5,7 @@ import { Icons } from '../Icons';
 import type { ContractorTaskWithDetails, TaskStatus, ProjectMemberWithProfile } from '../../lib/types';
 import { useContractorTasks } from '../../lib/hooks';
 import { createContractorTask, updateContractorTask, deleteContractorTask } from '../../lib/queries';
+import { thumb } from '../../lib/imgUrl';
 
 // ─── Status config ───────────────────────────────────────
 const STATUS_LABEL: Record<TaskStatus, string> = {
@@ -319,7 +320,7 @@ function TaskDetail({
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2 }}>
             {task.photos.map((url, i) => (
               <div key={i} style={{ aspectRatio: '3/4', background: '#F6F6F4', overflow: 'hidden', position: 'relative' }}>
-                <Image src={url} alt="" fill sizes="33vw" style={{ objectFit: 'cover' }} />
+                <Image src={thumb(url)} alt="" fill sizes="33vw" style={{ objectFit: 'cover' }} unoptimized />
               </div>
             ))}
           </div>

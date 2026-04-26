@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { searchProjectSupplyItems } from '../../lib/queries';
 import type { MoodboardItem, MoodboardSection, CanvasTool } from '../../lib/types';
+import { preview } from '../../lib/imgUrl';
 
 interface SupplySearchItem {
   id: string;
@@ -196,7 +197,7 @@ export default function CanvasSidebar({
             style={{ marginBottom: 6 }}
           />
           {selectedItem.image_url && (
-            <img src={selectedItem.image_url} alt="" style={{ width: '100%', height: 'auto', border: '0.5px solid #EBEBEB', marginTop: 4 }} />
+            <img src={preview(selectedItem.image_url)} alt="" style={{ width: '100%', height: 'auto', border: '0.5px solid #EBEBEB', marginTop: 4 }} />
           )}
         </div>
       )}

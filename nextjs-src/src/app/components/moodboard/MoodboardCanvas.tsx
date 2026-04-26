@@ -15,6 +15,7 @@ import {
 } from '../../lib/queries';
 import { supabase } from '../../lib/supabase';
 import type { Moodboard, MoodboardItem, MoodboardSection, CanvasTool } from '../../lib/types';
+import { imgUrl } from '../../lib/imgUrl';
 
 /* ═══ Sub-components ═══ */
 
@@ -40,8 +41,10 @@ interface NodeProps {
 }
 
 function ImageNode({ item, isSelected, onSelect, onDragEnd, tool }: NodeProps & { item: MoodboardItem }) {
-  const img = useCanvasImage(item.image_url);
   const w = item.canvas_w || 200, h = item.canvas_h || 200;
+  // Request transform 2× canvas size for retina; clamp to 1200px max.
+  const tw = Math.min(1200, Math.ceil(w * 2));
+  const img = useCanvasImage(imgUrl(item.image_url, { width: tw, quality: 80 }));
   return (
     <Group
       id={item.id} x={item.canvas_x || 0} y={item.canvas_y || 0}
@@ -93,8 +96,9 @@ function ColorSwatchNode({ item, isSelected, onSelect, onDragEnd, tool }: NodePr
 }
 
 function CatalogNode({ item, isSelected, onSelect, onDragEnd, tool }: NodeProps & { item: MoodboardItem }) {
-  const img = useCanvasImage(item.image_url);
   const w = item.canvas_w || 220, h = item.canvas_h || 200;
+  const tw = Math.min(1200, Math.ceil(w * 2));
+  const img = useCanvasImage(imgUrl(item.image_url, { width: tw, quality: 80 }));
   const imgH = h - 44; // leave space for label
   return (
     <Group
