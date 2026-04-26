@@ -7,6 +7,7 @@ import { useAuth } from '../../lib/auth';
 import { DESIGN_FOLDERS } from '../../lib/types';
 import type { DesignFolder, DesignFileCommentWithProfile, SignatureStatus } from '../../lib/types';
 import SignatureSection from './SignatureSection';
+import FileVideoSection from '../FileVideoSection';
 
 interface DesignFileDetailProps {
   fileId: string;
@@ -412,6 +413,9 @@ export default function DesignFileDetail({
           </>
         )}
       </div>
+
+      {/* Video reviews section */}
+      <FileVideoSection fileId={fileId} canRecord={!!canDelete} toast={toast} />
 
       {/* Comments section */}
       <div style={{ borderTop: '0.5px solid #EBEBEB', paddingTop: 16 }}>
