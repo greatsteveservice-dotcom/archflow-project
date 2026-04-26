@@ -911,26 +911,40 @@ function FileTile({
           </div>
         </div>
       ) : isPdfFile ? (
-        /* PDF tile — scaled-down iframe preview of first page */
+        /* PDF tile — clean placeholder (no in-tile PDF render: unreliable across browsers + pulls full file over network) */
         <div style={{
-          position: 'relative',
-          width: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
           height: '100%',
-          overflow: 'hidden',
+          padding: 12,
+          gap: 10,
+          textAlign: 'center',
           background: '#F6F6F4',
         }}>
-          <iframe
-            src={file.file_url}
-            style={{
-              position: 'absolute', top: 0, left: 0,
-              width: '500%', height: '500%',
-              border: 'none', pointerEvents: 'none',
-              transform: 'scale(0.2)',
-              transformOrigin: 'top left',
-            }}
-            title={file.name}
-            loading="lazy"
-          />
+          <div style={{
+            fontFamily: 'var(--af-font-display)',
+            fontSize: 20,
+            fontWeight: 900,
+            letterSpacing: '0.05em',
+            color: '#111',
+            lineHeight: 1,
+          }}>PDF</div>
+          <div style={{
+            fontFamily: 'var(--af-font-mono)',
+            fontSize: 9,
+            color: '#111',
+            lineHeight: 1.3,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            wordBreak: 'break-word',
+          }}>
+            {file.name}
+          </div>
         </div>
       ) : (
         <div style={{

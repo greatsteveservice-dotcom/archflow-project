@@ -453,6 +453,23 @@ export default function LoginPage({ inviteHint = false }: { inviteHint?: boolean
             </button>
           )}
         </div>
+
+        <div style={{
+          marginTop: 32,
+          paddingTop: 16,
+          borderTop: '0.5px solid #EBEBEB',
+          display: 'flex',
+          gap: 18,
+          flexWrap: 'wrap',
+          fontFamily: 'var(--af-font-mono)',
+          fontSize: 10,
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
+        }}>
+          <a href="/pricing" style={{ color: '#111', textDecoration: 'none' }}>Тарифы</a>
+          <a href="/privacy" style={{ color: '#111', textDecoration: 'none' }}>Политика</a>
+          <a href="mailto:archflow.office@gmail.com" style={{ color: '#111', textDecoration: 'none' }}>Контакт</a>
+        </div>
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 
 type SortBy = 'availability' | 'price' | 'reliability';
@@ -33,8 +33,10 @@ const AVAILABILITY_LABEL: Record<SearchResult['availability'], string> = {
 
 export default function SupplySearch({ projectId, supplyItemId, initialQuery, initialBudget, onClose }: Props) {
   const [query, setQuery] = useState(initialQuery || '');
-  const [budget, setBudget] = useState<string>(initialBudget ? String(initialBudget) : '');
+  const [budgetFrom, setBudgetFrom] = useState<string>('');
+  const [budgetTo, setBudgetTo] = useState<string>(initialBudget ? String(initialBudget) : '');
   const [sortBy, setSortBy] = useState<SortBy>('availability');
+  const [priceAsc, setPriceAsc] = useState<boolean>(true);
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
@@ -42,7 +44,7 @@ export default function SupplySearch({ projectId, supplyItemId, initialQuery, in
   const [cached, setCached] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  async function handleSearch(overrideQuery?: string, overrideSort?: SortBy) {
+  async function handleSearch(overrideQuery?: string) {
     const q = (overrideQuery ?? query).trim();
     if (q.length < 3) { setError('Слишком короткий запрос'); return; }
     setLoading(true);
@@ -57,8 +59,8 @@ export default function SupplySearch({ projectId, supplyItemId, initialQuery, in
         },
         body: JSON.stringify({
           query: q,
-          budget: budget ? parseInt(budget, 10) : null,
-          sortBy: overrideSort ?? sortBy,
+          budget: budgetTo ? parseInt(budgetTo, 10) : null,
+          sortBy: 'availability',
           supplyItemId,
           projectId,
         }),
@@ -106,10 +108,48 @@ export default function SupplySearch({ projectId, supplyItemId, initialQuery, in
     setTranscribing(false);
   }
 
-  const onSort = (s: SortBy) => { setSortBy(s); if (results.length) handleSearch(undefined, s); };
+  const onSort = (s: SortBy) => {
+    if (s === 'price' && sortBy === 'price') {
+      setPriceAsc(a => !a);
+    } else {
+      setSortBy(s);
+      if (s === 'price') setPriceAsc(true);
+    }
+  };
 
-  const inBudgetCount = results.filter(r => r.inBudget === true).length;
-  const clarifyCount = results.filter(r => r.price == null).length;
+  const budgetFromNum = budgetFrom ? parseInt(budgetFrom, 10) : null;
+  const budgetToNum = budgetTo ? parseInt(budgetTo, 10) : null;
+
+  const displayedResults = useMemo(() => {
+    const withInBudget = results.map(r => {
+      let inBudget: boolean | null = null;
+      if (r.price != null && (budgetFromNum != null || budgetToNum != null)) {
+        inBudget = (budgetFromNum == null || r.price >= budgetFromNum)
+          && (budgetToNum == null || r.price <= budgetToNum);
+      }
+      return { ...r, inBudget };
+    });
+    return [...withInBudget].sort((a, b) => {
+      if (sortBy === 'availability') {
+        const order = { in_stock: 0, in_catalog: 1, unknown: 2 } as const;
+        return order[a.availability] - order[b.availability];
+      }
+      if (sortBy === 'price') {
+        if (a.price != null && b.price != null) return priceAsc ? a.price - b.price : b.price - a.price;
+        if (a.price != null) return -1;
+        if (b.price != null) return 1;
+        return 0;
+      }
+      if (sortBy === 'reliability') {
+        const aAge = a.domainAge || 0, bAge = b.domainAge || 0;
+        return bAge - aAge;
+      }
+      return 0;
+    });
+  }, [results, sortBy, priceAsc, budgetFromNum, budgetToNum]);
+
+  const inBudgetCount = displayedResults.filter(r => r.inBudget === true).length;
+  const clarifyCount = displayedResults.filter(r => r.price == null).length;
 
   return (
     <div
@@ -183,15 +223,25 @@ export default function SupplySearch({ projectId, supplyItemId, initialQuery, in
           </div>
 
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}>
-            <span className="af-input-label" style={{ whiteSpace: 'nowrap' }}>Бюджет до</span>
+            <span className="af-input-label" style={{ whiteSpace: 'nowrap' }}>Бюджет</span>
             <input
               className="af-input"
-              style={{ flex: 1 }}
-              placeholder="150 000"
+              style={{ flex: 1, minWidth: 0 }}
+              placeholder="от"
               type="number"
               inputMode="numeric"
-              value={budget}
-              onChange={(e) => setBudget(e.target.value)}
+              value={budgetFrom}
+              onChange={(e) => setBudgetFrom(e.target.value)}
+            />
+            <span style={{ fontFamily: 'var(--af-font)', fontSize: 11, color: '#999' }}>—</span>
+            <input
+              className="af-input"
+              style={{ flex: 1, minWidth: 0 }}
+              placeholder="до"
+              type="number"
+              inputMode="numeric"
+              value={budgetTo}
+              onChange={(e) => setBudgetTo(e.target.value)}
             />
             <span style={{ fontFamily: 'var(--af-font)', fontSize: 12, color: '#999' }}>₽</span>
           </div>
@@ -226,7 +276,6 @@ export default function SupplySearch({ projectId, supplyItemId, initialQuery, in
               <button
                 key={s}
                 onClick={() => onSort(s)}
-                disabled={loading}
                 style={{
                   fontFamily: 'var(--af-font)', fontSize: 10,
                   textTransform: 'uppercase', letterSpacing: '0.08em',
@@ -236,7 +285,9 @@ export default function SupplySearch({ projectId, supplyItemId, initialQuery, in
                   border: '0.5px solid ' + (sortBy === s ? '#111' : '#EBEBEB'),
                 }}
               >
-                {s === 'availability' ? 'Наличие' : s === 'price' ? 'Цена' : 'Надёжность'}
+                {s === 'availability' ? 'Наличие'
+                  : s === 'price' ? `Цена ${sortBy === 'price' ? (priceAsc ? '↑' : '↓') : ''}`
+                  : 'Надёжность'}
               </button>
             ))}
           </div>
@@ -250,7 +301,7 @@ export default function SupplySearch({ projectId, supplyItemId, initialQuery, in
             textTransform: 'uppercase', letterSpacing: '0.06em',
             color: '#999', flexShrink: 0,
           }}>
-            {results.length} поставщиков
+            {displayedResults.length} поставщиков
             {inBudgetCount > 0 && ` · ${inBudgetCount} в бюджете`}
             {clarifyCount > 0 && ` · ${clarifyCount} уточнить цену`}
             {cached && ' · из кэша'}
@@ -259,7 +310,7 @@ export default function SupplySearch({ projectId, supplyItemId, initialQuery, in
 
         {/* Results */}
         <div style={{ overflowY: 'auto', flex: 1 }}>
-          {results.map((r, i) => (
+          {displayedResults.map((r, i) => (
             <div
               key={r.url}
               style={{

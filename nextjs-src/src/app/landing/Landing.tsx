@@ -75,26 +75,12 @@ const navLinkStyle: React.CSSProperties = {
   textTransform: "uppercase", color: "#111", textDecoration: "none",
 };
 
-// ── Rail (left column shared by all sections) ─────────────
-function Rail({ index, label }: { index: string; label: string }) {
-  return (
-    <div className="afl-rail">
-      <div className="top">
-        <span className="afl-micro">{index}</span>
-      </div>
-      <div className="vert">{label}</div>
-      <div className="bot">
-        <span className="afl-micro faint">↓</span>
-      </div>
-    </div>
-  );
-}
+// Rail removed — was rendering left-column index/label that duplicated section meaning.
 
 // ── 01 · Hero — Манифест ──────────────────────────────────
 function Hero() {
   return (
     <section className="afl-sect afl-h-hero">
-      <Rail index="01" label="Манифест" />
       <div className="afl-body">
         <blockquote className="quote">«... Да каждый день!»</blockquote>
         <p className="credit">
@@ -127,15 +113,9 @@ const HERO_PROJECTS = [
 function HeroShot() {
   return (
     <section className="afl-sect afl-shot-sect">
-      <Rail index="02" label="Главный экран" />
       <div className="afl-body">
         <div className="afl-frame">
           <div className="afl-frame-tab">
-            <span className="afl-logo">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logo.png" alt="" style={{ height: 14 }} />
-              <span className="afl-logo-word" style={{ fontSize: 11 }}>Archflow</span>
-            </span>
             <span className="afl-micro muted">Иванова М. · 4 проекта · 2 архивных</span>
           </div>
           <div className="afl-frame-body" style={{ padding: 20 }}>
@@ -179,7 +159,6 @@ const STEPS = [
 function How() {
   return (
     <section className="afl-sect afl-how">
-      <Rail index="03" label="Как это работает" />
       <div className="afl-body">
         <div className="head">
           <span className="afl-micro muted">Как это работает</span>
@@ -348,7 +327,6 @@ function ModuleSection({ m }: { m: ModuleDef }) {
       id={m.id}
       style={{ order: m.order }}
     >
-      <Rail index={m.rail} label={m.vert} />
       <div className="afl-body">
         {m.reverse ? (
           <>
@@ -650,13 +628,9 @@ const BA_ITEMS = [
 function BeforeAfter() {
   return (
     <section className="afl-sect afl-ba">
-      <Rail index="09" label="До · После" />
       <div className="afl-body">
         <div className="head">
           <h2>Жизнь дизайнера<br />меняется.</h2>
-          <p className="lede">
-            Не всё сразу, но по одному пункту в неделю. Главное — хаоса становится меньше, а доказательств работы — больше.
-          </p>
         </div>
         <div className="afl-ba-table">
           {BA_ITEMS.map((it, i) => (
@@ -693,7 +667,6 @@ const TRUST = [
 function Trust() {
   return (
     <section className="afl-sect afl-trust">
-      <Rail index="10" label="Надёжность" />
       <div className="afl-body">
         <div className="head">
           <h2>Ваши проекты<br />под защитой.</h2>
@@ -725,7 +698,6 @@ const PRICING = [
 function Pricing() {
   return (
     <section id="pricing" className="afl-sect afl-pri">
-      <Rail index="11" label="Тарифы" />
       <div className="afl-body">
         <div className="head">
           <h2>Одна подписка.<br />Без скрытых платежей.</h2>
@@ -782,7 +754,6 @@ function FAQ() {
   const [open, setOpen] = useState<number>(0);
   return (
     <section id="faq" className="afl-sect afl-faq">
-      <Rail index="12" label="Вопросы" />
       <div className="afl-body">
         <div className="head"><h2>Честные ответы.</h2></div>
         <div className="afl-faq-list">
@@ -811,7 +782,6 @@ function FAQ() {
 function FinalCTA() {
   return (
     <section className="afl-sect afl-final">
-      <Rail index="13" label="Триал" />
       <div className="afl-body">
         <div>
           <h2>Семь дней,<br /><span className="ghost">чтобы проверить.</span></h2>
@@ -832,11 +802,6 @@ function FinalCTA() {
 function Footer() {
   return (
     <section className="afl-sect afl-footer">
-      <div className="afl-rail">
-        <div className="top"><span className="afl-micro muted">∞</span></div>
-        <div className="vert">archflow · 2026</div>
-        <div className="bot" />
-      </div>
       <div className="afl-body">
         <div className="brand">
           <a href="/welcome" className="afl-logo" aria-label="Archflow">
@@ -870,9 +835,8 @@ function Footer() {
         <FooterCol
           title="Юридическое"
           links={[
-            { href: "#", label: "ИП Колунов Е. Е." },
-            { href: "#", label: "Оператор ПДн" },
-            { href: "#", label: "63-ФЗ · подпись" },
+            { label: "ИП Колунов Е. Е." },
+            { label: "Оператор ПДн" },
           ]}
         />
         <div className="copyright">
@@ -884,12 +848,16 @@ function Footer() {
   );
 }
 
-function FooterCol({ title, links }: { title: string; links: { href: string; label: string }[] }) {
+function FooterCol({ title, links }: { title: string; links: { href?: string; label: string }[] }) {
   return (
     <div>
       <h4>{title}</h4>
       <ul>
-        {links.map((l) => <li key={l.label}><a href={l.href}>{l.label}</a></li>)}
+        {links.map((l) => (
+          <li key={l.label}>
+            {l.href ? <a href={l.href}>{l.label}</a> : <span>{l.label}</span>}
+          </li>
+        ))}
       </ul>
     </div>
   );

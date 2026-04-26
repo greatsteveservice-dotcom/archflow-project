@@ -3,6 +3,7 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import ProjectCard from "./ProjectCard";
 import EmptyState from "./EmptyState";
+import ChangelogBanner from "./ChangelogBanner";
 import { ErrorMessage } from "./Loading";
 import { ProjectsListSkeleton } from "./Skeleton";
 import { useProjectsPaginated, usePendingAlerts, useUnreadCounts } from "../lib/hooks";
@@ -71,9 +72,6 @@ export default function ProjectsPage({ onNavigate, onCreateProject, refreshKey =
     );
   }
 
-  const activeCount = projects.filter(p => p.status === 'active').length;
-  const completedCount = projects.filter(p => p.status === 'completed').length;
-
   const now = new Date();
   const dateStr = now.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
 
@@ -102,23 +100,6 @@ export default function ProjectsPage({ onNavigate, onCreateProject, refreshKey =
         >
           Выйти
         </button>
-      </div>
-
-      {/* Status filters only (search moved to bottom tabbar) */}
-      <div className="flex items-center gap-3 mb-5">
-        <div className="stab">
-          <button className={`stb ${statusFilter === "all" ? "active" : ""}`} onClick={() => setStatusFilter("all")}>
-            Все ({total})
-          </button>
-          <button className={`stb ${statusFilter === "active" ? "active" : ""}`} onClick={() => setStatusFilter("active")}>
-            Активные ({activeCount})
-          </button>
-          {completedCount > 0 && (
-            <button className={`stb ${statusFilter === "completed" ? "active" : ""}`} onClick={() => setStatusFilter("completed")}>
-              Завершённые ({completedCount})
-            </button>
-          )}
-        </div>
       </div>
 
       {/* Results */}
@@ -157,6 +138,9 @@ export default function ProjectsPage({ onNavigate, onCreateProject, refreshKey =
               </button>
             </div>
           )}
+
+          {/* Changelog announcement */}
+          <ChangelogBanner />
         </>
       ) : (
         <div className="af-empty">

@@ -32,7 +32,7 @@ function getFirstDayOfMonth(year: number, month: number) {
 function EventChip({ label, inverted = false }: { label: string; inverted?: boolean }) {
   return (
     <div style={{
-      width: '100%',
+      alignSelf: 'flex-start',
       background: inverted ? '#FFFFFF' : '#111111',
       color: inverted ? '#111111' : '#FFFFFF',
       fontFamily: 'var(--af-font-mono)',
@@ -41,25 +41,6 @@ function EventChip({ label, inverted = false }: { label: string; inverted?: bool
       letterSpacing: '0.08em',
       textTransform: 'uppercase',
       textAlign: 'center',
-      padding: '2px 0',
-      lineHeight: 1,
-    }}>
-      {label}
-    </div>
-  );
-}
-
-/** Compact chip for legend (icon-size) */
-function LegendChip({ label }: { label: string }) {
-  return (
-    <div style={{
-      background: '#111111',
-      color: '#FFFFFF',
-      fontFamily: 'var(--af-font-mono)',
-      fontSize: 8,
-      fontWeight: 600,
-      letterSpacing: '0.08em',
-      textTransform: 'uppercase',
       padding: '2px 6px',
       lineHeight: 1,
     }}>
@@ -331,7 +312,7 @@ export default function CalendarView({ projectId, visits, toast, refetchVisits, 
         </div>
         <div className="grid grid-cols-7 gap-0.5">
           {Array.from({ length: firstDay }).map((_, i) => (
-            <div key={`empty-${i}`} className="aspect-square md:aspect-auto md:h-[52px]" style={{ background: '#FFFFFF' }} />
+            <div key={`empty-${i}`} className="h-[70px] md:h-[84px]" style={{ background: '#FFFFFF', border: '0.5px dashed #EBEBEB' }} />
           ))}
           {Array.from({ length: daysInMonth }).map((_, i) => {
             const day = i + 1;
@@ -347,43 +328,35 @@ export default function CalendarView({ projectId, visits, toast, refetchVisits, 
             return (
               <div
                 key={day}
-                className="h-[84px] md:h-[96px] flex flex-col cursor-pointer transition-all"
+                className="h-[70px] md:h-[84px] flex flex-col cursor-pointer transition-all"
                 style={{
                   fontFamily: 'var(--af-font-mono)',
                   background: inverted ? '#111111' : '#FFFFFF',
                   color: inverted ? '#FFFFFF' : '#111111',
-                  padding: '6px 4px 4px',
-                  gap: 3,
+                  padding: '6px 6px',
+                  gap: 6,
+                  border: inverted ? 'none' : '0.5px dashed #EBEBEB',
                 }}
                 onClick={() => handleDayClick(day)}
               >
                 <span style={{
                   fontSize: 14,
                   fontWeight: isToday ? 700 : 500,
-                  padding: '0 4px',
                 }}>{day}</span>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 'auto' }}>
-                  {hasScheduledVisit && <EventChip label="Визит" inverted={inverted} />}
-                  {hasPaymentReminder && <EventChip label="Счёт" inverted={inverted} />}
-                  {!hasIcons && dayVisits.length > 0 && (
-                    <EventChip label={`${dayVisits.length} визит${dayVisits.length > 1 ? 'а' : ''}`} inverted={inverted} />
-                  )}
-                </div>
+                {(hasScheduledVisit || hasPaymentReminder || (!hasIcons && dayVisits.length > 0)) && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'flex-start' }}>
+                    {hasScheduledVisit && <EventChip label="Визит" inverted={inverted} />}
+                    {hasPaymentReminder && <EventChip label="Счёт" inverted={inverted} />}
+                    {!hasIcons && dayVisits.length > 0 && (
+                      <EventChip label={`${dayVisits.length} визит${dayVisits.length > 1 ? 'а' : ''}`} inverted={inverted} />
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}
         </div>
 
-        {/* Legend */}
-        {hasConfig && (
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 10,
-            marginTop: 14, paddingTop: 8,
-          }}>
-            <LegendChip label="Визит" />
-            <LegendChip label="Счёт" />
-          </div>
-        )}
       </div>
 
       {/* Selected date visits */}
