@@ -6,7 +6,6 @@ import { ThemeProvider } from "./lib/theme";
 import YandexMetrika from "./components/YandexMetrika";
 import ServiceWorkerRegistration from "./components/ServiceWorkerRegistration";
 import HydrationGate from "./components/HydrationGate";
-import ChunkErrorHandler from "./components/ChunkErrorHandler";
 
 const vollkornSC = Vollkorn_SC({
   subsets: ['latin', 'cyrillic'],
@@ -191,7 +190,6 @@ export default function RootLayout({
 
         <YandexMetrika />
         <ServiceWorkerRegistration />
-        <ChunkErrorHandler />
         <HydrationGate />
       </body>
     </html>
