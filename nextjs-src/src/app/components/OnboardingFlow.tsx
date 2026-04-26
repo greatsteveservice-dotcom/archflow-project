@@ -268,8 +268,10 @@ function ClientOnboarding({ userId, onComplete }: { userId: string; onComplete: 
           {/* CLIENT SLIDE 2 — Supervision */}
           <Slide>
             <div style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '24px 24px', overflowY: 'auto' }}>
-              <CalendarPreview />
-              <SlideCaption num="01 / 02" title="Авторский надзор" desc="Смотрите отчёты по визитам, замечания и их статусы." />
+              <div style={{ maxWidth: 360, width: '100%', margin: '0 auto' }}>
+                <ClientCalendarPreview />
+                <SlideCaption num="01 / 02" title="Авторский надзор" desc="Смотрите отчёты по визитам, замечания и их статусы." />
+              </div>
             </div>
           </Slide>
 
@@ -277,8 +279,10 @@ function ClientOnboarding({ userId, onComplete }: { userId: string; onComplete: 
           <Slide>
             <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
               <div style={{ padding: '24px 24px', flex: 1, overflowY: 'auto' }}>
-                <ClientChatPreview />
-                <SlideCaption num="02 / 02" title="Общайтесь с дизайнером" desc="Задавайте вопросы и комментируйте прямо в приложении." />
+                <div style={{ maxWidth: 360, width: '100%', margin: '0 auto' }}>
+                  <ClientChatPreview />
+                  <SlideCaption num="02 / 02" title="Общайтесь с дизайнером" desc="Задавайте вопросы и комментируйте прямо в приложении." />
+                </div>
               </div>
             </div>
           </Slide>
@@ -316,20 +320,60 @@ function ClientChatPreview() {
   const msgs = [
     { text: 'Добрый день! Как продвигается ремонт?', own: true },
     { text: 'Всё по графику, на этой неделе начнём плитку', own: false },
+    { text: 'Когда привезут материалы?', own: true },
+    { text: 'Завтра к 10:00, отправлю фото после', own: false },
   ];
   return (
-    <div style={{ border: '0.5px solid #EBEBEB', background: '#fff', fontSize: 0 }}>
-      <div style={{ padding: '6px 0', textAlign: 'center', fontFamily: 'var(--af-font-mono)', fontSize: 5, fontWeight: 600, color: '#111', borderBottom: '1.5px solid #111', textTransform: 'uppercase', letterSpacing: '0.12em' }}>С дизайнером</div>
-      <div style={{ padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+    <div style={{ border: '0.5px solid #EBEBEB', background: '#fff' }}>
+      <div style={{ padding: '12px 0', textAlign: 'center', fontFamily: 'var(--af-font-mono)', fontSize: 11, fontWeight: 600, color: '#111', borderBottom: '1.5px solid #111', textTransform: 'uppercase', letterSpacing: '0.14em' }}>С дизайнером</div>
+      <div style={{ padding: '16px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
         {msgs.map((m, i) => (
           <div key={i} style={{ display: 'flex', justifyContent: m.own ? 'flex-end' : 'flex-start' }}>
             <div style={{
               background: m.own ? '#111' : '#F6F6F4', color: m.own ? '#fff' : '#111',
-              padding: '4px 8px', fontFamily: 'var(--af-font-mono)', fontSize: 6,
-              maxWidth: '70%',
+              padding: '8px 12px', fontFamily: 'var(--af-font-mono)', fontSize: 13,
+              lineHeight: 1.4, maxWidth: '78%',
             }}>{m.text}</div>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function ClientCalendarPreview() {
+  const days = Array.from({ length: 30 }, (_, i) => i + 1);
+  const visitDays = [3, 10, 17, 24];
+  const today = 20;
+  return (
+    <div style={{ border: '0.5px solid #EBEBEB', background: '#fff' }}>
+      <div style={{ padding: '14px 16px', borderBottom: '0.5px solid #EBEBEB', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+        <span style={{ fontFamily: 'var(--af-font-display)', fontSize: 16, fontWeight: 700, color: '#111' }}>Апрель 2026</span>
+        <span style={{ fontFamily: 'var(--af-font-mono)', fontSize: 9, color: 'rgb(150,150,150)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>визиты — чт</span>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 0, padding: '8px 10px 12px' }}>
+        {['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map(d => (
+          <div key={d} style={{ textAlign: 'center', fontFamily: 'var(--af-font-mono)', fontSize: 10, color: 'rgb(150,150,150)', padding: '6px 0', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{d}</div>
+        ))}
+        <div /><div />
+        {days.map(d => {
+          const isVisit = visitDays.includes(d);
+          const isToday = d === today;
+          return (
+            <div key={d} style={{ textAlign: 'center', padding: '4px 0' }}>
+              <div style={{
+                fontFamily: 'var(--af-font-mono)', fontSize: 12,
+                color: isToday ? '#fff' : '#111',
+                background: isToday ? '#111' : 'transparent',
+                width: 28, height: 28, lineHeight: '28px',
+                margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>{d}</div>
+              {isVisit && (
+                <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 8, color: '#111', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.1em' }}>визит</div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

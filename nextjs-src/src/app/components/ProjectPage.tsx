@@ -214,7 +214,7 @@ export default function ProjectPage({ projectId, initialTab, onNavigate, toast, 
       <div className="af-layout">
         {/* ═══ LEVEL 2: Section grid (2×3 like Design sub-sections) ═══ */}
         {activeTab === null && (
-          <div className="af-tab-list">
+          <div className={`af-tab-list${isClient ? ' af-tab-list-large' : ''}`}>
             {visibleSections.map((section) => {
               const displayLabel = getSectionLabel(section.id);
               let metricValue: string | number | null = null;

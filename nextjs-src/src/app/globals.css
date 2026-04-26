@@ -472,6 +472,23 @@ body {
 .af-tab-row:hover .af-tab-metric-label,
 .af-tab-row.active .af-tab-metric-value,
 .af-tab-row.active .af-tab-metric-label { color: var(--af-white); }
+/* Client mode — larger tiles for better readability */
+.af-tab-list-large .af-tab-row { min-height: 200px; padding: 32px 36px; }
+.af-tab-list-large .af-tab-name { font-size: 36px; line-height: 1.05; }
+.af-tab-list-large .af-tab-index { font-size: 10px; margin-bottom: 10px; }
+.af-tab-list-large .af-tab-metric { top: 24px; right: 56px; }
+.af-tab-list-large .af-tab-metric-value { font-size: 56px; }
+.af-tab-list-large .af-tab-metric-label { font-size: 10px; }
+.af-tab-list-large .af-tab-arrow { top: 24px; right: 24px; font-size: 22px; }
+.af-tab-list-large .af-tab-row-dark { min-height: 80px; padding: 22px 36px; }
+.af-tab-list-large .af-tab-row-dark .af-tab-name { font-size: 14px; }
+@media (max-width: 767px) {
+  .af-tab-list-large .af-tab-row { min-height: 140px; padding: 22px 24px; }
+  .af-tab-list-large .af-tab-name { font-size: 26px; }
+  .af-tab-list-large .af-tab-metric-value { font-size: 38px; }
+  .af-tab-list-large .af-tab-metric { top: 16px; right: 44px; }
+  .af-tab-list-large .af-tab-row-dark { min-height: 64px; padding: 18px 24px; }
+}
 /* Settings row (dark variant) */
 .af-tab-row-dark {
   background: var(--af-black); min-height: 64px;
