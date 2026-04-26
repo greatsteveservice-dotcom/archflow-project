@@ -96,6 +96,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Install global error reporter (once)
   useEffect(() => { installErrorReporter(); }, []);
 
+  // Activity heartbeat — extends or creates user_session every 60s while tab is visible.
+  // Used for "time in service" analytics.
+  useEffect(() => {
+    if (!session?.access_token) return;
+    const token = session.access_token;
+    let stopped = false;
+    const ping = () => {
+      if (stopped || typeof document === 'undefined' || document.hidden) return;
+      fetch('/api/activity/ping', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        keepalive: true,
+      }).catch(() => {});
+    };
+    ping();
+    const iv = setInterval(ping, 60_000);
+    const onVis = () => { if (!document.hidden) ping(); };
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      stopped = true;
+      clearInterval(iv);
+      document.removeEventListener('visibilitychange', onVis);
+    };
+  }, [session?.access_token]);
+
   // Initialize auth state
   useEffect(() => {
     // Get current session — validate it's still usable

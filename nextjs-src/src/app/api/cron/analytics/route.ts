@@ -124,6 +124,30 @@ async function fetchTopPages(date1: string, date2: string) {
   }));
 }
 
+/**
+ * Fetch per-user time in service from our own user_sessions table via Postgres RPC.
+ * Each session = pings within a 3-minute window; duration = last_ping_at - started_at.
+ * Returns map: userId → seconds spent.
+ */
+async function fetchPerUserDuration(fromIso: string, toIso: string) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_user_durations`, {
+    method: "POST",
+    headers: {
+      apikey: SERVICE_KEY,
+      Authorization: `Bearer ${SERVICE_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ p_from: fromIso, p_to: toIso }),
+  });
+  const map = new Map<string, { visits: number; duration: number }>();
+  if (!res.ok) return map;
+  const data: { user_id: string; seconds: number; sessions_count: number }[] = await res.json();
+  for (const row of data || []) {
+    map.set(row.user_id, { visits: row.sessions_count, duration: row.seconds });
+  }
+  return map;
+}
+
 async function fetchBounceByPage(date1: string, date2: string) {
   const url = `${METRIKA_API}?id=${COUNTER_ID}&metrics=ym:s:bounceRate,ym:s:visits&dimensions=ym:s:startURL&sort=-ym:s:bounceRate&limit=10&date1=${date1}&date2=${date2}`;
   const res = await fetch(url, {
@@ -183,7 +207,15 @@ interface DesignerStats {
   registered_at: string;
   last_sign_in_at: string | null;
   days_active: number;
+  period_duration_seconds: number;
+  total_duration_seconds: number;
 }
+
+// Accounts excluded from the report (owner + demo)
+const EXCLUDED_EMAILS = new Set<string>([
+  "kolunov87@bk.ru",
+  "demo@archflow.ru",
+]);
 
 async function sbFetch(path: string, extraHeaders: Record<string, string> = {}) {
   const res = await fetch(`${SUPABASE_URL}${path}`, {
@@ -200,13 +232,21 @@ async function sbFetch(path: string, extraHeaders: Record<string, string> = {}) 
   return res;
 }
 
-async function fetchDesignersStats(): Promise<DesignerStats[]> {
+async function fetchDesignersStats(
+  periodDuration: Map<string, { visits: number; duration: number }>,
+  totalDuration: Map<string, { visits: number; duration: number }>,
+): Promise<DesignerStats[]> {
   // 1. Get all designers from profiles
   const profilesRes = await sbFetch(
     `/rest/v1/profiles?role=eq.designer&select=id,full_name,email,created_at`
   );
-  const profiles: { id: string; full_name: string | null; email: string | null; created_at: string }[] =
+  const profilesRaw: { id: string; full_name: string | null; email: string | null; created_at: string }[] =
     await profilesRes.json();
+
+  // Exclude owner + demo accounts
+  const profiles = profilesRaw.filter(
+    (p) => !p.email || !EXCLUDED_EMAILS.has(p.email.toLowerCase())
+  );
 
   // 2. Get last_sign_in_at from auth.users via admin API
   const authUsersMap = new Map<string, string | null>();
@@ -261,6 +301,8 @@ async function fetchDesignersStats(): Promise<DesignerStats[]> {
       registered_at: d.created_at,
       last_sign_in_at: authUsersMap.get(d.id) || null,
       days_active: daysActive,
+      period_duration_seconds: periodDuration.get(d.id)?.duration || 0,
+      total_duration_seconds: totalDuration.get(d.id)?.duration || 0,
     });
   }
 
@@ -275,14 +317,24 @@ function fmtShortDate(iso: string | null): string {
   const now = new Date();
   const diffMs = now.getTime() - d.getTime();
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  if (diffDays === 0) return "сегодня";
-  if (diffDays === 1) return "вчера";
-  if (diffDays < 7) return `${diffDays} дн назад`;
-  return d.toLocaleDateString("ru-RU", {
+  const absDate = d.toLocaleDateString("ru-RU", {
     day: "2-digit",
     month: "2-digit",
     timeZone: "Europe/Moscow",
   });
+  if (diffDays === 0) return `сегодня (${absDate})`;
+  if (diffDays === 1) return `вчера (${absDate})`;
+  if (diffDays < 7) return `${diffDays} дн назад (${absDate})`;
+  return absDate;
+}
+
+function fmtHoursMinutes(seconds: number): string {
+  if (seconds <= 0) return "—";
+  const totalMin = Math.round(seconds / 60);
+  if (totalMin < 60) return `${totalMin} мин`;
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  return m > 0 ? `${h} ч ${m} мин` : `${h} ч`;
 }
 
 // ── Telegram ──────────────────────────────────────
@@ -376,11 +428,14 @@ function buildReport(
     designers.forEach((d, i) => {
       const name = d.full_name.length > 22 ? d.full_name.slice(0, 20) + "…" : d.full_name;
       const lastSeen = fmtShortDate(d.last_sign_in_at);
+      const periodTime = fmtHoursMinutes(d.period_duration_seconds);
+      const totalTime = fmtHoursMinutes(d.total_duration_seconds);
       lines.push(``);
       lines.push(`${i + 1}. ${name}`);
       lines.push(`   ✉ ${d.email}`);
       lines.push(`   📁 Проектов: ${d.projects} · 👥 Приглашено: ${d.invited}`);
       lines.push(`   📅 Регистрация: ${d.days_active} дн назад · Был: ${lastSeen}`);
+      lines.push(`   ⏱ За период: ${periodTime} · Всего: ${totalTime}`);
     });
   }
 
@@ -420,17 +475,24 @@ export async function GET(req: NextRequest) {
       fetchGoals(),
     ]);
 
-    // Fetch goal reaches (needs goal IDs from above)
+    // Fetch goal reaches (needs goal IDs from above) + per-user durations
     const goalIds = goals.map((g) => g.id);
-    const [goalReaches, topPages, bouncePages, designers] = await Promise.all([
+    // Period for per-user duration: start of date1 → end of date2 (inclusive)
+    const periodFrom = new Date(date1); periodFrom.setHours(0, 0, 0, 0);
+    const periodTo = new Date(date2); periodTo.setDate(periodTo.getDate() + 1); periodTo.setHours(0, 0, 0, 0);
+    // "Total ever" — from Archflow launch (2026-01-01) to end of date2
+    const totalFrom = new Date('2026-01-01T00:00:00Z');
+    const [goalReaches, topPages, bouncePages, periodDuration, totalDuration] = await Promise.all([
       fetchGoalReaches(fmt(date1), fmt(date2), goalIds),
       fetchTopPages(fmt(date1), fmt(date2)),
       fetchBounceByPage(fmt(date1), fmt(date2)),
-      fetchDesignersStats().catch((e) => {
-        console.error("[analytics] designers fetch failed:", e);
-        return [] as DesignerStats[];
-      }),
+      fetchPerUserDuration(periodFrom.toISOString(), periodTo.toISOString()),
+      fetchPerUserDuration(totalFrom.toISOString(), periodTo.toISOString()),
     ]);
+    const designers = await fetchDesignersStats(periodDuration, totalDuration).catch((e) => {
+      console.error("[analytics] designers fetch failed:", e);
+      return [] as DesignerStats[];
+    });
 
     // Build and send report
     const report = buildReport(stats, prev, goals, goalReaches, topPages, bouncePages, designers, date1, date2);
