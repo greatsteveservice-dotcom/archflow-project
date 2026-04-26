@@ -42,7 +42,25 @@ interface SettingsTabProps {
 export default function SettingsTab({ project, projectId, toast, canDeleteProject = false, onDeleteProject }: SettingsTabProps) {
   const [sub, setSub] = useState<'roles' | 'details' | 'notifications'>('roles');
   const { data: members, loading, refetch: refetchMembers } = useProjectMembersWithProfiles(projectId);
-  const { profile } = useAuth();
+  const { profile, session } = useAuth();
+  const [downloading, setDownloading] = useState(false);
+
+  const isDesigner = profile?.role === 'designer';
+
+  const handleDownloadArchive = async () => {
+    if (!session?.access_token || downloading) return;
+    setDownloading(true);
+    try {
+      // Open in new tab so the request happens with token in URL — browser handles
+      // download via Content-Disposition. Token is short-lived (Supabase JWT, ~1h)
+      // and only over HTTPS.
+      const url = `/api/projects/${projectId}/download?token=${encodeURIComponent(session.access_token)}`;
+      window.location.href = url;
+    } finally {
+      // Reset after navigation kick — browser triggers download, page stays.
+      setTimeout(() => setDownloading(false), 3000);
+    }
+  };
 
   // Show notifications tab for designer/owner and client
   const showNotifications = profile?.role === 'designer' || profile?.role === 'client';
@@ -290,6 +308,24 @@ export default function SettingsTab({ project, projectId, toast, canDeleteProjec
           <p style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: '#111', marginTop: 12 }}>
             Настройки комплектации — в разделе Комплектация
           </p>
+
+          {/* Download archive — designers only */}
+          {isDesigner && (
+            <div style={{ background: '#fff', border: '0.5px solid #EBEBEB', padding: 20, marginTop: 24 }}>
+              <h4 style={{ fontFamily: mono, fontSize: 'var(--af-fs-11)', fontWeight: 400, color: '#111', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.14em' }}>Архив проекта</h4>
+              <p style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: '#111', marginBottom: 16 }}>
+                Скачать все файлы проекта (дизайн, фото авторского надзора, документы) одним ZIP-архивом.
+              </p>
+              <button
+                className="af-btn"
+                onClick={handleDownloadArchive}
+                disabled={downloading}
+                style={{ opacity: downloading ? 0.5 : 1 }}
+              >
+                {downloading ? 'Готовим архив…' : 'Скачать архив'}
+              </button>
+            </div>
+          )}
 
           {/* Danger zone */}
           {canDeleteProject && (
