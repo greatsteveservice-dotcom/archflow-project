@@ -18,11 +18,19 @@ function formatDuration(sec: number): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-// Простой детект — Safari не поддерживает getDisplayMedia как Chrome/Edge
-function isSafari(): boolean {
-  if (typeof navigator === "undefined") return false;
+// Может ли браузер записать экран в реальном времени.
+// На iOS getDisplayMedia в принципе нет (системная запись только через Control Center),
+// поэтому там показываем загрузку готового файла.
+function canRecordScreen(): boolean {
+  if (typeof navigator === "undefined" || typeof window === "undefined") return false;
+  if (typeof MediaRecorder === "undefined") return false;
+  const md = navigator.mediaDevices as MediaDevices | undefined;
+  if (!md || typeof (md as any).getDisplayMedia !== "function") return false;
+  // iOS Safari/Chrome — getDisplayMedia есть в декларации, но не работает.
   const ua = navigator.userAgent;
-  return /^((?!chrome|android).)*safari/i.test(ua);
+  const isIOS = /iPad|iPhone|iPod/.test(ua) || (ua.includes("Mac") && "ontouchend" in document);
+  if (isIOS) return false;
+  return true;
 }
 
 export default function VideoRecorderModal({ fileId, open, onClose, onUploaded, toast }: Props) {
@@ -30,13 +38,11 @@ export default function VideoRecorderModal({ fileId, open, onClose, onUploaded, 
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const previewVideoRef = useRef<HTMLVideoElement | null>(null);
-  const [browserUnsupported, setBrowserUnsupported] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [recordingMode, setRecordingMode] = useState<"record" | "upload">("record");
 
   useEffect(() => {
-    if (open && typeof navigator !== "undefined") {
-      const noDM = !navigator.mediaDevices || typeof (navigator.mediaDevices as any).getDisplayMedia !== "function";
-      if (noDM || isSafari()) setBrowserUnsupported(true);
-    }
+    if (open) setRecordingMode(canRecordScreen() ? "record" : "upload");
   }, [open]);
 
   // Callback ref — привязываем камеру когда video element появляется в DOM
@@ -70,6 +76,35 @@ export default function VideoRecorderModal({ fileId, open, onClose, onUploaded, 
     const result = await recorder.stop();
     if (!result) return;
     await uploadVideo(result.blob, result.duration, result.mimeType);
+  };
+
+  const handleFilePick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // сброс, чтобы повторно тот же файл выбрать
+    if (!file) return;
+    if (!file.type.startsWith("video/")) {
+      toast("Это не видеофайл");
+      return;
+    }
+    // Лимит размера — 200 МБ (примерно 5 минут h264 1080p)
+    if (file.size > 200 * 1024 * 1024) {
+      toast("Файл больше 200 МБ. Сожмите видео или запишите короче.");
+      return;
+    }
+    // Пробуем определить длительность через временный <video>
+    const duration = await new Promise<number>((resolve) => {
+      const v = document.createElement("video");
+      v.preload = "metadata";
+      v.muted = true;
+      v.onloadedmetadata = () => resolve(Math.max(1, Math.round(v.duration || 0)));
+      v.onerror = () => resolve(0);
+      v.src = URL.createObjectURL(file);
+    });
+    await uploadVideo(file, duration, file.type || "video/mp4");
   };
 
   const uploadVideo = async (blob: Blob, durationSec: number, mimeType: string) => {
@@ -235,17 +270,42 @@ export default function VideoRecorderModal({ fileId, open, onClose, onUploaded, 
           Записать пояснение
         </h3>
 
-        {browserUnsupported ? (
+        {recordingMode === "upload" ? (
           <>
-            <p style={{ fontSize: 13, lineHeight: 1.6, color: "#c00", marginBottom: 12 }}>
-              Запись видеообзоров не поддерживается в этом браузере.
+            <p style={{ fontSize: 13, lineHeight: 1.6, color: "#333", marginBottom: 12 }}>
+              Запись прямо в браузере здесь не работает (Safari или мобильное устройство).
             </p>
-            <p style={{ fontSize: 13, lineHeight: 1.6, color: "#333", marginBottom: 20 }}>
-              Откройте Archflow в Chrome или Edge на десктопе. Safari, мобильные Safari/Chrome не умеют захватывать экран.
+            <p style={{ fontSize: 12, lineHeight: 1.55, color: "#646464", marginBottom: 8, fontWeight: 600 }}>
+              Что сделать:
             </p>
-            <button onClick={onClose} className="af-btn af-btn-ghost" style={{ width: "100%" }}>
-              Закрыть
-            </button>
+            <ul style={{ fontSize: 12, lineHeight: 1.6, color: "#333", marginBottom: 18, paddingLeft: 18, margin: 0 }}>
+              <li><b>На Mac</b> — записать через QuickTime (Файл → Новая запись экрана) или ⌘⇧5.</li>
+              <li><b>На iPhone/iPad</b> — Пункт управления → кнопка записи экрана.</li>
+              <li><b>На Android</b> — встроенная запись экрана из шторки.</li>
+            </ul>
+            <p style={{ fontSize: 11, color: "#888", margin: 0, marginBottom: 18 }}>
+              Готовый файл (mp4/mov/webm, до 200 МБ) загрузите сюда — он появится рядом с проектным файлом, как обычная запись.
+            </p>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="video/mp4,video/quicktime,video/webm,video/*"
+              onChange={handleFileSelected}
+              style={{ display: "none" }}
+            />
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={handleFilePick} className="af-btn" style={{ flex: 1 }} disabled={uploading}>
+                {uploading ? `Загрузка ${progress}%` : "Выбрать видеофайл"}
+              </button>
+              <button onClick={onClose} className="af-btn af-btn-ghost" style={{ flex: 1 }} disabled={uploading}>
+                Отмена
+              </button>
+            </div>
+            {uploading && (
+              <div style={{ height: 4, background: "#EBEBEB", marginTop: 14 }}>
+                <div style={{ height: "100%", width: `${progress}%`, background: "#111", transition: "width .2s" }} />
+              </div>
+            )}
           </>
         ) : recorder.error ? (
           <>

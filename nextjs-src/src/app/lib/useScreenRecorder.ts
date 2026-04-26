@@ -137,10 +137,17 @@ export function useScreenRecorder(): UseScreenRecorder {
       const canvasStream = canvas.captureStream(30);
       dest.stream.getAudioTracks().forEach((t) => canvasStream.addTrack(t));
 
-      // Выбор mime — webm/vp9 даёт хороший размер, webm/vp8 — фолбэк
-      let mimeType = "video/webm;codecs=vp9,opus";
-      if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = "video/webm;codecs=vp8,opus";
-      if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = "video/webm";
+      // Выбор mime — webm/vp9 даёт хороший размер, webm/vp8 — фолбэк.
+      // Safari не поддерживает webm в MediaRecorder, ему нужен mp4/h264.
+      const mimeCandidates = [
+        "video/webm;codecs=vp9,opus",
+        "video/webm;codecs=vp8,opus",
+        "video/webm",
+        "video/mp4;codecs=h264,aac",
+        "video/mp4",
+      ];
+      const mimeType = mimeCandidates.find((m) => MediaRecorder.isTypeSupported(m)) || "";
+      if (!mimeType) throw new Error("Браузер не поддерживает запись видео");
 
       const recorder = new MediaRecorder(canvasStream, { mimeType, videoBitsPerSecond: 1_500_000 });
       chunksRef.current = [];
