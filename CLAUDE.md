@@ -43,12 +43,17 @@ Production is **VPS**, not Netlify. Two paths:
 - Domain CDN: archflow.ru via Cloudflare (RU-friendly).
 
 ### CI gotchas
-- Build step only gets `NEXT_PUBLIC_*` secrets. **Never instantiate clients at module top-level** (`new Resend(...)`, `createClient(...)`) — if the required env is missing, the constructor throws during Next.js "Collecting page data" and the build fails. Pattern:
+- Build step only gets `NEXT_PUBLIC_*` secrets. **Never instantiate clients at module top-level** (`new Resend(...)`, `createClient(...)`, `new Anthropic(...)`) — if env missing, constructor throws during Next.js "Collecting page data" and build fails. Pattern:
   ```ts
   let _r: Resend | null = null;
   function getResend(): Resend { if (!_r) _r = new Resend(process.env.RESEND_API_KEY); return _r; }
   ```
-- GitHub secrets can get truncated when pasted. After updating `NEXT_PUBLIC_SUPABASE_ANON_KEY` verify the baked bundle: `curl -sL https://archflow.ru/_next/static/chunks/<file>.js | grep -oE 'eyJ[A-Za-z0-9_.-]{20,}' | awk '{print length}'` — should be ~169 chars.
+- GitHub secrets can get truncated when pasted. After updating `NEXT_PUBLIC_SUPABASE_ANON_KEY` verify the baked bundle: `curl -sL https://archflow.ru/_next/static/chunks/<file>.js | grep -oE 'eyJ[A-Za-z0-9_.-]{20,}' | awk '{print length}'` — should be ~169 chars. HTTP 200 alone is NOT proof the deploy works.
+- **New env var on VPS always goes to `/home/archflow/.env.production`** (the master file). `/home/archflow/app/.env.production` lives inside a release and is overwritten on next deploy. Serverный `/home/archflow/deploy.sh` сам копирует master в новый релиз.
+- **`npm run build` before every commit touching TSX.** HMR в dev сервере пропускает ошибки вроде `Icons <X style={...}>`, которые ломают production build. Дев-сервер поднимается — не значит собирается.
+- **`rm -rf nextjs-src/.next` после массовых правок или падения MODULE_NOT_FOUND** в dev — вебпак-кэш ломается, лечится полной очисткой.
+- **Konva: держать `react-konva@18`**, версия 19 несовместима с `react@18` и ломает CI.
+- **Edge Functions: добавлять `"supabase/functions"` в `tsconfig.json` exclude** — иначе Deno-импорты ломают Next-билд.
 
 ## Architecture
 
@@ -56,42 +61,56 @@ Next.js 14 App Router. Point of entry: `src/app/page.tsx` does `redirect("/proje
 
 ### Key directories (all under `nextjs-src/src/app/`)
 
-- `lib/` — data layer: queries, hooks, types, auth, permissions, theme, supabase client, mailer, health
-- `components/` — ~97 React components (grown significantly past "~50")
-- `components/project/` — project tabs (DesignSection, SupervisionTab, SettingsTab, ChatView, AccessScreen, AssistantView, NotificationSettings)
+- `lib/` — data layer: queries, hooks, types, auth, permissions, theme, supabase client, mailer, health, useSubscription
+- `components/` — 100+ React components
+- `components/project/` — project tabs (DesignSection, SupervisionTab, SettingsTab, ChatView, AccessScreen, NotificationSettings). Assistant отображается в BottomTabBar (tabbar), не в меню проекта.
 - `components/supervision/` — CalendarView, PhotoGallery, ReportsListView, ReportDetailView, ContractorTasksView, SupervisionSettings
-- `components/supply/` — SupplyModule, SupplyDashboard, SupplyTimeline, SupplyStages, SupplyImport, SupplyPlan, SupplyDocuments, SupplyOnboarding
-- `api/` — server routes: auth/signup, feedback, push/send, telegram/bot, design/rename, reports/[id]/send, cron/analytics
+- `components/supply/` — SupplyModule, SupplyDashboard, SupplyTimeline, SupplyStages, SupplyImport, SupplyPlan, SupplyDocuments, SupplyOnboarding, SupplySearch
+- `components/moodboard/` — MoodboardCanvas, CanvasSidebar, CanvasToolbar, CanvasMinimap (Konva.js)
+- `api/` — server routes: auth/signup, feedback, push/send, telegram/bot, design/rename, reports/[id]/send, cron/analytics, sign/send, sign/status, activity/ping, billing/create-payment, billing/webhook
 - `[...path]/page.tsx` — catch-all client router
 
-Orphaned (do not edit, slated for deletion): `DesignTab.tsx`, `DocCategoryList.tsx`.
+Orphaned (do not edit, slated for deletion): `DesignTab.tsx`, `DocCategoryList.tsx`, `FeedbackBar.tsx` (заменён на `BottomTabBar`).
 
 ### Data layer pattern
 
-1. **`queries.ts`** (~108KB, 3413 lines) — all Supabase query functions, single source of truth.
-2. **`hooks.ts`** (~28KB, 892 lines) — 25+ custom hooks wrapping queries via generic `useQuery<T>()`.
+1. **`queries.ts`** — Supabase query functions, single source of truth (~3500 строк).
+2. **`hooks.ts`** — 25+ custom hooks wrapping queries через generic `useQuery<T>()`. Кэш-ключ = `JSON.stringify(deps) + fetcher.toString()` — не использовать только deps (коллизии между разными запросами).
 3. **`types.ts`** — TS interfaces matching Supabase schema.
-4. **`auth.tsx`** — `AuthProvider` context (session, profile, signIn/signUp/signOut).
+4. **`auth.tsx`** — `AuthProvider` context. Содержит heartbeat — шлёт `/api/activity/ping` каждые 60с активной вкладки.
 5. **`permissions.ts`** — `resolvePermissions(role, accessLevel)` → 21 boolean flags.
-6. **`theme.tsx`** — `ThemeProvider`. **Dark mode is forcibly disabled** (forced light in theme.tsx). Do not re-enable without explicit instruction.
+6. **`useSubscription.ts`** — статус подписки. Для `role !== 'designer'` возвращает `canEdit=true` всегда (клиенты/подрядчики не подписываются).
+7. **`theme.tsx`** — `ThemeProvider`. **Dark mode forcibly disabled** (forced light). Не включать без явного запроса.
 
 Real-time: Supabase `postgres_changes` subscriptions auto-refetch hooks.
 
 ### Database
 
-Supabase on Beget Cloud (`oyklaglogmaniet.beget.app`). 43+ migrations in `nextjs-src/supabase/migrations/`.
+**Supabase на Yandex Cloud VM** (мигрирован с Beget 18.04.2026):
+- URL: `https://db.archflow.ru` (nginx → Kong → Docker-контейнеры Supabase)
+- VM: `archflow@111.88.244.78` (SSH key: `~/.ssh/archflow_ed25519`)
+- Контейнеры: `docker compose` из `~/supabase/` на VM
 
-Core tables (non-exhaustive): `profiles`, `projects`, `project_members`, `stages`, `visits`, `photo_records`, `invoices`, `documents`, `supply_items`, `contract_payments`, `tasks`, `rbac_members`, `visit_reports` (+ `attachments jsonb`), `visit_remarks`, `remark_comments`, `contractor_tasks`, `supervision_settings`, `project_access_settings`, `chat_messages` (+ `channel_id`, `image_url`, `is_pinned`), `chat_channels`, `chat_reads`, `design_files`, `design_subfolders`, `project_rooms`, `kind_stage_mapping`, `notification_preferences`, `support_threads`, `support_messages`, `assistant_events`, `reminders`, `bot_drafts`.
+48+ migrations в `nextjs-src/supabase/migrations/`.
+
+Core tables (non-exhaustive): `profiles`, `projects`, `project_members`, `stages`, `visits`, `photo_records`, `invoices`, `documents`, `supply_items`, `contract_payments`, `tasks`, `rbac_members`, `visit_reports`, `visit_remarks`, `remark_comments`, `contractor_tasks`, `supervision_settings`, `project_access_settings`, `chat_messages`, `chat_channels`, `chat_reads`, `design_files`, `design_subfolders`, `project_rooms`, `kind_stage_mapping`, `notification_preferences`, `support_threads`, `support_messages`, `assistant_events`, `reminders`, `bot_drafts`, `moodboards`, `moodboard_items`, `moodboard_sections`, `moodboard_comments`, `document_signatures` (Podpislon), `user_sessions` (аналитика времени), `subscriptions`, `user_module_settings`.
 
 ### Migrations — how to apply
 
-No direct psql/SSH access to the Supabase DB.
-1. Open Supabase Studio SQL Editor: `https://oyklaglogmaniet.beget.app/project/default/sql/new` (HTTP Basic Auth: `user` / `miu3wW!1`).
-2. Paste SQL, Run.
+**Единственный рабочий путь** — psql через Docker на Yandex VM:
+```bash
+ssh -i ~/.ssh/archflow_ed25519 archflow@111.88.244.78 \
+  "docker exec -i supabase-db psql -U supabase_admin -d postgres" \
+  < nextjs-src/supabase/migrations/NNN_name.sql
+```
 
-**Critical:** in RLS policies always use `project_members.role` (text: `designer/assistant/client/contractor/supplier`), NEVER `member_role` (separate enum with different values). Mixing them → `ERROR: 22P02: invalid input value for enum member_role`.
+Не работают (проверено): pg-meta REST, старый Beget Studio, Supabase CLI `db push` (не настроен линк), `exec_sql` RPC.
 
-Edge Functions live on a **different** Supabase instance (`fcbllfvlpzlczinlydcm.supabase.co`) with its own JWT — use `--no-verify-jwt` and custom `DB_URL` / `DB_SERVICE_KEY` env vars (the `SUPABASE_*` prefix is reserved).
+Перед новой миграцией — проверить что все предыдущие уже применены: `SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename;`
+
+**Critical RLS правило**: всегда использовать `project_members.role` (text: `designer/assistant/client/contractor/supplier`), НИКОГДА `member_role` (отдельный enum с другими значениями). Смешение → `ERROR: 22P02: invalid input value for enum member_role`.
+
+Edge Functions живут на **другой** Supabase-инстанции (`fcbllfvlpzlczinlydcm.supabase.co`) с собственным JWT — деплой `--no-verify-jwt`, env `DB_URL` / `DB_SERVICE_KEY` (префикс `SUPABASE_*` зарезервирован Edge-рантаймом).
 
 ### PWA
 
@@ -143,48 +162,91 @@ No reds (#E24B4A, #DC2626), no blues (#2563EB), no intermediate greys (#999). If
 
 ```
 /login
-/projects                        — project list
-/projects/:id                    — section picker
-/projects/:id/design             — Design (tabs inside)
-/projects/:id/supply             — Supply
-/projects/:id/journal            — Supervision (visits, invoices, planning)
-/projects/:id/settings           — Project settings
+/pricing                          — публичная страница тарифов (YooKassa)
+/privacy                          — публичная страница политики
+/billing/success                  — landing после успешной оплаты
+/projects                         — project list
+/projects/:id                     — section picker
+/projects/:id/design              — Design (папки + мудборд 07)
+/projects/:id/supply              — Supply / Комплектация
+/projects/:id/supervision         — Авторский надзор
+/projects/:id/chat                — Чат
+/projects/:id/moodboard           — Canvas-мудборд (Konva)
+/projects/:id/settings            — Project settings
+/projects/:id/assistant           — AI ассистент (только designer)
+/board/:token                     — публичный мудборд для клиента
+/m/:token                         — публичный grid-мудборд (legacy)
 ```
 
-Implemented via catch-all `[...path]/page.tsx` + `useRouter` from `next/navigation`.
+Implemented via catch-all `[...path]/page.tsx` + `useRouter` from `next/navigation`. Публичные страницы (`/pricing`, `/privacy`, `/billing/success`) вне catch-all — рендерятся без auth.
 
 ## Roles
 
 5 roles: `designer` (full access), `client` (view only), `contractor` (view + photos + comments), `supplier` (supply only), `assistant` (delegated). Invite via invite-links with base64 tokens. Permission gates via `resolvePermissions()` flags — never check role directly in UI.
 
-## Feedback Bar
+## Bottom TabBar
 
-Fixed bottom bar on all screens except login. Height 40px, bg `#111111`, text white, IBM Plex Mono.
+`components/BottomTabBar.tsx` — фикс-бар внизу на всех авторизованных экранах. 4 иконки: **Чат / Поиск / Помощь / Ассистент** (последний только для designer). Иконки SVG stroke-width 2.4, размер 28px. Фон `#FFF`, бордер сверху `2px #111`. Шрифт Vollkorn SC (тот же что и везде — IBM Plex Mono в проекте нет).
+
+## Profile Cabinet
+
+`components/ProfileCabinet.tsx` — bottom-sheet (`height: 88dvh`) открывается по клику на аватар в топбаре. 4 экрана: main / billing / settings / profile. Настройки (`user_module_settings`) — тумблеры видимости модулей. Биллинг (`subscriptions`) — выбор тарифа + оплата через ЮКассу.
+
+## Billing (YooKassa)
+
+- Тарифы: 1 месяц 1500 ₽ / 6 мес 6000 ₽ / 1 год 10000 ₽.
+- Триал 7 дней создаётся триггером `on_user_created_billing` для всех новых `auth.users`. Блокировка работает ТОЛЬКО для `role === 'designer'` — клиенты/подрядчики/ассистенты никогда не видят блокировки.
+- `/api/billing/create-payment` — требует auth, кладёт `userId` в metadata.
+- `/api/billing/webhook` — IP whitelist ЮКассы (`185.71.76.0/27`, `185.71.77.0/27`, `77.75.153.0/25`, `77.75.156.11`, `77.75.156.35`). Читает `cf-connecting-ip` первым (CF proxy), fallback на `x-forwarded-for`.
+- Env: `YOOKASSA_SHOP_ID`, `YOOKASSA_SECRET_KEY` (runtime-only, не `NEXT_PUBLIC_*`).
+- Webhook зарегистрирован в кабинете ЮКассы на `https://archflow.ru/api/billing/webhook`, событие `payment.succeeded`.
 
 ## Telegram Bots
 
-Both bots (voice bot, support bot) route through a Cloudflare Worker relay (`cf-telegram-relay/`), not straight to VPS. Webhook URL pattern: `https://archvoice-relay.archflow-office.workers.dev/<secret>`. When adding a bot — register webhook via the relay.
+Both bots (voice bot, support bot) route through a Cloudflare Worker relay (`cf-telegram-relay/`), not straight to VPS. Webhook URL pattern: `https://archvoice-relay.archflow-office.workers.dev/<secret>`. **Никогда не регистрировать Telegram webhook напрямую на VPS** — Telegram → VPS нестабилен.
+
+Telegram Bot API 7.0+: проверять пересланные сообщения через `message.forward_origin`, не через устаревшие `forward_from` / `forward_sender_name`.
+
+## E-signature (Podpislon)
+
+`/api/sign/send`, `/api/sign/status/[fileId]`, таблица `document_signatures`. Отправка договора клиенту по SMS, подписание кодом (63-ФЗ). Env: `PODPISLON_API_KEY`.
 
 ## Environment Variables
 
-Local `.env.local` and VPS `/home/archflow/.env.production`:
+Local `.env.local` и VPS `/home/archflow/.env.production` (**master-копия** — единственная правильная локация на сервере):
 
 ```
-NEXT_PUBLIC_SUPABASE_URL       — Supabase instance URL
-NEXT_PUBLIC_SUPABASE_ANON_KEY  — Supabase public anon key (~169 chars)
-NEXT_PUBLIC_YM_ID              — Yandex Metrika counter (primary)
-NEXT_PUBLIC_METRIKA_ID         — alt name, same value
-RESEND_API_KEY                 — Email (Resend)
-TELEGRAM_BOT_TOKEN             — Feedback bot token
-TELEGRAM_CHAT_ID               — Feedback chat ID
-TELEGRAM_VOICE_BOT_TOKEN       — Voice bot token
-SUPABASE_SERVICE_ROLE_KEY      — service role (server routes only)
+NEXT_PUBLIC_SUPABASE_URL         — https://db.archflow.ru
+NEXT_PUBLIC_SUPABASE_ANON_KEY    — Supabase public anon key (~169 chars)
+NEXT_PUBLIC_YM_ID                — Yandex Metrika counter
+NEXT_PUBLIC_METRIKA_ID           — alias, same value as YM_ID
+RESEND_API_KEY                   — Email (Resend)
+TELEGRAM_BOT_TOKEN               — Feedback bot
+TELEGRAM_CHAT_ID                 — Feedback chat
+TELEGRAM_VOICE_BOT_TOKEN         — Voice bot
+SUPABASE_SERVICE_ROLE_KEY        — service role (server routes only)
+METRIKA_OAUTH_TOKEN              — for cron analytics API
+CRON_SECRET                      — protects /api/cron/*
+PODPISLON_API_KEY                — e-signature
+YOOKASSA_SHOP_ID                 — billing
+YOOKASSA_SECRET_KEY              — billing
+OPENAI_API_KEY                   — supply search classification
 ```
 
-GitHub Actions secrets: only `NEXT_PUBLIC_*` + `VPS_SSH_KEY` at build time.
+GitHub Actions secrets: только `NEXT_PUBLIC_*` + `VPS_SSH_KEY` at build time. Остальные runtime-only (в VPS env).
 
 ## Demo Credentials
 
 ```
-designer: demo@archflow.ru / oDEgaa9rsAJD&ocw
+designer: demo@archflow.ru
 ```
+Пароль менялся в истории — если не работает, проверить в `/home/archflow/.env.production` или сменить через Supabase Studio.
+
+## CSS ink variables
+
+В дополнение к 4 основным цветам есть серые оттенки для неинтерактивных текстов (в `globals.css`):
+- `--ink-muted` — вторичный текст
+- `--ink-faint` — третичный
+- `--ink-ghost` — placeholder-like
+
+Использовать ТОЛЬКО для текстов, НЕ для границ/фонов. Для всего остального — 4 основных цвета.
