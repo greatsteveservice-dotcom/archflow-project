@@ -185,7 +185,9 @@ body {
 /* ═══════════════════════════════════════════════
    LAYOUT
    ═══════════════════════════════════════════════ */
-.af-layout { max-width: 960px; margin: 0 auto; }
+.af-layout { max-width: 1200px; margin: 0 auto; }
+/* Prevent any rogue horizontal scroll on wide displays */
+html, body { overflow-x: hidden; }
 
 /* ═══════════════════════════════════════════════
    PAGE TITLE (Level 1)

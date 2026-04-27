@@ -337,7 +337,6 @@ export default function SettingsTab({ project, projectId, toast, canDeleteProjec
               <button
                 className="af-btn"
                 onClick={() => setShowDeleteProject(true)}
-                style={{ color: '#111', borderColor: '#111' }}
               >
                 Удалить проект
               </button>

@@ -1445,34 +1445,38 @@ export default function ChatView({ projectId, toast }: ChatViewProps) {
       {/* Push notification permission banner */}
       <PushPermissionBanner />
 
-      {/* Channel navigation — rounded pills (Заказчик / Команда / + новый чат) */}
-      <div className="af-chat-channels">
-        {availableTabs.includes('client') && (
-          <>
-            {renderPill('client', undefined, isClientOnly ? 'С дизайнером' : 'Заказчик', clientUnread)}
-            {clientChannels.map(ch => renderPill('client', ch.id, ch.name, 0, () => handleDeleteChannel(ch)))}
-          </>
-        )}
-        {availableTabs.includes('team') && (
-          <>
-            {renderPill('team', undefined, 'Команда', teamUnread)}
-            {teamChannels.map(ch => renderPill('team', ch.id, ch.name, 0, () => handleDeleteChannel(ch)))}
-          </>
-        )}
-        {canManageChannels && (
-          <button
-            className="af-chat-channel-pill af-chat-channel-pill-new"
-            onClick={() => handleCreateChannel(activeTab)}
-            type="button"
-            title="Новый чат"
-          >
-            + Новый чат
-          </button>
-        )}
-      </div>
+      {/* Channel navigation — hidden for clients (single-thread experience) */}
+      {!isClientOnly && (
+        <div className="af-chat-channels">
+          {availableTabs.includes('client') && (
+            <>
+              {renderPill('client', undefined, 'Заказчик', clientUnread)}
+              {clientChannels.map(ch => renderPill('client', ch.id, ch.name, 0, () => handleDeleteChannel(ch)))}
+            </>
+          )}
+          {availableTabs.includes('team') && (
+            <>
+              {renderPill('team', undefined, 'Команда', teamUnread)}
+              {teamChannels.map(ch => renderPill('team', ch.id, ch.name, 0, () => handleDeleteChannel(ch)))}
+            </>
+          )}
+          {canManageChannels && (
+            <button
+              className="af-chat-channel-pill af-chat-channel-pill-new"
+              onClick={() => handleCreateChannel(activeTab)}
+              type="button"
+              title="Новый чат"
+            >
+              + Новый чат
+            </button>
+          )}
+        </div>
+      )}
 
-      {/* Member pills */}
-      <MemberPills members={activeTab === 'team' ? teamMembers : clientMembers} />
+      {/* Member pills (skip for clients — only the designer/assistant matters) */}
+      {!isClientOnly && (
+        <MemberPills members={activeTab === 'team' ? teamMembers : clientMembers} />
+      )}
 
       {/* Chat panel */}
       <ChatTabPanel

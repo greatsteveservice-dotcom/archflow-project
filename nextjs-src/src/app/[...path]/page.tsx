@@ -145,6 +145,18 @@ export default function AppShell() {
   });
   const [projectsRefreshKey, setProjectsRefreshKey] = useState(0);
 
+  // Auto-open single project for client/contractor on root path. They typically
+  // have one project and shouldn't waste a click on the projects-list screen.
+  // Skip when they navigate explicitly to /projects (no auto-redirect there).
+  useEffect(() => {
+    if (authLoading || projectsLoading || !session) return;
+    const role = profile?.role;
+    if (role !== 'client' && role !== 'contractor') return;
+    if (pathname !== '/' && pathname !== '') return;
+    if (!projects || projects.length !== 1) return;
+    router.replace(`/projects/${projects[0].id}`);
+  }, [authLoading, projectsLoading, session, profile?.role, projects, pathname, router]);
+
   // RBAC invite token from /invite/TOKEN path
   const [rbacInviteToken, setRbacInviteToken] = useState<string | null>(() => {
     if (typeof window !== 'undefined') {

@@ -158,10 +158,14 @@ export default function NotificationSettings({ projectId, toast }: NotificationS
         Уведомления заказчика
       </h3>
 
+      {/* 2-column grid: channels (left) + schedule+urgent (right) */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }} className="af-notif-grid">
+      <style>{`@media (max-width: 767px) { .af-notif-grid { grid-template-columns: 1fr !important; } }`}</style>
+
       {/* ============ CHANNELS ============ */}
       <div style={{
         background: 'rgb(var(--srf))', border: '0.5px solid rgb(var(--line))',
-        padding: 20, marginBottom: 2,
+        padding: 20,
       }}>
         <h4 style={{
           fontFamily: mono, fontSize: 'var(--af-fs-9)', textTransform: 'uppercase',
@@ -322,10 +326,13 @@ export default function NotificationSettings({ projectId, toast }: NotificationS
         </div>
       </div>
 
+      {/* Right column: schedule + urgent stacked */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+
       {/* ============ SCHEDULE ============ */}
       <div style={{
         background: 'rgb(var(--srf))', border: '0.5px solid rgb(var(--line))',
-        padding: 20, marginBottom: 2,
+        padding: 20,
       }}>
         <h4 style={{
           fontFamily: mono, fontSize: 'var(--af-fs-9)', textTransform: 'uppercase',
@@ -397,7 +404,7 @@ export default function NotificationSettings({ projectId, toast }: NotificationS
       {/* ============ URGENT ============ */}
       <div style={{
         background: 'rgb(var(--srf))', border: '0.5px solid rgb(var(--line))',
-        padding: 20, marginBottom: 24,
+        padding: 20,
       }}>
         <h4 style={{
           fontFamily: mono, fontSize: 'var(--af-fs-9)', textTransform: 'uppercase',
@@ -419,12 +426,16 @@ export default function NotificationSettings({ projectId, toast }: NotificationS
         </div>
       </div>
 
+      {/* close right column + grid wrapper */}
+      </div>
+      </div>
+
       {/* ============ SAVE ============ */}
       <button
         onClick={handleSave}
         disabled={saving}
-        className="af-btn af-btn-full"
-        style={{ width: '100%' }}
+        className="af-btn"
+        style={{ marginLeft: 'auto', display: 'block', minWidth: 200 }}
       >
         {saving ? 'Сохранение...' : 'Сохранить'}
       </button>

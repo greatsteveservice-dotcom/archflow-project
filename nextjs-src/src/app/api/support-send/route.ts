@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { body, context } = await req.json();
+    const { body, context, attachment_url } = await req.json();
     if (!body || typeof body !== 'string' || body.trim().length === 0) {
       return NextResponse.json({ error: 'Body is required' }, { status: 400 });
     }
@@ -76,12 +76,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to create thread' }, { status: 500 });
     }
 
-    // Save message
+    // Save message — attachment URL is appended to body so it's visible in chat history.
+    const fullBody = attachment_url
+      ? `${body.trim()}\n\n📎 ${attachment_url}`
+      : body.trim();
     await supabase.from('support_messages').insert({
       thread_id: thread.id,
       user_id: user.id,
       sender: 'user',
-      body: body.trim(),
+      body: fullBody,
     });
 
     // Get user name for Telegram notification
@@ -103,14 +106,29 @@ export async function POST(req: NextRequest) {
       `thread_id: ${thread.id}`,
     ].filter(Boolean).join('\n');
 
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: TELEGRAM_CHAT_ID,
-        text: lines,
-      }),
-    });
+    if (attachment_url) {
+      // Send as photo with caption (Telegram captions limited to 1024 chars; truncate)
+      const caption = lines.length > 1000 ? lines.slice(0, 1000) + '…' : lines;
+      await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: TELEGRAM_CHAT_ID,
+          photo: attachment_url,
+          caption: lines,
+        }),
+      });
+      void caption;
+    } else {
+      await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: TELEGRAM_CHAT_ID,
+          text: lines,
+        }),
+      });
+    }
 
     return NextResponse.json({ ok: true, thread_id: thread.id });
   } catch (err) {
