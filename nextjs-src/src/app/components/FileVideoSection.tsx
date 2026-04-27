@@ -19,6 +19,9 @@ interface Props {
   fileId: string;
   canRecord: boolean;
   toast: (msg: string) => void;
+  /** When the parent file is an image, pass its URL so recording uses
+   *  canvas-composite mode (image fullscreen + camera circle). */
+  imageUrl?: string;
 }
 
 function formatDuration(sec: number | null): string {
@@ -28,7 +31,7 @@ function formatDuration(sec: number | null): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-export default function FileVideoSection({ fileId, canRecord, toast }: Props) {
+export default function FileVideoSection({ fileId, canRecord, toast, imageUrl }: Props) {
   const [videos, setVideos] = useState<VideoRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [recorderOpen, setRecorderOpen] = useState(false);
@@ -264,6 +267,7 @@ export default function FileVideoSection({ fileId, canRecord, toast }: Props) {
           onClose={() => setRecorderOpen(false)}
           onUploaded={refetch}
           toast={toast}
+          imageUrl={imageUrl}
         />
       )}
 

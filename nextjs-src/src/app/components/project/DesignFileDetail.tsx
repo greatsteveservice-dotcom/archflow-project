@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { useDesignFile, useDesignFileComments } from '../../lib/hooks';
-import { deleteDesignFile, createDesignFileComment, updateDesignFileName } from '../../lib/queries';
+import { useDesignFile } from '../../lib/hooks';
+import { deleteDesignFile, updateDesignFileName } from '../../lib/queries';
 import { useAuth } from '../../lib/auth';
 import { DESIGN_FOLDERS } from '../../lib/types';
-import type { DesignFolder, DesignFileCommentWithProfile, SignatureStatus } from '../../lib/types';
+import type { DesignFolder, SignatureStatus } from '../../lib/types';
 import SignatureSection from './SignatureSection';
 import FileVideoSection from '../FileVideoSection';
+import AnnotatableImage from './AnnotatableImage';
 
 interface DesignFileDetailProps {
   fileId: string;
@@ -31,10 +32,6 @@ function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-function formatTime(dateStr: string): string {
-  return new Date(dateStr).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-}
-
 function isImage(mimeType: string | null): boolean {
   return !!mimeType && mimeType.startsWith('image/');
 }
@@ -49,12 +46,10 @@ export default function DesignFileDetail({
   onBack, onDeleted,
 }: DesignFileDetailProps) {
   const { data: file, loading, refetch: refetchFile } = useDesignFile(fileId);
-  const { data: comments, refetch: refetchComments } = useDesignFileComments(fileId);
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [commentText, setCommentText] = useState('');
-  const [sendingComment, setSendingComment] = useState(false);
+  const [annotateMode, setAnnotateMode] = useState<'view' | 'annotate'>('view');
 
   // PDF fullscreen state
   const [pdfFullscreen, setPdfFullscreen] = useState(false);
@@ -129,19 +124,6 @@ export default function DesignFileDetail({
     }
   };
 
-  const handleSendComment = async () => {
-    if (!commentText.trim()) return;
-    setSendingComment(true);
-    try {
-      await createDesignFileComment(fileId, projectId, commentText.trim());
-      setCommentText('');
-      refetchComments();
-    } catch {
-      toast('Ошибка отправки');
-    } finally {
-      setSendingComment(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -258,17 +240,33 @@ export default function DesignFileDetail({
         />
       )}
 
+      {/* Annotation mode toggle — only for image files */}
+      {isImage(file.file_type) && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+          <button
+            onClick={() => setAnnotateMode(annotateMode === 'view' ? 'annotate' : 'view')}
+            className="af-btn"
+            style={{
+              background: annotateMode === 'annotate' ? '#111' : 'transparent',
+              color: annotateMode === 'annotate' ? '#F6F6F4' : '#111',
+            }}
+          >
+            {annotateMode === 'annotate' ? 'Просмотр' : 'Замечания'}
+          </button>
+        </div>
+      )}
+
       {/* Preview */}
       <div style={{ marginBottom: 20 }}>
         {isImage(file.file_type) && (
-          <div>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={file.file_url}
-              alt={file.name}
-              style={{ width: '100%', height: 'auto', display: 'block', border: '0.5px solid #EBEBEB' }}
-            />
-          </div>
+          <AnnotatableImage
+            fileId={fileId}
+            imageUrl={file.file_url}
+            alt={file.name}
+            mode={annotateMode}
+            currentUserId={user?.id || ''}
+            isDesigner={profile?.role === 'designer'}
+          />
         )}
         {isPdf(file.file_type) && (
           <div>
@@ -415,100 +413,20 @@ export default function DesignFileDetail({
       </div>
 
       {/* Video reviews section */}
-      <FileVideoSection fileId={fileId} canRecord={!!canDelete} toast={toast} />
+      <FileVideoSection
+        fileId={fileId}
+        canRecord={!!canDelete}
+        toast={toast}
+        imageUrl={isImage(file.file_type) ? file.file_url : undefined}
+      />
 
-      {/* Comments section */}
-      <div style={{ borderTop: '0.5px solid #EBEBEB', paddingTop: 16 }}>
-        <div style={{
-          fontFamily: 'var(--af-font-mono)', fontSize: 8,
-          textTransform: 'uppercase', letterSpacing: '0.14em', color: '#111', marginBottom: 12,
-        }}>
-          Комментарии
-        </div>
-
-        {/* Comment list */}
-        {comments && comments.length > 0 ? (
-          <div>
-            {comments.map((comment) => (
-              <CommentRow key={comment.id} comment={comment} />
-            ))}
-          </div>
-        ) : (
-          <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 8, color: '#111', marginBottom: 16 }}>
-            Нет комментариев
-          </div>
-        )}
-
-        {/* Comment input */}
-        {canComment && (
-          <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-            <input
-              type="text"
-              value={commentText}
-              onChange={(e) => setCommentText(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendComment(); } }}
-              placeholder="Комментарий..."
-              style={{
-                flex: 1, fontFamily: 'var(--af-font-mono)', fontSize: 9,
-                color: '#111', border: '0.5px solid #EBEBEB', padding: '8px 12px',
-                outline: 'none', background: 'none',
-              }}
-            />
-            <button
-              onClick={handleSendComment}
-              disabled={sendingComment || !commentText.trim()}
-              style={{
-                fontFamily: 'var(--af-font-mono)', fontSize: 11,
-                color: '#fff', background: '#111', border: 'none',
-                padding: '8px 14px', cursor: 'pointer',
-                opacity: sendingComment || !commentText.trim() ? 0.4 : 1,
-              }}
-            >
-              →
-            </button>
-          </div>
-        )}
-      </div>
+      {/* General comments removed — discussions are pin-anchored on the image
+          (см. AnnotatableImage с режимом «Замечания»). */}
 
       {/* PDF fullscreen viewer */}
       {pdfFullscreen && file && isPdf(file.file_type) && (
         <PdfLightbox url={file.file_url} name={file.name} onClose={() => setPdfFullscreen(false)} />
       )}
-    </div>
-  );
-}
-
-function CommentRow({ comment }: { comment: DesignFileCommentWithProfile }) {
-  const authorName = comment.author?.full_name || 'Аноним';
-  const authorRole = comment.author?.role || 'designer';
-
-  const roleLabels: Record<string, string> = {
-    designer: 'Дизайнер',
-    client: 'Заказчик',
-    contractor: 'Подрядчик',
-    supplier: 'Поставщик',
-    assistant: 'Ассистент',
-  };
-
-  return (
-    <div style={{ paddingBottom: 10, marginBottom: 10, borderBottom: '0.5px solid #EBEBEB' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-        <span style={{ fontFamily: 'var(--af-font-mono)', fontSize: 7, textTransform: 'uppercase', color: '#111', fontWeight: 600 }}>
-          {authorName}
-        </span>
-        <span style={{
-          fontFamily: 'var(--af-font-mono)', fontSize: 6, color: '#111',
-          border: '0.5px solid #EBEBEB', padding: '1px 5px',
-        }}>
-          {roleLabels[authorRole] || authorRole}
-        </span>
-        <span style={{ fontFamily: 'var(--af-font-mono)', fontSize: 6, color: '#111', marginLeft: 'auto' }}>
-          {formatTime(comment.created_at)}
-        </span>
-      </div>
-      <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 9, color: '#111', lineHeight: 1.5 }}>
-        {comment.text}
-      </div>
     </div>
   );
 }

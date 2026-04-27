@@ -603,6 +603,79 @@ export async function updateProjectMemberAccess(
   if (error) throw error;
 }
 
+export async function updateProjectMemberRole(
+  memberId: string,
+  role: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from('project_members')
+    .update({ role })
+    .eq('id', memberId);
+  if (error) throw error;
+}
+
+// ── Design file annotations (pins) ────────────────────────────────────────
+
+export async function getFileAnnotations(fileId: string) {
+  const { data, error } = await supabase
+    .from('design_file_annotations')
+    .select('*, author:profiles!design_file_annotations_author_id_fkey(id, full_name, email, avatar_url)')
+    .eq('file_id', fileId)
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  return (data || []) as Array<import('./types').DesignFileAnnotation>;
+}
+
+export async function createFileAnnotation(input: {
+  fileId: string;
+  parentId?: string | null;
+  x?: number | null;
+  y?: number | null;
+  content: string;
+}) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Не авторизован');
+  const { data, error } = await supabase
+    .from('design_file_annotations')
+    .insert({
+      file_id: input.fileId,
+      parent_id: input.parentId ?? null,
+      author_id: user.id,
+      x: input.parentId ? null : (input.x ?? null),
+      y: input.parentId ? null : (input.y ?? null),
+      content: input.content,
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return data as import('./types').DesignFileAnnotation;
+}
+
+export async function updateFileAnnotationStatus(id: string, status: 'open' | 'resolved') {
+  const { data: { user } } = await supabase.auth.getUser();
+  const patch: Record<string, unknown> = { status, updated_at: new Date().toISOString() };
+  if (status === 'resolved') {
+    patch.resolved_by = user?.id || null;
+    patch.resolved_at = new Date().toISOString();
+  } else {
+    patch.resolved_by = null;
+    patch.resolved_at = null;
+  }
+  const { error } = await supabase
+    .from('design_file_annotations')
+    .update(patch)
+    .eq('id', id);
+  if (error) throw error;
+}
+
+export async function deleteFileAnnotation(id: string) {
+  const { error } = await supabase
+    .from('design_file_annotations')
+    .delete()
+    .eq('id', id);
+  if (error) throw error;
+}
+
 /** Create an invoice */
 export async function createInvoice(input: CreateInvoiceInput): Promise<Invoice> {
   const { data, error } = await supabase

@@ -696,6 +696,24 @@ export interface DesignFileCommentWithProfile extends DesignFileComment {
   author?: Profile;
 }
 
+/** Pin annotation on a design file image (Loom/Figma-style review). */
+export interface DesignFileAnnotation {
+  id: string;
+  file_id: string;
+  parent_id: string | null;       // null = root pin, set = reply
+  author_id: string;
+  x: number | null;               // % 0..100, null on replies
+  y: number | null;
+  number: number | null;          // pin index for the file (root pins only)
+  content: string;
+  status: 'open' | 'resolved';
+  resolved_by: string | null;
+  resolved_at: string | null;
+  created_at: string;
+  updated_at: string;
+  author?: Profile;
+}
+
 export interface CreateDesignFileInput {
   project_id: string;
   folder: DesignFolder;

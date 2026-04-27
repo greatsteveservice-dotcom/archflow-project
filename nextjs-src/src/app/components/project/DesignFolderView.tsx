@@ -246,12 +246,9 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
       toggleSelect(file.id);
       return;
     }
-    if (isImageFile(file)) {
-      const idx = imageFiles.findIndex(f => f.id === file.id);
-      if (idx >= 0) setLightboxIndex(idx);
-    } else {
-      onSelectFile(file.id);
-    }
+    // Click goes straight to the file detail view (download, video reviews,
+    // future pin annotations) — skip the intermediate lightbox preview.
+    onSelectFile(file.id);
   };
 
   // ---- UPLOAD ----

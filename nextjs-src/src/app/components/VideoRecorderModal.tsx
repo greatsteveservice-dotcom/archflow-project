@@ -10,6 +10,9 @@ interface Props {
   onClose: () => void;
   onUploaded: () => void;
   toast: (msg: string) => void;
+  /** When provided, recording uses image-review canvas-composite (image
+   *  full-screen + camera circle) without screen-share dialog. */
+  imageUrl?: string;
 }
 
 function formatDuration(sec: number): string {
@@ -33,34 +36,19 @@ function canRecordScreen(): boolean {
   return true;
 }
 
-export default function VideoRecorderModal({ fileId, open, onClose, onUploaded, toast }: Props) {
+export default function VideoRecorderModal({ fileId, open, onClose, onUploaded, toast, imageUrl }: Props) {
   const recorder = useScreenRecorder();
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
-  const previewVideoRef = useRef<HTMLVideoElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [recordingMode, setRecordingMode] = useState<"record" | "upload">("record");
 
   useEffect(() => {
-    if (open) setRecordingMode(canRecordScreen() ? "record" : "upload");
-  }, [open]);
-
-  // Callback ref — привязываем камеру когда video element появляется в DOM
-  const setPreviewVideoEl = (el: HTMLVideoElement | null) => {
-    previewVideoRef.current = el;
-    if (el && recorder.cameraStream) {
-      el.srcObject = recorder.cameraStream;
-      el.play().catch(() => {});
-    }
-  };
-
-  // Если камера-стрим обновился, а video уже отрисован — переподключить
-  useEffect(() => {
-    if (previewVideoRef.current && recorder.cameraStream) {
-      previewVideoRef.current.srcObject = recorder.cameraStream;
-      previewVideoRef.current.play().catch(() => {});
-    }
-  }, [recorder.cameraStream]);
+    // Image-review mode (canvas composite) works on every browser including
+    // mobile, so default to "record". Legacy screen-share mode still falls
+    // back to "upload" on iOS.
+    if (open) setRecordingMode(imageUrl || canRecordScreen() ? "record" : "upload");
+  }, [open, imageUrl]);
 
   // Очистка при закрытии
   useEffect(() => {
@@ -69,7 +57,7 @@ export default function VideoRecorderModal({ fileId, open, onClose, onUploaded, 
   }, [open]);
 
   const handleStart = async () => {
-    await recorder.start();
+    await recorder.start(imageUrl);
   };
 
   const handleStop = async () => {
@@ -185,24 +173,30 @@ export default function VideoRecorderModal({ fileId, open, onClose, onUploaded, 
           {isRecording ? "Запись" : isStopping ? "Остановка..." : `Загрузка ${progress}%`}
         </p>
 
-        {/* Камера-превью (всегда в DOM пока stream активен) */}
+        {/* REC indicator — no camera preview here so the widget itself doesn't
+            duplicate the face into the recording when capture mode includes
+            this surface. The face is already composited on the canvas. */}
         <div style={{
-          position: "relative", width: 96, height: 96, margin: "0 auto 12px",
-          borderRadius: "50%", overflow: "hidden", border: "2px solid #111",
-          background: "#111",
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+          margin: "0 auto 12px", height: 32,
         }}>
-          <video
-            ref={setPreviewVideoEl}
-            muted
-            playsInline
-            autoPlay
-            style={{ width: "100%", height: "100%", objectFit: "cover" }}
-          />
-          {isRecording && (
-            <div style={{
-              position: "absolute", top: 6, left: 6, width: 8, height: 8,
-              borderRadius: "50%", background: "#c00", animation: "afpulse 1.5s infinite",
-            }} />
+          {isRecording ? (
+            <>
+              <span style={{
+                width: 10, height: 10, borderRadius: "50%",
+                background: "#c00", animation: "afpulse 1.5s infinite",
+              }} />
+              <span style={{
+                fontFamily: "var(--af-font-mono)", fontSize: 11,
+                letterSpacing: "0.14em", textTransform: "uppercase", color: "#c00",
+                fontWeight: 700,
+              }}>REC</span>
+            </>
+          ) : (
+            <span style={{
+              fontFamily: "var(--af-font-mono)", fontSize: 10,
+              letterSpacing: "0.14em", textTransform: "uppercase", color: "#999",
+            }}>{isStopping ? "Сохранение…" : "Загрузка…"}</span>
           )}
         </div>
 

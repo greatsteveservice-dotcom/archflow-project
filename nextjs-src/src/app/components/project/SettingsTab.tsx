@@ -4,12 +4,11 @@ import { Icons } from '../Icons';
 import Bdg from '../Bdg';
 import Modal from '../Modal';
 import ConfirmDialog from '../ConfirmDialog';
-import AccessScreen from './AccessScreen';
 import NotificationSettings from './NotificationSettings';
 import type { ProjectWithStats, ProjectMemberWithProfile, UserRole, AccessLevel } from '../../lib/types';
 import { useProjectMembersWithProfiles } from '../../lib/hooks';
 import { useAuth } from '../../lib/auth';
-import { inviteProjectMember, createProjectInvitation, removeProjectMember, deleteProject, updateProjectMemberAccess } from '../../lib/queries';
+import { inviteProjectMember, createProjectInvitation, removeProjectMember, deleteProject, updateProjectMemberAccess, updateProjectMemberRole } from '../../lib/queries';
 
 const ROLE_LABEL: Record<string, string> = {
   client: 'Заказчик', contractor: 'Подрядчик', supplier: 'Комплектатор', assistant: 'Ассистент', designer: 'Дизайнер',
@@ -211,60 +210,116 @@ export default function SettingsTab({ project, projectId, toast, canDeleteProjec
           {loading ? (
             <div style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: '#111' }}>Загрузка...</div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 24 }}>
-              {(Array.isArray(members) ? members : []).map((m) => (
-                <div key={m.id} className="group" style={{
-                  background: '#fff', border: '0.5px solid #EBEBEB', padding: 16,
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ background: '#fff', border: '0.5px solid #EBEBEB', marginBottom: 24 }}>
+              {/* Header row */}
+              <div style={{
+                display: 'grid', gridTemplateColumns: '44px 1.4fr 1.6fr 160px 200px 32px',
+                gap: 12, padding: '10px 16px', alignItems: 'center',
+                fontFamily: mono, fontSize: 'var(--af-fs-9)',
+                letterSpacing: '0.08em', textTransform: 'uppercase', color: '#999',
+                borderBottom: '0.5px solid #EBEBEB',
+              }}>
+                <div></div>
+                <div>Имя</div>
+                <div>Email</div>
+                <div>Роль</div>
+                <div>Доступ</div>
+                <div></div>
+              </div>
+              {(Array.isArray(members) ? members : []).map((m) => {
+                const isOwner = m.role === 'designer';
+                return (
+                  <div key={m.id} style={{
+                    display: 'grid', gridTemplateColumns: '44px 1.4fr 1.6fr 160px 200px 32px',
+                    gap: 12, padding: '12px 16px', alignItems: 'center',
+                    borderBottom: '0.5px solid #F6F6F4',
+                  }}>
                     <div style={{
-                      width: 28, height: 28, background: '#F6F6F4',
+                      width: 32, height: 32, background: '#111', color: '#F6F6F4',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontFamily: mono, fontSize: 'var(--af-fs-9)', fontWeight: 600, color: '#111',
-                    }}>
-                      {getInitials(m)}
+                      fontFamily: mono, fontSize: 'var(--af-fs-9)', fontWeight: 700,
+                    }}>{getInitials(m)}</div>
+
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {getName(m)}
+                        {isOwner && (
+                          <span style={{ marginLeft: 8, fontFamily: mono, fontSize: 8, letterSpacing: '0.1em', color: '#999', fontWeight: 400 }}>
+                            ВЛАДЕЛЕЦ
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <div>
-                      <div style={{ fontFamily: mono, fontSize: 'var(--af-fs-10)', color: '#111' }}>{getName(m)}</div>
-                      <div style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: '#111' }}>{ROLE_LABEL[m.role] || m.role}</div>
+
+                    <div style={{ fontSize: 12, color: '#666', fontFamily: mono, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {m.profile?.email || '—'}
                     </div>
+
+                    <select
+                      value={m.role}
+                      disabled={isOwner}
+                      onChange={async (e) => {
+                        try {
+                          await updateProjectMemberRole(m.id, e.target.value);
+                          toast('Роль обновлена');
+                          refetchMembers();
+                        } catch (err: any) {
+                          toast(err?.message || 'Ошибка');
+                        }
+                      }}
+                      style={{
+                        height: 32, border: '0.5px solid #EBEBEB', background: '#fff',
+                        fontFamily: mono, fontSize: 12, padding: '0 8px',
+                        cursor: isOwner ? 'not-allowed' : 'pointer',
+                        opacity: isOwner ? 0.5 : 1,
+                      }}
+                    >
+                      {ROLE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    </select>
+
+                    <select
+                      value={m.access_level || 'view'}
+                      disabled={isOwner}
+                      onChange={async (e) => {
+                        try {
+                          await updateProjectMemberAccess(m.id, e.target.value);
+                          toast('Доступ обновлён');
+                          refetchMembers();
+                        } catch (err: any) {
+                          toast(err?.message || 'Ошибка');
+                        }
+                      }}
+                      style={{
+                        height: 32, border: '0.5px solid #EBEBEB', background: '#fff',
+                        fontFamily: mono, fontSize: 12, padding: '0 8px',
+                        cursor: isOwner ? 'not-allowed' : 'pointer',
+                        opacity: isOwner ? 0.5 : 1,
+                      }}
+                    >
+                      {ACCESS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    </select>
+
+                    <button
+                      disabled={isOwner}
+                      onClick={() => setMemberToDelete(m)}
+                      title={isOwner ? 'Владельца нельзя удалить' : 'Убрать из проекта'}
+                      style={{
+                        width: 28, height: 28, background: 'none', border: 'none',
+                        fontSize: 18, color: isOwner ? '#EBEBEB' : '#999',
+                        cursor: isOwner ? 'default' : 'pointer',
+                        fontFamily: mono,
+                      }}
+                    >×</button>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    {m.role !== 'designer' && (
-                      <button
-                        className="opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => setMemberToDelete(m)}
-                        title="Удалить участника"
-                        style={{ padding: 4, color: '#EBEBEB' }}
-                      >
-                        <Icons.Trash className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
               {(!members || members.length === 0) && (
-                <div style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: '#111' }}>Участников пока нет</div>
+                <div style={{ padding: 24, fontFamily: mono, fontSize: 'var(--af-fs-9)', color: '#999', textAlign: 'center' }}>
+                  Участников пока нет
+                </div>
               )}
             </div>
           )}
-
-          {/* Role templates */}
-          <div style={{ background: '#fff', border: '0.5px solid #EBEBEB', padding: 16 }}>
-            <h4 style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', textTransform: 'uppercase', letterSpacing: '0.14em', color: '#111', marginBottom: 12 }}>Шаблоны Ролей</h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}><span style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', minWidth: 120, display: 'inline-block', textAlign: 'left', padding: '2px 6px', border: '0.5px solid #EBEBEB', color: '#111', flexShrink: 0 }}>Заказчик</span><span style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: '#111' }}>Только просмотр</span></div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}><span style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', minWidth: 120, display: 'inline-block', textAlign: 'left', padding: '2px 6px', border: '0.5px solid #EBEBEB', color: '#111', flexShrink: 0 }}>Подрядчик</span><span style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: '#111' }}>Просмотр + фото + комментарии</span></div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}><span style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', minWidth: 120, display: 'inline-block', textAlign: 'left', padding: '2px 6px', border: '0.5px solid #EBEBEB', color: '#111', flexShrink: 0 }}>Комплектатор</span><span style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: '#111' }}>Комплектация + обновление статусов</span></div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}><span style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', minWidth: 120, display: 'inline-block', textAlign: 'left', padding: '2px 6px', border: '0.5px solid #EBEBEB', color: '#111', flexShrink: 0 }}>Ассистент</span><span style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: '#111' }}>На усмотрение дизайнера</span></div>
-            </div>
-          </div>
-
-          {/* Access management (merged from separate tab) */}
-          <div style={{ marginTop: 24 }}>
-            <AccessScreen projectId={projectId} projectName={project?.title} toast={toast} onBack={() => {}} embedded />
-          </div>
         </div>
       )}
 
