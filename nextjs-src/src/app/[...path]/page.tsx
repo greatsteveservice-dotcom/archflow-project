@@ -264,7 +264,18 @@ export default function AppShell() {
 
   // Not authenticated
   if (!session) {
-    return <LoginPage inviteHint={!!rbacInviteToken} />;
+    // Explicit login route, invite acceptance, or Supabase password-reset link
+    // (returns with #access_token=... hash) — keep showing the login screen.
+    const hasPasswordResetHash = typeof window !== 'undefined' && window.location.hash.includes('access_token');
+    const isLoginRoute = pathname === '/login';
+    if (isLoginRoute || rbacInviteToken || hasPasswordResetHash) {
+      return <LoginPage inviteHint={!!rbacInviteToken} />;
+    }
+    // Default for unauthenticated visitors: show the public landing page.
+    if (typeof window !== 'undefined') {
+      window.location.replace('/welcome');
+    }
+    return null;
   }
 
   // RBAC invite accepting screen
