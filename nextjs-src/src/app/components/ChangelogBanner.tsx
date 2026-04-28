@@ -31,7 +31,7 @@ export default function ChangelogBanner({}: Props) {
         marginTop: 32,
         background: "#F6F6F4",
         color: "#111111",
-        borderLeft: "2px solid #111111",
+        borderLeft: "4px solid var(--af-ochre)",
         padding: "28px 28px 28px 26px",
         position: "relative",
         fontFamily: "var(--af-font)",
@@ -66,7 +66,7 @@ export default function ChangelogBanner({}: Props) {
           fontSize: "var(--af-fs-8)",
           letterSpacing: "0.14em",
           textTransform: "uppercase",
-          color: "#111111",
+          color: "var(--af-ochre)",
           marginBottom: 14,
         }}
       >

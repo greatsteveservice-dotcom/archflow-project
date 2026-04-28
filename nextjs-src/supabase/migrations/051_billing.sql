@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS user_module_settings (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
--- Trigger: on new auth.users → create 7-day trial + default module settings
+-- Trigger: on new auth.users → create 14-day trial + default module settings
 CREATE OR REPLACE FUNCTION create_trial_subscription()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -33,7 +33,7 @@ SET search_path = public
 AS $$
 BEGIN
   INSERT INTO subscriptions (user_id, plan, status, started_at, expires_at)
-  VALUES (NEW.id, 'trial', 'trial', now(), now() + interval '7 days')
+  VALUES (NEW.id, 'trial', 'trial', now(), now() + interval '14 days')
   ON CONFLICT (user_id) DO NOTHING;
 
   INSERT INTO user_module_settings (user_id)

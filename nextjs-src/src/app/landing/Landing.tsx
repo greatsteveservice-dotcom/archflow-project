@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 
 // ─────────────────────────────────────────────────────────
 // Editorial Issue 01 — 13 numbered sections + footer.
@@ -24,6 +24,7 @@ export default function Landing() {
         <FinalCTA />
         <Footer />
       </main>
+      <WhyDrawer />
     </div>
   );
 }
@@ -94,7 +95,7 @@ function Hero() {
           Archflow — рабочее пространство для управления проектами и коммуникации с заказчиком.
         </p>
         <div className="ctas">
-          <a href="/login?mode=register" className="afl-btn inverted">Попробовать 7 дней →</a>
+          <a href="/login?mode=register" className="afl-btn accent">Попробовать 14 дней →</a>
         </div>
         <div className="afl-micro muted reassure">Не требует обучения</div>
       </div>
@@ -191,6 +192,8 @@ type ModuleDef = {
   desc: string;
   bullets: string[];
   why: string[];
+  whyTitle: string;   // drawer headline
+  whyKicker: string;  // drawer kicker line
   shotSrc: string;
   shotTab: string;
   shotMeta: string;
@@ -219,6 +222,8 @@ const MODULES: ModuleDef[] = [
       "Труд дизайнера по большей части невидимый. Заказчик не знает, сколько часов ушло на согласование поставщика, на переписку с прорабом, на выбор материалов. У него нет ощущения, что он платит за реальную работу.",
       "В кабинете заказчика видно, что вы делаете, на каком этапе проект и что он должен по графику оплат. Напоминания приходят от сервиса, а не от вас.",
     ],
+    whyTitle: "Прозрачность для клиента",
+    whyKicker: "Модуль · Кабинет заказчика",
     shotSrc: "/landing/07-client-cabinet.png",
     shotTab: "Кабинет · Иванова М.",
     shotMeta: "Issue 03",
@@ -241,6 +246,8 @@ const MODULES: ModuleDef[] = [
       "ТЗ уточняется, сметы меняются, допники согласовываются. Каждая подпись — распечатать, сканировать, отправить, подождать.",
       "В модуле «Дизайн» — полный архив проекта в одном месте: чертежи, визуализации, мудборды, документы по шести категориям с версионностью. Любой документ — договор, акт, допник — подписывается прямо в сервисе через СМС за минуту. Юридически значимо. Без курьеров.",
     ],
+    whyTitle: "Документы и файлы",
+    whyKicker: "Модуль · Дизайн",
     shotSrc: "/landing/02-design.png",
     shotTab: "Дизайн · Файлы проекта",
     shotMeta: "v04",
@@ -263,6 +270,8 @@ const MODULES: ModuleDef[] = [
       "Разница между «слово против слова» и «вот визиты, которые вы подписали» — стоит реальных денег.",
       "Именно поэтому мы сделали журнал цифровым: фото, отчёт и подпись строителей — прямо на объекте, за минуту.",
     ],
+    whyTitle: "Журнал визитов и замечаний",
+    whyKicker: "Модуль · Авторский надзор",
     shotSrc: "/landing/03-supervision.png",
     shotTab: "Надзор · Визиты",
     shotMeta: "Этап II",
@@ -284,6 +293,8 @@ const MODULES: ModuleDef[] = [
       "Главный вопрос в комплектации — когда заказать, чтобы материал пришёл к нужному этапу стройки с учётом сроков изготовления, доставки, возможных задержек. Итальянская сантехника идёт 8 недель, кухня — 12, плитка из партии может закончиться в любой момент. Ошиблись на две недели — стройка встала, подрядчики сидят без работы, заказчик звонит каждый день.",
       "Именно поэтому комплектация у нас живая: позиции привязаны к графику стройки, дедлайны предоплат считаются сами, о критичных датах система напоминает заранее.",
     ],
+    whyTitle: "Планирование и закупки",
+    whyKicker: "Модуль · Комплектация",
     shotSrc: "/landing/04-supply.png",
     shotTab: "Комплектация · Список",
     shotMeta: "142 позиции",
@@ -305,6 +316,8 @@ const MODULES: ModuleDef[] = [
       "Telegram, WhatsApp, MAX, почта — у каждого заказчика свой любимый канал, и в какой-то момент становится невозможно вспомнить, кому куда писать. А ещё заказчик или подрядчик может в любой момент удалить чат — и вы останетесь без доказательств.",
       "Оставьте мессенджеры для дружеских разговоров. Рабочая коммуникация — в одном окне, с поиском, расшифровкой голосовых и гарантией, что переписку не сотрут задним числом.",
     ],
+    whyTitle: "Коммуникация в одном окне",
+    whyKicker: "Модуль · Чат и ассистент",
     shotSrc: "/landing/06-chat.png",
     shotTab: "Чат · ЖК «Сетунь»",
     shotMeta: "3 участника",
@@ -345,7 +358,11 @@ function ModuleSection({ m }: { m: ModuleDef }) {
 }
 
 function ModuleCopy({ m }: { m: ModuleDef }) {
-  const [whyOpen, setWhyOpen] = useState(false);
+  const openWhy = () => {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("why:open", { detail: m }));
+    }
+  };
   return (
     <div className="copy">
       <div className="kicker">{m.kicker}</div>
@@ -362,18 +379,13 @@ function ModuleCopy({ m }: { m: ModuleDef }) {
       </ul>
       <button
         type="button"
-        className={`afl-why-toggle${whyOpen ? " open" : ""}`}
-        aria-expanded={whyOpen}
-        onClick={() => setWhyOpen((v) => !v)}
+        className="afl-why-trigger"
+        aria-haspopup="dialog"
+        onClick={openWhy}
       >
         <span>Почему мы это сделали</span>
-        <span className="pm">+</span>
+        <span className="arrow" aria-hidden="true">→</span>
       </button>
-      {whyOpen && (
-        <div className="why">
-          {m.why.map((p, i) => <p key={i}>{p}</p>)}
-        </div>
-      )}
     </div>
   );
 }
@@ -707,7 +719,7 @@ function Pricing() {
         </div>
         <div className="trial">
           <span className="afl-micro" style={{ color: "rgba(255,255,255,0.55)" }}>Триал</span>
-          <span className="b">7 дней полного доступа · без платёжных данных</span>
+          <span className="b">14 дней полного доступа · без платёжных данных</span>
         </div>
         <div className="afl-pri-grid">
           {PRICING.map((p) => (
@@ -784,13 +796,13 @@ function FinalCTA() {
     <section className="afl-sect afl-final">
       <div className="afl-body">
         <div>
-          <h2>Семь дней,<br /><span className="ghost">чтобы проверить.</span></h2>
+          <h2>14 дней,<br /><span className="ghost">чтобы проверить.</span></h2>
         </div>
         <div>
           <p className="body">
-            Заведите один живой проект. Пригласите заказчика. Зафиксируйте визит на объекте. Если через неделю не увидите разницы — просто не продлевайте подписку.
+            Заведите один живой проект. Пригласите заказчика. Зафиксируйте визит на объекте. Если через 2 недели не увидите разницы — просто не продлевайте подписку.
           </p>
-          <a href="/login?mode=register" className="afl-btn">Попробовать 7 дней →</a>
+          <a href="/login?mode=register" className="afl-btn">Попробовать 14 дней →</a>
           <div className="afl-micro reassure">Без карты · полный доступ ко всем модулям</div>
         </div>
       </div>
@@ -860,5 +872,114 @@ function FooterCol({ title, links }: { title: string; links: { href?: string; la
         ))}
       </ul>
     </div>
+  );
+}
+
+// ── Why-drawer ────────────────────────────────────────────
+function WhyDrawer() {
+  const [m, setM] = useState<ModuleDef | null>(null);
+  const closeBtnRef = useRef<HTMLButtonElement>(null);
+  const drawerRef = useRef<HTMLElement>(null);
+  const lastTriggerRef = useRef<HTMLElement | null>(null);
+
+  // open via custom event
+  useEffect(() => {
+    const onOpen = (e: Event) => {
+      const ce = e as CustomEvent<ModuleDef>;
+      lastTriggerRef.current = (document.activeElement as HTMLElement) || null;
+      setM(ce.detail);
+    };
+    window.addEventListener("why:open", onOpen);
+    return () => window.removeEventListener("why:open", onOpen);
+  }, []);
+
+  // body scroll lock + focus close button + esc
+  useEffect(() => {
+    if (!m) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const t = setTimeout(() => closeBtnRef.current?.focus(), 200);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setM(null);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      clearTimeout(t);
+      document.removeEventListener("keydown", onKey);
+      // restore focus to trigger
+      lastTriggerRef.current?.focus?.();
+    };
+  }, [m]);
+
+  // touch swipe-down on mobile
+  const startYRef = useRef<number | null>(null);
+  const currentYRef = useRef<number | null>(null);
+  const draggingRef = useRef(false);
+  const onTouchStart: React.TouchEventHandler = (e) => {
+    if (!drawerRef.current) return;
+    if (!window.matchMedia("(max-width: 900px)").matches) return;
+    const rect = drawerRef.current.getBoundingClientRect();
+    const y = e.touches[0].clientY;
+    if (y - rect.top > 80) return;
+    startYRef.current = y;
+    draggingRef.current = true;
+    drawerRef.current.style.transition = "none";
+  };
+  const onTouchMove: React.TouchEventHandler = (e) => {
+    if (!draggingRef.current || !drawerRef.current || startYRef.current == null) return;
+    const y = e.touches[0].clientY;
+    currentYRef.current = y;
+    const dy = Math.max(0, y - startYRef.current);
+    drawerRef.current.style.transform = `translateY(${dy}px)`;
+  };
+  const onTouchEnd: React.TouchEventHandler = () => {
+    if (!draggingRef.current || !drawerRef.current) return;
+    draggingRef.current = false;
+    drawerRef.current.style.transition = "";
+    const dy = (currentYRef.current ?? startYRef.current ?? 0) - (startYRef.current ?? 0);
+    if (dy > 80) setM(null);
+    else drawerRef.current.style.transform = "";
+    startYRef.current = currentYRef.current = null;
+  };
+
+  const isOpen = !!m;
+
+  return (
+    <>
+      <div
+        className={`afl-why-overlay${isOpen ? " is-open" : ""}`}
+        aria-hidden={!isOpen}
+        onClick={() => setM(null)}
+      />
+      <aside
+        ref={drawerRef}
+        className={`afl-why-drawer${isOpen ? " is-open" : ""}`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="afl-why-title"
+        aria-hidden={!isOpen}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+      >
+        <div className="head">
+          <div className="head-text">
+            <div className="kicker">{m?.whyKicker || "Почему мы это сделали"}</div>
+            <h3 id="afl-why-title">{m?.whyTitle || "Почему мы это сделали"}</h3>
+          </div>
+          <button
+            ref={closeBtnRef}
+            type="button"
+            className="close"
+            aria-label="Закрыть"
+            onClick={() => setM(null)}
+          >×</button>
+        </div>
+        <div className="body">
+          {m?.why.map((p, i) => <p key={i}>{p}</p>)}
+        </div>
+      </aside>
+    </>
   );
 }

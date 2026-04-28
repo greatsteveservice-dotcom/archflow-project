@@ -174,8 +174,8 @@ export default function SupplyDocuments({ projectId, toast }: SupplyDocumentsPro
           style={{
             display: 'inline-flex', alignItems: 'center', gap: 6,
             fontFamily: mono, fontSize: 'var(--af-fs-9)', textTransform: 'uppercase', letterSpacing: '0.12em',
-            padding: '6px 14px', border: '0.5px solid rgb(var(--line))',
-            background: 'transparent', color: 'rgb(var(--ink))',
+            padding: '6px 14px', border: '0.5px solid var(--af-ochre)',
+            background: 'transparent', color: 'var(--af-ochre)',
             cursor: uploading ? 'wait' : 'pointer',
             opacity: uploading ? 0.5 : 1,
             transition: 'all 0.15s',

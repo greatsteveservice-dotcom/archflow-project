@@ -423,7 +423,7 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
             <button className="af-btn-pill small" onClick={handleCreateSubfolder} type="button">
               + Папка
             </button>
-            <button className="af-btn-pill small" onClick={() => { setActiveSubfolder(null); fileInputRef.current?.click(); }} type="button">
+            <button className="af-btn-pill small action" onClick={() => { setActiveSubfolder(null); fileInputRef.current?.click(); }} type="button">
               + Загрузить
             </button>
           </div>
@@ -476,7 +476,7 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
           </div>
           {canUpload && (
             <button
-              className="af-btn-pill"
+              className="af-btn-pill action"
               style={{ marginTop: 16 }}
               onClick={() => fileInputRef.current?.click()}
               type="button"

@@ -360,7 +360,7 @@ export default function DesignFileDetail({
           style={{
             fontFamily: 'var(--af-font-mono)', fontSize: 8,
             textTransform: 'uppercase', letterSpacing: '0.14em',
-            color: '#111', border: '0.5px solid #EBEBEB', padding: '8px 14px',
+            color: 'var(--af-ochre)', border: '0.5px solid var(--af-ochre)', padding: '8px 14px',
             textDecoration: 'none', display: 'inline-block',
           }}
         >

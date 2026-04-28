@@ -202,7 +202,7 @@ export default function SettingsTab({ project, projectId, toast, canDeleteProjec
         <div>
           <div className="flex items-center justify-between mb-4">
             <h3 style={{ fontFamily: mono, fontSize: 'var(--af-fs-13)', fontWeight: 400, color: '#111', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Участники Проекта</h3>
-            <button className="af-btn" onClick={() => setShowInvite(true)}>
+            <button className="af-btn af-action" onClick={() => setShowInvite(true)}>
               + Пригласить
             </button>
           </div>
@@ -211,13 +211,10 @@ export default function SettingsTab({ project, projectId, toast, canDeleteProjec
             <div style={{ fontFamily: mono, fontSize: 'var(--af-fs-9)', color: '#111' }}>Загрузка...</div>
           ) : (
             <div style={{ background: '#fff', border: '0.5px solid #EBEBEB', marginBottom: 24 }}>
-              {/* Header row */}
-              <div style={{
-                display: 'grid', gridTemplateColumns: '44px 1.4fr 1.6fr 160px 200px 32px',
-                gap: 12, padding: '10px 16px', alignItems: 'center',
+              {/* Header row (desktop only) */}
+              <div className="af-roles-header" style={{
                 fontFamily: mono, fontSize: 'var(--af-fs-9)',
                 letterSpacing: '0.08em', textTransform: 'uppercase', color: '#999',
-                borderBottom: '0.5px solid #EBEBEB',
               }}>
                 <div></div>
                 <div>Имя</div>
@@ -229,18 +226,14 @@ export default function SettingsTab({ project, projectId, toast, canDeleteProjec
               {(Array.isArray(members) ? members : []).map((m) => {
                 const isOwner = m.role === 'designer';
                 return (
-                  <div key={m.id} style={{
-                    display: 'grid', gridTemplateColumns: '44px 1.4fr 1.6fr 160px 200px 32px',
-                    gap: 12, padding: '12px 16px', alignItems: 'center',
-                    borderBottom: '0.5px solid #F6F6F4',
-                  }}>
-                    <div style={{
+                  <div key={m.id} className="af-roles-row">
+                    <div className="af-roles-avatar" style={{
                       width: 32, height: 32, background: '#111', color: '#F6F6F4',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontFamily: mono, fontSize: 'var(--af-fs-9)', fontWeight: 700,
                     }}>{getInitials(m)}</div>
 
-                    <div style={{ minWidth: 0 }}>
+                    <div className="af-roles-name" style={{ minWidth: 0 }}>
                       <div style={{ fontSize: 13, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {getName(m)}
                         {isOwner && (
@@ -251,11 +244,12 @@ export default function SettingsTab({ project, projectId, toast, canDeleteProjec
                       </div>
                     </div>
 
-                    <div style={{ fontSize: 12, color: '#666', fontFamily: mono, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div className="af-roles-email" style={{ fontSize: 12, color: '#666', fontFamily: mono, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {m.profile?.email || '—'}
                     </div>
 
                     <select
+                      className="af-roles-role"
                       value={m.role}
                       disabled={isOwner}
                       onChange={async (e) => {
@@ -268,7 +262,7 @@ export default function SettingsTab({ project, projectId, toast, canDeleteProjec
                         }
                       }}
                       style={{
-                        height: 32, border: '0.5px solid #EBEBEB', background: '#fff',
+                        height: 36, border: '0.5px solid #EBEBEB', background: '#fff',
                         fontFamily: mono, fontSize: 12, padding: '0 8px',
                         cursor: isOwner ? 'not-allowed' : 'pointer',
                         opacity: isOwner ? 0.5 : 1,
@@ -278,6 +272,7 @@ export default function SettingsTab({ project, projectId, toast, canDeleteProjec
                     </select>
 
                     <select
+                      className="af-roles-access"
                       value={m.access_level || 'view'}
                       disabled={isOwner}
                       onChange={async (e) => {
@@ -290,7 +285,7 @@ export default function SettingsTab({ project, projectId, toast, canDeleteProjec
                         }
                       }}
                       style={{
-                        height: 32, border: '0.5px solid #EBEBEB', background: '#fff',
+                        height: 36, border: '0.5px solid #EBEBEB', background: '#fff',
                         fontFamily: mono, fontSize: 12, padding: '0 8px',
                         cursor: isOwner ? 'not-allowed' : 'pointer',
                         opacity: isOwner ? 0.5 : 1,
@@ -300,6 +295,7 @@ export default function SettingsTab({ project, projectId, toast, canDeleteProjec
                     </select>
 
                     <button
+                      className="af-roles-del"
                       disabled={isOwner}
                       onClick={() => setMemberToDelete(m)}
                       title={isOwner ? 'Владельца нельзя удалить' : 'Убрать из проекта'}
@@ -372,7 +368,7 @@ export default function SettingsTab({ project, projectId, toast, canDeleteProjec
                 Скачать все файлы проекта (дизайн, фото авторского надзора, документы) одним ZIP-архивом.
               </p>
               <button
-                className="af-btn"
+                className="af-btn af-action"
                 onClick={handleDownloadArchive}
                 disabled={downloading}
                 style={{ opacity: downloading ? 0.5 : 1 }}

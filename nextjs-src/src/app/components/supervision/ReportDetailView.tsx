@@ -625,7 +625,19 @@ export default function ReportDetailView({ reportId, projectId, toast, onBack, m
         </div>
         <textarea
           value={comment}
-          onChange={e => setComment(e.target.value)}
+          onChange={e => {
+            setComment(e.target.value);
+            // Auto-grow fallback for browsers without field-sizing
+            const el = e.currentTarget;
+            el.style.height = 'auto';
+            el.style.height = el.scrollHeight + 'px';
+          }}
+          ref={(el) => {
+            if (el) {
+              el.style.height = 'auto';
+              el.style.height = el.scrollHeight + 'px';
+            }
+          }}
           placeholder="Краткое описание визита..."
           rows={3}
           style={{
@@ -636,9 +648,13 @@ export default function ReportDetailView({ reportId, projectId, toast, onBack, m
             border: '0.5px solid #EBEBEB',
             background: '#FFF',
             color: '#111',
-            resize: 'vertical',
+            resize: 'none',
             outline: 'none',
             borderRadius: 0,
+            minHeight: '5em',
+            overflow: 'hidden',
+            // @ts-ignore — modern CSS for self-sizing
+            fieldSizing: 'content',
           }}
         />
         {comment !== (report.general_comment || '') && (

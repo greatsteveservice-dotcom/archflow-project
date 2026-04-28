@@ -138,8 +138,8 @@ export default function FileVideoSection({ fileId, canRecord, toast, imageUrl }:
         {canRecord && (
           <button
             onClick={() => setRecorderOpen(true)}
-            className="af-btn af-btn-ghost"
-            style={{ fontSize: 10, padding: "6px 10px" }}
+            className="af-btn af-action"
+            style={{ fontSize: 10, padding: "6px 10px", height: 'auto' }}
           >
             🎥 Записать
           </button>

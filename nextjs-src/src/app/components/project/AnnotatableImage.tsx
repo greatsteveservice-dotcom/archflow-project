@@ -158,6 +158,7 @@ export default function AnnotatableImage({
           {draftAt && (
             <div
               data-draft
+              className="af-pin-popup af-pin-draft"
               style={{
                 position: 'absolute',
                 left: `${draftAt.x}%`, top: `${draftAt.y}%`,
@@ -174,12 +175,13 @@ export default function AnnotatableImage({
                 onChange={(e) => setDraftText(e.target.value)}
                 placeholder="Замечание..."
                 rows={3}
+                className="af-pin-textarea"
                 style={{
                   width: '100%', border: '0.5px solid #EBEBEB', padding: 8,
                   fontFamily: FONT, fontSize: 12, resize: 'vertical', outline: 'none',
                 }}
               />
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
+              <div className="af-pin-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
                 <button onClick={() => { setDraftAt(null); setDraftText(''); }} style={btnGhost}>Esc</button>
                 <button onClick={submitDraft} disabled={!draftText.trim()} style={{ ...btnSolid, opacity: draftText.trim() ? 1 : 0.4 }}>
                   Отправить
@@ -191,6 +193,7 @@ export default function AnnotatableImage({
           {openThread && (
             <div
               data-thread
+              className="af-pin-popup af-pin-thread"
               style={{
                 position: 'absolute',
                 left: `${openThread.x}%`, top: `${openThread.y}%`,
