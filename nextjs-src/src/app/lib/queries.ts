@@ -617,13 +617,22 @@ export async function updateProjectMemberRole(
 // ── Design file annotations (pins) ────────────────────────────────────────
 
 export async function getFileAnnotations(fileId: string) {
-  const { data, error } = await supabase
+  // FK author_id → auth.users (not profiles), so we hydrate authors separately.
+  const { data: rows, error } = await supabase
     .from('design_file_annotations')
-    .select('*, author:profiles!design_file_annotations_author_id_fkey(id, full_name, email, avatar_url)')
+    .select('*')
     .eq('file_id', fileId)
     .order('created_at', { ascending: true });
   if (error) throw error;
-  return (data || []) as Array<import('./types').DesignFileAnnotation>;
+  const list = rows || [];
+  if (list.length === 0) return [] as Array<import('./types').DesignFileAnnotation>;
+  const authorIds = Array.from(new Set(list.map((r: any) => r.author_id).filter(Boolean)));
+  const { data: authors } = await supabase
+    .from('profiles')
+    .select('id, full_name, email, avatar_url')
+    .in('id', authorIds);
+  const byId = new Map((authors || []).map((p: any) => [p.id, p]));
+  return list.map((r: any) => ({ ...r, author: byId.get(r.author_id) || null })) as Array<import('./types').DesignFileAnnotation>;
 }
 
 export async function createFileAnnotation(input: {
