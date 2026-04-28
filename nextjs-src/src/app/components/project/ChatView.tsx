@@ -481,15 +481,14 @@ function VoiceRecorder({ projectId, userId, chatType, profile, appendMessage, re
           formData.append('duration', String(finalDuration));
           formData.append('message_id', dbMsg.id);
 
-          const EDGE_FN_URL = 'https://fcbllfvlpzlczinlydcm.supabase.co/functions/v1/process-voice';
-
-          // Get user's JWT access token for Supabase Edge Function auth
+          // Next.js API route on VPS — replaces legacy Edge Function on old Supabase
+          // (JWT mismatch after Yandex VM migration).
           const { supabase } = await import('../../lib/supabase');
           const { data: { session: authSession } } = await supabase.auth.getSession();
           const accessToken = authSession?.access_token;
           if (!accessToken) throw new Error('Нет авторизации');
 
-          const res = await fetch(EDGE_FN_URL, {
+          const res = await fetch('/api/voice/transcribe', {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${accessToken}`,
