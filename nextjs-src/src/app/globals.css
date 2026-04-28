@@ -1965,7 +1965,7 @@ html, body { overflow-x: hidden; }
 .afl-shot-sect .afl-body { padding: 0 64px 64px 64px; }
 .afl-frame {
   background: #F6F6F4;
-  border: 1px solid #EBEBEB;
+  border: 1px solid var(--af-ochre);
   display: flex; flex-direction: column;
   overflow: hidden;
 }
@@ -2004,16 +2004,14 @@ html, body { overflow-x: hidden; }
 }
 .afl-how-grid {
   display: grid; grid-template-columns: 1fr 1fr 1fr;
-  border-top: 0.5px solid #EBEBEB;
-  border-bottom: 0.5px solid #EBEBEB;
+  gap: 2px;
 }
 .afl-how-step {
   background: #FFF;
   padding: 32px 24px 36px 24px;
   display: flex; flex-direction: column; gap: 14px;
-  border-right: 0.5px solid #EBEBEB;
+  border: 1px solid var(--af-ochre);
 }
-.afl-how-step:last-child { border-right: none; }
 .afl-how-step .mark {
   font-family: var(--af-font); font-weight: 900;
   font-size: 80px; line-height: 0.85;
@@ -2203,7 +2201,7 @@ html, body { overflow-x: hidden; }
 
 .afl-mod .shot {
   background: #F6F6F4;
-  border: 1px solid #EBEBEB;
+  border: 1px solid var(--af-ochre);
   display: flex; flex-direction: column;
   position: relative; min-height: 460px;
 }
@@ -2419,14 +2417,12 @@ html, body { overflow-x: hidden; }
   color: #111; max-width: 460px; margin: 0;
 }
 .afl-ba-table {
-  border-top: 0.5px solid #EBEBEB;
-  border-bottom: 0.5px solid #EBEBEB;
+  display: flex; flex-direction: column; gap: 2px;
 }
 .afl-ba-row {
   display: grid; grid-template-columns: 1fr 200px 1fr;
-  border-bottom: 0.5px solid #EBEBEB;
+  border: 1px solid var(--af-ochre);
 }
-.afl-ba-row:last-child { border-bottom: none; }
 .afl-ba-cell {
   padding: 28px 24px;
   display: flex; flex-direction: column; gap: 8px;
@@ -2698,8 +2694,6 @@ html, body { overflow-x: hidden; }
   .afl-shot-sect .afl-body { padding: 0 20px 32px 20px; }
   .afl-how .afl-body { padding: 40px 20px !important; }
   .afl-how-grid { grid-template-columns: 1fr; }
-  .afl-how-step { border-right: none; border-bottom: 0.5px solid #EBEBEB; }
-  .afl-how-step:last-child { border-bottom: none; }
   .afl-how h2 { font-size: 38px; overflow-wrap: anywhere; }
   .afl-ba .head, .afl-trust .head, .afl-pri .head { grid-template-columns: 1fr; gap: 16px; }
   .afl-ba h2, .afl-trust h2, .afl-pri h2 { overflow-wrap: anywhere; }
