@@ -105,7 +105,7 @@ export default function ProjectsPage({ onNavigate, onCreateProject, refreshKey =
       {/* Results */}
       {filtered.length > 0 ? (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2" style={{ gap: 2 }}>
+          <div className="grid grid-cols-1 md:grid-cols-2 af-projects-grid" style={{ gap: 2 }}>
             {filtered.map((project, i) => (
               <ProjectCard
                 key={project.id}

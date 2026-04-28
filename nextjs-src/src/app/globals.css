@@ -299,6 +299,14 @@ html, body { overflow-x: hidden; }
   min-height: 180px; padding: 24px 28px;
   position: relative; overflow: hidden;
 }
+/* Ochre rail on left column of the project grid (all rows on mobile 1-col) */
+.af-projects-grid > .af-project-row { border-left: 4px solid var(--af-ochre); }
+@media (min-width: 768px) {
+  .af-projects-grid > .af-project-row { border-left: none; }
+  .af-projects-grid > .af-project-row:nth-child(odd) {
+    border-left: 4px solid var(--af-ochre);
+  }
+}
 .af-project-row:hover, .af-project-row:active {
   background: var(--af-black); color: var(--af-white);
 }
@@ -401,6 +409,14 @@ html, body { overflow-x: hidden; }
   cursor: pointer; background: var(--af-offwhite);
   transition: background 0.2s ease, color 0.2s ease;
   position: relative;
+}
+/* Ochre rail on left column of the section grid (all rows on mobile 1-col) */
+.af-tab-list .af-tab-row { border-left: 4px solid var(--af-ochre); }
+@media (min-width: 768px) {
+  .af-tab-list .af-tab-row { border-left: none; }
+  .af-tab-list .af-tab-row:nth-child(odd) {
+    border-left: 4px solid var(--af-ochre);
+  }
 }
 .af-tab-row:hover { background: var(--af-black); color: var(--af-white); }
 .af-tab-row:hover .af-tab-name { color: var(--af-white); }
