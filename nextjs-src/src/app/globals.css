@@ -2692,6 +2692,12 @@ html, body { overflow-x: hidden; }
   .afl-mod .afl-body { grid-template-columns: 1fr !important; gap: 32px; padding: 40px 20px !important; }
   .afl-mod.reverse .shot { order: 0; }
   .afl-mod.reverse .copy { order: 0; }
+  .afl-mod#supply .copy,
+  .afl-mod#chat .copy { order: 0; }
+  .afl-mod#supply .shot,
+  .afl-mod#chat .shot { order: 1; }
+  .afl-chat-img-desktop { display: none !important; }
+  .afl-chat-mock-mobile { display: flex !important; }
   .afl-mod .copy { min-width: 0; }
   .afl-mod .copy p,
   .afl-mod .copy h2,

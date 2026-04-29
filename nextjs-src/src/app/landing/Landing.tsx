@@ -530,14 +530,38 @@ function SupplyShot() {
   );
 }
 
+const CHAT_MSGS = [
+  { who: "Иванова М.", time: "15.X · 14:08", text: "Этап II — черновая отделка завершается на следующей неделе. По срокам идём, по бюджету — тоже.", assist: false },
+  { who: "Заказчик",    time: "15.X · 14:42", text: "Спасибо! Когда будут готовы фото после стяжки?", assist: false },
+  { who: "Прораб",      time: "15.X · 15:01", text: "Загружаю в надзор → визит № 04. Готово к концу дня.", assist: false },
+  { who: "Ассистент Archflow", time: "", text: "Я подсветил две задачи без исполнителей: «согласовать сантехнику» и «утвердить освещение в гостиной». Хотите назначить?", assist: true },
+];
+
 function ChatShot() {
   return (
-    /* eslint-disable-next-line @next/next/no-img-element */
-    <img
-      src="/landing/06-chat.png"
-      alt="Чат проекта · модуль «Чат и ассистент»"
-      style={{ display: "block", width: "100%", height: "auto", objectFit: "cover", objectPosition: "top center" }}
-    />
+    <>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        className="afl-chat-img-desktop"
+        src="/landing/06-chat.png"
+        alt="Чат проекта · модуль «Чат и ассистент»"
+        style={{ display: "block", width: "100%", height: "auto", objectFit: "cover", objectPosition: "top center" }}
+      />
+      <div className="afl-chat afl-chat-mock-mobile" style={{ flex: 1, flexDirection: "column", display: "none" }}>
+        {CHAT_MSGS.map((m, i) => (
+          <div key={i} className={`afl-chat-msg${m.assist ? " assist" : ""}`}>
+            <div className="afl-chat-meta afl-micro muted">
+              {m.assist ? m.who : `${m.time} · ${m.who}`}
+            </div>
+            <div className="afl-chat-text">{m.text}</div>
+          </div>
+        ))}
+        <div className="afl-chat-input">
+          <span className="afl-micro muted">Сообщение или голосовое →</span>
+          <span className="afl-micro faint">⌘ + ↵</span>
+        </div>
+      </div>
+    </>
   );
 }
 
