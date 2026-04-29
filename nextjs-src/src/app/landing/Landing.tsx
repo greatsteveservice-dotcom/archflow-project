@@ -64,7 +64,7 @@ function Topbar() {
         <a href="#faq" onClick={() => setOpen(false)} style={navLinkStyle}>03 — Вопросы</a>
         <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
           <a href="/login" className="afl-btn" style={{ flex: 1, justifyContent: "center" }}>Войти</a>
-          <a href="/login?mode=register" className="afl-btn inverted" style={{ flex: 1, justifyContent: "center" }}>Попробовать</a>
+          <a href="/login?mode=register" className="afl-btn inverted" style={{ flex: 1, justifyContent: "center" }}>Регистрация</a>
         </div>
       </div>
     </>
@@ -127,17 +127,17 @@ function HeroShot() {
             <div className="afl-proj-table">
               <div className="h">№</div>
               <div className="h">Адрес</div>
-              <div className="h">Этап</div>
-              <div className="h">Бюджет</div>
-              <div className="h">Дедлайн</div>
+              <div className="h" data-col="stage">Этап</div>
+              <div className="h" data-col="budget">Бюджет</div>
+              <div className="h" data-col="due">Дедлайн</div>
               <div className="h" style={{ textAlign: "right" }}>—</div>
               {HERO_PROJECTS.map((p) => (
                 <Fragment key={p.ix}>
                   <div className="c ix">{p.ix}</div>
                   <div className="c name">{p.name}</div>
-                  <div className="c">{p.stage}</div>
-                  <div className="c muted">{p.budget}</div>
-                  <div className="c muted">{p.due}</div>
+                  <div className="c" data-col="stage">{p.stage}</div>
+                  <div className="c muted" data-col="budget">{p.budget}</div>
+                  <div className="c muted" data-col="due">{p.due}</div>
                   <div className="c right arr">→</div>
                 </Fragment>
               ))}
@@ -530,29 +530,14 @@ function SupplyShot() {
   );
 }
 
-const CHAT_MSGS = [
-  { who: "Иванова М.", time: "15.X · 14:08", text: "Этап II — черновая отделка завершается на следующей неделе. По срокам идём, по бюджету — тоже.", assist: false },
-  { who: "Заказчик",    time: "15.X · 14:42", text: "Спасибо! Когда будут готовы фото после стяжки?", assist: false },
-  { who: "Прораб",      time: "15.X · 15:01", text: "Загружаю в надзор → визит № 04. Готово к концу дня.", assist: false },
-  { who: "Ассистент Archflow", time: "", text: "Я подсветил две задачи без исполнителей: «согласовать сантехнику» и «утвердить освещение в гостиной». Хотите назначить?", assist: true },
-];
-
 function ChatShot() {
   return (
-    <div className="afl-chat" style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-      {CHAT_MSGS.map((m, i) => (
-        <div key={i} className={`afl-chat-msg${m.assist ? " assist" : ""}`}>
-          <div className="afl-chat-meta afl-micro muted">
-            {m.assist ? m.who : `${m.time} · ${m.who}`}
-          </div>
-          <div className="afl-chat-text">{m.text}</div>
-        </div>
-      ))}
-      <div className="afl-chat-input">
-        <span className="afl-micro muted">Сообщение или голосовое →</span>
-        <span className="afl-micro faint">⌘ + ↵</span>
-      </div>
-    </div>
+    /* eslint-disable-next-line @next/next/no-img-element */
+    <img
+      src="/landing/06-chat.png"
+      alt="Чат проекта · модуль «Чат и ассистент»"
+      style={{ display: "block", width: "100%", height: "auto", objectFit: "cover", objectPosition: "top center" }}
+    />
   );
 }
 
