@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useProjectsPaginated } from "../lib/hooks";
 import { useAuth } from "../lib/auth";
 import { ErrorMessage } from "./Loading";
@@ -14,9 +15,19 @@ export default function ClientDashboard({ onNavigate, toast }: ClientDashboardPr
   const { profile, signOut } = useAuth();
   const { projects, total, loading, error } = useProjectsPaginated();
 
+  // Auto-redirect: clients almost always have a single project — skip the
+  // intermediate list and open the project home directly.
+  useEffect(() => {
+    if (!loading && !error && projects && projects.length === 1) {
+      onNavigate("project", projects[0].id);
+    }
+  }, [loading, error, projects, onNavigate]);
+
   if (loading) return <ProjectsListSkeleton />;
   if (error) return <ErrorMessage message={error} />;
   if (!projects) return null;
+  // While useEffect runs the redirect, avoid a flash of the list.
+  if (projects.length === 1) return <ProjectsListSkeleton />;
 
   const now = new Date();
   const dateStr = now.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });

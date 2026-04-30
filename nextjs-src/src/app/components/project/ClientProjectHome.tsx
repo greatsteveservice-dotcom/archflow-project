@@ -2,11 +2,10 @@
 
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
-import type { ProjectWithStats, ProjectMemberWithProfile, SupplyStatus } from "../../lib/types";
+import type { ProjectWithStats, ProjectMemberWithProfile } from "../../lib/types";
 import { useAuth } from "../../lib/auth";
 import {
   useDesignFileCounts,
-  useProjectSupplyItems,
   useVisitReports,
   useChatUnreadByType,
   usePendingSignatures,
@@ -23,12 +22,12 @@ interface Props {
 }
 
 const FIXED_STAGES = [
+  "Сбор ТЗ, обмеры",
+  "Планировочное решение",
   "Концепция",
-  "Документы",
-  "Чистовая",
-  "Комплектация",
-  "Сборка",
-  "Сдача",
+  "Визуализация",
+  "Рабочие чертежи",
+  "Ведомость и спецификации",
 ];
 
 function stageFromProgress(p: number): number {
@@ -38,12 +37,6 @@ function stageFromProgress(p: number): number {
   if (p < 71) return 3;
   if (p < 91) return 4;
   return 5;
-}
-
-function initials(name: string | null | undefined): string {
-  if (!name) return "··";
-  const parts = name.trim().split(/\s+/);
-  return ((parts[0]?.[0] || "") + (parts[1]?.[0] || "")).toUpperCase() || "··";
 }
 
 function formatDueDate(iso: string | null): { phrase: string; daysLeft: number } {
@@ -73,7 +66,6 @@ export default function ClientProjectHome({ project, projectId, members, toast }
   const { profile } = useAuth();
 
   const { data: designCounts } = useDesignFileCounts(projectId);
-  const { data: supplyItems } = useProjectSupplyItems(projectId);
   const { data: reports } = useVisitReports(projectId);
   const { count: unreadClient } = useChatUnreadByType(projectId, profile?.id || null, "client");
   const { data: signatures } = usePendingSignatures(projectId, profile?.id || null);
@@ -89,7 +81,6 @@ export default function ClientProjectHome({ project, projectId, members, toast }
   }, [project.owner, members]);
 
   const designTotal = designCounts ? Object.values(designCounts).reduce((a, b) => a + b, 0) : 0;
-  const supplyTotal = supplyItems?.length || 0;
   const reportsTotal = reports?.length || 0;
   const unreadTotal = unreadClient || 0;
 
@@ -141,29 +132,14 @@ export default function ClientProjectHome({ project, projectId, members, toast }
   // ─── Stage progress ─────────────────────────────────────────
   const currentStage = stageFromProgress(project.progress || 0);
 
-  // ─── Supply by status ───────────────────────────────────────
-  const supplyByStatus = useMemo(() => {
-    const map: Record<SupplyStatus, number> = {
-      pending: 0, approved: 0, in_review: 0, ordered: 0, in_production: 0, delivered: 0,
-    };
-    (supplyItems || []).forEach(s => { map[s.status] = (map[s.status] || 0) + 1; });
-    return map;
-  }, [supplyItems]);
-
-  const supplyOrdered = supplyByStatus.ordered + supplyByStatus.in_production;
-  const supplyPending = supplyByStatus.pending + supplyByStatus.in_review + supplyByStatus.approved;
-  const supplyDelivered = supplyByStatus.delivered;
-  const supplyTotalCalc = supplyOrdered + supplyPending + supplyDelivered;
-
   const upcoming = (timeline || []).slice(0, 3);
 
   // ─── Module tiles ───────────────────────────────────────────
   type Tile = { id: string; index: string; name: string; count: number; label: string; unread?: boolean; href: string };
   const tiles: Tile[] = [
     { id: "design",      index: "01", name: "Дизайн",            count: designTotal,  label: "файлов",  href: `/projects/${projectId}/design` },
-    { id: "supply",      index: "02", name: "Комплектация",      count: supplyTotal,  label: "позиций", href: `/projects/${projectId}/supply` },
-    { id: "supervision", index: "03", name: "Авторский надзор",  count: reportsTotal, label: "отчётов", href: `/projects/${projectId}/supervision` },
-    { id: "chat",        index: "04", name: "Чат",               count: unreadTotal,  label: unreadTotal === 1 ? "новое" : "новых", unread: unreadTotal > 0, href: `/projects/${projectId}/chat` },
+    { id: "supervision", index: "02", name: "Авторский надзор",  count: reportsTotal, label: "отчётов", href: `/projects/${projectId}/supervision` },
+    { id: "chat",        index: "03", name: "Чат",               count: unreadTotal,  label: unreadTotal === 1 ? "новое" : "новых", unread: unreadTotal > 0, href: `/projects/${projectId}/chat` },
   ];
 
   return (
@@ -197,7 +173,7 @@ export default function ClientProjectHome({ project, projectId, members, toast }
       {/* ═══ STAGE PROGRESS ═══ */}
       <section className="af-cab-stage">
         <div className="af-cab-stage-head">
-          <div className="af-cab-stage-kicker">Стадия проекта</div>
+          <div className="af-cab-stage-kicker">Этапы проекта</div>
           <h1 className="af-cab-stage-name">{FIXED_STAGES[currentStage]}</h1>
           <div className="af-cab-stage-sub">
             Этап <strong>{currentStage + 1} из 6</strong>
@@ -241,19 +217,15 @@ export default function ClientProjectHome({ project, projectId, members, toast }
       {/* ═══ DESIGNER + ACTIVITY ═══ */}
       <section className="af-cab-mid">
         {/* Designer */}
-        <div className="af-cab-designer">
-          <div className="af-cab-kicker">Ваш дизайнер</div>
+        <div className="af-cab-designer af-cab-designer-compact">
           {designerProfile ? (
             <>
-              <div className="af-cab-avatar-big">
-                {designerProfile.avatar_url ? (
-                  <img src={designerProfile.avatar_url} alt="" />
-                ) : (
-                  <span>{initials(designerProfile.full_name)}</span>
-                )}
+              <div className="af-cab-designer-row">
+                <span className="af-cab-designer-label">Дизайнер</span>
+                <span className="af-cab-designer-name-inline">
+                  {(designerProfile.full_name || "Дизайнер").split(" ")[0]}
+                </span>
               </div>
-              <div className="af-cab-designer-name">{designerProfile.full_name || "Дизайнер"}</div>
-              <div className="af-cab-designer-role">Ведёт ваш проект</div>
               <div className="af-cab-designer-actions">
                 <button
                   className="af-cab-btn primary"
@@ -299,7 +271,7 @@ export default function ClientProjectHome({ project, projectId, members, toast }
         </div>
       </section>
 
-      {/* ═══ UPCOMING + SUPPLY STATUS ═══ */}
+      {/* ═══ UPCOMING ═══ */}
       <section className="af-cab-status">
         {/* Upcoming events */}
         <div className="af-cab-upcoming">
@@ -325,27 +297,6 @@ export default function ClientProjectHome({ project, projectId, members, toast }
             </>
           )}
         </div>
-
-        {/* Supply status */}
-        {supplyTotalCalc > 0 && (
-          <div className="af-cab-supply">
-            <div className="af-cab-kicker">Поставки</div>
-            <div className="af-cab-supply-hero">
-              <span className="af-cab-supply-num">{supplyTotal}</span>
-              <span className="af-cab-supply-label">позиций всего</span>
-            </div>
-            <div className="af-cab-supply-stack">
-              {supplyOrdered > 0 && <span className="s1" style={{ width: `${(supplyOrdered / supplyTotalCalc) * 100}%` }} />}
-              {supplyPending > 0 && <span className="s2" style={{ width: `${(supplyPending / supplyTotalCalc) * 100}%` }} />}
-              {supplyDelivered > 0 && <span className="s3" style={{ width: `${(supplyDelivered / supplyTotalCalc) * 100}%` }} />}
-            </div>
-            <div className="af-cab-supply-legend">
-              <div className="row"><span className="dot s1" /><span className="lab">Заказано</span><span className="num">{supplyOrdered}</span></div>
-              <div className="row"><span className="dot s2" /><span className="lab">Ожидает</span><span className="num">{supplyPending}</span></div>
-              <div className="row"><span className="dot s3" /><span className="lab">Доставлено</span><span className="num">{supplyDelivered}</span></div>
-            </div>
-          </div>
-        )}
       </section>
     </div>
   );
