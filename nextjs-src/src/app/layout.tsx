@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Vollkorn_SC } from "next/font/google";
+import { Vollkorn_SC, Playfair_Display, Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "./lib/auth";
 import { ThemeProvider } from "./lib/theme";
@@ -11,6 +11,24 @@ const vollkornSC = Vollkorn_SC({
   subsets: ['latin', 'cyrillic'],
   weight: ['400', '600', '700', '900'],
   variable: '--font-vollkorn',
+  display: 'swap',
+});
+
+// Display font for landing/public pages (h1, h2, large numbers).
+// Roman style only — no italic. Full cyrillic support.
+const playfairDisplay = Playfair_Display({
+  subsets: ['latin', 'cyrillic'],
+  weight: ['400', '700', '900'],
+  style: ['normal'],
+  variable: '--font-playfair',
+  display: 'swap',
+});
+
+// Body font for landing/public pages (paragraphs, labels, buttons).
+const inter = Inter({
+  subsets: ['latin', 'cyrillic'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-inter',
   display: 'swap',
 });
 
@@ -71,16 +89,20 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ru" className={vollkornSC.variable} suppressHydrationWarning>
+    <html
+      lang="ru"
+      className={`${vollkornSC.variable} ${playfairDisplay.variable} ${inter.variable}`}
+      suppressHydrationWarning
+    >
       <head>
         {/* Google Fonts backup — ensures fonts render even when Next.js font
             chunks are blocked by Service Worker cache or mobile network issues.
-            next/font self-hosts the same font via CSS variable (--font-vollkorn)
-            which takes priority when loaded. */}
+            next/font self-hosts the same fonts via CSS variables (--font-vollkorn,
+            --font-playfair, --font-inter) which take priority when loaded. */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Vollkorn+SC:wght@400;600;700;900&display=swap&subset=latin,cyrillic"
+          href="https://fonts.googleapis.com/css2?family=Vollkorn+SC:wght@400;600;700;900&family=Playfair+Display:wght@400;700;900&family=Inter:wght@400;500;600;700&display=swap&subset=latin,cyrillic"
           rel="stylesheet"
         />
         {/* Manifest without crossOrigin for Safari PWA compatibility */}

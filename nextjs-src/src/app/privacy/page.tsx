@@ -13,7 +13,7 @@ export const metadata = {
 const S: Record<string, CSSProperties> = {
   wrap: { maxWidth: "720px", margin: "0 auto", padding: "48px 24px 80px" },
   label: {
-    fontFamily: "var(--af-font)",
+    fontFamily: "var(--af-landing-body)",
     fontSize: "10px",
     textTransform: "uppercase",
     letterSpacing: "0.14em",
@@ -22,7 +22,7 @@ const S: Record<string, CSSProperties> = {
     display: "block",
   },
   h1: {
-    fontFamily: "var(--af-font)",
+    fontFamily: "var(--af-landing-display)",
     fontSize: "42px",
     fontWeight: 900,
     color: "var(--af-black)",
@@ -30,14 +30,14 @@ const S: Record<string, CSSProperties> = {
     marginBottom: "8px",
   },
   meta: {
-    fontFamily: "var(--af-font)",
+    fontFamily: "var(--af-landing-body)",
     fontSize: "11px",
     color: "var(--af-gray)",
     marginBottom: "40px",
     display: "block",
   },
   h2: {
-    fontFamily: "var(--af-font)",
+    fontFamily: "var(--af-landing-display)",
     fontSize: "18px",
     fontWeight: 700,
     color: "var(--af-black)",
@@ -47,7 +47,7 @@ const S: Record<string, CSSProperties> = {
     borderBottom: "0.5px solid var(--af-border)",
   },
   h3: {
-    fontFamily: "var(--af-font)",
+    fontFamily: "var(--af-landing-body)",
     fontSize: "14px",
     fontWeight: 700,
     color: "var(--af-black)",
@@ -55,14 +55,14 @@ const S: Record<string, CSSProperties> = {
     marginBottom: "8px",
   },
   p: {
-    fontFamily: "var(--af-font)",
+    fontFamily: "var(--af-landing-body)",
     fontSize: "14px",
     color: "var(--af-black)",
     lineHeight: 1.7,
     marginBottom: "12px",
   },
   pBold: {
-    fontFamily: "var(--af-font)",
+    fontFamily: "var(--af-landing-body)",
     fontSize: "14px",
     fontWeight: 700,
     color: "var(--af-black)",
@@ -71,7 +71,7 @@ const S: Record<string, CSSProperties> = {
   },
   ul: { paddingLeft: "0", listStyle: "none", marginBottom: "12px" },
   li: {
-    fontFamily: "var(--af-font)",
+    fontFamily: "var(--af-landing-body)",
     fontSize: "14px",
     color: "var(--af-black)",
     lineHeight: 1.7,
@@ -83,7 +83,7 @@ const S: Record<string, CSSProperties> = {
     marginTop: "60px",
     paddingTop: "20px",
     borderTop: "0.5px solid var(--af-border)",
-    fontFamily: "var(--af-font)",
+    fontFamily: "var(--af-landing-body)",
     fontSize: "11px",
     color: "var(--af-gray)",
   },
@@ -102,7 +102,7 @@ export default function PrivacyPage() {
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           background: 'var(--af-white)', border: '0.5px solid var(--af-border)',
           color: 'var(--af-black)', textDecoration: 'none',
-          fontFamily: 'var(--af-font)', fontSize: 20,
+          fontFamily: 'var(--af-landing-body)', fontSize: 20,
           zIndex: 50,
         }}
       >

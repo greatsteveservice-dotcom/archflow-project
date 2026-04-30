@@ -56,7 +56,7 @@ export default function CheckoutButton({ tariffId, tariffName, price, dark }: Pr
   };
 
   const btnStyle = {
-    fontFamily: "var(--af-font-mono)",
+    fontFamily: "var(--af-landing-body)",
     fontSize: 11,
     fontWeight: 600,
     letterSpacing: "0.14em",
@@ -72,7 +72,7 @@ export default function CheckoutButton({ tariffId, tariffName, price, dark }: Pr
   };
 
   const inputStyle = {
-    fontFamily: "var(--af-font)",
+    fontFamily: "var(--af-landing-body)",
     fontSize: 14,
     padding: "10px 12px",
     width: "100%",
@@ -108,7 +108,7 @@ export default function CheckoutButton({ tariffId, tariffName, price, dark }: Pr
       {error && (
         <div
           style={{
-            fontFamily: "var(--af-font-mono)",
+            fontFamily: "var(--af-landing-body)",
             fontSize: 11,
             color: dark ? "#fff" : "#111",
             marginTop: 10,

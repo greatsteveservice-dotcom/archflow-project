@@ -1,11 +1,12 @@
 "use client";
 
-import { Fragment, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // ─────────────────────────────────────────────────────────
 // Editorial Issue 01 — 13 numbered sections + footer.
 // 80px rail-column on the left of every section, marked 01–13.
-// Single-font system: Vollkorn SC (var(--af-font)).
+// Two-font system: Playfair Display (display) + Inter (body).
+// .afl-root rebinds var(--af-font) → Inter, var(--af-font-display) → Playfair.
 // ─────────────────────────────────────────────────────────
 
 export default function Landing() {
@@ -103,14 +104,7 @@ function Hero() {
   );
 }
 
-// ── 02 · Главный экран — типографический «скриншот» ────────
-const HERO_PROJECTS = [
-  { ix: "01", name: "ЖК «Сетунь», 142 м²",        stage: "Стройка · этап II",        budget: "4,2 М ₽ · 62 %",  due: "28.III.2027" },
-  { ix: "02", name: "Никитский, 86 м²",            stage: "Дизайн-проект · v04",     budget: "2,8 М ₽ · 18 %",  due: "14.V.2027" },
-  { ix: "03", name: "Дом · Барвиха, 320 м²",      stage: "Комплектация · 142 поз.", budget: "12,4 М ₽ · 41 %", due: "10.IX.2027" },
-  { ix: "04", name: "Студия · Хамовники, 38 м²",  stage: "Сдача · 2 акта",          budget: "980 К ₽ · 95 %",  due: "02.XII.2026" },
-];
-
+// ── 02 · Главный экран — реальные скриншоты ────────────────
 function HeroShot() {
   return (
     <section className="afl-sect afl-shot-sect">
@@ -119,29 +113,21 @@ function HeroShot() {
           <div className="afl-frame-tab">
             <span className="afl-micro muted">Иванова М. · 4 проекта · 2 архивных</span>
           </div>
-          <div className="afl-frame-body" style={{ padding: 20 }}>
-            <div className="afl-proj-toolbar">
-              <span style={{ fontFamily: "var(--af-font)", fontSize: 22, fontWeight: 700 }}>Проекты</span>
-              <span className="afl-micro muted">Активные · 4</span>
-            </div>
-            <div className="afl-proj-table">
-              <div className="h">№</div>
-              <div className="h">Адрес</div>
-              <div className="h" data-col="stage">Этап</div>
-              <div className="h" data-col="budget">Бюджет</div>
-              <div className="h" data-col="due">Дедлайн</div>
-              <div className="h" style={{ textAlign: "right" }}>—</div>
-              {HERO_PROJECTS.map((p) => (
-                <Fragment key={p.ix}>
-                  <div className="c ix">{p.ix}</div>
-                  <div className="c name">{p.name}</div>
-                  <div className="c" data-col="stage">{p.stage}</div>
-                  <div className="c muted" data-col="budget">{p.budget}</div>
-                  <div className="c muted" data-col="due">{p.due}</div>
-                  <div className="c right arr">→</div>
-                </Fragment>
-              ))}
-            </div>
+          <div className="afl-frame-body" style={{ padding: 0 }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              className="afl-shot-desktop"
+              src="/landing/01-projects.png"
+              alt="Главный экран — все проекты в одном списке"
+              style={{ display: "block", width: "100%", height: "auto" }}
+            />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              className="afl-shot-mobile"
+              src="/landing/01-projects-mobile.png"
+              alt="Главный экран — все проекты в одном списке"
+              style={{ display: "none", width: "100%", height: "auto" }}
+            />
           </div>
           <div className="afl-frame-cap afl-micro">Главный экран · все проекты в одном списке</div>
         </div>
@@ -194,7 +180,8 @@ type ModuleDef = {
   why: string[];
   whyTitle: string;   // drawer headline
   whyKicker: string;  // drawer kicker line
-  shotSrc: string;
+  shotSrc: string;          // desktop screenshot
+  shotSrcMobile?: string;   // mobile screenshot — falls back to shotSrc
   shotTab: string;
   shotMeta: string;
   shotCaption: string;
@@ -225,6 +212,7 @@ const MODULES: ModuleDef[] = [
     whyTitle: "Прозрачность для клиента",
     whyKicker: "Модуль · Кабинет заказчика",
     shotSrc: "/landing/07-client-cabinet.png",
+    shotSrcMobile: "/landing/07-client-cabinet-mobile.png",
     shotTab: "Кабинет · Иванова М.",
     shotMeta: "Issue 03",
     shotCaption: "Главный экран кабинета · вид заказчика",
@@ -249,6 +237,7 @@ const MODULES: ModuleDef[] = [
     whyTitle: "Документы и файлы",
     whyKicker: "Модуль · Дизайн",
     shotSrc: "/landing/02-design.png",
+    shotSrcMobile: "/landing/02-design-mobile.png",
     shotTab: "Дизайн · Файлы проекта",
     shotMeta: "v04",
     shotCaption: "Модуль «Дизайн» · структура папок",
@@ -273,6 +262,7 @@ const MODULES: ModuleDef[] = [
     whyTitle: "Журнал визитов и замечаний",
     whyKicker: "Модуль · Авторский надзор",
     shotSrc: "/landing/03-supervision.png",
+    shotSrcMobile: "/landing/03-supervision-mobile.png",
     shotTab: "Надзор · Визиты",
     shotMeta: "Этап II",
     shotCaption: "Хроника визитов · модуль «Авторский надзор»",
@@ -296,6 +286,7 @@ const MODULES: ModuleDef[] = [
     whyTitle: "Планирование и закупки",
     whyKicker: "Модуль · Комплектация",
     shotSrc: "/landing/04-supply.png",
+    shotSrcMobile: "/landing/04-supply-mobile.png",
     shotTab: "Комплектация · Список",
     shotMeta: "142 позиции",
     shotCaption: "Список поставок · модуль «Комплектация»",
@@ -319,6 +310,7 @@ const MODULES: ModuleDef[] = [
     whyTitle: "Коммуникация в одном окне",
     whyKicker: "Модуль · Чат и ассистент",
     shotSrc: "/landing/06-chat.png",
+    shotSrcMobile: "/landing/06-chat-mobile.png",
     shotTab: "Чат · ЖК «Сетунь»",
     shotMeta: "3 участника",
     shotCaption: "Чат проекта · модуль «Чат и ассистент»",
@@ -391,6 +383,7 @@ function ModuleCopy({ m }: { m: ModuleDef }) {
 }
 
 function ModuleShot({ m }: { m: ModuleDef }) {
+  const mobileSrc = m.shotSrcMobile || m.shotSrc;
   return (
     <div className="shot">
       <div className="shot-tab">
@@ -398,219 +391,21 @@ function ModuleShot({ m }: { m: ModuleDef }) {
         <span className="afl-micro muted">{m.shotMeta}</span>
       </div>
       <div className="shot-body">
-        {m.id === "design"      && <DesignShot />}
-        {m.id === "supervision" && <SupervisionShot />}
-        {m.id === "supply"      && <SupplyShot />}
-        {m.id === "chat"        && <ChatShot />}
-        {m.id === "cabinet"     && <CabinetShot />}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          className="afl-shot-desktop"
+          src={m.shotSrc}
+          alt={m.shotCaption}
+        />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          className="afl-shot-mobile"
+          src={mobileSrc}
+          alt={m.shotCaption}
+        />
       </div>
       <div className="shot-caption afl-micro muted">{m.shotCaption}</div>
     </div>
-  );
-}
-
-// ── Module screenshot fakes — typographic, no real PNGs ──
-const DESIGN_FOLDERS = [
-  { ix: "01", nm: "Проект",        sb: "12 файлов" },
-  { ix: "02", nm: "Визуализации",  sb: "28 файлов" },
-  { ix: "03", nm: "Чертежи",       sb: "9 файлов" },
-  { ix: "04", nm: "Мебель",        sb: "14 позиций" },
-  { ix: "05", nm: "Инженерия",     sb: "6 файлов" },
-  { ix: "06", nm: "Документы",     sb: "7 + 2 на подпись" },
-];
-
-function DesignShot() {
-  return (
-    <>
-      <div className="afl-plate-grid g3" style={{ flex: 1 }}>
-        {DESIGN_FOLDERS.map((f) => (
-          <div key={f.ix} className="afl-cell afl-folder">
-            <div>
-              <span className="ix">{f.ix}</span>
-              <div className="nm">{f.nm}</div>
-            </div>
-            <div className="sb afl-micro">{f.sb}</div>
-          </div>
-        ))}
-      </div>
-      <div className="afl-plate" style={{ marginTop: 2 }}>
-        <div className="afl-plate-h">
-          <span className="afl-micro muted">Мудборд · кухня-гостиная</span>
-          <span className="afl-micro faint">→ Развернуть</span>
-        </div>
-        <div className="afl-mood-swatches">
-          <div className="s1" />
-          <div className="s2" />
-          <div className="s3" />
-        </div>
-      </div>
-    </>
-  );
-}
-
-const VISITS = [
-  { date: "15.X.2026", time: "14:42", n: "04", desc: "Стяжка готова · 12 фото · 2 задачи", dark: false },
-  { date: "08.X.2026", time: "11:08", n: "03", desc: "Электрика — отклонения от чертежа · 8 фото · 5 задач", dark: false },
-  { date: "01.X.2026", time: "10:15", n: "02", desc: "Сан. узел — задачи закрыты · 14 фото", dark: true },
-];
-
-function SupervisionShot() {
-  return (
-    <div className="afl-plate-grid" style={{ gridTemplateColumns: "1fr", flex: 1 }}>
-      {VISITS.map((v) => (
-        <div key={v.n} className={`afl-visit${v.dark ? " dark" : ""}`}>
-          <div className="when afl-micro">{v.date}<br />{v.time}</div>
-          <div>
-            <div className="afl-cell-name">Визит № {v.n} · Сетунь</div>
-            <div className="afl-cell-sub afl-micro">{v.desc}</div>
-          </div>
-          <div className="afl-micro" style={{ textAlign: "right", color: v.dark ? "rgba(255,255,255,0.55)" : "rgb(150,150,150)" }}>→</div>
-        </div>
-      ))}
-      <div className="afl-plate">
-        <div className="afl-plate-h">
-          <span className="afl-micro muted">Фото со стройки · 15.X.2026</span>
-          <span className="afl-micro faint">12</span>
-        </div>
-        <div className="afl-photos">
-          <div className="p1" />
-          <div className="p2" />
-          <div className="p3" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-const SUPPLY_ROWS = [
-  { ix: "01", name: "Кухня · Schmidt",          delivery: "28.XI", pre: "оплачено",  post: "15.XII",     postMuted: true },
-  { ix: "02", name: "Диван · Eichholtz",        delivery: "10.XII", pre: "15 / XI",  post: "28.XII",     postMuted: true },
-  { ix: "03", name: "Сантехника · Hansgrohe",   delivery: "02.XII", pre: "оплачено", post: "по факту",   postMuted: true },
-  { ix: "04", name: "Свет · Vibia × 12",        delivery: "14.I",   pre: "просрочка", post: "—",          postMuted: true, preStrike: true },
-];
-
-function SupplyShot() {
-  return (
-    <>
-      <div className="afl-supply-grid">
-        <div className="h">№</div>
-        <div className="h">Позиция</div>
-        <div className="h">Поставка</div>
-        <div className="h">Предопл.</div>
-        <div className="h">Постопл.</div>
-        <div className="h"> </div>
-        {SUPPLY_ROWS.map((r) => (
-          <Fragment key={r.ix}>
-            <div className="c ix">{r.ix}</div>
-            <div className="c name">{r.name}</div>
-            <div className="c muted">{r.delivery}</div>
-            <div className={`c ${r.preStrike ? "strike" : "muted"}`}>{r.pre}</div>
-            <div className={`c ${r.postMuted ? "muted" : ""}`}>{r.post}</div>
-            <div className="c arr">→</div>
-          </Fragment>
-        ))}
-      </div>
-      <div className="afl-plate" style={{ marginTop: 2 }}>
-        <div className="afl-plate-h">
-          <span className="afl-micro muted">План платежей · ноябрь</span>
-          <span style={{ fontFamily: "var(--af-font)", fontWeight: 900, fontSize: 18 }}>1 240 000 ₽</span>
-        </div>
-        <div className="afl-bar">
-          <div style={{ background: "#111", width: "42%" }} />
-          <div style={{ background: "rgb(200,200,200)", width: "28%" }} />
-          <div style={{ background: "#F6F6F4", width: "30%" }} />
-        </div>
-        <div className="afl-bar-legend">
-          <span className="afl-micro faint">оплачено · 520 К</span>
-          <span className="afl-micro muted">в работе · 350 К</span>
-          <span className="afl-micro faint">план · 370 К</span>
-        </div>
-      </div>
-    </>
-  );
-}
-
-const CHAT_MSGS = [
-  { who: "Иванова М.", time: "15.X · 14:08", text: "Этап II — черновая отделка завершается на следующей неделе. По срокам идём, по бюджету — тоже.", assist: false },
-  { who: "Заказчик",    time: "15.X · 14:42", text: "Спасибо! Когда будут готовы фото после стяжки?", assist: false },
-  { who: "Прораб",      time: "15.X · 15:01", text: "Загружаю в надзор → визит № 04. Готово к концу дня.", assist: false },
-  { who: "Ассистент Archflow", time: "", text: "Я подсветил две задачи без исполнителей: «согласовать сантехнику» и «утвердить освещение в гостиной». Хотите назначить?", assist: true },
-];
-
-function ChatShot() {
-  return (
-    <>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        className="afl-chat-img-desktop"
-        src="/landing/06-chat.png"
-        alt="Чат проекта · модуль «Чат и ассистент»"
-        style={{ display: "block", width: "100%", height: "auto", objectFit: "cover", objectPosition: "top center" }}
-      />
-      <div className="afl-chat afl-chat-mock-mobile" style={{ flex: 1, flexDirection: "column", display: "none" }}>
-        {CHAT_MSGS.map((m, i) => (
-          <div key={i} className={`afl-chat-msg${m.assist ? " assist" : ""}`}>
-            <div className="afl-chat-meta afl-micro muted">
-              {m.assist ? m.who : `${m.time} · ${m.who}`}
-            </div>
-            <div className="afl-chat-text">{m.text}</div>
-          </div>
-        ))}
-        <div className="afl-chat-input">
-          <span className="afl-micro muted">Сообщение или голосовое →</span>
-          <span className="afl-micro faint">⌘ + ↵</span>
-        </div>
-      </div>
-    </>
-  );
-}
-
-const CAB_CELLS = [
-  { ix: "01", nm: "Дизайн-проект", sb: "согласовано · 4 раздела" },
-  { ix: "02", nm: "Стройка",        sb: "этап 2 из 5" },
-  { ix: "03", nm: "Документы",      sb: "2 на подпись" },
-  { ix: "04", nm: "Бюджет",         sb: "62 % из плана" },
-];
-
-function CabinetShot() {
-  return (
-    <>
-      <div className="afl-plate">
-        <div className="afl-cab-head">
-          <div>
-            <div className="afl-plate-title">ЖК «Сетунь», 142 м²</div>
-            <div className="afl-micro muted" style={{ marginTop: 6 }}>
-              Дизайн-проект · этап стройки · надзор
-            </div>
-          </div>
-          <div className="afl-cab-bignum">02</div>
-        </div>
-      </div>
-      <div className="afl-plate-grid g2">
-        {CAB_CELLS.map((c) => (
-          <div key={c.ix} className="afl-cell">
-            <div className="afl-cell-h">
-              <span className="afl-micro muted">{c.ix}</span>
-              <span className="afl-micro faint">→</span>
-            </div>
-            <div>
-              <div className="afl-cell-name">{c.nm}</div>
-              <div className="afl-cell-sub afl-micro">{c.sb}</div>
-            </div>
-          </div>
-        ))}
-        <div className="afl-cell dark" style={{ gridColumn: "1 / -1" }}>
-          <div className="afl-cell-h">
-            <span className="afl-micro">сейчас</span>
-            <span className="afl-micro">15 / X / 2026</span>
-          </div>
-          <div>
-            <div className="afl-cell-name">Прораб загрузил отчёт со стройки</div>
-            <div className="afl-cell-sub afl-micro">Этап II — черновая отделка · 12 фото</div>
-          </div>
-        </div>
-      </div>
-    </>
   );
 }
 
