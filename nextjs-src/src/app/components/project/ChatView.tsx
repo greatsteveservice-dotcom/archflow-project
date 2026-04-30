@@ -7,6 +7,7 @@ import { useChatMessages, useChatRealtime, useChatMarkRead, useChatUnreadByType,
 import { sendChatMessage, deleteChatMessage, fetchChatMessages, analyzeChatMessages, createReminder, createChatChannel, deleteChatChannel, uploadChatImage, toggleChatMessagePin, fetchPinnedMessages, searchChatMessages } from '../../lib/queries';
 import type { ChatMessageWithAuthor, ChatType, ChatChannel, Profile, ChatAnalysisResult } from '../../lib/types';
 import PushPermissionBanner from './PushPermissionBanner';
+import ChatProjectPicker from './ChatProjectPicker';
 
 // ======================== HELPERS ========================
 
@@ -488,13 +489,24 @@ function VoiceRecorder({ projectId, userId, chatType, profile, appendMessage, re
           const accessToken = authSession?.access_token;
           if (!accessToken) throw new Error('Нет авторизации');
 
-          const res = await fetch('/api/voice/transcribe', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${accessToken}`,
-            },
-            body: formData,
-          });
+          // fetch with one retry on TypeError (Safari "Load failed" — usually
+          // transient network blip when keep-alive drops between recordings).
+          const sendOnce = async (): Promise<Response> => {
+            return await fetch('/api/voice/transcribe', {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${accessToken}` },
+              body: formData,
+            });
+          };
+
+          let res: Response;
+          try {
+            res = await sendOnce();
+          } catch (netErr: unknown) {
+            console.warn('[voice] fetch failed once, retrying', netErr);
+            await new Promise(r => setTimeout(r, 600));
+            res = await sendOnce();
+          }
 
           if (!res.ok) {
             const errText = await res.text().catch(() => '');
@@ -505,7 +517,7 @@ function VoiceRecorder({ projectId, userId, chatType, profile, appendMessage, re
             } catch {
               errMsg = errText || errMsg;
             }
-            console.error('Voice Edge Function error:', res.status, errMsg);
+            console.error('[voice] transcribe error:', res.status, errMsg);
             throw new Error(errMsg);
           }
 
@@ -526,6 +538,7 @@ function VoiceRecorder({ projectId, userId, chatType, profile, appendMessage, re
             }
           }
         } catch (err: unknown) {
+          console.error('[voice] stopAndSend failed', err);
           toast('Ошибка: ' + (err instanceof Error ? err.message : 'не удалось отправить'));
         }
         resolve();
@@ -1443,6 +1456,9 @@ export default function ChatView({ projectId, toast }: ChatViewProps) {
     }}>
       {/* Push notification permission banner */}
       <PushPermissionBanner />
+
+      {/* Project switcher — only when user has >1 project */}
+      <ChatProjectPicker currentProjectId={projectId} />
 
       {/* Channel navigation — hidden for clients (single-thread experience) */}
       {!isClientOnly && (

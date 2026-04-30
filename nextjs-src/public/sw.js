@@ -1,6 +1,6 @@
 // Archflow Service Worker — offline caching
 // Bump version to invalidate all caches on deploy
-const SW_VERSION = '1777211314224';
+const SW_VERSION = '1777568253729';
 const CACHE_NAME = 'archflow-v' + SW_VERSION;
 const STATIC_CACHE = 'archflow-static-v' + SW_VERSION;
 const API_CACHE = 'archflow-api-v' + SW_VERSION;
