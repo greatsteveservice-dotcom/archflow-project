@@ -12,6 +12,7 @@ import {
   useDuePayments,
   useProjectActivity,
   useUpcomingTimeline,
+  useProjectStages,
 } from "../../lib/hooks";
 
 interface Props {
@@ -37,6 +38,17 @@ function stageFromProgress(p: number): number {
   if (p < 71) return 3;
   if (p < 91) return 4;
   return 5;
+}
+
+function formatStageDate(iso: string | null): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "—";
+  const day = d.getDate();
+  const month = d.toLocaleDateString("ru-RU", { month: "short" }).replace(".", "");
+  const year = d.getFullYear();
+  const now = new Date();
+  return year === now.getFullYear() ? `${day} ${month}` : `${day} ${month} ${year}`;
 }
 
 function formatDueDate(iso: string | null): { phrase: string; daysLeft: number } {
@@ -67,6 +79,7 @@ export default function ClientProjectHome({ project, projectId, members, toast }
 
   const { data: designCounts } = useDesignFileCounts(projectId);
   const { data: reports } = useVisitReports(projectId);
+  const { data: dbStages } = useProjectStages(projectId);
   const { count: unreadClient } = useChatUnreadByType(projectId, profile?.id || null, "client");
   const { data: signatures } = usePendingSignatures(projectId, profile?.id || null);
   const { data: payments } = useDuePayments(projectId, 30);
@@ -130,7 +143,32 @@ export default function ClientProjectHome({ project, projectId, members, toast }
   const restTasks = tasks.length - 1;
 
   // ─── Stage progress ─────────────────────────────────────────
-  const currentStage = stageFromProgress(project.progress || 0);
+  // Try to derive current stage from real project_stages.status; fall back to
+  // a progress-percentage heuristic if the designer hasn't filled them in.
+  const stagesByOrder = useMemo(() => {
+    const sorted = [...(dbStages || [])].sort((a, b) => a.sort_order - b.sort_order);
+    return sorted;
+  }, [dbStages]);
+
+  const currentStage = useMemo(() => {
+    const inProgress = stagesByOrder.findIndex(s => s.status === "in_progress");
+    if (inProgress !== -1) return Math.min(inProgress, FIXED_STAGES.length - 1);
+    const lastDone = stagesByOrder
+      .map(s => s.status)
+      .lastIndexOf("done");
+    if (lastDone !== -1) return Math.min(lastDone + 1, FIXED_STAGES.length - 1);
+    return stageFromProgress(project.progress || 0);
+  }, [stagesByOrder, project.progress]);
+
+  // end_date for stage i = start of stage (i+1).  We trust the DB row at the
+  // same sort_order index when it has end_date filled in; otherwise we leave
+  // the slot blank.
+  const stageEndDates: (string | null)[] = useMemo(() => {
+    const arr = FIXED_STAGES.map((_, i) => stagesByOrder[i]?.end_date || null);
+    return arr;
+  }, [stagesByOrder]);
+
+  const stagePct = Math.round(((currentStage) / (FIXED_STAGES.length - 1)) * 100);
 
   const upcoming = (timeline || []).slice(0, 3);
 
@@ -171,25 +209,42 @@ export default function ClientProjectHome({ project, projectId, members, toast }
       )}
 
       {/* ═══ STAGE PROGRESS ═══ */}
-      <section className="af-cab-stage">
-        <div className="af-cab-stage-head">
-          <div className="af-cab-stage-kicker">Этапы проекта</div>
-          <h1 className="af-cab-stage-name">{FIXED_STAGES[currentStage]}</h1>
-          <div className="af-cab-stage-sub">
-            Этап <strong>{currentStage + 1} из 6</strong>
-            {project.progress != null && <> · <strong>{project.progress} %</strong></>}
-          </div>
+      <section className="af-cab-stage2">
+        <div className="af-cab-stage2-kicker">Этапы проекта</div>
+        <h1 className="af-cab-stage2-name">{FIXED_STAGES[currentStage]}</h1>
+        <div className="af-cab-stage2-sub">
+          Этап <strong>{currentStage + 1}</strong> из {FIXED_STAGES.length} · {stagePct}%
         </div>
-        <div className="af-cab-stage-bar">
+        <div className="af-cab-stage2-bar">
           {FIXED_STAGES.map((_, i) => (
-            <div key={i} className={`af-cab-stage-seg ${i < currentStage ? "done" : i === currentStage ? "now" : ""}`} />
+            <span
+              key={i}
+              className={`af-cab-stage2-seg ${i < currentStage ? "done" : i === currentStage ? "now" : ""}`}
+            />
           ))}
         </div>
-        <div className="af-cab-stage-labels">
-          {FIXED_STAGES.map((label, i) => (
-            <div key={i} className={`af-cab-stage-lab ${i < currentStage ? "done" : i === currentStage ? "now" : ""}`}>{label}</div>
-          ))}
-        </div>
+        <ul className="af-cab-stage2-list">
+          {FIXED_STAGES.map((label, i) => {
+            const done = i < currentStage;
+            const now = i === currentStage;
+            const endIso = stageEndDates[i];
+            return (
+              <li
+                key={i}
+                className={`af-cab-stage2-row ${done ? "done" : now ? "now" : "future"}`}
+              >
+                <span className="af-cab-stage2-box" aria-hidden="true">
+                  {done ? "✓" : ""}
+                </span>
+                <span className="af-cab-stage2-label">{label}</span>
+                <span className="af-cab-stage2-date">{formatStageDate(endIso)}</span>
+                <span className="af-cab-stage2-num">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
       </section>
 
       {/* ═══ MODULE TILES ═══ */}
