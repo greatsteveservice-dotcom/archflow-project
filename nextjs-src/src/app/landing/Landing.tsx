@@ -39,7 +39,6 @@ function Topbar() {
         <a href="/welcome" className="afl-logo" aria-label="Archflow">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo.png" alt="" />
-          <span className="afl-logo-word">Archflow</span>
         </a>
         <nav className="afl-nav">
           <a href="#modules"><span className="num">01</span>Модули</a>
@@ -110,9 +109,6 @@ function HeroShot() {
     <section className="afl-sect afl-shot-sect">
       <div className="afl-body">
         <div className="afl-frame">
-          <div className="afl-frame-tab">
-            <span className="afl-micro muted">Иванова М. · 4 проекта · 2 архивных</span>
-          </div>
           <div className="afl-frame-body" style={{ padding: 0 }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -386,10 +382,6 @@ function ModuleShot({ m }: { m: ModuleDef }) {
   const mobileSrc = m.shotSrcMobile || m.shotSrc;
   return (
     <div className="shot">
-      <div className="shot-tab">
-        <span className="afl-micro">{m.shotTab}</span>
-        <span className="afl-micro muted">{m.shotMeta}</span>
-      </div>
       <div className="shot-body">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
