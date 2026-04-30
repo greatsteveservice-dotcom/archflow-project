@@ -7,7 +7,6 @@ import { useAuth } from "../../lib/auth";
 import {
   useDesignFileCounts,
   useVisitReports,
-  useChatUnreadByType,
   usePendingSignatures,
   useDuePayments,
   useProjectActivity,
@@ -80,7 +79,6 @@ export default function ClientProjectHome({ project, projectId, members, toast }
   const { data: designCounts } = useDesignFileCounts(projectId);
   const { data: reports } = useVisitReports(projectId);
   const { data: dbStages } = useProjectStages(projectId);
-  const { count: unreadClient } = useChatUnreadByType(projectId, profile?.id || null, "client");
   const { data: signatures } = usePendingSignatures(projectId, profile?.id || null);
   const { data: payments } = useDuePayments(projectId, 30);
   const { data: activity } = useProjectActivity(projectId, 4);
@@ -95,7 +93,6 @@ export default function ClientProjectHome({ project, projectId, members, toast }
 
   const designTotal = designCounts ? Object.values(designCounts).reduce((a, b) => a + b, 0) : 0;
   const reportsTotal = reports?.length || 0;
-  const unreadTotal = unreadClient || 0;
 
   // ─── Hero action ────────────────────────────────────────────
   type HeroTask = {
@@ -173,11 +170,12 @@ export default function ClientProjectHome({ project, projectId, members, toast }
   const upcoming = (timeline || []).slice(0, 3);
 
   // ─── Module tiles ───────────────────────────────────────────
+  // Chat is intentionally excluded — it's reachable from the designer card
+  // above and from the bottom tabbar.
   type Tile = { id: string; index: string; name: string; count: number; label: string; unread?: boolean; href: string };
   const tiles: Tile[] = [
     { id: "design",      index: "01", name: "Дизайн",            count: designTotal,  label: "файлов",  href: `/projects/${projectId}/design` },
     { id: "supervision", index: "02", name: "Авторский надзор",  count: reportsTotal, label: "отчётов", href: `/projects/${projectId}/supervision` },
-    { id: "chat",        index: "03", name: "Чат",               count: unreadTotal,  label: unreadTotal === 1 ? "новое" : "новых", unread: unreadTotal > 0, href: `/projects/${projectId}/chat` },
   ];
 
   return (
@@ -247,28 +245,6 @@ export default function ClientProjectHome({ project, projectId, members, toast }
         </ul>
       </section>
 
-      {/* ═══ MODULE TILES ═══ */}
-      <section className="af-tab-list af-tab-list-large">
-        {tiles.map(t => (
-          <div
-            key={t.id}
-            className="af-tab-row"
-            onClick={() => router.push(t.href)}
-          >
-            <span className="af-tab-index">{t.index}</span>
-            <span className="af-tab-name">{t.name}</span>
-            <div className="af-tab-metric">
-              <span className="af-tab-metric-value">
-                {t.unread && <span className="af-cab-unread-dot" />}
-                {t.count}
-              </span>
-              <span className="af-tab-metric-label">{t.label}</span>
-            </div>
-            <span className="af-tab-arrow">→</span>
-          </div>
-        ))}
-      </section>
-
       {/* ═══ DESIGNER + ACTIVITY ═══ */}
       <section className="af-cab-mid">
         {/* Designer */}
@@ -324,6 +300,28 @@ export default function ClientProjectHome({ project, projectId, members, toast }
             </>
           )}
         </div>
+      </section>
+
+      {/* ═══ MODULE TILES ═══ */}
+      <section className="af-tab-list af-tab-list-large">
+        {tiles.map(t => (
+          <div
+            key={t.id}
+            className="af-tab-row"
+            onClick={() => router.push(t.href)}
+          >
+            <span className="af-tab-index">{t.index}</span>
+            <span className="af-tab-name">{t.name}</span>
+            <div className="af-tab-metric">
+              <span className="af-tab-metric-value">
+                {t.unread && <span className="af-cab-unread-dot" />}
+                {t.count}
+              </span>
+              <span className="af-tab-metric-label">{t.label}</span>
+            </div>
+            <span className="af-tab-arrow">→</span>
+          </div>
+        ))}
       </section>
 
       {/* ═══ UPCOMING ═══ */}
