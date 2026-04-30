@@ -7,7 +7,7 @@
 import { useState, useEffect, useCallback, useRef, useId } from 'react';
 import { supabase } from './supabase';
 import { isBackendError, getHealth } from './health';
-import type { ProjectWithStats, VisitWithStats, PhotoRecord, Profile, Stage, SupplyItem, Invoice, Notification, ActivityItem, Document, ProjectMember, ProjectMemberWithProfile, DocumentCategory, Task, PhotoRecordWithVisit, RbacMemberWithProfile, ProjectAccessSettings, VisitReportWithStats, VisitRemarkWithDetails, ContractorTaskWithDetails, ChatMessageWithAuthor, ChatType, ChatChannel, DesignFileWithProfile, DesignFileCommentWithProfile, DesignFolder, DesignSubfolder, ProjectRoom, KindStageMapping, OnboardingUpload } from './types';
+import type { ProjectWithStats, VisitWithStats, PhotoRecord, Profile, Stage, SupplyItem, Invoice, Notification, ActivityItem, Document, ProjectMember, ProjectMemberWithProfile, DocumentCategory, Task, PhotoRecordWithVisit, RbacMemberWithProfile, ProjectAccessSettings, VisitReportWithStats, VisitRemarkWithDetails, ContractorTaskWithDetails, ChatMessageWithAuthor, ChatType, ChatChannel, DesignFileWithProfile, DesignFileCommentWithProfile, DesignFolder, DesignSubfolder, ProjectRoom, KindStageMapping } from './types';
 import {
   fetchProjects,
   fetchProjectsPaginated,
@@ -47,7 +47,6 @@ import {
   fetchChatChannels,
   fetchProjectRooms,
   fetchKindStageMappings,
-  listOnboardingPending,
 } from './queries';
 
 // ======================== GENERIC HOOK ========================
@@ -446,7 +445,7 @@ export function usePendingAlerts(projectIds: string[]): Map<string, boolean> {
 
 // ======================== REALTIME SUBSCRIPTIONS ========================
 
-type RealtimeTable = 'projects' | 'visits' | 'photo_records' | 'invoices' | 'supply_items' | 'tasks' | 'documents' | 'project_members' | 'onboarding_uploads';
+type RealtimeTable = 'projects' | 'visits' | 'photo_records' | 'invoices' | 'supply_items' | 'tasks' | 'documents' | 'project_members';
 
 interface UseRealtimeOptions {
   /** Tables to subscribe to */
@@ -969,21 +968,3 @@ export function useMoodboardSections(moodboardId: string | null) {
   );
 }
 
-// ======================== ONBOARDING ========================
-
-/** Список pending/needs_review/auto_placed/supply_suggested для проекта + realtime. */
-export function useOnboardingPending(projectId: string | null) {
-  const result = useQuery<OnboardingUpload[]>(
-    () => projectId ? listOnboardingPending(projectId) : Promise.resolve([]),
-    [projectId]
-  );
-
-  useRealtimeSubscription({
-    tables: ['onboarding_uploads'],
-    projectId: projectId || undefined,
-    enabled: !!projectId,
-    onUpdate: () => result.refetch(),
-  });
-
-  return result;
-}
