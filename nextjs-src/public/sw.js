@@ -1,6 +1,6 @@
 // Archflow Service Worker — offline caching
 // Bump version to invalidate all caches on deploy
-const SW_VERSION = '1777570189154';
+const SW_VERSION = '1777645110178';
 const CACHE_NAME = 'archflow-v' + SW_VERSION;
 const STATIC_CACHE = 'archflow-static-v' + SW_VERSION;
 const API_CACHE = 'archflow-api-v' + SW_VERSION;
@@ -48,6 +48,14 @@ const OFFLINE_HTML = `<!DOCTYPE html>
 // all-or-nothing, and if ANY asset failed the offline fallback page
 // never got cached, leaving users with raw "Offline" text on failures.
 self.addEventListener('install', (event) => {
+  // Skip the "waiting" state automatically. Without this a new SW version
+  // sits idle until every archflow.ru tab is closed — which means a user
+  // experiencing a bug we just fixed can't actually receive the fix until
+  // they manually close all tabs / kill the PWA. With skipWaiting() the
+  // new SW takes over on the next activate, clients.claim() pulls open
+  // pages under it, and ServiceWorkerRegistration.tsx auto-reloads them
+  // via the controllerchange listener.
+  self.skipWaiting();
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then(async (cache) => {
