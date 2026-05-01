@@ -4,51 +4,51 @@ import { reportSuccess, reportFailure, isBackendError } from './health'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder'
 
-// Fail fast on dead backend — default browser fetch has no timeout at all,
-// which means a hanging Postgres makes every query block for 30+ seconds.
-// 8s is long enough for a cold Postgres query on slow 3G but short enough
-// to surface outages quickly to the DatabaseBanner.
-const REQUEST_TIMEOUT_MS = 8000;
+// We never abort fetches with our own timer — supabase-js wraps auth/token
+// requests in navigator.locks.request(); aborting an inner fetch leaves the
+// lock in a "stolen" state and the next acquirer throws
+// "AbortError: Lock was stolen by another request". So instead of killing
+// the request, we only mark the connection as degraded after a soft delay
+// and let the underlying fetch finish naturally.
+const SOFT_DEGRADE_MS = 12000;
 
-/** fetch wrapper with timeout + health reporting */
+/** fetch wrapper with health reporting (no forced abort) */
 const instrumentedFetch: typeof fetch = (input, init) => {
-  const ctrl = new AbortController();
-  const signal = init?.signal
-    ? mergeSignals(init.signal, ctrl.signal)
-    : ctrl.signal;
-  const timeoutId = setTimeout(() => ctrl.abort('request-timeout'), REQUEST_TIMEOUT_MS);
   const started = typeof performance !== 'undefined' ? performance.now() : Date.now();
+  let degraded = false;
+  const degradeTimer = setTimeout(() => {
+    degraded = true;
+    reportFailure('slow-response');
+  }, SOFT_DEGRADE_MS);
 
-  return fetch(input, { ...init, signal })
+  // Pass through the caller's abort signal unchanged — that lets legit
+  // user-side cancellations (component unmount, navigation) still work,
+  // without us injecting our own abort into the supabase auth lock.
+  return fetch(input, init)
     .then((res) => {
-      // 5xx = server error → degrade
       if (res.status >= 500) {
         reportFailure(`HTTP ${res.status}`);
+      } else if (!degraded) {
+        const duration = (typeof performance !== 'undefined' ? performance.now() : Date.now()) - started;
+        reportSuccess(duration);
       } else {
+        // Late success after we already reported degradation — recovery
         const duration = (typeof performance !== 'undefined' ? performance.now() : Date.now()) - started;
         reportSuccess(duration);
       }
       return res;
     })
     .catch((err) => {
-      if (isBackendError(err)) {
-        reportFailure(err?.message || 'network error');
+      // Only treat genuine backend errors as failures. AbortError from a
+      // user-side signal is a normal cancellation, not a backend outage.
+      const name = (err as { name?: string } | null)?.name;
+      if (name !== 'AbortError' && isBackendError(err)) {
+        reportFailure((err as Error)?.message || 'network error');
       }
       throw err;
     })
-    .finally(() => clearTimeout(timeoutId));
+    .finally(() => clearTimeout(degradeTimer));
 };
-
-function mergeSignals(a: AbortSignal, b: AbortSignal): AbortSignal {
-  if (a.aborted) return a;
-  if (b.aborted) return b;
-  const ctrl = new AbortController();
-  const onAbortA = () => ctrl.abort((a as any).reason);
-  const onAbortB = () => ctrl.abort((b as any).reason);
-  a.addEventListener('abort', onAbortA, { once: true });
-  b.addEventListener('abort', onAbortB, { once: true });
-  return ctrl.signal;
-}
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   global: {

@@ -23,6 +23,7 @@ import ContractorDashboard from "../components/ContractorDashboard";
 import { useProjects } from "../lib/hooks";
 import { useAuth } from "../lib/auth";
 import { acceptProjectInvitation, acceptRbacInvite } from "../lib/queries";
+import { isTransientError } from "../lib/retry";
 import { metrikaGoal } from "../lib/metrika";
 
 // ======================== URL ROUTING ========================
@@ -217,7 +218,14 @@ export default function AppShell() {
       })
       .catch((err) => {
         console.error('[invite] project invitation failed:', err);
-        setToastMsg(err.message || 'Ошибка принятия приглашения');
+        // Transient network/lock errors: acceptProjectInvitation already
+        // retried 3× via runWithRetry. Don't dump scary technical text in
+        // a toast — show a friendly hint and let the user pull-to-refresh.
+        if (isTransientError(err)) {
+          setToastMsg('Соединение нестабильно — обновите страницу');
+        } else {
+          setToastMsg(err.message || 'Ошибка принятия приглашения');
+        }
       });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session]);
@@ -255,7 +263,15 @@ export default function AppShell() {
         console.error('[invite] rbac invite failed:', err);
         router.replace('/projects');
         setRbacInviteToken(null);
-        setInviteError(err?.message || 'Ссылка недействительна или уже использована');
+        // Don't lock the whole app behind a fatal "ссылка недействительна"
+        // screen for transient network/lock errors. acceptRbacInvite already
+        // retried 3×; show a soft toast instead so the user can re-open the
+        // link.
+        if (isTransientError(err)) {
+          setToastMsg('Соединение нестабильно — обновите страницу');
+        } else {
+          setInviteError(err?.message || 'Ссылка недействительна или уже использована');
+        }
       })
       .finally(() => {
         setInviteAccepting(false);

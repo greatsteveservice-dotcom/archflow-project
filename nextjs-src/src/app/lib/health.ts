@@ -28,8 +28,12 @@ export interface HealthState {
 }
 
 // Thresholds
-const DEGRADED_AFTER_FAILURES = 2;   // 2 consecutive failures → degraded
-const OFFLINE_AFTER_FAILURES = 4;    // 4 consecutive failures → offline
+// Yandex Cloud cold queries on a fresh user (no cache) routinely take 3–8s
+// for the first round of paginated fetches; tripping degraded after 2 misses
+// produced false-positive banners. Bumped to 3/6 to give honest outages
+// enough rope to surface while smoothing out cold-start jitter.
+const DEGRADED_AFTER_FAILURES = 3;   // 3 consecutive failures → degraded
+const OFFLINE_AFTER_FAILURES = 6;    // 6 consecutive failures → offline
 const SLOW_RESPONSE_MS = 5000;       // >5s successful response → still degraded
 
 let _state: HealthState = {
@@ -127,8 +131,15 @@ export function useSupabaseHealth(): HealthState {
 
 export function isBackendError(err: unknown): boolean {
   if (err instanceof TypeError) return true; // network failure in browser fetch
+  const name = (err as { name?: string } | null)?.name;
+  // AbortError can come from user-side cancellation (component unmount,
+  // navigation) — that's not a backend failure. supabase-js token-refresh
+  // lock contention also surfaces as AbortError ("Lock was stolen by another
+  // request"); we don't want that to escalate the health banner either.
+  if (name === 'AbortError') return false;
   const msg = err instanceof Error ? err.message : String(err || '');
-  if (/timeout|timed out|abort/i.test(msg)) return true;
+  if (/lock was stolen/i.test(msg)) return false;
+  if (/timeout|timed out/i.test(msg)) return true;
   if (/failed to fetch|networkerror|load failed/i.test(msg)) return true;
   if (/502|503|504|ERR_NETWORK|ERR_TIMED_OUT/i.test(msg)) return true;
   if (/PGRST000|could not translate host name/i.test(msg)) return true;

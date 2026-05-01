@@ -7,6 +7,7 @@
 import { useState, useEffect, useCallback, useRef, useId } from 'react';
 import { supabase } from './supabase';
 import { isBackendError, getHealth } from './health';
+import { runWithRetry } from './retry';
 import type { ProjectWithStats, VisitWithStats, PhotoRecord, Profile, Stage, SupplyItem, Invoice, Notification, ActivityItem, Document, ProjectMember, ProjectMemberWithProfile, DocumentCategory, Task, PhotoRecordWithVisit, RbacMemberWithProfile, ProjectAccessSettings, VisitReportWithStats, VisitRemarkWithDetails, ContractorTaskWithDetails, ChatMessageWithAuthor, ChatType, ChatChannel, DesignFileWithProfile, DesignFileCommentWithProfile, DesignFolder, DesignSubfolder, ProjectRoom, KindStageMapping } from './types';
 import {
   fetchProjects,
@@ -60,34 +61,6 @@ interface UseQueryResult<T> {
 
 /** Simple module-level cache to prevent skeleton flash on re-mounts (e.g. tab switches) */
 const _queryCache = new Map<string, unknown>();
-
-// Retry policy: only retry network/backend errors (not 4xx business errors).
-// Exponential backoff: 400ms, 1200ms, 3000ms → 3 retries, ~4.6s max total.
-const RETRY_DELAYS_MS = [400, 1200, 3000];
-
-/** Run a fetcher with automatic retry on backend failures */
-async function runWithRetry<T>(
-  fetcher: () => Promise<T>,
-  isCancelled: () => boolean,
-): Promise<T> {
-  let lastErr: unknown;
-  for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
-    if (isCancelled()) throw new Error('cancelled');
-    try {
-      return await fetcher();
-    } catch (err) {
-      lastErr = err;
-      // Don't retry on 4xx business errors — those are deterministic
-      if (!isBackendError(err)) throw err;
-      // Last attempt — rethrow
-      if (attempt === RETRY_DELAYS_MS.length) throw err;
-      // Wait then retry
-      const delay = RETRY_DELAYS_MS[attempt];
-      await new Promise(r => setTimeout(r, delay));
-    }
-  }
-  throw lastErr;
-}
 
 function useQuery<T>(fetcher: () => Promise<T>, deps: unknown[] = []): UseQueryResult<T> {
   // Include fetcher source to distinguish hooks with same deps (e.g. useProject vs useProjectVisits)
@@ -965,6 +938,23 @@ export function useMoodboardSections(moodboardId: string | null) {
   return useQuery<MoodboardSection[]>(
     () => moodboardId ? fetchMoodboardSections(moodboardId) : Promise.resolve([]),
     [moodboardId]
+  );
+}
+
+// ======================== ONBOARDING ========================
+
+import type { OnboardingUpload } from './types';
+import { listOnboardingPending } from './queries';
+
+/**
+ * AI-онбординг: pending-очередь файлов для проекта.
+ * Возвращает все статусы кроме `confirmed` и `rejected` (см. listOnboardingPending).
+ * UI разносит их по группам auto_placed / needs_review / supply_suggested.
+ */
+export function useOnboardingPending(projectId: string | null) {
+  return useQuery<OnboardingUpload[]>(
+    () => projectId ? listOnboardingPending(projectId) : Promise.resolve([]),
+    [projectId]
   );
 }
 

@@ -4,6 +4,7 @@
 
 import { supabase } from './supabase';
 import { sanitize, sanitizeUrl } from './sanitize';
+import { runWithRetry } from './retry';
 import type {
   Project, Profile, Visit, PhotoRecord, Invoice,
   Document, SupplyItem, Stage, ContractPayment,
@@ -1602,10 +1603,12 @@ export async function removeRbacMember(memberId: string): Promise<void> {
 
 /** Accept RBAC invite by token (uses RPC from migration 012) */
 export async function acceptRbacInvite(token: string): Promise<{ project_id: string; role: string } | null> {
-  const { data, error } = await supabase.rpc('accept_member_invite', { p_token: token });
-  if (error) throw new Error(humanError(error));
-  if (data?.error) throw new Error(data.error);
-  return data;
+  return runWithRetry(async () => {
+    const { data, error } = await supabase.rpc('accept_member_invite', { p_token: token });
+    if (error) throw new Error(humanError(error));
+    if (data?.error) throw new Error(data.error);
+    return data;
+  });
 }
 
 // ─── Access settings ────────────────────────────────────
@@ -1697,11 +1700,12 @@ export async function createProjectInvitation(
 
 /** Accept an invitation by token (RPC) */
 export async function acceptProjectInvitation(token: string): Promise<{ project_id: string; role: string } | null> {
-  const { data, error } = await supabase.rpc('accept_project_invitation', { invite_token: token });
-
-  if (error) throw error;
-  if (data?.error) throw new Error(data.error);
-  return data;
+  return runWithRetry(async () => {
+    const { data, error } = await supabase.rpc('accept_project_invitation', { invite_token: token });
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+    return data;
+  });
 }
 
 // ======================== DELETE OPERATIONS ========================
