@@ -196,13 +196,14 @@ export default function AppShell() {
     }
   }, [projects, welcomeDismissed]);
 
-  // Handle invite token from URL query
+  // Handle invite token from URL query (or sessionStorage if user was redirected to /welcome first)
   useEffect(() => {
     if (!session) return;
     const params = new URLSearchParams(window.location.search);
-    const inviteToken = params.get('invite');
+    const inviteToken = params.get('invite') || sessionStorage.getItem('archflow_pending_invite');
     if (!inviteToken) return;
 
+    sessionStorage.removeItem('archflow_pending_invite');
     window.history.replaceState({}, '', window.location.pathname);
 
     acceptProjectInvitation(inviteToken)
@@ -300,7 +301,12 @@ export default function AppShell() {
       return <LoginPage inviteHint={!!rbacInviteToken} />;
     }
     // Default for unauthenticated visitors: show the public landing page.
+    // Preserve ?invite= token so it survives the redirect → login → back flow.
     if (typeof window !== 'undefined') {
+      const inviteParam = new URLSearchParams(window.location.search).get('invite');
+      if (inviteParam) {
+        sessionStorage.setItem('archflow_pending_invite', inviteParam);
+      }
       window.location.replace('/welcome');
     }
     return null;

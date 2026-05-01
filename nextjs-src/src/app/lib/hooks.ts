@@ -7,7 +7,7 @@
 import { useState, useEffect, useCallback, useRef, useId } from 'react';
 import { supabase } from './supabase';
 import { isBackendError, getHealth } from './health';
-import { runWithRetry } from './retry';
+import { runWithRetry, isTransientError } from './retry';
 import type { ProjectWithStats, VisitWithStats, PhotoRecord, Profile, Stage, SupplyItem, Invoice, Notification, ActivityItem, Document, ProjectMember, ProjectMemberWithProfile, DocumentCategory, Task, PhotoRecordWithVisit, RbacMemberWithProfile, ProjectAccessSettings, VisitReportWithStats, VisitRemarkWithDetails, ContractorTaskWithDetails, ChatMessageWithAuthor, ChatType, ChatChannel, DesignFileWithProfile, DesignFileCommentWithProfile, DesignFolder, DesignSubfolder, ProjectRoom, KindStageMapping } from './types';
 import {
   fetchProjects,
@@ -89,6 +89,15 @@ function useQuery<T>(fetcher: () => Promise<T>, deps: unknown[] = []): UseQueryR
       })
       .catch(err => {
         if (!cancelled) {
+          // AbortError / "Lock was stolen" are supabase-js lock-contention noise,
+          // not real failures — never surface them as a UI error block.
+          if (isTransientError(err)) {
+            setLoading(false);
+            if (!_queryCache.has(cacheKey)) {
+              setError('Нет соединения — попробуйте обновить страницу');
+            }
+            return;
+          }
           // If the backend is degraded and we still have cached data,
           // keep showing the cache and don't surface an error state.
           if (isBackendError(err) && _queryCache.has(cacheKey)) {
