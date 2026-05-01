@@ -941,20 +941,3 @@ export function useMoodboardSections(moodboardId: string | null) {
   );
 }
 
-// ======================== ONBOARDING ========================
-
-import type { OnboardingUpload } from './types';
-import { listOnboardingPending } from './queries';
-
-/**
- * AI-онбординг: pending-очередь файлов для проекта.
- * Возвращает все статусы кроме `confirmed` и `rejected` (см. listOnboardingPending).
- * UI разносит их по группам auto_placed / needs_review / supply_suggested.
- */
-export function useOnboardingPending(projectId: string | null) {
-  return useQuery<OnboardingUpload[]>(
-    () => projectId ? listOnboardingPending(projectId) : Promise.resolve([]),
-    [projectId]
-  );
-}
-
