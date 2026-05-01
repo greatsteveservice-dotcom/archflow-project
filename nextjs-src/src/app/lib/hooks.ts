@@ -7,7 +7,7 @@
 import { useState, useEffect, useCallback, useRef, useId } from 'react';
 import { supabase } from './supabase';
 import { isBackendError, getHealth } from './health';
-import { runWithRetry } from './retry';
+import { runWithRetry, isTransientError } from './retry';
 import type { ProjectWithStats, VisitWithStats, PhotoRecord, Profile, Stage, SupplyItem, Invoice, Notification, ActivityItem, Document, ProjectMember, ProjectMemberWithProfile, DocumentCategory, Task, PhotoRecordWithVisit, RbacMemberWithProfile, ProjectAccessSettings, VisitReportWithStats, VisitRemarkWithDetails, ContractorTaskWithDetails, ChatMessageWithAuthor, ChatType, ChatChannel, DesignFileWithProfile, DesignFileCommentWithProfile, DesignFolder, DesignSubfolder, ProjectRoom, KindStageMapping } from './types';
 import {
   fetchProjects,
@@ -89,9 +89,16 @@ function useQuery<T>(fetcher: () => Promise<T>, deps: unknown[] = []): UseQueryR
       })
       .catch(err => {
         if (!cancelled) {
-          // If the backend is degraded and we still have cached data,
-          // keep showing the cache and don't surface an error state.
-          if (isBackendError(err) && _queryCache.has(cacheKey)) {
+          // Backend or transient errors (lock contention, AbortError, etc.):
+          // if we have cached data, keep showing it without surfacing an error.
+          if ((isBackendError(err) || isTransientError(err)) && _queryCache.has(cacheKey)) {
+            setLoading(false);
+            return;
+          }
+          // Transient errors are infrastructure noise, not user-actionable.
+          // Show a friendly message instead of raw "AbortError: Lock was stolen".
+          if (isTransientError(err)) {
+            setError('Нет соединения — попробуйте обновить страницу');
             setLoading(false);
             return;
           }
