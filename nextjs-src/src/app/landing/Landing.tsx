@@ -381,7 +381,7 @@ function ModuleCopy({ m }: { m: ModuleDef }) {
 function ModuleShot({ m }: { m: ModuleDef }) {
   // Cache-buster: bump when mobile screenshots are re-cropped so Cloudflare/SW
   // and browsers don't keep the old cached image.
-  const v = "20260501";
+  const v = "20260501a";
   const mobileSrc = (m.shotSrcMobile || m.shotSrc) + `?v=${v}`;
   const desktopSrc = m.shotSrc + `?v=${v}`;
   return (
