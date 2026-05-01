@@ -61,21 +61,22 @@ Next.js 14 App Router. Point of entry: `src/app/page.tsx` does `redirect("/proje
 
 ### Key directories (all under `nextjs-src/src/app/`)
 
-- `lib/` — data layer: queries, hooks, types, auth, permissions, theme, supabase client, mailer, health, useSubscription
-- `components/` — 100+ React components
-- `components/project/` — project tabs (DesignSection, SupervisionTab, SettingsTab, ChatView, AccessScreen, NotificationSettings). Assistant отображается в BottomTabBar (tabbar), не в меню проекта.
+- `lib/` — data layer: queries, hooks, types, auth, permissions, theme, supabase client, mailer, health, useSubscription, onboarding
+- `components/` — React components (Vollkorn-SC editorial style)
+- `components/project/` — project tabs (DesignSection, SupervisionTab, SettingsTab, ChatView, AccessScreen, NotificationSettings, ClientProjectHome). Assistant отображается в BottomTabBar, не в меню проекта.
 - `components/supervision/` — CalendarView, PhotoGallery, ReportsListView, ReportDetailView, ContractorTasksView, SupervisionSettings
 - `components/supply/` — SupplyModule, SupplyDashboard, SupplyTimeline, SupplyStages, SupplyImport, SupplyPlan, SupplyDocuments, SupplyOnboarding, SupplySearch
 - `components/moodboard/` — MoodboardCanvas, CanvasSidebar, CanvasToolbar, CanvasMinimap (Konva.js)
-- `api/` — server routes: auth/signup, feedback, push/send, telegram/bot, design/rename, reports/[id]/send, cron/analytics, sign/send, sign/status, activity/ping, billing/create-payment, billing/webhook
+- `Landing.tsx` — публичный лендинг `/welcome` (server component, scoped `.afl-*` стили). Не делать `"use client"` целиком — auth-redirect вынесен в `<AuthRedirect />` client-island.
+- `api/` — server routes: auth/signup, feedback, push/send, telegram/bot, design/rename, reports/[id]/send, cron/analytics, sign/send, sign/status, activity/ping, billing/create-payment, billing/webhook, voice/transcribe, videos/*, onboarding/*
 - `[...path]/page.tsx` — catch-all client router
 
-Orphaned (do not edit, slated for deletion): `DesignTab.tsx`, `DocCategoryList.tsx`, `FeedbackBar.tsx` (заменён на `BottomTabBar`).
+Orphaned (do not edit, slated for deletion): `DesignTab.tsx`, `DocCategoryList.tsx`.
 
 ### Data layer pattern
 
-1. **`queries.ts`** — Supabase query functions, single source of truth (~3500 строк).
-2. **`hooks.ts`** — 25+ custom hooks wrapping queries через generic `useQuery<T>()`. Кэш-ключ = `JSON.stringify(deps) + fetcher.toString()` — не использовать только deps (коллизии между разными запросами).
+1. **`queries.ts`** — Supabase query functions, single source of truth.
+2. **`hooks.ts`** — custom hooks wrapping queries через generic `useQuery<T>()`. Кэш-ключ = `JSON.stringify(deps) + fetcher.toString()` — не использовать только deps (коллизии между разными запросами).
 3. **`types.ts`** — TS interfaces matching Supabase schema.
 4. **`auth.tsx`** — `AuthProvider` context. Содержит heartbeat — шлёт `/api/activity/ping` каждые 60с активной вкладки.
 5. **`permissions.ts`** — `resolvePermissions(role, accessLevel)` → 21 boolean flags.
@@ -86,12 +87,12 @@ Real-time: Supabase `postgres_changes` subscriptions auto-refetch hooks.
 
 ### Database
 
-**Supabase на Yandex Cloud VM** (мигрирован с Beget 18.04.2026):
+**Supabase на Yandex Cloud VM** (мигрирован с Beget 18.04.2026, Beget полностью deprecated):
 - URL: `https://db.archflow.ru` (nginx → Kong → Docker-контейнеры Supabase)
 - VM: `archflow@111.88.244.78` (SSH key: `~/.ssh/archflow_ed25519`)
 - Контейнеры: `docker compose` из `~/supabase/` на VM
 
-48+ migrations в `nextjs-src/supabase/migrations/`.
+Migrations в `nextjs-src/supabase/migrations/`. Untracked WIP миграции в working tree — нормально, проверять через `git status` перед деплоем.
 
 Core tables (non-exhaustive): `profiles`, `projects`, `project_members`, `stages`, `visits`, `photo_records`, `invoices`, `documents`, `supply_items`, `contract_payments`, `tasks`, `rbac_members`, `visit_reports`, `visit_remarks`, `remark_comments`, `contractor_tasks`, `supervision_settings`, `project_access_settings`, `chat_messages`, `chat_channels`, `chat_reads`, `design_files`, `design_subfolders`, `project_rooms`, `kind_stage_mapping`, `notification_preferences`, `support_threads`, `support_messages`, `assistant_events`, `reminders`, `bot_drafts`, `moodboards`, `moodboard_items`, `moodboard_sections`, `moodboard_comments`, `document_signatures` (Podpislon), `user_sessions` (аналитика времени), `subscriptions`, `user_module_settings`.
 
@@ -104,7 +105,7 @@ ssh -i ~/.ssh/archflow_ed25519 archflow@111.88.244.78 \
   < nextjs-src/supabase/migrations/NNN_name.sql
 ```
 
-Не работают (проверено): pg-meta REST, старый Beget Studio, Supabase CLI `db push` (не настроен линк), `exec_sql` RPC.
+Не работают (проверено): pg-meta REST, Supabase CLI `db push` (не настроен линк), `exec_sql` RPC.
 
 Перед новой миграцией — проверить что все предыдущие уже применены: `SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename;`
 
@@ -128,15 +129,16 @@ Service Worker `public/sw.js`: cache-first for static, network-first for API. Ma
 - `letter-spacing` for Vollkorn: compact. Mapping 0.2em→0.08em, 0.18em→0.06em, 0.15em→0.05em, 0.12em→0.04em. Elements at 8–9px keep wider spacing.
 - Google Fonts `<link>` in `layout.tsx` is a fallback in case Next font chunk misses through the SW.
 
-### Colors — ONLY these 4
+### Colors — 4 base + 1 accent
 | Token | Hex | Usage |
 |-------|-----|-------|
 | `--af-black` | `#111111` | Primary text, inverted backgrounds |
 | `--af-offwhite` | `#F6F6F4` | Page backgrounds |
 | `--af-border` | `#EBEBEB` | Borders, dividers |
 | `--af-white` | `#FFFFFF` | Card backgrounds |
+| `--af-ochre` | `#B8862A` | Accent: hero CTA, action buttons (`+ Новый проект`, `Загрузить`, `Скачать`, `Записать`, `+ Пригласить`), pricing featured card, why-drawer trigger, changelog kicker, left rail-frames. Hover: `#9a6f1f`. **Не для текста заголовков, не для навигации, не для бордеров блоков.** |
 
-No reds (#E24B4A, #DC2626), no blues (#2563EB), no intermediate greys (#999). If something needs visual emphasis — use `#111` inverted block, not color.
+No reds (#E24B4A, #DC2626), no blues (#2563EB), no greens, no intermediate greys (#999). Эмфаз — инверсия (`#111` блок) или охра, не другие цвета.
 
 ### Rules
 - `border-radius: 0` everywhere — no exceptions (including modals, tooltips, unread dots, badges).
@@ -165,8 +167,9 @@ No reds (#E24B4A, #DC2626), no blues (#2563EB), no intermediate greys (#999). If
 /pricing                          — публичная страница тарифов (YooKassa)
 /privacy                          — публичная страница политики
 /billing/success                  — landing после успешной оплаты
+/welcome                          — публичный лендинг (Playfair/Inter, scoped в .afl-root)
 /projects                         — project list
-/projects/:id                     — section picker
+/projects/:id                     — section picker (designer) / ClientProjectHome (client)
 /projects/:id/design              — Design (папки + мудборд 07)
 /projects/:id/supply              — Supply / Комплектация
 /projects/:id/supervision         — Авторский надзор
@@ -230,17 +233,21 @@ CRON_SECRET                      — protects /api/cron/*
 PODPISLON_API_KEY                — e-signature
 YOOKASSA_SHOP_ID                 — billing
 YOOKASSA_SECRET_KEY              — billing
-OPENAI_API_KEY                   — supply search classification
+OPENAI_API_KEY                   — supply search classification, voice transcribe (Whisper)
+YC_S3_KEY_ID                     — Yandex Object Storage (видео-бакет)
+YC_S3_SECRET_KEY                 — Yandex Object Storage
+ANTHROPIC_API_KEY                — GitHub Action @claude (только в repo secrets)
 ```
 
-GitHub Actions secrets: только `NEXT_PUBLIC_*` + `VPS_SSH_KEY` at build time. Остальные runtime-only (в VPS env).
+GitHub Actions secrets: только `NEXT_PUBLIC_*` + `VPS_SSH_KEY` at build time. Остальные runtime-only (в VPS env). `ANTHROPIC_API_KEY` отдельный — только для `claude.yml` workflow, передаётся через `with: anthropic_api_key:` (не `env:`).
 
 ## Demo Credentials
 
 ```
 designer: demo@archflow.ru
 ```
-Пароль менялся в истории — если не работает, проверить в `/home/archflow/.env.production` или сменить через Supabase Studio.
+Пароль — в password manager пользователя или сменить через psql:
+`UPDATE auth.users SET encrypted_password = crypt('newpw', gen_salt('bf')) WHERE email='demo@archflow.ru';`
 
 ## CSS ink variables
 
@@ -250,3 +257,59 @@ designer: demo@archflow.ru
 - `--ink-ghost` — placeholder-like
 
 Использовать ТОЛЬКО для текстов, НЕ для границ/фонов. Для всего остального — 4 основных цвета.
+
+## Untracked WIP Pattern
+
+В рабочем дереве почти всегда лежат untracked файлы следующего спринта (онбординг, видео, новые миграции). Они тащат за собой типы из `lib/onboarding.ts`, новые блоки в `hooks.ts`/`queries.ts`. Если закоммитить эти примеси случайно — CI падает на типах.
+
+**Алгоритм перед `git add` любых правок:**
+1. `git status` — посмотреть untracked.
+2. `git diff <changed-file> | head -40` — убедиться что в diff нет блоков из чужого спринта.
+3. Если есть примеси: `git restore --staged FILE && git stash push -- FILE`, заново применить нужные правки через Edit, затем `git add`, потом `git stash pop`.
+4. Никогда `git add -A` или `git add .` — только именованные файлы.
+
+## Videos (design_file_videos)
+
+Миграция 053. Бэкенд: `/api/videos/upload-url` (presigned PUT, TTL 15 мин), `/api/videos/[id]` (GET/PATCH), `/api/videos/[id]/finalize` (Whisper-1 транскрипция), `/api/videos/[id]/url` (presigned GET), `/api/videos/delete/[id]`. Компоненты: `VideoRecorder.tsx` (MediaRecorder, getDisplayMedia/getUserMedia), `VideoPlayer.tsx`, `FileVideoSection.tsx`. Хранилище — YC Object Storage `archflow-media-prod`. CORS bucket policy через `nextjs-src/scripts/apply-yc-cors.mjs` — без CORS PUT возвращает 403.
+
+Safari ограничен в `getDisplayMedia` — давать понятный fallback. `previewRef` для камеры — callback ref, не `useRef`.
+
+## Onboarding (AI document classification)
+
+В разработке. Файлы: `OnboardingPanel.tsx`, `lib/onboarding.ts`, `api/onboarding/classify|confirm|reject`, миграция `055_onboarding_queue.sql`. nginx `client_max_body_size 2g` + Storage `FILE_SIZE_LIMIT 2147483648` подняты на VM. **Не коммитить без end-to-end теста.**
+
+## Landing (`/welcome`)
+
+- Server component (`Landing.tsx` без `"use client"`). Auth-redirect — отдельный `<AuthRedirect />` client-island. `#af-fallback-screen` рендерится последним в body.
+- CSS-классы `.afl-*` (не `.af-*`). Шрифты — Playfair Display + Inter, **scoped в `.afl-root`** через `--af-landing-*` rebind. Никогда не трогать `--af-font*` глобально — продукт остаётся на Vollkorn SC.
+- Mobile screenshot swap: `.afl-shot-desktop` / `.afl-shot-mobile` + `@media (max-width: 900px)` (не 768!). Файлы в `public/landing/`. 6 модулей: `01-projects`, `02-design`, `03-supervision`, `04-supply`, `06-chat`, `07-client-cabinet`.
+- Скриншоты снимать через puppeteer-скрипт `scripts/take-screenshots.js` (логин как `demo@archflow.ru`, обрезка таббара через `clip:`). Для client cabinet — проект ЖК iLove (наиболее насыщен данными).
+- WhyDrawer: bottom-sheet ≤900px, правая панель >900px. Открывается через CustomEvent `why:open`.
+
+## ClientProjectHome
+
+`components/project/ClientProjectHome.tsx` — главная проекта для роли `client` (hero-task, stage-progress, designer-карточка, activity feed, тайлы Дизайн+Авторский надзор, upcoming events). Дизайнер видит старую раскладку 4 тайлов (`ClientProjectView`).
+
+**Supply-тайл намеренно скрыт для всех клиентов** независимо от `accessLevel`. Чат не выводится тайлом — он есть в designer-карточке («Написать в чат →») и в BottomTabBar.
+
+## Hydration / DOM gotchas
+
+- `HydrationGate.tsx`: НИКОГДА не делать `el.remove()` на узлах из server-rendered JSX — React держит VDOM-ссылку, удаление → `insertBefore NotFoundError` → каскад рендер-ошибок. Только `display:none`.
+- `ChunkLoadError` recovery: handler `af-chunk-reload` в `layout.tsx` делает тихий hard-reload в Safari при bundle-mismatch. Не переписывать.
+
+## Voice / Edge Functions migration
+
+`process-voice` перенесён из Edge Function в `/api/voice/transcribe` (коммит 471231f). Все новые серверные функции — Next.js API routes на VPS. Edge Functions на старой Supabase Cloud (`fcbllfvlpzlczinlydcm.supabase.co`) — legacy, не использовать для новых фич.
+
+## Build / dev cache gotcha
+
+`npm run build` поверх запущенного `npm run dev` затаптывает `.next` кэш → `MODULE_NOT_FOUND: ./vendor-chunks/@supabase.js`. Лечение: остановить dev, `rm -rf nextjs-src/.next`, заново `npm run dev`. Если build нужен параллельно — отдельный terminal с другим `PORT=3001`.
+
+## GitHub @claude integration
+
+Workflow `.github/workflows/claude.yml`. Триггер: подстрока `@claude` в issue/PR/comment body. Требует:
+1. Установленный GitHub App: https://github.com/apps/claude (на репозиторий).
+2. Repo secret `ANTHROPIC_API_KEY`.
+3. Передача через `with: anthropic_api_key:` (не `env:`) — иначе action валится с `ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN is required`.
+
+История диалогов с Claude через GitHub видна на десктопе: issue/PR comments + Actions tab + (если был PR) Branches.
