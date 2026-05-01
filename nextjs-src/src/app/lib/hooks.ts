@@ -7,7 +7,7 @@
 import { useState, useEffect, useCallback, useRef, useId } from 'react';
 import { supabase } from './supabase';
 import { isBackendError, getHealth } from './health';
-import { runWithRetry } from './retry';
+import { runWithRetry, friendlyError } from './retry';
 import type { ProjectWithStats, VisitWithStats, PhotoRecord, Profile, Stage, SupplyItem, Invoice, Notification, ActivityItem, Document, ProjectMember, ProjectMemberWithProfile, DocumentCategory, Task, PhotoRecordWithVisit, RbacMemberWithProfile, ProjectAccessSettings, VisitReportWithStats, VisitRemarkWithDetails, ContractorTaskWithDetails, ChatMessageWithAuthor, ChatType, ChatChannel, DesignFileWithProfile, DesignFileCommentWithProfile, DesignFolder, DesignSubfolder, ProjectRoom, KindStageMapping } from './types';
 import {
   fetchProjects,
@@ -95,7 +95,7 @@ function useQuery<T>(fetcher: () => Promise<T>, deps: unknown[] = []): UseQueryR
             setLoading(false);
             return;
           }
-          setError(err.message || 'Ошибка загрузки данных');
+          setError(friendlyError(err));
           setLoading(false);
         }
       });
@@ -171,7 +171,7 @@ export function useProjectsPaginated(pageSize: number = PROJECTS_PAGE_SIZE): Use
       })
       .catch(err => {
         if (!cancelled) {
-          setError(err.message || 'Ошибка загрузки проектов');
+          setError(friendlyError(err));
           setLoading(false);
         }
       });
@@ -194,7 +194,7 @@ export function useProjectsPaginated(pageSize: number = PROJECTS_PAGE_SIZE): Use
         setLoadingMore(false);
       })
       .catch(err => {
-        setError(err.message || 'Ошибка загрузки проектов');
+        setError(friendlyError(err));
         setLoadingMore(false);
       });
   }, [page, pageSize, loadingMore, hasMore]);

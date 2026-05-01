@@ -32,9 +32,13 @@ export interface HealthState {
 // for the first round of paginated fetches; tripping degraded after 2 misses
 // produced false-positive banners. Bumped to 3/6 to give honest outages
 // enough rope to surface while smoothing out cold-start jitter.
+//
+// Slow-response is intentionally NOT a degraded trigger anymore: a single
+// 7-second TLS handshake in Telegram WKWebView used to flip the banner on
+// the very first successful response. Slow ≠ broken — only real failures
+// count.
 const DEGRADED_AFTER_FAILURES = 3;   // 3 consecutive failures → degraded
 const OFFLINE_AFTER_FAILURES = 6;    // 6 consecutive failures → offline
-const SLOW_RESPONSE_MS = 5000;       // >5s successful response → still degraded
 
 let _state: HealthState = {
   status: 'online',
@@ -60,18 +64,21 @@ function dispatchRecovered() {
   }
 }
 
-function computeStatus(failures: number, slow: boolean): HealthStatus {
+function computeStatus(failures: number, hasEverSucceeded: boolean): HealthStatus {
+  // Cold-start guard: until the very first successful response we have no
+  // signal that backend is actually broken vs. just slow handshake / fresh
+  // session bootstrap. Stay 'online' so the banner never flashes for a new
+  // user opening an invite link in a mobile in-app browser.
+  if (!hasEverSucceeded) return 'online';
   if (failures >= OFFLINE_AFTER_FAILURES) return 'offline';
   if (failures >= DEGRADED_AFTER_FAILURES) return 'degraded';
-  if (slow) return 'degraded';
   return 'online';
 }
 
-export function reportSuccess(durationMs: number) {
-  const slow = durationMs > SLOW_RESPONSE_MS;
+export function reportSuccess(_durationMs: number) {
   const wasUnhealthy = _state.status !== 'online';
   _state = {
-    status: computeStatus(0, slow),
+    status: computeStatus(0, true),
     lastSuccessAt: Date.now(),
     lastFailureAt: _state.lastFailureAt,
     consecutiveFailures: 0,
@@ -83,8 +90,9 @@ export function reportSuccess(durationMs: number) {
 
 export function reportFailure(reason: string) {
   const failures = _state.consecutiveFailures + 1;
+  const hasEverSucceeded = _state.lastSuccessAt !== null;
   _state = {
-    status: computeStatus(failures, false),
+    status: computeStatus(failures, hasEverSucceeded),
     lastSuccessAt: _state.lastSuccessAt,
     lastFailureAt: Date.now(),
     consecutiveFailures: failures,

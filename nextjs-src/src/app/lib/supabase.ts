@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { reportSuccess, reportFailure, isBackendError } from './health'
+import { reportSuccess, reportFailure, isBackendError, getHealth } from './health'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder'
@@ -10,13 +10,22 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholde
 // "AbortError: Lock was stolen by another request". So instead of killing
 // the request, we only mark the connection as degraded after a soft delay
 // and let the underlying fetch finish naturally.
-const SOFT_DEGRADE_MS = 12000;
+//
+// Bumped 12s → 20s because Telegram WKWebView cold-start (TLS + DNS + first
+// session bootstrap) routinely takes 12–18s on cellular networks. The old
+// timer was synthesising failures on a perfectly healthy backend.
+const SOFT_DEGRADE_MS = 20000;
 
 /** fetch wrapper with health reporting (no forced abort) */
 const instrumentedFetch: typeof fetch = (input, init) => {
   const started = typeof performance !== 'undefined' ? performance.now() : Date.now();
   let degraded = false;
   const degradeTimer = setTimeout(() => {
+    // Cold-start safety: don't fabricate the very first failure ourselves.
+    // Until the first real success arrives we cannot distinguish a slow
+    // handshake from an actual outage, so leave the health state alone and
+    // let the fetch resolve (or genuinely reject) on its own.
+    if (getHealth().lastSuccessAt === null) return;
     degraded = true;
     reportFailure('slow-response');
   }, SOFT_DEGRADE_MS);

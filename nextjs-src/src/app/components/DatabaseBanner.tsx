@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useSupabaseHealth, clearHealthErrors } from "../lib/health";
-import { supabase } from "../lib/supabase";
 
 /**
  * Fixed top banner that appears when the Supabase backend is
@@ -10,6 +9,13 @@ import { supabase } from "../lib/supabase";
  * visible and disappears silently once it comes back.
  *
  * Shows a manual "Попробовать сейчас" button for the impatient.
+ *
+ * Important: the banner stays hidden until we've observed at least
+ * one real successful response (`lastSuccessAt !== null`). On a cold
+ * start in mobile in-app browsers (Telegram WKWebView, etc.) the very
+ * first auth bootstrap can take 5–15s of TLS+DNS+session work; we
+ * don't have any signal that distinguishes "slow handshake" from
+ * "backend is down" until at least one request actually succeeds.
  */
 export default function DatabaseBanner() {
   const health = useSupabaseHealth();
@@ -19,47 +25,49 @@ export default function DatabaseBanner() {
   // Update "time since last success" counter every second
   useEffect(() => {
     if (health.status === "online") return;
+    if (!health.lastSuccessAt) return; // never fake-tick before a real success
     const tick = () => {
-      if (health.lastSuccessAt) {
-        setSecondsAgo(Math.floor((Date.now() - health.lastSuccessAt) / 1000));
-      } else {
-        setSecondsAgo((s) => s + 1);
-      }
+      setSecondsAgo(Math.floor((Date.now() - (health.lastSuccessAt ?? Date.now())) / 1000));
     };
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
   }, [health.status, health.lastSuccessAt]);
 
-  // Auto-ping the backend every 5s while unhealthy
-  useEffect(() => {
-    if (health.status === "online") return;
-    const id = setInterval(() => {
-      void pingBackend();
-    }, 5000);
-    return () => clearInterval(id);
-  }, [health.status]);
-
   const pingBackend = useCallback(async () => {
     if (checking) return;
     setChecking(true);
     try {
-      // Lightweight query that actually exercises Postgres through PostgREST
-      const { error } = await supabase
-        .from("profiles")
-        .select("id", { count: "exact", head: true })
-        .limit(1);
-      if (!error) {
-        clearHealthErrors();
-      }
+      // Hit the GoTrue health endpoint directly — it's public, requires only
+      // an apikey, and bypasses our instrumented fetch so the ping itself
+      // can never feed back into the failure counter.
+      const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/health`;
+      const res = await fetch(url, {
+        headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "" },
+        cache: "no-store",
+      });
+      if (res.ok) clearHealthErrors();
     } catch {
-      // instrumentedFetch in lib/supabase.ts already reported the failure
+      // Network failures here are not informative on their own; the next
+      // user-driven request will surface them through instrumentedFetch.
     } finally {
       setChecking(false);
     }
   }, [checking]);
 
+  // Auto-ping the backend every 5s while unhealthy
+  useEffect(() => {
+    if (health.status === "online") return;
+    if (!health.lastSuccessAt) return;
+    const id = setInterval(() => {
+      void pingBackend();
+    }, 5000);
+    return () => clearInterval(id);
+  }, [health.status, health.lastSuccessAt, pingBackend]);
+
   if (health.status === "online") return null;
+  // Hide the banner entirely on cold start — see file-level comment.
+  if (!health.lastSuccessAt) return null;
 
   const isOffline = health.status === "offline";
   const label = isOffline

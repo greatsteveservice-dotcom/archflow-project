@@ -50,3 +50,21 @@ export function isTransientError(err: unknown): boolean {
   if (/\b(502|503|504)\b/.test(msg)) return true;
   return false;
 }
+
+/**
+ * Convert any error into a user-facing message safe to render in the UI.
+ * Hides raw fetch/network errors ("TypeError: Load failed", "Failed to fetch")
+ * and any stack-trace-like text behind a generic Russian fallback.
+ */
+export function friendlyError(err: unknown): string {
+  if (isTransientError(err)) return 'Соединение нестабильно. Попробуйте обновить страницу.';
+  const msg = err instanceof Error ? err.message : String(err || '');
+  if (!msg) return 'Не удалось загрузить данные';
+  if (/typeerror|load failed|failed to fetch|networkerror|abort/i.test(msg)) {
+    return 'Не удалось загрузить данные';
+  }
+  if (msg.length > 140 || /\b(at |\/api\/|node_modules)\b/.test(msg)) {
+    return 'Не удалось загрузить данные';
+  }
+  return msg;
+}
