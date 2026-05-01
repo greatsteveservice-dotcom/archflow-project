@@ -232,6 +232,31 @@ async function sbFetch(path: string, extraHeaders: Record<string, string> = {}) 
   return res;
 }
 
+/**
+ * Latest user_sessions.last_ping_at per user. The heartbeat (1/min while a tab
+ * is active) is the most accurate signal of "когда заходил" — auth.users.
+ * last_sign_in_at only updates on explicit password/OAuth sign-in, so a user
+ * with a long-lived Supabase session who reopens the PWA never bumps it.
+ */
+async function fetchLastPingMap(): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/user_sessions?select=user_id,last_ping_at&order=last_ping_at.desc&limit=10000`,
+    {
+      headers: {
+        apikey: SERVICE_KEY,
+        Authorization: `Bearer ${SERVICE_KEY}`,
+      },
+    },
+  );
+  if (!res.ok) return map;
+  const rows: { user_id: string; last_ping_at: string }[] = await res.json();
+  for (const r of rows) {
+    if (!map.has(r.user_id)) map.set(r.user_id, r.last_ping_at);
+  }
+  return map;
+}
+
 async function fetchDesignersStats(
   periodDuration: Map<string, { visits: number; duration: number }>,
   totalDuration: Map<string, { visits: number; duration: number }>,
@@ -248,14 +273,18 @@ async function fetchDesignersStats(
     (p) => !p.email || !EXCLUDED_EMAILS.has(p.email.toLowerCase())
   );
 
-  // 2. Get last_sign_in_at from auth.users via admin API
+  // 2. Resolve "Был" timestamp.  Prefer user_sessions.last_ping_at (heartbeat,
+  // updated each minute the user has a tab open); fall back to
+  // auth.users.last_sign_in_at when there are no pings yet.
+  const lastPingMap = await fetchLastPingMap();
   const authUsersMap = new Map<string, string | null>();
   try {
     const authRes = await sbFetch(`/auth/v1/admin/users?per_page=200`);
     const authData = await authRes.json();
     const users = authData.users || authData || [];
     for (const u of users) {
-      authUsersMap.set(u.id, u.last_sign_in_at || null);
+      const ping = lastPingMap.get(u.id) || null;
+      authUsersMap.set(u.id, ping || u.last_sign_in_at || null);
     }
   } catch (e) {
     console.error("[analytics] auth.users fetch failed:", e);
