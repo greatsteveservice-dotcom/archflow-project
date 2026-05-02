@@ -16,7 +16,7 @@ interface DesignFolderViewProps {
   onSelectFile: (fileId: string) => void;
 }
 
-const MAX_SIZE = 50 * 1024 * 1024; // 50MB
+const MAX_SIZE = 2 * 1024 * 1024 * 1024; // 2 GB
 
 const ACCEPT = '.pdf,.jpg,.jpeg,.png,.webp,.ppt,.pptx,.doc,.docx';
 
@@ -335,7 +335,7 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
     // Validate sizes
     const tooLarge = filesArr.filter(f => f.size > MAX_SIZE);
     if (tooLarge.length > 0) {
-      setUploadError(`Файлы слишком большие (${tooLarge.map(f => f.name).join(', ')}). Максимум 50 МБ.`);
+      setUploadError(`Файлы слишком большие (${tooLarge.map(f => f.name).join(', ')}). Максимум 2 ГБ.`);
       return;
     }
 

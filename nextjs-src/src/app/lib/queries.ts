@@ -26,6 +26,7 @@ import type {
   DesignFolder, CreateDesignFileInput, DesignSubfolder,
   ProjectRoom, CreateProjectRoomInput,
   KindStageMapping, CreateKindStageMappingInput,
+  OnboardingUpload,
 } from './types';
 
 // ======================== CONSTANTS ========================
@@ -3928,4 +3929,84 @@ export async function createMoodboardComment(moodboardId: string, content: strin
     .single();
   if (error) throw error;
   return data;
+}
+
+// ======================== ONBOARDING QUEUE ========================
+
+/** Список файлов в очереди онбординга для проекта (всё, что ещё не подтверждено/отклонено). */
+export async function listOnboardingPending(projectId: string): Promise<OnboardingUpload[]> {
+  const { data, error } = await supabase
+    .from('onboarding_uploads')
+    .select('*')
+    .eq('project_id', projectId)
+    .in('status', ['pending', 'auto_placed', 'needs_review', 'supply_suggested'])
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data || []) as OnboardingUpload[];
+}
+
+/** Запустить классификацию пакета загруженных файлов. Возвращает классификации, не обновляет UI. */
+export async function classifyOnboardingBatch(
+  projectId: string,
+  files: { storagePath: string; name: string; size: number; mime: string }[],
+): Promise<{ items: OnboardingUpload[]; cost_usd?: number }> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) throw new Error('Требуется авторизация');
+
+  const res = await fetch('/api/onboarding/classify', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify({ projectId, files }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || 'Ошибка классификации');
+  }
+  return res.json();
+}
+
+/** Подтвердить категорию (или изменить и перенести в design_files). */
+export async function confirmOnboardingItem(
+  uploadId: string,
+  finalCategory: DesignFolder,
+): Promise<DesignFile> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) throw new Error('Требуется авторизация');
+
+  const res = await fetch('/api/onboarding/confirm', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify({ uploadId, finalCategory }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || 'Ошибка подтверждения');
+  }
+  const json = await res.json();
+  return json.designFile as DesignFile;
+}
+
+/** Отклонить файл — удаляет из Storage и помечает rejected. */
+export async function rejectOnboardingItem(uploadId: string): Promise<void> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) throw new Error('Требуется авторизация');
+
+  const res = await fetch('/api/onboarding/reject', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify({ uploadId }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || 'Ошибка отклонения');
+  }
 }

@@ -8,7 +8,7 @@ import { useState, useEffect, useCallback, useRef, useId } from 'react';
 import { supabase } from './supabase';
 import { isBackendError, getHealth } from './health';
 import { runWithRetry, friendlyError } from './retry';
-import type { ProjectWithStats, VisitWithStats, PhotoRecord, Profile, Stage, SupplyItem, Invoice, Notification, ActivityItem, Document, ProjectMember, ProjectMemberWithProfile, DocumentCategory, Task, PhotoRecordWithVisit, RbacMemberWithProfile, ProjectAccessSettings, VisitReportWithStats, VisitRemarkWithDetails, ContractorTaskWithDetails, ChatMessageWithAuthor, ChatType, ChatChannel, DesignFileWithProfile, DesignFileCommentWithProfile, DesignFolder, DesignSubfolder, ProjectRoom, KindStageMapping } from './types';
+import type { ProjectWithStats, VisitWithStats, PhotoRecord, Profile, Stage, SupplyItem, Invoice, Notification, ActivityItem, Document, ProjectMember, ProjectMemberWithProfile, DocumentCategory, Task, PhotoRecordWithVisit, RbacMemberWithProfile, ProjectAccessSettings, VisitReportWithStats, VisitRemarkWithDetails, ContractorTaskWithDetails, ChatMessageWithAuthor, ChatType, ChatChannel, DesignFileWithProfile, DesignFileCommentWithProfile, DesignFolder, DesignSubfolder, ProjectRoom, KindStageMapping, OnboardingUpload } from './types';
 import {
   fetchProjects,
   fetchProjectsPaginated,
@@ -48,6 +48,7 @@ import {
   fetchChatChannels,
   fetchProjectRooms,
   fetchKindStageMappings,
+  listOnboardingPending,
 } from './queries';
 
 // ======================== GENERIC HOOK ========================
@@ -939,5 +940,31 @@ export function useMoodboardSections(moodboardId: string | null) {
     () => moodboardId ? fetchMoodboardSections(moodboardId) : Promise.resolve([]),
     [moodboardId]
   );
+}
+
+// ======================== ONBOARDING ========================
+
+/** Pending/active items in the AI onboarding queue for a project, with realtime refetch. */
+export function useOnboardingPending(projectId: string | null) {
+  const result = useQuery<OnboardingUpload[]>(
+    () => projectId ? listOnboardingPending(projectId) : Promise.resolve([]),
+    [projectId]
+  );
+
+  useEffect(() => {
+    if (!projectId) return;
+    const channel = supabase
+      .channel(`onboarding:${projectId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'onboarding_uploads', filter: `project_id=eq.${projectId}` },
+        () => result.refetch(),
+      )
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId]);
+
+  return result;
 }
 

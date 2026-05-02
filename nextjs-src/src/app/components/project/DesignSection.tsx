@@ -7,6 +7,7 @@ import { DESIGN_FOLDERS } from '../../lib/types';
 import type { DesignFolder } from '../../lib/types';
 import DesignFolderView from './DesignFolderView';
 import DesignFileDetail from './DesignFileDetail';
+import OnboardingPanel from './OnboardingPanel';
 
 const MoodboardCanvas = dynamic(() => import('../moodboard/MoodboardCanvas'), { loading: () => null, ssr: false });
 
@@ -85,8 +86,20 @@ export default function DesignSection({ projectId, toast, canUpload = true, canD
   }
 
   // Level 1: Folder grid (blocks)
+  const totalFiles = counts ? Object.values(counts).reduce((s, n) => s + n, 0) : 0;
+  const allEmpty = totalFiles === 0;
+
   return (
     <div className="animate-fade-in">
+      {canUpload && (
+        <div style={{ padding: '0 16px', marginTop: 16 }}>
+          <OnboardingPanel
+            projectId={projectId}
+            toast={toast}
+            forceVisible={allEmpty}
+          />
+        </div>
+      )}
       <div className="af-tab-list">
         {DESIGN_FOLDERS.map((folder) => {
           const count = counts ? counts[folder.id] : 0;

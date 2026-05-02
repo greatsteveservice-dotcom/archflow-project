@@ -749,6 +749,41 @@ export const DESIGN_FOLDERS: DesignFolderConfig[] = [
   { id: 'documents', label: 'Документы', index: '06' },
 ];
 
+// ======================== ONBOARDING QUEUE ========================
+
+/** Категории, которые ИИ может вернуть. 6 папок Дизайна + кросс-модульные подсказки. */
+export type OnboardingCategory =
+  | DesignFolder              // 6 папок Дизайна
+  | 'supply_excel'            // Excel-комплектация → CTA в Supply
+  | 'sign_contract'           // договор/акт, можно отправить на ЭП
+  | 'unknown';
+
+export type OnboardingStatus =
+  | 'pending'           // только загружен в _onboarding/, ждёт классификации
+  | 'auto_placed'       // ИИ confidence ≥ 0.85, перенесён в design_files автоматически
+  | 'needs_review'      // ИИ confidence < 0.85, ждёт ручного подтверждения
+  | 'supply_suggested'  // похоже на Excel-комплектацию, ждёт CTA в Supply
+  | 'confirmed'         // дизайнер подтвердил/изменил → перенесён
+  | 'rejected';         // дизайнер удалил из проекта
+
+export interface OnboardingUpload {
+  id: string;
+  project_id: string;
+  uploaded_by: string | null;
+  storage_path: string;
+  file_name: string;
+  file_size: number;
+  file_type: string | null;
+  ai_category: OnboardingCategory | null;
+  ai_confidence: number | null;
+  ai_reasoning: string | null;
+  status: OnboardingStatus;
+  final_category: string | null;
+  created_design_file_id: string | null;
+  created_at: string;
+  decided_at: string | null;
+}
+
 // ======================== MOODBOARDS ========================
 
 export type MoodboardItemType = 'image' | 'text_note' | 'color_swatch' | 'arrow' | 'catalog';
