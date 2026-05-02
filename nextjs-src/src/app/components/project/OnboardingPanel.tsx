@@ -61,7 +61,13 @@ function OnboardingPanelInner({ projectId, toast, forceVisible, onSwitchToSupply
   // classification call was interrupted don't silently disappear from the UI.
   const review = visibleItems.filter((i) => i.status === 'needs_review' || i.status === 'pending');
   const supply = visibleItems.filter((i) => i.status === 'supply_suggested');
-  const hasContent = placed.length + review.length + supply.length > 0;
+  // Panel appears only while there is unfinished work: pending review, supply
+  // suggestions, or an upload in progress. Auto-placed files don't keep the
+  // panel alive on subsequent visits — they're already filed in their folders
+  // and re-showing them turns the panel into permanent noise above the
+  // folder grid.
+  const needsAttention = review.length + supply.length > 0;
+  const hasContent = needsAttention;
 
   const handleFiles = useCallback(
     async (rawFiles: FileList | null) => {
@@ -184,32 +190,28 @@ function OnboardingPanelInner({ projectId, toast, forceVisible, onSwitchToSupply
 
       {/* Needs review */}
       {review.length > 0 && (
-        <Section title="Уточните раздел" emphasis>
-          {review.map((it) => (
-            <ReviewRow
-              key={it.id}
-              item={it}
-              onConfirm={async (cat) => {
-                try {
-                  await confirmOnboardingItem(it.id, cat);
-                  toast('Файл перенесён');
-                  refetch();
-                } catch (e) {
-                  toast(e instanceof Error ? e.message : 'Ошибка');
-                }
-              }}
-              onReject={async () => {
-                try {
-                  await rejectOnboardingItem(it.id);
-                  toast('Файл удалён');
-                  refetch();
-                } catch (e) {
-                  toast(e instanceof Error ? e.message : 'Ошибка');
-                }
-              }}
-            />
-          ))}
-        </Section>
+        <ReviewSection
+          items={review}
+          onConfirm={async (id, cat) => {
+            try {
+              await confirmOnboardingItem(id, cat);
+              refetch();
+            } catch (e) {
+              toast(e instanceof Error ? e.message : 'Ошибка');
+              throw e;
+            }
+          }}
+          onReject={async (id) => {
+            try {
+              await rejectOnboardingItem(id);
+              refetch();
+            } catch (e) {
+              toast(e instanceof Error ? e.message : 'Ошибка');
+              throw e;
+            }
+          }}
+          toast={toast}
+        />
       )}
     </div>
   );
@@ -380,6 +382,131 @@ function SupplyRow({
         )}
         <button onClick={onReject} style={btnStyle(false)}>Удалить</button>
       </div>
+    </div>
+  );
+}
+
+// ── ReviewSection: bulk "Всё ок" / "Ручная проверка" + детальный режим ──
+function ReviewSection({
+  items,
+  onConfirm,
+  onReject,
+  toast,
+}: {
+  items: OnboardingUpload[];
+  onConfirm: (id: string, cat: DesignFolder) => Promise<void>;
+  onReject: (id: string) => Promise<void>;
+  toast: (msg: string) => void;
+}) {
+  const [mode, setMode] = useState<'overview' | 'manual'>('overview');
+  const [bulkBusy, setBulkBusy] = useState(false);
+
+  const guessFor = useCallback((item: OnboardingUpload): DesignFolder => {
+    if (item.ai_category && DESIGN_FOLDERS.some((f) => f.id === item.ai_category)) {
+      return item.ai_category as DesignFolder;
+    }
+    return 'documents';
+  }, []);
+
+  const acceptAll = useCallback(async () => {
+    if (bulkBusy) return;
+    setBulkBusy(true);
+    try {
+      let ok = 0;
+      for (const it of items) {
+        try {
+          await onConfirm(it.id, guessFor(it));
+          ok += 1;
+        } catch {
+          // onConfirm уже показал toast — продолжаем оставшиеся
+        }
+      }
+      if (ok > 0) toast(`Подтвердили ${ok} ${pluralFiles(ok)}`);
+    } finally {
+      setBulkBusy(false);
+    }
+  }, [bulkBusy, items, guessFor, onConfirm, toast]);
+
+  return (
+    <div style={{ borderTop: '1px solid #EBEBEB' }}>
+      <div
+        style={{
+          padding: '10px 18px',
+          display: 'grid',
+          gridTemplateColumns: '1fr auto',
+          gap: 12,
+          alignItems: 'center',
+          background: '#FAFAF8',
+        }}
+      >
+        <div style={{ fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--af-ochre)', fontWeight: 700 }}>
+          Уточните раздел · {items.length}
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          <button
+            onClick={acceptAll}
+            disabled={bulkBusy}
+            style={btnStyle(true)}
+          >
+            {bulkBusy ? '…' : 'Всё ок'}
+          </button>
+          <button
+            onClick={() => setMode((m) => (m === 'overview' ? 'manual' : 'overview'))}
+            disabled={bulkBusy}
+            style={btnStyle(false)}
+          >
+            {mode === 'overview' ? 'Ручная проверка' : 'Свернуть'}
+          </button>
+        </div>
+      </div>
+
+      {mode === 'overview' ? (
+        // Compact preview: file → AI guess, no per-row controls.
+        items.map((it) => {
+          const g = guessFor(it);
+          const cat = DESIGN_FOLDERS.find((f) => f.id === g);
+          return (
+            <div
+              key={it.id}
+              style={{
+                padding: '10px 18px',
+                display: 'grid',
+                gridTemplateColumns: '1fr minmax(180px, auto)',
+                gap: 12,
+                alignItems: 'center',
+                borderTop: '1px solid #F6F6F4',
+                fontSize: 13,
+              }}
+            >
+              <div style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 600 }}>
+                {it.file_name}
+              </div>
+              <div style={{ fontSize: 12, color: '#666' }}>
+                {cat ? `→ ${cat.index} · ${cat.label}` : '→ выберите вручную'}
+              </div>
+            </div>
+          );
+        })
+      ) : (
+        items.map((it) => (
+          <ReviewRow
+            key={it.id}
+            item={it}
+            onConfirm={async (cat) => {
+              try {
+                await onConfirm(it.id, cat);
+                toast('Файл перенесён');
+              } catch {/* surfaced by parent */}
+            }}
+            onReject={async () => {
+              try {
+                await onReject(it.id);
+                toast('Файл удалён');
+              } catch {/* surfaced by parent */}
+            }}
+          />
+        ))
+      )}
     </div>
   );
 }
