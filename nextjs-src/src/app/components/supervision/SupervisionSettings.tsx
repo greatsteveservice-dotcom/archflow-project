@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import type { SupervisionConfig } from '../../lib/types';
-import { loadSupervisionConfig, saveSupervisionConfig } from '../../lib/queries';
+import { loadSupervisionConfig, loadSupervisionConfigCached, saveSupervisionConfig } from '../../lib/queries';
 
 interface SupervisionSettingsProps {
   projectId: string;
@@ -42,25 +42,37 @@ export default function SupervisionSettings({ projectId, toast }: SupervisionSet
   const [extraCost, setExtraCost] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const cfg = loadSupervisionConfig(projectId);
-    if (cfg) {
-      setFreq(cfg.visitSchedule.type);
-      setWeekday(cfg.visitSchedule.weekday);
-      if (cfg.visitSchedule.customDay !== null) setCustomDay(cfg.visitSchedule.customDay);
-      setBillingDay(cfg.billingDay);
-      if (!BILLING_OPTIONS.includes(cfg.billingDay)) {
-        setCustomBilling(true);
-        setCustomBillingDay(cfg.billingDay);
-      }
-      setReminderDays(cfg.reminderDays);
-      setExtraCost(cfg.extraVisitCost !== null ? String(cfg.extraVisitCost) : '');
+  const applyConfig = (cfg: SupervisionConfig) => {
+    setFreq(cfg.visitSchedule.type);
+    setWeekday(cfg.visitSchedule.weekday);
+    if (cfg.visitSchedule.customDay !== null) setCustomDay(cfg.visitSchedule.customDay);
+    setBillingDay(cfg.billingDay);
+    if (!BILLING_OPTIONS.includes(cfg.billingDay)) {
+      setCustomBilling(true);
+      setCustomBillingDay(cfg.billingDay);
+    } else {
+      setCustomBilling(false);
     }
+    setReminderDays(cfg.reminderDays);
+    setExtraCost(cfg.extraVisitCost !== null ? String(cfg.extraVisitCost) : '');
+  };
+
+  useEffect(() => {
+    // Instant first paint from local cache (if any), then refresh from DB.
+    const cached = loadSupervisionConfigCached(projectId);
+    if (cached) applyConfig(cached);
+    let cancelled = false;
+    loadSupervisionConfig(projectId)
+      .then((cfg) => {
+        if (cancelled || !cfg) return;
+        applyConfig(cfg);
+      })
+      .catch((e) => console.error('[supervision] load failed:', e));
+    return () => { cancelled = true; };
   }, [projectId]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setError(null);
-    // Validation: if freq is not 'custom', weekday is required
     if (freq !== 'custom' && weekday === null) {
       setError('Выберите день недели');
       return;
@@ -75,8 +87,14 @@ export default function SupervisionSettings({ projectId, toast }: SupervisionSet
       reminderDays,
       extraVisitCost: extraCost.trim() ? Number(extraCost) : null,
     };
-    saveSupervisionConfig(projectId, config);
-    toast('Настройки надзора сохранены');
+    try {
+      await saveSupervisionConfig(projectId, config);
+      toast('Настройки надзора сохранены');
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Не удалось сохранить';
+      setError(msg);
+      toast(msg);
+    }
   };
 
   const isCustomDate = freq === 'custom';

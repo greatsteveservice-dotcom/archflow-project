@@ -1515,8 +1515,47 @@ export async function updateProjectWebcam(projectId: string, webcamUrl: string |
 
 const SV_KEY = (pid: string) => `archflow:sv_config:${pid}`;
 
-/** Load supervision config for a project (localStorage, fallback until DB migration) */
-export function loadSupervisionConfig(projectId: string): import('./types').SupervisionConfig | null {
+/**
+ * Load supervision config from `projects.supervision_config jsonb`.
+ * Falls back to a localStorage cache so the UI has something to render
+ * before the network round-trip resolves and during cold starts.
+ *
+ * IMPORTANT: this used to be localStorage-only, which meant settings
+ * silently disappeared after logout (and the calendar lost its visit
+ * and payment markers as a result). The DB column has existed since
+ * migration 011 — we just weren't using it.
+ */
+export async function loadSupervisionConfig(
+  projectId: string,
+): Promise<import('./types').SupervisionConfig | null> {
+  const { data, error } = await supabase
+    .from('projects')
+    .select('supervision_config')
+    .eq('id', projectId)
+    .single();
+  if (!error && data && (data as { supervision_config: unknown }).supervision_config) {
+    const cfg = (data as { supervision_config: import('./types').SupervisionConfig }).supervision_config;
+    if (typeof window !== 'undefined') {
+      try { localStorage.setItem(SV_KEY(projectId), JSON.stringify(cfg)); } catch { /* quota / private mode */ }
+    }
+    return cfg;
+  }
+  // DB read failed or column is null — fall back to local cache so the
+  // first load after a redeploy doesn't flash empty for users who have
+  // existing local settings. Their next save will mirror them to the DB.
+  if (typeof window !== 'undefined') {
+    try {
+      const raw = localStorage.getItem(SV_KEY(projectId));
+      if (raw) return JSON.parse(raw);
+    } catch { /* ignore */ }
+  }
+  return null;
+}
+
+/** Sync read of the local cache — used for instant first paint while the DB call is in flight. */
+export function loadSupervisionConfigCached(
+  projectId: string,
+): import('./types').SupervisionConfig | null {
   if (typeof window === 'undefined') return null;
   try {
     const raw = localStorage.getItem(SV_KEY(projectId));
@@ -1524,10 +1563,33 @@ export function loadSupervisionConfig(projectId: string): import('./types').Supe
   } catch { return null; }
 }
 
-/** Save supervision config for a project */
-export function saveSupervisionConfig(projectId: string, config: import('./types').SupervisionConfig): void {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(SV_KEY(projectId), JSON.stringify(config));
+/**
+ * Persist supervision config to the DB through the auth-checked API
+ * route. The route uses the service role to bypass the owner-only RLS
+ * on `projects.UPDATE`, so member designers/assistants can save too.
+ */
+export async function saveSupervisionConfig(
+  projectId: string,
+  config: import('./types').SupervisionConfig,
+): Promise<void> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) throw new Error('Требуется авторизация');
+
+  const res = await fetch('/api/supervision/save', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify({ projectId, config }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || 'Не удалось сохранить настройки');
+  }
+  if (typeof window !== 'undefined') {
+    try { localStorage.setItem(SV_KEY(projectId), JSON.stringify(config)); } catch { /* ignore */ }
+  }
 }
 
 // ======================== RBAC: MEMBERS + ACCESS SETTINGS ========================

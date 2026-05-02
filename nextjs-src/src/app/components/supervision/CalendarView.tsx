@@ -1,10 +1,10 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Icons } from '../Icons';
 import Bdg from '../Bdg';
 import Modal from '../Modal';
 import type { VisitWithStats, SupervisionConfig } from '../../lib/types';
-import { formatDate, createVisit, loadSupervisionConfig } from '../../lib/queries';
+import { formatDate, createVisit, loadSupervisionConfig, loadSupervisionConfigCached } from '../../lib/queries';
 
 interface CalendarViewProps {
   projectId: string;
@@ -149,8 +149,18 @@ export default function CalendarView({ projectId, visits, toast, refetchVisits, 
   const [vNote, setVNote] = useState('');
   const [saving, setSaving] = useState(false);
 
-  // Load supervision config
-  const svConfig = useMemo(() => loadSupervisionConfig(projectId), [projectId]);
+  // Load supervision config from DB (with localStorage fallback so we don't
+  // flash an empty calendar while the network round-trip is in flight).
+  const [svConfig, setSvConfig] = useState<SupervisionConfig | null>(
+    () => loadSupervisionConfigCached(projectId),
+  );
+  useEffect(() => {
+    let cancelled = false;
+    loadSupervisionConfig(projectId)
+      .then((cfg) => { if (!cancelled) setSvConfig(cfg); })
+      .catch((e) => console.error('[calendar] sv config load failed:', e));
+    return () => { cancelled = true; };
+  }, [projectId]);
 
   // Map visits by date
   const visitsByDate = useMemo(() => {

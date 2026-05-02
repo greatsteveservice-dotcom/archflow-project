@@ -60,15 +60,21 @@ export default function ReportsListView({ projectId, toast, onSelectReport }: Re
     fetchReportDeliveryStatuses(publishedIds).then(setDeliveryStatuses).catch(() => {});
   }, [reports]);
 
-  // Auto-draft on mount
+  // Auto-draft on mount (config now lives in DB, so this is async).
   useEffect(() => {
-    const cfg = loadSupervisionConfig(projectId);
-    const scheduled = isTodayScheduledVisit(cfg);
-    if (scheduled) {
-      ensureTodayDraft(projectId, true).then(created => {
-        if (created) refetch();
-      });
-    }
+    let cancelled = false;
+    loadSupervisionConfig(projectId)
+      .then((cfg) => {
+        if (cancelled) return;
+        const scheduled = isTodayScheduledVisit(cfg);
+        if (scheduled) {
+          ensureTodayDraft(projectId, true).then(created => {
+            if (!cancelled && created) refetch();
+          });
+        }
+      })
+      .catch((e) => console.error('[reports] sv config load failed:', e));
+    return () => { cancelled = true; };
   }, [projectId, refetch]);
 
   // Manual create
