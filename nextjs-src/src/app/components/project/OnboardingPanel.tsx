@@ -161,9 +161,30 @@ function OnboardingPanelInner({ projectId, toast, forceVisible, onSwitchToSupply
         </Section>
       )}
 
+      {/* Supply suggested — теперь над "Нужна проверка": это подсказка, не требующая разбора */}
+      {supply.length > 0 && (
+        <Section title="Отправили в Комплектацию" muted>
+          {supply.map((it) => (
+            <SupplyRow
+              key={it.id}
+              item={it}
+              onSwitchToSupply={onSwitchToSupply}
+              onReject={async () => {
+                try {
+                  await rejectOnboardingItem(it.id);
+                  refetch();
+                } catch (e) {
+                  toast(e instanceof Error ? e.message : 'Ошибка');
+                }
+              }}
+            />
+          ))}
+        </Section>
+      )}
+
       {/* Needs review */}
       {review.length > 0 && (
-        <Section title="Нужна проверка" emphasis>
+        <Section title="Уточните раздел" emphasis>
           {review.map((it) => (
             <ReviewRow
               key={it.id}
@@ -181,27 +202,6 @@ function OnboardingPanelInner({ projectId, toast, forceVisible, onSwitchToSupply
                 try {
                   await rejectOnboardingItem(it.id);
                   toast('Файл удалён');
-                  refetch();
-                } catch (e) {
-                  toast(e instanceof Error ? e.message : 'Ошибка');
-                }
-              }}
-            />
-          ))}
-        </Section>
-      )}
-
-      {/* Supply suggested */}
-      {supply.length > 0 && (
-        <Section title="Похоже на комплектацию" emphasis>
-          {supply.map((it) => (
-            <SupplyRow
-              key={it.id}
-              item={it}
-              onSwitchToSupply={onSwitchToSupply}
-              onReject={async () => {
-                try {
-                  await rejectOnboardingItem(it.id);
                   refetch();
                 } catch (e) {
                   toast(e instanceof Error ? e.message : 'Ошибка');
@@ -294,12 +294,26 @@ function DropZone({
 }
 
 // ── Section wrapper ──
+// Two-column header to match the row grid: "ДОКУМЕНТ" — "РАЗДЕЛ".
 function Section({ title, emphasis, muted, children }: { title: string; emphasis?: boolean; muted?: boolean; children: React.ReactNode }) {
+  const labelColor = emphasis ? 'var(--af-ochre)' : muted ? '#999' : '#111';
   return (
     <div style={{ borderTop: '1px solid #EBEBEB' }}>
-      <div style={{ padding: '10px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-        <div style={{ fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: emphasis ? 'var(--af-ochre)' : muted ? '#999' : '#111', fontWeight: 700 }}>
+      <div
+        style={{
+          padding: '10px 18px',
+          display: 'grid',
+          gridTemplateColumns: '1fr minmax(180px, auto)',
+          gap: 12,
+          alignItems: 'baseline',
+          background: '#FAFAF8',
+        }}
+      >
+        <div style={{ fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: labelColor, fontWeight: 700 }}>
           {title}
+        </div>
+        <div style={{ fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#999', fontWeight: 600 }}>
+          Раздел
         </div>
       </div>
       <div>{children}</div>
@@ -307,26 +321,70 @@ function Section({ title, emphasis, muted, children }: { title: string; emphasis
   );
 }
 
-// ── PlacedRow ──
+// ── PlacedRow: документ слева, раздел справа жирно ──
 function PlacedRow({ item }: { item: OnboardingUpload }) {
   const cat = DESIGN_FOLDERS.find((f) => f.id === item.final_category);
   return (
-    <div style={{ padding: '8px 18px', display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 12, fontSize: 13, borderTop: '1px solid #F6F6F4' }}>
-      <div>
-        <div style={{ fontWeight: 600 }}>{item.file_name}</div>
-        <div style={{ fontSize: 11, color: '#999', marginTop: 2 }}>
-          {cat ? `${cat.index} · ${cat.label}` : item.final_category}
-        </div>
+    <div
+      style={{
+        padding: '12px 18px',
+        display: 'grid',
+        gridTemplateColumns: '1fr minmax(180px, auto)',
+        gap: 12,
+        alignItems: 'center',
+        borderTop: '1px solid #F6F6F4',
+      }}
+    >
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontWeight: 600, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.file_name}</div>
+        <div style={{ fontSize: 11, color: '#999', marginTop: 2 }}>{formatSize(item.file_size)}</div>
       </div>
-      <div style={{ fontSize: 11, color: '#999', alignSelf: 'center' }}>
-        {item.ai_confidence != null ? `${Math.round(item.ai_confidence * 100)}%` : ''}
+      <div style={{ fontSize: 13, fontWeight: 600 }}>
+        {cat ? `${cat.index} · ${cat.label}` : (item.final_category || '—')}
       </div>
-      <div style={{ fontSize: 11, color: '#999', alignSelf: 'center' }}>{formatSize(item.file_size)}</div>
     </div>
   );
 }
 
-// ── ReviewRow ──
+// ── SupplyRow: документ слева, "Комплектация" справа ──
+function SupplyRow({
+  item,
+  onSwitchToSupply,
+  onReject,
+}: {
+  item: OnboardingUpload;
+  onSwitchToSupply?: () => void;
+  onReject: () => void | Promise<void>;
+}) {
+  return (
+    <div
+      style={{
+        padding: '12px 18px',
+        display: 'grid',
+        gridTemplateColumns: '1fr minmax(180px, auto)',
+        gap: 12,
+        alignItems: 'center',
+        borderTop: '1px solid #F6F6F4',
+      }}
+    >
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontWeight: 600, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.file_name}</div>
+        <div style={{ fontSize: 11, color: '#999', marginTop: 2 }}>
+          {item.ai_reasoning || 'Похоже на спецификацию / смету'}
+        </div>
+      </div>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--af-ochre)' }}>Комплектация</span>
+        {onSwitchToSupply && (
+          <button onClick={onSwitchToSupply} style={btnStyle(false)}>Открыть →</button>
+        )}
+        <button onClick={onReject} style={btnStyle(false)}>Удалить</button>
+      </div>
+    </div>
+  );
+}
+
+// ── ReviewRow: документ слева, dropdown+кнопки справа ──
 function ReviewRow({
   item,
   onConfirm,
@@ -348,18 +406,23 @@ function ReviewRow({
   const guessLabel = DESIGN_FOLDERS.find((f) => f.id === guess);
 
   return (
-    <div style={{ padding: '12px 18px', borderTop: '1px solid #F6F6F4' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, gap: 12 }}>
-        <span style={{ fontWeight: 600, fontSize: 13 }}>{item.file_name}</span>
-        <span style={{ fontSize: 11, color: 'var(--af-ochre)' }}>
-          {item.ai_confidence != null ? `${Math.round(item.ai_confidence * 100)}%` : ''}
-        </span>
+    <div
+      style={{
+        padding: '12px 18px',
+        display: 'grid',
+        gridTemplateColumns: '1fr minmax(180px, auto)',
+        gap: 12,
+        alignItems: 'center',
+        borderTop: '1px solid #F6F6F4',
+      }}
+    >
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontWeight: 600, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.file_name}</div>
+        <div style={{ fontSize: 11, color: '#999', marginTop: 2 }}>
+          {guessLabel ? `ИИ предположил: ${guessLabel.index} · ${guessLabel.label}` : 'Не распознан — выберите вручную'}
+        </div>
       </div>
-      <div style={{ fontSize: 12, color: '#666', marginBottom: 10 }}>
-        Похоже на: <strong>{guessLabel ? `${guessLabel.index} · ${guessLabel.label}` : '—'}</strong>
-        {item.ai_reasoning ? ` · ${item.ai_reasoning}` : ''}
-      </div>
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
         <select
           value={chosen}
           onChange={(e) => setChosen(e.target.value as DesignFolder)}
@@ -377,43 +440,15 @@ function ReviewRow({
           onClick={async () => { setPending(true); try { await onConfirm(chosen); } finally { setPending(false); } }}
           style={btnStyle(true)}
         >
-          {pending ? '…' : 'Подтвердить'}
+          {pending ? '…' : 'OK'}
         </button>
         <button
           disabled={pending}
           onClick={async () => { setPending(true); try { await onReject(); } finally { setPending(false); } }}
           style={btnStyle(false)}
         >
-          Не нужно
+          Удалить
         </button>
-      </div>
-    </div>
-  );
-}
-
-// ── SupplyRow ──
-function SupplyRow({
-  item,
-  onSwitchToSupply,
-  onReject,
-}: {
-  item: OnboardingUpload;
-  onSwitchToSupply?: () => void;
-  onReject: () => void | Promise<void>;
-}) {
-  return (
-    <div style={{ padding: '12px 18px', borderTop: '1px solid #F6F6F4', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-      <div>
-        <div style={{ fontWeight: 600, fontSize: 13 }}>{item.file_name}</div>
-        <div style={{ fontSize: 12, color: '#666', marginTop: 2 }}>
-          Похоже на Excel-комплектацию · {item.ai_reasoning || 'импортировать в модуль Supply'}
-        </div>
-      </div>
-      <div style={{ display: 'flex', gap: 8 }}>
-        {onSwitchToSupply && (
-          <button onClick={onSwitchToSupply} style={btnStyle(true)}>Открыть Supply</button>
-        )}
-        <button onClick={onReject} style={btnStyle(false)}>Не нужно</button>
       </div>
     </div>
   );
