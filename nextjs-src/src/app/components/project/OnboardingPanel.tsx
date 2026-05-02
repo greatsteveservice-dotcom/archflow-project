@@ -38,24 +38,30 @@ interface Props {
   onSwitchToSupply?: () => void;
 }
 
-export default function OnboardingPanel({ projectId, toast, forceVisible, onSwitchToSupply }: Props) {
+export default function OnboardingPanel(props: Props) {
+  // Allowlist gate lives in the outer component so the inner one always runs
+  // its hooks in the same order regardless of who is logged in. Returning
+  // early between hook calls breaks the rules of hooks and was the cause of
+  // a crash to the global error boundary mid-upload.
   const { user } = useAuth();
   const allowed = !!user?.email && ONBOARDING_ALLOWED_EMAILS.has(user.email.toLowerCase());
-  const { data: items, refetch } = useOnboardingPending(allowed ? projectId : null);
-  // Hooks above must run unconditionally; gate the render after they've been called.
   if (!allowed) return null;
+  return <OnboardingPanelInner {...props} />;
+}
+
+function OnboardingPanelInner({ projectId, toast, forceVisible, onSwitchToSupply }: Props) {
+  const { data: items, refetch } = useOnboardingPending(projectId);
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState<{ uploaded: number; total: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const visibleItems: OnboardingUpload[] = items || [];
   const placed = visibleItems.filter((i) => i.status === 'auto_placed' || i.status === 'confirmed');
-  const review = visibleItems.filter((i) => i.status === 'needs_review');
+  // Treat unfinished `pending` rows as needing review — that way files whose
+  // classification call was interrupted don't silently disappear from the UI.
+  const review = visibleItems.filter((i) => i.status === 'needs_review' || i.status === 'pending');
   const supply = visibleItems.filter((i) => i.status === 'supply_suggested');
   const hasContent = placed.length + review.length + supply.length > 0;
-
-  const shouldShow = forceVisible || hasContent;
-  if (!shouldShow) return null;
 
   const handleFiles = useCallback(
     async (rawFiles: FileList | null) => {
@@ -78,6 +84,7 @@ export default function OnboardingPanel({ projectId, toast, forceVisible, onSwit
 
       const uploaded: { storagePath: string; name: string; size: number; mime: string }[] = [];
 
+      let failed = 0;
       try {
         for (let i = 0; i < files.length; i++) {
           const f = files[i];
@@ -92,24 +99,29 @@ export default function OnboardingPanel({ projectId, toast, forceVisible, onSwit
           if (upErr) {
             console.error('upload error', f.name, upErr);
             toast(`Не удалось загрузить «${f.name}»`);
-            continue;
+            failed += 1;
+          } else {
+            uploaded.push({ storagePath: path, name: f.name, size: f.size, mime: f.type || 'application/octet-stream' });
           }
-          uploaded.push({ storagePath: path, name: f.name, size: f.size, mime: f.type || 'application/octet-stream' });
-          setProgress({ uploaded: i + 1, total: files.length });
+          // Progress reflects "files we tried", regardless of success — it
+          // matches what the user sees in the queue (1/N → N/N) without
+          // pretending failures didn't happen.
+          setProgress({ uploaded: uploaded.length + failed, total: files.length });
         }
 
         if (uploaded.length === 0) {
-          setBusy(false);
-          setProgress(null);
           return;
         }
 
         await classifyOnboardingBatch(projectId, uploaded);
         await refetch();
-        toast(`Распознали ${uploaded.length} ${pluralFiles(uploaded.length)}`);
+        const okMsg = `Распознали ${uploaded.length} ${pluralFiles(uploaded.length)}`;
+        toast(failed > 0 ? `${okMsg}, ${failed} не загрузилось` : okMsg);
       } catch (err) {
         console.error('onboarding error', err);
         toast(err instanceof Error ? err.message : 'Не удалось распознать');
+        // Make sure the failed batch becomes reviewable instead of stuck on `pending`.
+        await refetch();
       } finally {
         setBusy(false);
         setProgress(null);
@@ -117,6 +129,9 @@ export default function OnboardingPanel({ projectId, toast, forceVisible, onSwit
     },
     [projectId, refetch, toast],
   );
+
+  const shouldShow = forceVisible || hasContent || busy;
+  if (!shouldShow) return null;
 
   return (
     <div style={{ marginBottom: 24, border: '1px solid var(--af-ochre)', background: '#FFF' }}>
