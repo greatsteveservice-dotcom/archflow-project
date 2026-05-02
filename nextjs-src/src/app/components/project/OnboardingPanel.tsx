@@ -92,16 +92,21 @@ function OnboardingPanelInner({ projectId, toast, forceVisible, onSwitchToSupply
           const id = crypto.randomUUID();
           const path = `_onboarding/${projectId}/${id}_${safe}`;
 
+          // Some files dragged from Finder (e.g. .xlsx, .dwg) come without a
+          // browser-detected MIME type — explicitly fall back to a generic
+          // octet-stream so the bucket doesn't reject them on mime check.
+          const contentType = f.type || 'application/octet-stream';
+
           const { error: upErr } = await supabase.storage
             .from('design-files')
-            .upload(path, f, { contentType: f.type, upsert: false });
+            .upload(path, f, { contentType, upsert: false });
 
           if (upErr) {
             console.error('upload error', f.name, upErr);
-            toast(`Не удалось загрузить «${f.name}»`);
+            toast(`Не удалось загрузить «${f.name}»: ${upErr.message || 'storage error'}`);
             failed += 1;
           } else {
-            uploaded.push({ storagePath: path, name: f.name, size: f.size, mime: f.type || 'application/octet-stream' });
+            uploaded.push({ storagePath: path, name: f.name, size: f.size, mime: contentType });
           }
           // Progress reflects "files we tried", regardless of success — it
           // matches what the user sees in the queue (1/N → N/N) without
