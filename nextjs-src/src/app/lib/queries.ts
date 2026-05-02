@@ -4,7 +4,7 @@
 
 import { supabase } from './supabase';
 import { sanitize, sanitizeUrl } from './sanitize';
-import { runWithRetry } from './retry';
+import { runWithRetry, withReauth } from './retry';
 import type {
   Project, Profile, Visit, PhotoRecord, Invoice,
   Document, SupplyItem, Stage, ContractPayment,
@@ -2465,27 +2465,32 @@ export async function sendChatMessage(
   input: SendChatMessageInput,
   userId: string,
 ): Promise<ChatMessage> {
-  const { data, error } = await supabase
-    .from('chat_messages')
-    .insert({
-      project_id: input.project_id,
-      user_id: userId,
-      text: sanitize(input.text),
-      chat_type: input.chat_type || 'team',
-      channel_id: input.channel_id || null,
-      image_url: input.image_url || null,
-      ref_type: input.ref_type || null,
-      ref_id: input.ref_id || null,
-      ref_preview: input.ref_preview ? sanitize(input.ref_preview) : null,
-      message_type: input.message_type || 'text',
-      voice_duration: input.voice_duration || null,
-      voice_original: input.voice_original || null,
-    })
-    .select()
-    .single();
+  // withReauth: auto-refreshes the session and retries once if the JWT was
+  // anon/expired by the time it hit the database (the "row violates RLS"
+  // family of errors on mobile after the tab was backgrounded).
+  return withReauth(async () => {
+    const { data, error } = await supabase
+      .from('chat_messages')
+      .insert({
+        project_id: input.project_id,
+        user_id: userId,
+        text: sanitize(input.text),
+        chat_type: input.chat_type || 'team',
+        channel_id: input.channel_id || null,
+        image_url: input.image_url || null,
+        ref_type: input.ref_type || null,
+        ref_id: input.ref_id || null,
+        ref_preview: input.ref_preview ? sanitize(input.ref_preview) : null,
+        message_type: input.message_type || 'text',
+        voice_duration: input.voice_duration || null,
+        voice_original: input.voice_original || null,
+      })
+      .select()
+      .single();
 
-  if (error) throw error;
-  return data;
+    if (error) throw error;
+    return data;
+  });
 }
 
 /** Delete a chat message (own only, within 24h of sending) */

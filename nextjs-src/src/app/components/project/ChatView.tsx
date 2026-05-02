@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useAuth } from '../../lib/auth';
 import { useChatMessages, useChatRealtime, useChatMarkRead, useChatUnreadByType, sendPushNotification, useProjectMembersWithProfiles, useChatChannels } from '../../lib/hooks';
 import { sendChatMessage, deleteChatMessage, fetchChatMessages, analyzeChatMessages, createReminder, createChatChannel, deleteChatChannel, uploadChatImage, toggleChatMessagePin, fetchPinnedMessages, searchChatMessages } from '../../lib/queries';
+import { friendlyError } from '../../lib/retry';
 import type { ChatMessageWithAuthor, ChatType, ChatChannel, Profile, ChatAnalysisResult } from '../../lib/types';
 import PushPermissionBanner from './PushPermissionBanner';
 import ChatProjectPicker from './ChatProjectPicker';
@@ -857,8 +858,8 @@ function ChatTabPanel({ projectId, chatType, channelId, userId, profile, toast, 
           if (result.found) setSuggestion(result);
         }).catch(() => {});
       }
-    } catch (e: any) {
-      toast('Ошибка отправки: ' + (e.message || ''));
+    } catch (e) {
+      toast(friendlyError(e));
     }
     setSending(false);
   };
