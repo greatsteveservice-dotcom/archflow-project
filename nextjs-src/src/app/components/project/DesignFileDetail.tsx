@@ -9,6 +9,24 @@ import type { DesignFolder, SignatureStatus } from '../../lib/types';
 import SignatureSection from './SignatureSection';
 import FileVideoSection from '../FileVideoSection';
 import AnnotatableImage from './AnnotatableImage';
+import dynamic from 'next/dynamic';
+
+// Lazy-load SheetJS-based preview only when user actually opens an xlsx.
+const XlsxPreview = dynamic(() => import('./XlsxPreview'), {
+  ssr: false,
+  loading: () => (
+    <div style={{ padding: 24, textAlign: 'center', color: '#999', fontSize: 12 }}>
+      Загружаем предпросмотр…
+    </div>
+  ),
+});
+
+function isXlsx(file: { file_type?: string | null; name: string }): boolean {
+  const t = (file.file_type || '').toLowerCase();
+  if (t === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') return true;
+  if (t === 'application/vnd.ms-excel') return true;
+  return /\.(xlsx|xls)$/i.test(file.name);
+}
 
 interface DesignFileDetailProps {
   fileId: string;
@@ -336,7 +354,10 @@ export default function DesignFileDetail({
             </button>
           </div>
         )}
-        {!isImage(file.file_type) && !isPdf(file.file_type) && (
+        {!isImage(file.file_type) && !isPdf(file.file_type) && isXlsx(file) && (
+          <XlsxPreview fileUrl={file.file_url} fileName={file.name} />
+        )}
+        {!isImage(file.file_type) && !isPdf(file.file_type) && !isXlsx(file) && (
           <div style={{ textAlign: 'center', padding: '32px 0' }}>
             <div style={{
               width: 80, height: 96, border: '0.5px solid #EBEBEB', display: 'flex',
