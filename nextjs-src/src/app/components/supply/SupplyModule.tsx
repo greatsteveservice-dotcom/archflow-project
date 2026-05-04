@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { Icons } from "../Icons";
 import Loading, { ErrorMessage } from "../Loading";
 import { useProjectStages, useProjectSupplyItems, useProjectRooms, useKindStageMappings } from "../../lib/hooks";
@@ -50,8 +50,21 @@ export default function SupplyModule({ projectId, toast }: SupplyModuleProps) {
   // Onboarding overlay dismiss: when the user finishes the wizard via the
   // skip-Excel branch, no rooms/items get created, so the
   // `!hasItems && !hasRooms` gate below would re-mount the wizard forever.
-  // The flag lets us drop into the empty Supply view instead.
-  const [onboardingDismissed, setOnboardingDismissed] = useState(false);
+  // Persist per-project in localStorage — without it the flag dies on every
+  // tab switch / refetch-driven re-mount, and "Перейти к комплектации"
+  // appears to do nothing because the wizard returns instantly.
+  const dismissKey = `archflow:supply-onboarding-dismissed:${projectId}`;
+  const [onboardingDismissed, setOnboardingDismissedState] = useState(false);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    setOnboardingDismissedState(window.localStorage.getItem(dismissKey) === '1');
+  }, [dismissKey]);
+  const setOnboardingDismissed = useCallback((value: boolean) => {
+    setOnboardingDismissedState(value);
+    if (typeof window === 'undefined') return;
+    if (value) window.localStorage.setItem(dismissKey, '1');
+    else window.localStorage.removeItem(dismissKey);
+  }, [dismissKey]);
 
   const { data: stages, loading: loadingStages, error: errorStages, refetch: refetchStages } = useProjectStages(projectId);
   const { data: items, loading: loadingItems, error: errorItems, refetch: refetchItems } = useProjectSupplyItems(projectId);
