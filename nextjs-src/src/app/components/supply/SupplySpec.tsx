@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { Icons } from "../Icons";
-import { formatPrice, formatShortDate, updateSupplyItemStatus, deleteSupplyItem, deleteAllSupplyItems } from "../../lib/queries";
+import { formatPrice, formatShortDate, updateSupplyItemStatus, deleteSupplyItem, deleteAllSupplyItems, createSupplyItem } from "../../lib/queries";
 import { SUPPLY_STATUS_CONFIG, RISK_CONFIG } from "../../lib/types";
 import type { SupplyItemWithCalc, Stage, SupplyStatus, RiskLevel } from "../../lib/types";
 
@@ -33,6 +33,43 @@ export function SupplySpec({ items, stages, projectId, refetchItems, toast, canD
   const [confirmDeleteSelected, setConfirmDeleteSelected] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>('asc');
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newRoom, setNewRoom] = useState('');
+  const [newCategory, setNewCategory] = useState('');
+  const [newQuantity, setNewQuantity] = useState('1');
+  const [newBudget, setNewBudget] = useState('');
+  const [newStageId, setNewStageId] = useState(stages[0]?.id || '');
+  const [creating, setCreating] = useState(false);
+
+  const resetAddForm = () => {
+    setNewName(''); setNewRoom(''); setNewCategory('');
+    setNewQuantity('1'); setNewBudget(''); setNewStageId(stages[0]?.id || '');
+  };
+
+  const handleCreate = async () => {
+    if (!newName.trim()) { toast?.('Введите название позиции'); return; }
+    setCreating(true);
+    try {
+      await createSupplyItem({
+        project_id: projectId,
+        name: newName.trim(),
+        room: newRoom.trim() || undefined,
+        category: newCategory.trim() || undefined,
+        quantity: parseInt(newQuantity) || 1,
+        budget: parseFloat(newBudget.replace(/[^\d.,]/g, '').replace(',', '.')) || 0,
+        target_stage_id: newStageId || undefined,
+      });
+      refetchItems();
+      resetAddForm();
+      setShowAddForm(false);
+      toast?.('Позиция добавлена');
+    } catch (err) {
+      toast?.(err instanceof Error ? err.message : 'Ошибка добавления');
+    } finally {
+      setCreating(false);
+    }
+  };
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -216,26 +253,35 @@ export function SupplySpec({ items, stages, projectId, refetchItems, toast, canD
             Заказано
           </button>
         </div>
-        {canDelete && items.length > 0 && (
-          <div className="flex items-center gap-2 ml-auto">
-            {selectedIds.size > 0 && (
+        <div className="flex items-center gap-2 ml-auto">
+          <button
+            className="btn btn-secondary text-[12px]"
+            style={{ color: '#111', borderColor: '#111' }}
+            onClick={() => setShowAddForm(true)}
+          >
+            + Добавить позицию
+          </button>
+          {canDelete && items.length > 0 && (
+            <>
+              {selectedIds.size > 0 && (
+                <button
+                  className="btn btn-secondary text-[12px]"
+                  style={{ color: '#111', borderColor: '#111' }}
+                  onClick={() => setConfirmDeleteSelected(true)}
+                >
+                  Удалить выбранные ({selectedIds.size})
+                </button>
+              )}
               <button
                 className="btn btn-secondary text-[12px]"
-                style={{ color: '#111', borderColor: '#111' }}
-                onClick={() => setConfirmDeleteSelected(true)}
+                style={{ color: '#999', borderColor: '#ddd' }}
+                onClick={() => setConfirmDeleteAll(true)}
               >
-                Удалить выбранные ({selectedIds.size})
+                Очистить всё
               </button>
-            )}
-            <button
-              className="btn btn-secondary text-[12px]"
-              style={{ color: '#999', borderColor: '#ddd' }}
-              onClick={() => setConfirmDeleteAll(true)}
-            >
-              Очистить всё
-            </button>
-          </div>
-        )}
+            </>
+          )}
+        </div>
       </div>
 
       {/* Mobile card view */}
@@ -571,6 +617,101 @@ export function SupplySpec({ items, stages, projectId, refetchItems, toast, canD
             </div>
           </div>
         </>
+      )}
+
+      {/* Add-item modal */}
+      {showAddForm && (
+        <div
+          className="af-modal-overlay"
+          onClick={() => !creating && setShowAddForm(false)}
+          style={{ zIndex: 60 }}
+        >
+          <div className="af-modal" onClick={(e) => e.stopPropagation()} style={{ width: 380, maxWidth: '92vw', padding: 20 }}>
+            <div style={{
+              fontFamily: 'var(--af-font-mono)', fontSize: 10,
+              textTransform: 'uppercase', letterSpacing: '0.14em', color: '#111',
+              marginBottom: 14,
+            }}>
+              Новая позиция
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <input
+                type="text"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="Название *"
+                autoFocus
+                onKeyDown={(e) => { if (e.key === 'Enter' && newName.trim()) handleCreate(); }}
+                className="w-full px-3 py-2 border border-line text-sm outline-none focus:border-ink bg-srf"
+                style={{ fontFamily: 'var(--af-font-mono)', borderRadius: 0 }}
+              />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <input
+                  type="text"
+                  value={newRoom}
+                  onChange={(e) => setNewRoom(e.target.value)}
+                  placeholder="Помещение"
+                  className="w-full px-3 py-2 border border-line text-sm outline-none focus:border-ink bg-srf"
+                  style={{ fontFamily: 'var(--af-font-mono)', borderRadius: 0 }}
+                />
+                <input
+                  type="text"
+                  value={newCategory}
+                  onChange={(e) => setNewCategory(e.target.value)}
+                  placeholder="Категория"
+                  className="w-full px-3 py-2 border border-line text-sm outline-none focus:border-ink bg-srf"
+                  style={{ fontFamily: 'var(--af-font-mono)', borderRadius: 0 }}
+                />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <input
+                  type="number"
+                  min="1"
+                  value={newQuantity}
+                  onChange={(e) => setNewQuantity(e.target.value)}
+                  placeholder="Кол-во"
+                  className="w-full px-3 py-2 border border-line text-sm outline-none focus:border-ink bg-srf"
+                  style={{ fontFamily: 'var(--af-font-mono)', borderRadius: 0 }}
+                />
+                <input
+                  type="text"
+                  value={newBudget}
+                  onChange={(e) => setNewBudget(e.target.value)}
+                  placeholder="Бюджет, ₽"
+                  className="w-full px-3 py-2 border border-line text-sm outline-none focus:border-ink bg-srf"
+                  style={{ fontFamily: 'var(--af-font-mono)', borderRadius: 0 }}
+                />
+              </div>
+              <select
+                value={newStageId}
+                onChange={(e) => setNewStageId(e.target.value)}
+                className="w-full px-3 py-2 border border-line text-sm outline-none focus:border-ink bg-srf"
+                style={{ fontFamily: 'var(--af-font-mono)', borderRadius: 0 }}
+              >
+                <option value="">Без этапа</option>
+                {stages.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            </div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
+              <button
+                onClick={() => { if (!creating) { resetAddForm(); setShowAddForm(false); } }}
+                disabled={creating}
+                className="btn btn-secondary text-[12px]"
+                style={{ color: '#999', borderColor: '#ddd' }}
+              >
+                Отмена
+              </button>
+              <button
+                onClick={handleCreate}
+                disabled={creating || !newName.trim()}
+                className="btn btn-secondary text-[12px]"
+                style={{ color: '#fff', background: '#111', borderColor: '#111' }}
+              >
+                {creating ? 'Сохраняем…' : 'Добавить'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
