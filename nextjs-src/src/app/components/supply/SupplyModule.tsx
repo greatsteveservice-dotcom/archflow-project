@@ -47,6 +47,11 @@ export default function SupplyModule({ projectId, toast }: SupplyModuleProps) {
   const [activeItemTab, setActiveItemTab] = useState<ItemTabId>("spec");
   const [showImport, setShowImport] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
+  // Onboarding overlay dismiss: when the user finishes the wizard via the
+  // skip-Excel branch, no rooms/items get created, so the
+  // `!hasItems && !hasRooms` gate below would re-mount the wizard forever.
+  // The flag lets us drop into the empty Supply view instead.
+  const [onboardingDismissed, setOnboardingDismissed] = useState(false);
 
   const { data: stages, loading: loadingStages, error: errorStages, refetch: refetchStages } = useProjectStages(projectId);
   const { data: items, loading: loadingItems, error: errorItems, refetch: refetchItems } = useProjectSupplyItems(projectId);
@@ -89,7 +94,7 @@ export default function SupplyModule({ projectId, toast }: SupplyModuleProps) {
   const hasRooms = rooms && rooms.length > 0;
 
   // Show onboarding when no supply data exists (stages may already be set by designer)
-  if (!hasItems && !hasRooms) {
+  if (!hasItems && !hasRooms && !onboardingDismissed) {
     return (
       <SupplyOnboarding
         projectId={projectId}
@@ -103,6 +108,7 @@ export default function SupplyModule({ projectId, toast }: SupplyModuleProps) {
           refetchRooms();
           refetchItems();
           refetchStages();
+          setOnboardingDismissed(true);
         }}
       />
     );
