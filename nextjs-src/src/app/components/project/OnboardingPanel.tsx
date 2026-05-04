@@ -163,7 +163,30 @@ function OnboardingPanelInner({ projectId, toast, forceVisible, onSwitchToSupply
       {/* Auto-placed list */}
       {placed.length > 0 && (
         <Section title="Разнесли автоматически" muted>
-          {placed.map((it) => <PlacedRow key={it.id} item={it} />)}
+          {placed.map((it) => (
+            <PlacedRow
+              key={it.id}
+              item={it}
+              onMove={async (cat) => {
+                try {
+                  await confirmOnboardingItem(it.id, cat);
+                  refetch();
+                  toast('Файл перенесён');
+                } catch (e) {
+                  toast(e instanceof Error ? e.message : 'Ошибка');
+                }
+              }}
+              onReject={async () => {
+                try {
+                  await rejectOnboardingItem(it.id);
+                  refetch();
+                  toast('Файл удалён');
+                } catch (e) {
+                  toast(e instanceof Error ? e.message : 'Ошибка');
+                }
+              }}
+            />
+          ))}
         </Section>
       )}
 
@@ -323,15 +346,30 @@ function Section({ title, emphasis, muted, children }: { title: string; emphasis
   );
 }
 
-// ── PlacedRow: документ слева, раздел справа жирно ──
-function PlacedRow({ item }: { item: OnboardingUpload }) {
+// ── PlacedRow: документ слева, раздел справа + кнопки изменить/удалить ──
+function PlacedRow({
+  item,
+  onMove,
+  onReject,
+}: {
+  item: OnboardingUpload;
+  onMove: (cat: DesignFolder) => void | Promise<void>;
+  onReject: () => void | Promise<void>;
+}) {
+  const initialCat = (item.final_category && DESIGN_FOLDERS.some(f => f.id === item.final_category))
+    ? (item.final_category as DesignFolder)
+    : 'documents' as DesignFolder;
+  const [editing, setEditing] = useState(false);
+  const [chosen, setChosen] = useState<DesignFolder>(initialCat);
+  const [pending, setPending] = useState(false);
   const cat = DESIGN_FOLDERS.find((f) => f.id === item.final_category);
+
   return (
     <div
       style={{
         padding: '12px 18px',
         display: 'grid',
-        gridTemplateColumns: '1fr minmax(180px, auto)',
+        gridTemplateColumns: '1fr minmax(220px, auto)',
         gap: 12,
         alignItems: 'center',
         borderTop: '1px solid #F6F6F4',
@@ -341,9 +379,61 @@ function PlacedRow({ item }: { item: OnboardingUpload }) {
         <div style={{ fontWeight: 600, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.file_name}</div>
         <div style={{ fontSize: 11, color: '#999', marginTop: 2 }}>{formatSize(item.file_size)}</div>
       </div>
-      <div style={{ fontSize: 13, fontWeight: 600 }}>
-        {cat ? `${cat.index} · ${cat.label}` : (item.final_category || '—')}
-      </div>
+      {editing ? (
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          <select
+            value={chosen}
+            onChange={(e) => setChosen(e.target.value as DesignFolder)}
+            style={{
+              padding: '6px 10px', fontFamily: 'var(--af-font)', fontSize: 12,
+              border: '1px solid #EBEBEB', background: '#FFF', borderRadius: 0,
+            }}
+          >
+            {DESIGN_FOLDERS.map((f) => (
+              <option key={f.id} value={f.id}>{f.index} · {f.label}</option>
+            ))}
+          </select>
+          <button
+            disabled={pending || chosen === initialCat}
+            onClick={async () => {
+              setPending(true);
+              try { await onMove(chosen); setEditing(false); }
+              finally { setPending(false); }
+            }}
+            style={btnStyle(true)}
+          >
+            {pending ? '…' : 'OK'}
+          </button>
+          <button
+            disabled={pending}
+            onClick={() => { setChosen(initialCat); setEditing(false); }}
+            style={btnStyle(false)}
+          >
+            Отмена
+          </button>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', justifyContent: 'flex-end' }}>
+          <span style={{ fontSize: 13, fontWeight: 600 }}>
+            {cat ? `${cat.index} · ${cat.label}` : (item.final_category || '—')}
+          </span>
+          <button onClick={() => setEditing(true)} style={btnStyle(false)} disabled={pending}>
+            Изменить
+          </button>
+          <button
+            disabled={pending}
+            onClick={async () => {
+              if (!confirm(`Удалить файл «${item.file_name}»?`)) return;
+              setPending(true);
+              try { await onReject(); }
+              finally { setPending(false); }
+            }}
+            style={btnStyle(false)}
+          >
+            Удалить
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -647,7 +647,12 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
           style={{
             position: 'fixed',
             left: 0, right: 0,
-            bottom: 40, // sits above FeedbackBar (40px)
+            // Sit above the BottomTabBar (.af-tabbar = fixed 72px height +
+            // safe-area inset). The old `bottom: 40` was a leftover from the
+            // FeedbackBar era and got hidden under the new tabbar — that's
+            // why "Удалить / Переместить / Отмена" were invisible after
+            // selecting files on mobile.
+            bottom: 'calc(72px + env(safe-area-inset-bottom) + 8px)',
             zIndex: 40,
             background: '#111',
             color: '#fff',
