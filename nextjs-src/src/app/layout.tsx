@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Vollkorn_SC, Playfair_Display, Inter } from "next/font/google";
+import { Vollkorn_SC, Playfair_Display, Inter, Onest } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "./lib/auth";
 import { ThemeProvider } from "./lib/theme";
@@ -29,6 +29,16 @@ const inter = Inter({
   subsets: ['latin', 'cyrillic'],
   weight: ['400', '500', '600', '700'],
   variable: '--font-inter',
+  display: 'swap',
+});
+
+// Display font for landing/public pages — replaces Playfair as headline face.
+// Onest used as Cyrillic-compatible substitute for Bricolage Grotesque
+// (Bricolage on Google Fonts is latin-only).
+const bricolageGrotesque = Onest({
+  subsets: ['latin', 'cyrillic'],
+  weight: ['400', '500', '600', '700', '800', '900'],
+  variable: '--font-bricolage',
   display: 'swap',
 });
 
@@ -91,7 +101,7 @@ export default function RootLayout({
   return (
     <html
       lang="ru"
-      className={`${vollkornSC.variable} ${playfairDisplay.variable} ${inter.variable}`}
+      className={`${vollkornSC.variable} ${playfairDisplay.variable} ${inter.variable} ${bricolageGrotesque.variable}`}
       suppressHydrationWarning
     >
       <head>
@@ -102,7 +112,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Vollkorn+SC:wght@400;600;700;900&family=Playfair+Display:wght@400;700;900&family=Inter:wght@400;500;600;700&display=swap&subset=latin,cyrillic"
+          href="https://fonts.googleapis.com/css2?family=Vollkorn+SC:wght@400;600;700;900&family=Playfair+Display:wght@400;700;900&family=Inter:wght@400;500;600;700&family=Onest:wght@400;500;600;700;800;900&display=swap&subset=latin,cyrillic"
           rel="stylesheet"
         />
         {/* Manifest without crossOrigin for Safari PWA compatibility */}
