@@ -37,6 +37,9 @@ interface DesignFileDetailProps {
   canComment?: boolean;
   onBack: () => void;
   onDeleted: () => void;
+  // Опциональный навигейтор — нужен, например, для авто-перехода
+  // на сконвертированный PDF после преобразования DOCX.
+  onSelectFile?: (fileId: string) => void;
 }
 
 function formatSize(bytes: number | null): string {
@@ -58,10 +61,22 @@ function isPdf(mimeType: string | null): boolean {
   return !!mimeType && mimeType.includes('pdf');
 }
 
+// Файлы, которые умеем конвертировать в PDF на сервере (LibreOffice headless).
+// Используется для DOCX/DOC/ODT/RTF в папке «Документы», чтобы пользователь
+// мог отправить их на электронную подпись (Подпислон работает только с PDF).
+function isConvertibleToPdf(file: { file_type?: string | null; name: string }): boolean {
+  const t = (file.file_type || '').toLowerCase();
+  if (t === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') return true;
+  if (t === 'application/msword') return true;
+  if (t === 'application/vnd.oasis.opendocument.text') return true;
+  if (t === 'application/rtf' || t === 'text/rtf') return true;
+  return /\.(docx|doc|odt|rtf)$/i.test(file.name);
+}
+
 export default function DesignFileDetail({
   fileId, projectId, folder, toast,
   canDelete = true, canComment = true,
-  onBack, onDeleted,
+  onBack, onDeleted, onSelectFile,
 }: DesignFileDetailProps) {
   const { data: file, loading, refetch: refetchFile } = useDesignFile(fileId);
   const { user, profile } = useAuth();
@@ -77,6 +92,9 @@ export default function DesignFileDetail({
   const [nameDraft, setNameDraft] = useState('');
   const [savingName, setSavingName] = useState(false);
   const nameInputRef = useRef<HTMLInputElement>(null);
+
+  // Конвертация DOCX/DOC/ODT/RTF → PDF (для подписи через Подпислон)
+  const [converting, setConverting] = useState(false);
 
   useEffect(() => {
     if (editingName) {
@@ -139,6 +157,45 @@ export default function DesignFileDetail({
       toast('Ошибка удаления');
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleConvertToPdf = async () => {
+    if (!file || converting) return;
+    setConverting(true);
+    try {
+      // Берём свежий accessToken из supabase, чтобы серверный роут мог
+      // верифицировать пользователя.
+      const { supabase } = await import('../../lib/supabase');
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+      if (!accessToken) {
+        toast('Нужно войти заново');
+        return;
+      }
+
+      const res = await fetch('/api/design/convert-to-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileId: file.id, accessToken }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json?.ok) {
+        throw new Error(json?.error || 'Ошибка конвертации');
+      }
+      toast(`PDF создан: ${json.name}`);
+      // Если пробрасывали навигейтор — открываем новый PDF, иначе возвращаемся
+      // в папку, где пользователь увидит свежий файл.
+      if (onSelectFile && json.fileId) {
+        onSelectFile(json.fileId);
+      } else {
+        onBack();
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Ошибка конвертации';
+      toast(msg);
+    } finally {
+      setConverting(false);
     }
   };
 
@@ -246,6 +303,27 @@ export default function DesignFileDetail({
       <p style={{ fontFamily: 'var(--af-font-mono)', fontSize: 8, color: '#111', marginBottom: 20 }}>
         {formatSize(file.file_size)} · {formatDate(file.created_at)} · {file.uploader?.full_name || '—'}
       </p>
+
+      {/* DOCX/DOC/ODT/RTF → PDF conversion (для последующей подписи через Подпислон) */}
+      {folder === 'documents' && isConvertibleToPdf(file) && canDelete && (
+        <div style={{ marginBottom: 20, border: '0.5px solid #EBEBEB', padding: 16, background: '#FFF' }}>
+          <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 9, color: '#111', textTransform: 'uppercase', letterSpacing: '0.16em', marginBottom: 8 }}>
+            Электронная подпись
+          </div>
+          <p style={{ fontFamily: 'var(--af-font)', fontSize: 13, lineHeight: 1.5, color: 'rgb(80,80,80)', margin: 0, marginBottom: 14 }}>
+            Подписать можно только PDF (требование 63-ФЗ к ЭП). Преобразуйте файл в PDF, и кнопка «Отправить на подпись» появится на новой версии.
+          </p>
+          <button
+            type="button"
+            onClick={handleConvertToPdf}
+            disabled={converting}
+            className="af-btn-pill"
+            style={{ opacity: converting ? 0.6 : 1, cursor: converting ? 'wait' : 'pointer' }}
+          >
+            {converting ? 'Конвертируем…' : 'Преобразовать в PDF →'}
+          </button>
+        </div>
+      )}
 
       {/* Electronic signature — only in "documents" folder, for PDF files */}
       {folder === 'documents' && isPdf(file.file_type) && (

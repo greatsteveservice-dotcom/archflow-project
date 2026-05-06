@@ -67,6 +67,7 @@ export default function DesignSection({ projectId, toast, canUpload = true, canD
         canComment={canComment}
         onBack={() => setActiveFileId(null)}
         onDeleted={() => { setActiveFileId(null); refetchCounts(); }}
+        onSelectFile={(fileId) => { setActiveFileId(fileId); refetchCounts(); }}
       />
     );
   }
