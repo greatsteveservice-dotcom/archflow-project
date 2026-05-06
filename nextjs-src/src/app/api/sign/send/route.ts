@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { getPodpislon, normalizePhone } from '../../../lib/podpislon';
+import { normalizePhone } from '../../../lib/podpislon';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -102,25 +102,33 @@ export async function POST(req: Request) {
     // Podpislon SDK accepts Blob with name when using FormData — we attach name via a wrapper File-like object
     (fileBlob as any).name = fileName;
 
-    // Send to Podpislon
-    const sdk = getPodpislon();
-    const payload: any = {
-      file: fileBlob,
-      agreement: 'y',
-    };
+    // Send to Podpislon directly (the SDK hardcodes agreement='1', but the server now requires 'Y').
+    const apiToken = process.env.PODPISLON_API_KEY;
+    if (!apiToken) return NextResponse.json({ error: 'PODPISLON_API_KEY not configured' }, { status: 500 });
+    const formData = new FormData();
+    formData.append('file[]', fileBlob, fileName);
     if (normalized.length === 1) {
-      payload.name = normalized[0].name;
-      payload.last_name = normalized[0].last_name;
-      if (normalized[0].second_name) payload.second_name = normalized[0].second_name;
-      payload.phone = normalized[0].phone;
+      formData.append('name', normalized[0].name);
+      formData.append('last_name', normalized[0].last_name);
+      if (normalized[0].second_name) formData.append('second_name', normalized[0].second_name);
+      formData.append('phone', normalized[0].phone);
     } else {
-      payload.contacts = normalized;
-      payload.stroke_doc = 0; // parallel signing by default
+      for (let i = 0; i < normalized.length; i++) {
+        formData.append(`contacts[${i}]`, JSON.stringify(normalized[i]));
+      }
+      formData.append('stroke_doc', '0');
     }
+    formData.append('agreement', 'Y');
 
-    const resp = await sdk.createDocument(payload);
+    const podpislonRes = await fetch('https://podpislon.ru/integration/add-document', {
+      method: 'PUT',
+      headers: { 'X-Api-Key': apiToken },
+      body: formData,
+    });
+    let resp: any;
+    try { resp = await podpislonRes.json(); } catch { resp = null; }
     if (!resp?.status) {
-      const msg = resp?.message || resp?.sessError || 'Ошибка Подпислона';
+      const msg = resp?.message || resp?.sessError || `Ошибка Подпислона (HTTP ${podpislonRes.status})`;
       return NextResponse.json({ error: msg }, { status: 500 });
     }
 
