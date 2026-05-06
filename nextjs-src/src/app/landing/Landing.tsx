@@ -88,7 +88,7 @@ function Hero() {
           Так отвечают 9 из 10 дизайнеров на вопрос «когда в последний раз что-то пошло не так».
         </p>
         <h1>
-          <span className="row">Защищаем юридически,</span>
+          <span className="row">Защищаем юридически</span>
           <span className="row">Убираем рутину</span>
         </h1>
         <p className="lede">
