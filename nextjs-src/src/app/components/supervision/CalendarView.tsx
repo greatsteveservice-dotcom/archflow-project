@@ -29,12 +29,13 @@ function getFirstDayOfMonth(year: number, month: number) {
 // ── Event chip (plazhka) ─────────────────────────────────────
 
 /** Full-width event chip: black bg + white label */
-function EventChip({ label, inverted = false }: { label: string; inverted?: boolean }) {
+function EventChip({ label }: { label: string; inverted?: boolean }) {
   return (
     <div style={{
       alignSelf: 'flex-start',
-      background: inverted ? '#FFFFFF' : '#111111',
-      color: inverted ? '#111111' : '#FFFFFF',
+      background: 'transparent',
+      color: '#111111',
+      border: '1px solid #111111',
       fontFamily: 'var(--af-font-mono)',
       fontSize: 9,
       fontWeight: 600,
@@ -341,24 +342,24 @@ export default function CalendarView({ projectId, visits, toast, refetchVisits, 
                 className="h-[70px] md:h-[84px] flex flex-col cursor-pointer transition-all"
                 style={{
                   fontFamily: 'var(--af-font-mono)',
-                  background: inverted ? '#111111' : '#FFFFFF',
-                  color: inverted ? '#FFFFFF' : '#111111',
+                  background: '#FFFFFF',
+                  color: '#111111',
                   padding: '6px 6px',
                   gap: 6,
-                  border: inverted ? 'none' : '0.5px dashed #EBEBEB',
+                  border: inverted ? '1px solid #111111' : '0.5px dashed #EBEBEB',
                 }}
                 onClick={() => handleDayClick(day)}
               >
                 <span style={{
                   fontSize: 14,
-                  fontWeight: isToday ? 700 : 500,
+                  fontWeight: isToday || isSelected ? 700 : 500,
                 }}>{day}</span>
                 {(hasScheduledVisit || hasPaymentReminder || (!hasIcons && dayVisits.length > 0)) && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'flex-start' }}>
-                    {hasScheduledVisit && <EventChip label="Визит" inverted={inverted} />}
-                    {hasPaymentReminder && <EventChip label="Счёт" inverted={inverted} />}
+                    {hasScheduledVisit && <EventChip label="Визит" />}
+                    {hasPaymentReminder && <EventChip label="Счёт" />}
                     {!hasIcons && dayVisits.length > 0 && (
-                      <EventChip label={`${dayVisits.length} визит${dayVisits.length > 1 ? 'а' : ''}`} inverted={inverted} />
+                      <EventChip label={`${dayVisits.length} визит${dayVisits.length > 1 ? 'а' : ''}`} />
                     )}
                   </div>
                 )}

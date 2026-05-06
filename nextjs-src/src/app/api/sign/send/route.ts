@@ -35,9 +35,12 @@ export async function POST(req: Request) {
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await req.json();
-    const { fileId, signers } = body as { fileId: string; signers: Signer[] };
+    const { fileId, signers, agreement } = body as { fileId: string; signers: Signer[]; agreement?: string };
     if (!fileId || !Array.isArray(signers) || signers.length === 0) {
       return NextResponse.json({ error: 'fileId and signers required' }, { status: 400 });
+    }
+    if (agreement !== 'y') {
+      return NextResponse.json({ error: 'Требуется согласие с условиями электронной подписи' }, { status: 400 });
     }
 
     // Validate each signer
@@ -103,7 +106,7 @@ export async function POST(req: Request) {
     const sdk = getPodpislon();
     const payload: any = {
       file: fileBlob,
-      agreement: true,
+      agreement: 'y',
     };
     if (normalized.length === 1) {
       payload.name = normalized[0].name;

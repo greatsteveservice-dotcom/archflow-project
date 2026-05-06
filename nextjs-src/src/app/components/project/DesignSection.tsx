@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
 import { useDesignFileCounts } from '../../lib/hooks';
 import { DESIGN_FOLDERS } from '../../lib/types';
 import type { DesignFolder } from '../../lib/types';
@@ -29,6 +30,7 @@ function pluralFilesLabel(n: number): string {
 }
 
 export default function DesignSection({ projectId, toast, canUpload = true, canDelete = true, canComment = true }: DesignSectionProps) {
+  const router = useRouter();
   const { data: counts, refetch: refetchCounts } = useDesignFileCounts(projectId);
   const [activeFolder, setActiveFolder] = useState<DesignFolder | null>(null);
   const [activeFileId, setActiveFileId] = useState<string | null>(null);
@@ -92,6 +94,18 @@ export default function DesignSection({ projectId, toast, canUpload = true, canD
 
   return (
     <div className="animate-fade-in">
+      <div style={{ padding: '12px 16px', borderBottom: '0.5px solid #EBEBEB' }}>
+        <button
+          onClick={() => router.push(`/projects/${projectId}`)}
+          style={{
+            fontFamily: 'var(--af-font)', fontSize: 10,
+            textTransform: 'uppercase', letterSpacing: '0.08em',
+            color: '#111', background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+          }}
+        >
+          ← Назад к проекту
+        </button>
+      </div>
       {canUpload && (
         <div style={{ padding: '0 16px', marginTop: 16 }}>
           <OnboardingPanel

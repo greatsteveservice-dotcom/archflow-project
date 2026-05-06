@@ -37,6 +37,7 @@ export default function SignatureSection({ fileId, canSend, status, onStatusChan
   const [sending, setSending] = useState(false);
   const [signatures, setSignatures] = useState<DocumentSignature[]>([]);
   const [polling, setPolling] = useState(false);
+  const [agreed, setAgreed] = useState(false);
 
   // Load existing signatures
   const loadSignatures = useCallback(async () => {
@@ -77,7 +78,7 @@ export default function SignatureSection({ fileId, canSend, status, onStatusChan
   const updateSigner = (i: number, key: keyof SignerDraft, v: string) =>
     setSigners(prev => prev.map((s, idx) => idx === i ? { ...s, [key]: v } : s));
 
-  const canSubmit = signers.every(s => s.name.trim() && s.last_name.trim() && s.phone.trim());
+  const canSubmit = agreed && signers.every(s => s.name.trim() && s.last_name.trim() && s.phone.trim());
 
   const handleSend = async () => {
     if (!canSubmit) return;
@@ -92,6 +93,7 @@ export default function SignatureSection({ fileId, canSend, status, onStatusChan
         },
         body: JSON.stringify({
           fileId,
+          agreement: 'y',
           signers: signers.map(s => ({
             name: s.name.trim(),
             last_name: s.last_name.trim(),
@@ -107,6 +109,7 @@ export default function SignatureSection({ fileId, canSend, status, onStatusChan
         toast('Отправлено на подпись');
         setOpen(false);
         setSigners([{ name: '', last_name: '', second_name: '', phone: '' }]);
+        setAgreed(false);
         if (onStatusChange) onStatusChange('sent');
         await loadSignatures();
       }
@@ -229,6 +232,17 @@ export default function SignatureSection({ fileId, canSend, status, onStatusChan
           <p style={{ fontFamily: 'var(--af-font)', fontSize: 11, color: '#999', lineHeight: 1.5, marginBottom: 12 }}>
             Каждый подписант получит SMS со ссылкой на документ и код для подписания. Регистрация не требуется.
           </p>
+          <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 12, cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={agreed}
+              onChange={(e) => setAgreed(e.target.checked)}
+              style={{ marginTop: 3, flexShrink: 0 }}
+            />
+            <span style={{ fontFamily: 'var(--af-font)', fontSize: 11, color: '#111', lineHeight: 1.5 }}>
+              Подтверждаю согласие подписантов с условиями электронной подписи (63-ФЗ).
+            </span>
+          </label>
           <div style={{ display: 'flex', gap: 8 }}>
             <button
               className="af-btn-pill"
@@ -241,7 +255,7 @@ export default function SignatureSection({ fileId, canSend, status, onStatusChan
             </button>
             <button
               className="af-btn-pill small"
-              onClick={() => setOpen(false)}
+              onClick={() => { setOpen(false); setAgreed(false); }}
               disabled={sending}
               type="button"
             >
