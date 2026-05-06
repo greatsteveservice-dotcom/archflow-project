@@ -63,6 +63,11 @@ export function SupplySpec({ items, stages, projectId, refetchItems, toast, canD
       refetchItems();
       resetAddForm();
       setShowAddForm(false);
+      // Сбрасываем фильтр и поиск, чтобы новая позиция (status='pending')
+      // точно отобразилась — иначе при активном фильтре статуса/поиска
+      // её не видно в списке.
+      setFilterStatus('all');
+      setSearch('');
       toast?.('Позиция добавлена');
     } catch (err) {
       toast?.(err instanceof Error ? err.message : 'Ошибка добавления');
