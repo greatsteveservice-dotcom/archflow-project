@@ -88,8 +88,8 @@ function Hero() {
           Так отвечают 9 из 10 дизайнеров на вопрос «когда в последний раз что-то пошло не так».
         </p>
         <h1>
-          <span className="row">Дизайн</span>
-          <span className="row">без рутины.</span>
+          <span className="row">Защищаем юридически,</span>
+          <span className="row">Убираем рутину</span>
         </h1>
         <p className="lede">
           Archflow — рабочее пространство для управления проектами и коммуникации с заказчиком.
@@ -145,7 +145,7 @@ function How() {
       <div className="afl-body">
         <div className="head">
           <span className="afl-micro muted">Как это работает</span>
-          <h2>Первый проект<br />за минуту.</h2>
+          <h2>Первый проект<br />за минуту</h2>
           <p className="lede">Открываете сайт и начинаете работать. Без установки и обучения.</p>
         </div>
         <div className="afl-how-grid">
@@ -192,7 +192,7 @@ const MODULES: ModuleDef[] = [
     id: "cabinet", rail: "07", vert: "Кабинет заказчика", order: 5, reverse: true,
     kicker: "Заказчик в проекте",
     name: "Кабинет заказчика",
-    claim: "Заказчик видит проект, а не ваши файлы.",
+    claim: "Заказчик видит проект, а не ваши файлы",
     desc: "Утверждённые сметы, графики, акты, прогресс стройки — со своим логином. Без доступа к вашей переписке с командой, себестоимости, внутренним заметкам.",
     bullets: [
       "Отдельный интерфейс заказчика — со своим логином, без рабочего хаоса",
@@ -217,7 +217,7 @@ const MODULES: ModuleDef[] = [
     id: "design", rail: "04", vert: "Дизайн", order: 1, reverse: false,
     kicker: "Документы и файлы",
     name: "Дизайн",
-    claim: "Все версии в одном месте.",
+    claim: "Все версии в одном месте",
     desc: "Структурированное хранилище чертежей, визуализаций и документов в одном проекте.",
     bullets: [
       "Электронная подпись по СМС — 63-ФЗ, не требует ЭЦП и КриптоПро",
@@ -242,7 +242,7 @@ const MODULES: ModuleDef[] = [
     id: "supervision", rail: "05", vert: "Надзор", order: 2, reverse: true,
     kicker: "Фотоотчёт и задачи",
     name: "Авторский надзор",
-    claim: "Каждый визит — фиксация.",
+    claim: "Каждый визит — фиксация",
     desc: "Запись, которую не получится стереть или «не получить». Фото, отчёт, задачи строителям с геометкой и временем.",
     bullets: [
       "Фиксация визитов с фото и геометкой",
@@ -267,7 +267,7 @@ const MODULES: ModuleDef[] = [
     id: "supply", rail: "06", vert: "Комплектация", order: 3, reverse: false,
     kicker: "Список поставок",
     name: "Комплектация",
-    claim: "Со сроками и оплатами — в одном месте.",
+    claim: "Со сроками и оплатами — в одном месте",
     desc: "Живой список позиций с датами заказа и поставки, предоплатами и постоплатами, статусами. Все суммы считаются сами.",
     bullets: [
       "Импорт существующей комплектации из Excel — без переписывания",
@@ -291,7 +291,7 @@ const MODULES: ModuleDef[] = [
     id: "chat", rail: "08", vert: "Чат", order: 4, reverse: false,
     kicker: "Внутренний мессенджер",
     name: "Чат и ассистент",
-    claim: "Без танцев с VPN.",
+    claim: "Без танцев с VPN",
     desc: "Внутренний мессенджер с поиском по истории. Умный ассистент найдёт нужную информацию или подсветит неназначенную задачу.",
     bullets: [
       "Расшифровка голосовых в текст — без «эмм, нууу, как бы»",
@@ -442,7 +442,7 @@ function BeforeAfter() {
     <section className="afl-sect afl-ba">
       <div className="afl-body">
         <div className="head">
-          <h2>Жизнь дизайнера<br />меняется.</h2>
+          <h2>Жизнь дизайнера<br />меняется</h2>
         </div>
         <div className="afl-ba-table">
           {BA_ITEMS.map((it, i) => (
@@ -481,7 +481,7 @@ function Trust() {
     <section className="afl-sect afl-trust">
       <div className="afl-body">
         <div className="head">
-          <h2>Ваши проекты<br />под защитой.</h2>
+          <h2>Ваши проекты<br />под защитой</h2>
           <p className="lede">
             Российская инфраструктура с ежедневным резервным копированием. В любой момент можно выгрузить всё и уйти.
           </p>
@@ -512,7 +512,7 @@ function Pricing() {
     <section id="pricing" className="afl-sect afl-pri">
       <div className="afl-body">
         <div className="head">
-          <h2>Одна подписка.<br />Без скрытых платежей.</h2>
+          <h2>Одна подписка<br />без скрытых платежей</h2>
           <p className="lede">
             Все модули включены. Электронная подпись — тоже. Количество проектов, заказчиков и размер студии — без ограничений.
           </p>
@@ -567,7 +567,7 @@ function FAQ() {
   return (
     <section id="faq" className="afl-sect afl-faq">
       <div className="afl-body">
-        <div className="head"><h2>Честные ответы.</h2></div>
+        <div className="head"><h2>Честные ответы</h2></div>
         <div className="afl-faq-list">
           {FAQ_ITEMS.map((it, i) => (
             <div key={i} className="afl-faq-item">
@@ -596,7 +596,7 @@ function FinalCTA() {
     <section className="afl-sect afl-final">
       <div className="afl-body">
         <div>
-          <h2>14 дней,<br /><span className="ghost">чтобы проверить.</span></h2>
+          <h2>14 дней,<br /><span className="ghost">чтобы проверить</span></h2>
         </div>
         <div>
           <p className="body">
