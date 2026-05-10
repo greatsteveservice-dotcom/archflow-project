@@ -42,6 +42,69 @@ function fmtDate(d: Date): string {
   });
 }
 
+// ── Period resolution ─────────────────────────────
+// daily   = single previous day
+// weekly  = previous full Mon-Sun week (run on Mondays)
+// monthly = previous full calendar month (run on 1st of month)
+type Period = "daily" | "weekly" | "monthly";
+
+function nowMoscow(): Date {
+  // Treat "today" as Moscow date for boundary decisions.
+  const fmt = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Moscow",
+    year: "numeric", month: "2-digit", day: "2-digit",
+  });
+  const [{ value: y }, , { value: m }, , { value: day }] = fmt.formatToParts(new Date());
+  return new Date(Date.UTC(Number(y), Number(m) - 1, Number(day)));
+}
+
+function autoPeriod(): Period {
+  const today = nowMoscow();
+  if (today.getUTCDate() === 1) return "monthly";
+  if (today.getUTCDay() === 1) return "weekly"; // Monday
+  return "daily";
+}
+
+interface PeriodRange {
+  date1: Date;
+  date2: Date;
+  prevDate1: Date;
+  prevDate2: Date;
+  label: string; // human label for header
+}
+
+function resolveRange(period: Period): PeriodRange {
+  const today = nowMoscow();
+  let date1: Date, date2: Date, prevDate1: Date, prevDate2: Date, label: string;
+
+  if (period === "daily") {
+    // Yesterday (single day)
+    date2 = new Date(today); date2.setUTCDate(date2.getUTCDate() - 1);
+    date1 = new Date(date2);
+    prevDate2 = new Date(date1); prevDate2.setUTCDate(prevDate2.getUTCDate() - 1);
+    prevDate1 = new Date(prevDate2);
+    label = "за день";
+  } else if (period === "weekly") {
+    // Last full Mon-Sun: today is Monday → Sun = today-1, Mon = today-7
+    date2 = new Date(today); date2.setUTCDate(date2.getUTCDate() - 1);
+    date1 = new Date(today); date1.setUTCDate(date1.getUTCDate() - 7);
+    prevDate2 = new Date(date1); prevDate2.setUTCDate(prevDate2.getUTCDate() - 1);
+    prevDate1 = new Date(prevDate2); prevDate1.setUTCDate(prevDate1.getUTCDate() - 6);
+    label = "за неделю";
+  } else {
+    // Last full calendar month: today is 1st → range = 1st of prev month → last of prev month
+    date2 = new Date(today); date2.setUTCDate(date2.getUTCDate() - 1);
+    date1 = new Date(today); date1.setUTCMonth(date1.getUTCMonth() - 1);
+    // Previous month for comparison
+    prevDate2 = new Date(date1); prevDate2.setUTCDate(prevDate2.getUTCDate() - 1);
+    prevDate1 = new Date(prevDate2.getUTCFullYear(), prevDate2.getUTCMonth(), 1);
+    prevDate1 = new Date(Date.UTC(prevDate2.getUTCFullYear(), prevDate2.getUTCMonth(), 1));
+    label = "за месяц";
+  }
+
+  return { date1, date2, prevDate1, prevDate2, label };
+}
+
 // ── Metrika API ───────────────────────────────────
 
 async function fetchStats(date1: string, date2: string) {
@@ -204,11 +267,59 @@ interface DesignerStats {
   email: string;
   projects: number;
   clients: number;
+  team: number; // assistants + contractors + suppliers invited to designer's projects
   registered_at: string;
   last_sign_in_at: string | null;
   days_active: number;
   period_duration_seconds: number;
   total_duration_seconds: number;
+}
+
+interface PeriodCounts {
+  newDesigners: number;
+  newProjects: number;
+  newClientsInvited: number;
+  newTeamInvited: number;
+}
+
+/**
+ * New designers / projects / project members in [date1, date2] inclusive (Moscow date boundaries).
+ * Uses created_at fields. Excludes owner/demo accounts when counting designers.
+ */
+async function fetchPeriodCounts(date1: Date, date2: Date): Promise<PeriodCounts> {
+  const fromIso = new Date(Date.UTC(date1.getUTCFullYear(), date1.getUTCMonth(), date1.getUTCDate(), 0, 0, 0)).toISOString();
+  const toIso = new Date(Date.UTC(date2.getUTCFullYear(), date2.getUTCMonth(), date2.getUTCDate() + 1, 0, 0, 0)).toISOString();
+
+  const headers = (extra: Record<string, string> = {}) => ({
+    apikey: SERVICE_KEY,
+    Authorization: `Bearer ${SERVICE_KEY}`,
+    ...extra,
+  });
+
+  // New designers: profiles where role=designer & created_at in window, excluding internal accounts.
+  const designersUrl = `${SUPABASE_URL}/rest/v1/profiles?role=eq.designer&created_at=gte.${encodeURIComponent(fromIso)}&created_at=lt.${encodeURIComponent(toIso)}&select=id,email`;
+  const dRes = await fetch(designersUrl, { headers: headers() });
+  const dData: { id: string; email: string | null }[] = dRes.ok ? await dRes.json() : [];
+  const newDesigners = dData.filter(d => !d.email || !EXCLUDED_EMAILS.has(d.email.toLowerCase())).length;
+
+  // New projects in window
+  const projUrl = `${SUPABASE_URL}/rest/v1/projects?created_at=gte.${encodeURIComponent(fromIso)}&created_at=lt.${encodeURIComponent(toIso)}&select=id`;
+  const pRes = await fetch(projUrl, { headers: headers() });
+  const pData: { id: string }[] = pRes.ok ? await pRes.json() : [];
+  const newProjects = pData.length;
+
+  // New invited project_members in window — split by client vs team
+  const memUrl = `${SUPABASE_URL}/rest/v1/project_members?created_at=gte.${encodeURIComponent(fromIso)}&created_at=lt.${encodeURIComponent(toIso)}&select=role`;
+  const mRes = await fetch(memUrl, { headers: headers() });
+  const mData: { role: string }[] = mRes.ok ? await mRes.json() : [];
+  let newClientsInvited = 0;
+  let newTeamInvited = 0;
+  for (const m of mData) {
+    if (m.role === "client") newClientsInvited++;
+    else if (["assistant", "contractor", "supplier"].includes(m.role)) newTeamInvited++;
+  }
+
+  return { newDesigners, newProjects, newClientsInvited, newTeamInvited };
 }
 
 // Accounts excluded from the report (owner + demo)
@@ -303,15 +414,23 @@ async function fetchDesignersStats(
     const projects: { id: string }[] = await projectsRes.json();
     const projectsCount = projects.length;
 
-    // Clients invited to designer's projects (role='client', unique users)
+    // Clients + team members invited to designer's projects (unique users by role)
     let clients = 0;
+    let team = 0;
     if (projectsCount > 0) {
       const projectIds = projects.map((p) => p.id).join(",");
       const membersRes = await sbFetch(
-        `/rest/v1/project_members?project_id=in.(${projectIds})&role=eq.client&user_id=neq.${d.id}&select=user_id`
+        `/rest/v1/project_members?project_id=in.(${projectIds})&user_id=neq.${d.id}&select=user_id,role`
       );
-      const members: { user_id: string }[] = await membersRes.json();
-      clients = new Set(members.map((m) => m.user_id)).size;
+      const members: { user_id: string; role: string }[] = await membersRes.json();
+      const clientIds = new Set<string>();
+      const teamIds = new Set<string>();
+      for (const m of members) {
+        if (m.role === "client") clientIds.add(m.user_id);
+        else if (["assistant", "contractor", "supplier"].includes(m.role)) teamIds.add(m.user_id);
+      }
+      clients = clientIds.size;
+      team = teamIds.size;
     }
 
     const daysActive = Math.max(
@@ -325,6 +444,7 @@ async function fetchDesignersStats(
       email: d.email || "—",
       projects: projectsCount,
       clients,
+      team,
       registered_at: d.created_at,
       last_sign_in_at: authUsersMap.get(d.id) || null,
       days_active: daysActive,
@@ -399,19 +519,27 @@ function buildReport(
   designers: DesignerStats[],
   date1: Date,
   date2: Date,
+  periodLabel: string,
+  periodCounts: PeriodCounts,
 ) {
   const d1 = fmtDate(date1);
   const d2 = fmtDate(date2);
+  const dateLine = d1 === d2 ? d1 : `${d1} – ${d2}`;
 
   const lines: string[] = [
-    `📊 ArchFlow — Аналитика за 2 дня`,
-    `${d1} – ${d2}`,
+    `📊 ArchFlow — Аналитика ${periodLabel}`,
+    dateLine,
     `─────────────────`,
     `👥 Пользователи: ${stats.users} (${arrow(stats.users, prev.users)} ${pct(stats.users, prev.users)})`,
     `👁 Визиты: ${stats.visits} (${arrow(stats.visits, prev.visits)} ${pct(stats.visits, prev.visits)})`,
     `📄 Просмотры: ${stats.pageviews} (${arrow(stats.pageviews, prev.pageviews)} ${pct(stats.pageviews, prev.pageviews)})`,
     `⏱ Ср. время: ${fmtDuration(stats.avgDuration)} (${arrow(stats.avgDuration, prev.avgDuration)} ${pct(stats.avgDuration, prev.avgDuration)})`,
     `📉 Отказы: ${Math.round(stats.bounceRate)}% (${arrow(prev.bounceRate, stats.bounceRate)} ${pct(prev.bounceRate, stats.bounceRate)})`,
+    `─────────────────`,
+    `🆕 Новых дизайнеров: ${periodCounts.newDesigners}`,
+    `🆕 Новых проектов: ${periodCounts.newProjects}`,
+    `🆕 Заказчиков приглашено: ${periodCounts.newClientsInvited}`,
+    `🆕 Участников команды приглашено: ${periodCounts.newTeamInvited}`,
   ];
 
   // Goals section
@@ -460,7 +588,7 @@ function buildReport(
       lines.push(``);
       lines.push(`${i + 1}. ${name}`);
       lines.push(`   ✉ ${d.email}`);
-      lines.push(`   📁 Проектов: ${d.projects} · 👥 Заказчиков: ${d.clients}`);
+      lines.push(`   📁 Проектов: ${d.projects} · 👥 Заказчиков: ${d.clients} · 🤝 Команда: ${d.team}`);
       lines.push(`   📅 Регистрация: ${d.days_active} дн назад · Был: ${lastSeen}`);
       lines.push(`   ⏱ За период: ${periodTime} · Всего: ${totalTime}`);
     });
@@ -483,23 +611,22 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // Date ranges (2-day window)
-    const now = new Date();
-    const date2 = new Date(now);
-    date2.setDate(date2.getDate() - 1); // yesterday (today's data incomplete)
-    const date1 = new Date(date2);
-    date1.setDate(date1.getDate() - 1); // 2-day window
-
-    const prevDate2 = new Date(date1);
-    prevDate2.setDate(prevDate2.getDate() - 1);
-    const prevDate1 = new Date(prevDate2);
-    prevDate1.setDate(prevDate1.getDate() - 1);
+    // Period: explicit ?period=daily|weekly|monthly, otherwise auto by date.
+    const periodParam = (req.nextUrl.searchParams.get("period") || "").toLowerCase();
+    const period: Period = (periodParam === "daily" || periodParam === "weekly" || periodParam === "monthly")
+      ? periodParam
+      : autoPeriod();
+    const { date1, date2, prevDate1, prevDate2, label } = resolveRange(period);
 
     // Fetch all data in parallel
-    const [stats, prev, goals] = await Promise.all([
+    const [stats, prev, goals, periodCounts] = await Promise.all([
       fetchStats(fmt(date1), fmt(date2)),
       fetchStats(fmt(prevDate1), fmt(prevDate2)),
       fetchGoals(),
+      fetchPeriodCounts(date1, date2).catch((e) => {
+        console.error("[analytics] period counts failed:", e);
+        return { newDesigners: 0, newProjects: 0, newClientsInvited: 0, newTeamInvited: 0 };
+      }),
     ]);
 
     // Fetch goal reaches (needs goal IDs from above) + per-user durations
@@ -522,14 +649,16 @@ export async function GET(req: NextRequest) {
     });
 
     // Build and send report
-    const report = buildReport(stats, prev, goals, goalReaches, topPages, bouncePages, designers, date1, date2);
+    const report = buildReport(stats, prev, goals, goalReaches, topPages, bouncePages, designers, date1, date2, label, periodCounts);
     await sendTelegram(report);
 
     return NextResponse.json({
       ok: true,
-      period: `${fmt(date1)} — ${fmt(date2)}`,
+      period,
+      window: `${fmt(date1)} — ${fmt(date2)}`,
       stats,
       goalCount: goals.length,
+      periodCounts,
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error";
