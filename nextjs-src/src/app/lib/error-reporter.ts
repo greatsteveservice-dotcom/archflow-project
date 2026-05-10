@@ -18,6 +18,30 @@ function fingerprint(message: string): string {
     .slice(0, 200);
 }
 
+// Шумные benign-ошибки, которые не показывают реальных проблем —
+// не репортим в бот, чтобы не плодить ложные алерты.
+//   - "Lock was stolen"  : supabase-js v2 navigator.locks гонка (см. MEMORY.md
+//     "Supabase auth lock contention"). Транзиентная, retry-слой её обрабатывает.
+//   - AbortError         : пользователь ушёл со страницы / signal.abort, не баг.
+//   - "ResizeObserver loop limit exceeded" / "ResizeObserver loop completed" :
+//     известный benign Chrome warning, в каждом браузере свой текст.
+//   - ChunkLoadError     : уже лечится тихим reload-handler'ом в layout.tsx
+//     (см. MEMORY.md), репорт только захламляет ленту.
+const SILENT_PATTERNS: RegExp[] = [
+  /Lock was stolen/i,
+  /\bAbortError\b/,
+  /^The (operation|user) (was )?aborted/i,
+  /signal is aborted/i,
+  /ResizeObserver loop/i,
+  /ChunkLoadError/i,
+  /Loading chunk \d+ failed/i,
+];
+
+function isSilent(message: string): boolean {
+  if (!message) return true;
+  return SILENT_PATTERNS.some((re) => re.test(message));
+}
+
 function isDuplicate(msg: string): boolean {
   const fp = fingerprint(msg);
   const now = Date.now();
@@ -39,6 +63,7 @@ function send(data: {
   url?: string;
   extra?: Record<string, unknown>;
 }) {
+  if (isSilent(data.message)) return;
   if (isDuplicate(data.message)) return;
 
   const payload = {
