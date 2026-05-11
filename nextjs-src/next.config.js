@@ -21,10 +21,10 @@ const nextConfig = {
       },
     ],
   },
-  // @sparticuz/chromium and puppeteer-core must not be bundled — they load
-  // native binaries at runtime and expect to be found in node_modules.
+  // Packages that must not be bundled — they load native/WASM binaries at
+  // runtime and webpack tree-shaking breaks them.
   experimental: {
-    serverComponentsExternalPackages: ['@sparticuz/chromium', 'puppeteer-core'],
+    serverComponentsExternalPackages: ['@sparticuz/chromium', 'puppeteer-core', 'mupdf', 'sharp'],
   },
   // Konva imports node-canvas for SSR fallback; we don't use SSR for canvas
   // components (all wrapped in dynamic({ ssr: false })), so alias it out.
