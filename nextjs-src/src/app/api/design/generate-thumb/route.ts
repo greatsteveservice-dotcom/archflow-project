@@ -6,29 +6,27 @@
 // raster image), uploads it to the same YC design bucket under
 // <original_path>.thumb.jpg, and updates design_files.thumb_path/thumb_status.
 //
-// Uses native CLI tools for speed and reliability:
-//   PDF   → pdftoppm  (apt: poppler-utils)
-//   Image → convert   (apt: imagemagick)
-// Both are vastly faster than headless Chromium (~0.5 sec vs 5+ sec cold start)
-// and avoid the PDFium-plugin issue that @sparticuz/chromium has.
-//
-// VPS prerequisite: `sudo apt install -y poppler-utils imagemagick`
+// Pipeline (zero system dependencies — all pure npm):
+//   PDF   → mupdf (WASM)  → PNG bytes → sharp (resize 800px) → JPEG q82
+//   Image →                            sharp (resize 800px) → JPEG q82
+// sharp ships prebuilt binaries for linux-x64-glibc / darwin-arm64 / etc, so
+// `npm install` is enough on the VPS — no apt / sudo required.
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { getS3, DESIGN_BUCKET, designPublicUrl } from "@/app/lib/s3";
-import { exec } from "node:child_process";
-import { promisify } from "node:util";
-import { mkdtemp, readFile, writeFile, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import path from "node:path";
-
-const execAsync = promisify(exec);
+import sharp from "sharp";
+// mupdf is dynamic-imported lazily inside the request handler — its top-level
+// init throws during Next.js "Collecting page data" (CI build) because the
+// WASM blob isn't loadable at static-analysis time.
+type MupdfModule = typeof import("mupdf");
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
+
+const THUMB_MAX = 800;
 
 function getServiceClient() {
   return createClient(
@@ -43,38 +41,54 @@ async function fetchSource(url: string): Promise<Buffer> {
   return Buffer.from(await r.arrayBuffer());
 }
 
-async function renderThumb(src: Buffer, mime: string): Promise<Buffer> {
-  const dir = await mkdtemp(path.join(tmpdir(), "af-thumb-"));
+let _mupdfPromise: Promise<MupdfModule> | null = null;
+function getMupdf(): Promise<MupdfModule> {
+  if (!_mupdfPromise) _mupdfPromise = import("mupdf");
+  return _mupdfPromise;
+}
+
+/** Render the first page of a PDF to a PNG buffer via MuPDF (WASM). */
+async function renderPdfFirstPage(src: Buffer): Promise<Buffer> {
+  const mupdf = await getMupdf();
+  const doc = mupdf.Document.openDocument(src, "application/pdf");
   try {
-    const srcPath = path.join(dir, "src");
-    await writeFile(srcPath, src);
-
-    if (mime === "application/pdf") {
-      // pdftoppm: first page only (-f 1 -l 1), JPEG, longest side 800 px.
-      // Output goes to <prefix>-1.jpg
-      const prefix = path.join(dir, "out");
-      await execAsync(
-        `pdftoppm -jpeg -jpegopt quality=80 -scale-to 800 -f 1 -l 1 "${srcPath}" "${prefix}"`,
-        { timeout: 30_000 }
-      );
-      return await readFile(`${prefix}-1.jpg`);
+    const page = doc.loadPage(0);
+    try {
+      // Scale 1.0 → native resolution. We let sharp downscale afterwards
+      // (better resampling than MuPDF's bilinear scale).
+      const matrix = mupdf.Matrix.scale(1.0, 1.0);
+      const pixmap = page.toPixmap(matrix, mupdf.ColorSpace.DeviceRGB, false);
+      try {
+        return Buffer.from(pixmap.asPNG());
+      } finally {
+        if (typeof (pixmap as { destroy?: () => void }).destroy === "function") {
+          (pixmap as { destroy: () => void }).destroy();
+        }
+      }
+    } finally {
+      if (typeof (page as { destroy?: () => void }).destroy === "function") {
+        (page as { destroy: () => void }).destroy();
+      }
     }
-
-    if (mime.startsWith("image/")) {
-      const outPath = path.join(dir, "out.jpg");
-      // -resize 800x800\>: downscale only if larger; preserve aspect ratio.
-      // -auto-orient: respect EXIF orientation.
-      await execAsync(
-        `convert "${srcPath}" -auto-orient -resize 800x800\\> -quality 82 "${outPath}"`,
-        { timeout: 30_000 }
-      );
-      return await readFile(outPath);
-    }
-
-    throw new Error(`unsupported mime: ${mime}`);
   } finally {
-    await rm(dir, { recursive: true, force: true }).catch(() => {});
+    if (typeof (doc as { destroy?: () => void }).destroy === "function") {
+      (doc as { destroy: () => void }).destroy();
+    }
   }
+}
+
+async function makeThumb(src: Buffer, mime: string): Promise<Buffer> {
+  let rasterSrc = src;
+  if (mime === "application/pdf") {
+    rasterSrc = await renderPdfFirstPage(src);
+  } else if (!mime.startsWith("image/")) {
+    throw new Error(`unsupported mime: ${mime}`);
+  }
+  return await sharp(rasterSrc)
+    .rotate() // honor EXIF orientation for images; no-op for PNG from mupdf
+    .resize({ width: THUMB_MAX, height: THUMB_MAX, fit: "inside", withoutEnlargement: true })
+    .jpeg({ quality: 82, mozjpeg: true })
+    .toBuffer();
 }
 
 export async function POST(req: NextRequest) {
@@ -109,7 +123,7 @@ export async function POST(req: NextRequest) {
     let thumbBuf: Buffer;
     try {
       const src = await fetchSource(url);
-      thumbBuf = await renderThumb(src, f.file_type);
+      thumbBuf = await makeThumb(src, f.file_type);
     } catch (renderErr) {
       console.error("[design/thumb] render failed:", renderErr);
       await sb.from("design_files").update({ thumb_status: "failed" }).eq("id", fileId);
