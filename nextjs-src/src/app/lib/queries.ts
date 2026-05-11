@@ -227,6 +227,21 @@ export async function fetchProjectsPaginated(
   };
 }
 
+/**
+ * Throw on auth-broken errors (PGRST301 / "JWT expired" / "Invalid JWT") so
+ * callers can surface them instead of treating an expired session as
+ * "row not found". instrumentedFetch in lib/supabase.ts will also trigger
+ * signOut → redirect on the same condition.
+ */
+function throwIfAuthBroken(error: { code?: string; message?: string } | null) {
+  if (!error) return;
+  const code = error.code;
+  const msg = error.message || '';
+  if (code === 'PGRST301' || /JWT|jwt|Invalid token/.test(msg)) {
+    throw new Error('Session expired — please sign in again');
+  }
+}
+
 /** Fetch a single project by ID */
 export async function fetchProject(projectId: string): Promise<ProjectWithStats | null> {
   const { data: project, error } = await supabase
@@ -235,6 +250,7 @@ export async function fetchProject(projectId: string): Promise<ProjectWithStats 
     .eq('id', projectId)
     .single();
 
+  throwIfAuthBroken(error);
   if (error || !project) return null;
 
   // Get owner
