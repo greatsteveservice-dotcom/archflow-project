@@ -258,30 +258,60 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
     };
 
     try {
+      updateOne({ progress: 5 });
+      // 1. Ask backend for a presigned PUT URL into YC Object Storage (public
+      //    bucket fronted by Yandex CDN). Replaces the legacy proxy upload
+      //    through supabase-storage on the VM.
+      const { data: { session } } = await supabase.auth.getSession();
+      const urlRes = await fetch('/api/design/upload-url', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.access_token || ''}`,
+        },
+        body: JSON.stringify({
+          projectId,
+          folder,
+          subfolder: activeSubfolder,
+          name: file.name,
+          mime: file.type,
+          size: file.size,
+        }),
+      });
+      if (!urlRes.ok) throw new Error((await urlRes.json()).error || 'upload-url failed');
+      const { uploadUrl, key, publicUrl } = await urlRes.json();
       updateOne({ progress: 15 });
-      const timestamp = Date.now() + Math.floor(Math.random() * 1000);
-      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-      const path = `design/${projectId}/${folder}/${timestamp}_${safeName}`;
 
-      const { error: storageError } = await supabase.storage
-        .from('design-files')
-        .upload(path, file, { contentType: file.type });
-
-      if (storageError) throw storageError;
+      // 2. Direct PUT to the bucket. The browser uploads to ru-central1
+      //    storage edge; our app server never sees the bytes.
+      const putRes = await fetch(uploadUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' },
+        body: file,
+      });
+      if (!putRes.ok) throw new Error(`storage PUT ${putRes.status}`);
       updateOne({ progress: 70 });
 
-      const { data: urlData } = supabase.storage.from('design-files').getPublicUrl(path);
-
-      const created = await createDesignFile({
-        project_id: projectId,
-        folder,
-        subfolder: activeSubfolder,
-        name: file.name,
-        file_path: path,
-        file_url: urlData.publicUrl,
-        file_size: file.size,
-        file_type: file.type,
+      // 3. Finalize — registers the design_files row and triggers async
+      //    thumbnail generation.
+      const finRes = await fetch('/api/design/finalize', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.access_token || ''}`,
+        },
+        body: JSON.stringify({
+          projectId,
+          folder,
+          subfolder: activeSubfolder,
+          name: file.name,
+          key,
+          size: file.size,
+          mime: file.type,
+        }),
       });
+      if (!finRes.ok) throw new Error((await finRes.json()).error || 'finalize failed');
+      const { id: createdId } = await finRes.json();
 
       updateOne({ progress: 100 });
       await refetch();
@@ -294,14 +324,14 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
         fetch('/api/classify-room', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ imageUrl: urlData.publicUrl }),
+          body: JSON.stringify({ imageUrl: publicUrl }),
         })
           .then(r => r.ok ? r.json() : null)
           .then((result: { suggestedName?: string; confidence?: number } | null) => {
             if (result && result.suggestedName && (result.confidence ?? 0) >= 0.55) {
               // Only open rename dialog if we're not already showing one
               setRenameDialog(prev => prev ?? {
-                fileId: created.id,
+                fileId: createdId,
                 currentName: file.name,
                 suggestedName: result.suggestedName,
               });
@@ -808,6 +838,19 @@ function FileTile({
   const showImg = isImg && !imgError;
   const typeLabel = getFileTypeLabel(file.file_type, file.name);
 
+  // Server-rendered thumbnail (mig 056). When ready we prefer it for PDFs
+  // and as an even smaller initial render for images — original loads
+  // lazily / on click.
+  const thumbUrl = (() => {
+    if (!file.thumb_path || file.thumb_status !== 'ready') return null;
+    try {
+      const u = new URL(file.file_url);
+      return `${u.protocol}//${u.host}/${file.thumb_path}`;
+    } catch {
+      return null;
+    }
+  })();
+
   const handleRetry = (e: React.MouseEvent) => {
     e.stopPropagation();
     setImgError(false);
@@ -848,7 +891,9 @@ function FileTile({
       )}
       {showImg ? (
         <img
-          src={`${file.file_url}${file.file_url.includes('?') ? '&' : '?'}r=${reloadKey}`}
+          src={thumbUrl
+            ? `${thumbUrl}?r=${reloadKey}`
+            : `${file.file_url}${file.file_url.includes('?') ? '&' : '?'}r=${reloadKey}`}
           alt={file.name}
           loading="lazy"
           draggable={false}
@@ -912,8 +957,17 @@ function FileTile({
             {file.name}
           </div>
         </div>
+      ) : isPdfFile && thumbUrl ? (
+        /* PDF tile — server-rendered first-page thumbnail (mig 056). */
+        <img
+          src={`${thumbUrl}?r=${reloadKey}`}
+          alt={file.name}
+          loading="lazy"
+          draggable={false}
+          onError={() => setImgError(true)}
+        />
       ) : isPdfFile ? (
-        /* PDF tile — clean placeholder (no in-tile PDF render: unreliable across browsers + pulls full file over network) */
+        /* PDF tile — placeholder (no thumb yet OR thumb generation failed). */
         <div style={{
           display: 'flex',
           flexDirection: 'column',
@@ -947,6 +1001,17 @@ function FileTile({
           }}>
             {file.name}
           </div>
+          {file.thumb_status === 'pending' && (
+            <div style={{
+              fontFamily: 'var(--af-font-mono)',
+              fontSize: 8,
+              color: '#999',
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+            }}>
+              превью готовится…
+            </div>
+          )}
         </div>
       ) : (
         <div style={{

@@ -657,6 +657,13 @@ export interface DesignFile {
   file_type: string | null;
   uploaded_by: string | null;
   signature_status: SignatureStatus | null;
+  // Storage migration (mig 056): 'supabase' = legacy Supabase Storage on VM,
+  // 'yc' = Yandex Object Storage public bucket fronted by Yandex CDN.
+  storage_provider?: 'supabase' | 'yc';
+  // Server-rendered thumbnail (PDF first page or resized image). Path inside
+  // the YC design bucket. UI builds the URL via designPublicUrl() helper.
+  thumb_path?: string | null;
+  thumb_status?: 'pending' | 'ready' | 'failed' | 'unsupported';
   created_at: string;
   updated_at: string;
 }

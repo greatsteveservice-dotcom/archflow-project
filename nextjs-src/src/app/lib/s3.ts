@@ -16,6 +16,22 @@ const ENDPOINT = "https://storage.yandexcloud.net";
 const REGION = "ru-central1";
 export const MEDIA_BUCKET = "archflow-media-prod";
 
+// Public bucket fronted by Yandex CDN. Used for design files (PDFs, images,
+// office docs) where browsers/CDN need stable URLs, not presigned ones.
+// Configure via env, with sensible default.
+export const DESIGN_BUCKET = process.env.YC_DESIGN_BUCKET || "archflow-design-prod";
+
+// CDN host (set to cdn.archflow.ru once Yandex CDN resource is attached).
+// Fallback: direct bucket virtual-host URL.
+export const DESIGN_CDN_HOST =
+  process.env.YC_DESIGN_CDN_HOST || `${DESIGN_BUCKET}.storage.yandexcloud.net`;
+
+/** Build a public URL for a design-files object using CDN (or direct bucket as fallback). */
+export function designPublicUrl(key: string): string {
+  const k = key.replace(/^\/+/, "");
+  return `https://${DESIGN_CDN_HOST}/${k}`;
+}
+
 let _client: S3Client | null = null;
 
 export function getS3(): S3Client {
