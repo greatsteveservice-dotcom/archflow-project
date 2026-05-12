@@ -70,19 +70,7 @@ export async function GET(
       return NextResponse.json({ error: 'Report not found' }, { status: 404 });
     }
 
-    // 2. Auth: caller must be a member of the project (any role).
-    const { data: membership } = await admin
-      .from('project_members')
-      .select('role')
-      .eq('project_id', report.project_id)
-      .eq('user_id', userId)
-      .eq('status', 'active')
-      .maybeSingle();
-    if (!membership) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
-    // 3. Project
+    // 2. Project (needed for owner check below)
     const { data: project, error: projectErr } = await admin
       .from('projects')
       .select('*')
@@ -90,6 +78,20 @@ export async function GET(
       .single();
     if (projectErr || !project) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+    }
+
+    // 3. Auth: caller must be the project owner OR an active project_member.
+    if (project.owner_id !== userId) {
+      const { data: membership } = await admin
+        .from('project_members')
+        .select('role')
+        .eq('project_id', report.project_id)
+        .eq('user_id', userId)
+        .eq('status', 'active')
+        .maybeSingle();
+      if (!membership) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
     }
 
     // 4. Remarks (+ assignee names + comments)
