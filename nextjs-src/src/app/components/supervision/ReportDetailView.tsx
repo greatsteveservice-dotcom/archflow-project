@@ -79,6 +79,17 @@ export default function ReportDetailView({ reportId, projectId, toast, onBack, m
   // Send / acknowledge state
   const [sending, setSending] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  // ─── Voice transcription state ───────────────────────────
+  const [voiceRecording, setVoiceRecording] = useState(false);
+  const [voiceProcessing, setVoiceProcessing] = useState(false);
+  const [voiceDuration, setVoiceDuration] = useState(0);
+  const [voiceResult, setVoiceResult] = useState<{ generalComment: string; remarks: string[] } | null>(null);
+  const [voiceSelectedRemarks, setVoiceSelectedRemarks] = useState<Set<number>>(new Set());
+  const voiceRecorderRef = useRef<MediaRecorder | null>(null);
+  const voiceStreamRef = useRef<MediaStream | null>(null);
+  const voiceChunksRef = useRef<Blob[]>([]);
+  const voiceTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const voiceCancelledRef = useRef(false);
   const [acknowledging, setAcknowledging] = useState(false);
 
   // Edit state
@@ -184,6 +195,134 @@ export default function ReportDetailView({ reportId, projectId, toast, onBack, m
       toast(err instanceof Error ? err.message : 'Ошибка');
     } finally {
       setAddingRemark(false);
+    }
+  };
+
+  // ─── Voice recording → transcribe → structured remarks ─────
+  const voiceCleanup = () => {
+    if (voiceTimerRef.current) { clearInterval(voiceTimerRef.current); voiceTimerRef.current = null; }
+    voiceStreamRef.current?.getTracks().forEach(t => t.stop());
+    voiceStreamRef.current = null;
+    voiceRecorderRef.current = null;
+    voiceChunksRef.current = [];
+    setVoiceRecording(false);
+    setVoiceDuration(0);
+    voiceCancelledRef.current = false;
+  };
+
+  const startVoiceRecording = async () => {
+    if (voiceRecording || voiceProcessing) return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      voiceStreamRef.current = stream;
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : MediaRecorder.isTypeSupported('audio/webm')
+          ? 'audio/webm'
+          : 'audio/mp4';
+      const mr = new MediaRecorder(stream, { mimeType });
+      voiceRecorderRef.current = mr;
+      voiceChunksRef.current = [];
+      voiceCancelledRef.current = false;
+      mr.ondataavailable = (e) => { if (e.data.size > 0) voiceChunksRef.current.push(e.data); };
+      mr.start(250);
+      setVoiceRecording(true);
+      setVoiceDuration(0);
+      let sec = 0;
+      voiceTimerRef.current = setInterval(() => { sec++; setVoiceDuration(sec); }, 1000);
+    } catch {
+      toast('Нет доступа к микрофону');
+    }
+  };
+
+  const cancelVoiceRecording = () => {
+    voiceCancelledRef.current = true;
+    const mr = voiceRecorderRef.current;
+    if (mr && mr.state !== 'inactive') {
+      mr.onstop = () => voiceCleanup();
+      mr.stop();
+    } else {
+      voiceCleanup();
+    }
+  };
+
+  const stopAndTranscribe = async () => {
+    const mr = voiceRecorderRef.current;
+    if (!mr || mr.state === 'inactive') return;
+    if (voiceTimerRef.current) { clearInterval(voiceTimerRef.current); voiceTimerRef.current = null; }
+    setVoiceRecording(false);
+    setVoiceProcessing(true);
+
+    await new Promise<void>((resolve) => {
+      mr.onstop = () => resolve();
+      mr.stop();
+    });
+    voiceStreamRef.current?.getTracks().forEach(t => t.stop());
+
+    if (voiceCancelledRef.current) {
+      voiceCleanup();
+      setVoiceProcessing(false);
+      return;
+    }
+
+    try {
+      const mimeType = mr.mimeType || 'audio/webm';
+      const blob = new Blob(voiceChunksRef.current, { type: mimeType });
+      const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
+      const fd = new FormData();
+      fd.append('audio', blob, `report-voice.${ext}`);
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) { toast('Сессия истекла'); return; }
+      const res = await fetch('/api/voice/transcribe-report', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        body: fd,
+      });
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        toast(`Не удалось распознать${text ? ': ' + text : ''}`);
+        return;
+      }
+      const data = (await res.json()) as { generalComment: string; remarks: string[] };
+      setVoiceResult({ generalComment: data.generalComment || '', remarks: data.remarks || [] });
+      setVoiceSelectedRemarks(new Set((data.remarks || []).map((_, i) => i))); // pre-select all
+      if (!data.generalComment && (!data.remarks || data.remarks.length === 0)) {
+        toast('Ничего не распознано');
+      }
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Ошибка распознавания');
+    } finally {
+      setVoiceProcessing(false);
+      voiceCleanup();
+    }
+  };
+
+  const applyVoiceResult = async () => {
+    if (!voiceResult) return;
+    try {
+      // Apply general comment (replaces existing — UX: voice — это «новый» комментарий).
+      if (voiceResult.generalComment) {
+        const newComment = comment.trim()
+          ? `${comment.trim()}\n\n${voiceResult.generalComment}`
+          : voiceResult.generalComment;
+        setComment(newComment);
+        await updateVisitReport(reportId, { general_comment: newComment });
+      }
+      // Create selected remarks one by one.
+      const toCreate = voiceResult.remarks.filter((_, i) => voiceSelectedRemarks.has(i));
+      for (const text of toCreate) {
+        await createVisitRemark({ report_id: reportId, project_id: projectId, text });
+      }
+      refetchRemarks();
+      const parts: string[] = [];
+      if (voiceResult.generalComment) parts.push('комментарий');
+      if (toCreate.length > 0) parts.push(`${toCreate.length} замеч.`);
+      toast(`Применено: ${parts.join(' + ') || 'ничего'}`);
+      setVoiceResult(null);
+      setVoiceSelectedRemarks(new Set());
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Ошибка применения');
     }
   };
 
@@ -673,8 +812,61 @@ export default function ReportDetailView({ reportId, projectId, toast, onBack, m
           letterSpacing: '0.08em',
           color: '#111',
           marginBottom: 6,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
         }}>
-          Общий комментарий
+          <span>Общий комментарий</span>
+          {!voiceRecording && !voiceProcessing && (
+            <button
+              type="button"
+              onClick={startVoiceRecording}
+              style={{
+                fontFamily: 'var(--af-font-mono)',
+                fontSize: 9,
+                letterSpacing: '0.08em',
+                padding: '4px 10px',
+                background: '#FFF',
+                color: '#111',
+                border: '0.5px solid #111',
+                cursor: 'pointer',
+              }}
+              title="Наговорить голосом — распознается и разложится на общий комментарий + замечания"
+            >
+              🎤 Голос →
+            </button>
+          )}
+          {voiceRecording && (
+            <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
+              <span style={{
+                fontFamily: 'var(--af-font-mono)',
+                fontSize: 10,
+                color: '#B8862A',
+                letterSpacing: '0.08em',
+              }}>
+                ● ЗАПИСЬ {Math.floor(voiceDuration / 60)}:{String(voiceDuration % 60).padStart(2, '0')}
+              </span>
+              <button
+                type="button"
+                onClick={cancelVoiceRecording}
+                style={{ fontFamily: 'var(--af-font-mono)', fontSize: 9, padding: '4px 8px', background: '#FFF', color: '#111', border: '0.5px solid #EBEBEB', cursor: 'pointer' }}
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                onClick={stopAndTranscribe}
+                style={{ fontFamily: 'var(--af-font-mono)', fontSize: 9, padding: '4px 10px', background: '#111', color: '#FFF', border: 'none', cursor: 'pointer' }}
+              >
+                Стоп →
+              </button>
+            </span>
+          )}
+          {voiceProcessing && (
+            <span style={{ fontFamily: 'var(--af-font-mono)', fontSize: 10, color: '#666', letterSpacing: '0.08em' }}>
+              Распознаём…
+            </span>
+          )}
         </div>
         <textarea
           value={comment}
@@ -727,6 +919,73 @@ export default function ReportDetailView({ reportId, projectId, toast, onBack, m
           >
             {saving ? '...' : 'Сохранить'}
           </button>
+        )}
+
+        {/* Voice transcription result panel */}
+        {voiceResult && (
+          <div style={{ marginTop: 12, padding: 12, border: '0.5px solid #B8862A', background: '#FBF8F2' }}>
+            <div style={{
+              fontFamily: 'var(--af-font-mono)', fontSize: 9, letterSpacing: '0.12em',
+              textTransform: 'uppercase', color: '#B8862A', marginBottom: 10,
+            }}>
+              Распознано — выберите что применить
+            </div>
+            {voiceResult.generalComment && (
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 9, color: '#666', marginBottom: 4, letterSpacing: '0.06em' }}>
+                  Дополнение к общему комментарию
+                </div>
+                <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 12, color: '#111', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
+                  {voiceResult.generalComment}
+                </div>
+              </div>
+            )}
+            {voiceResult.remarks.length > 0 && (
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontFamily: 'var(--af-font-mono)', fontSize: 9, color: '#666', marginBottom: 6, letterSpacing: '0.06em' }}>
+                  Новые замечания ({voiceResult.remarks.length})
+                </div>
+                {voiceResult.remarks.map((r, i) => (
+                  <label key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '6px 0', cursor: 'pointer', borderTop: i === 0 ? 'none' : '0.5px dashed #EBEBEB' }}>
+                    <input
+                      type="checkbox"
+                      checked={voiceSelectedRemarks.has(i)}
+                      onChange={(e) => {
+                        const next = new Set(voiceSelectedRemarks);
+                        if (e.target.checked) next.add(i); else next.delete(i);
+                        setVoiceSelectedRemarks(next);
+                      }}
+                      style={{ marginTop: 3 }}
+                    />
+                    <span style={{ fontFamily: 'var(--af-font-mono)', fontSize: 12, color: '#111', lineHeight: 1.4 }}>
+                      {r}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                onClick={applyVoiceResult}
+                disabled={!voiceResult.generalComment && voiceSelectedRemarks.size === 0}
+                style={{
+                  fontFamily: 'var(--af-font-mono)', fontSize: 9, padding: '6px 12px',
+                  background: '#111', color: '#FFF', border: 'none', cursor: 'pointer',
+                }}
+              >
+                Применить →
+              </button>
+              <button
+                onClick={() => { setVoiceResult(null); setVoiceSelectedRemarks(new Set()); }}
+                style={{
+                  fontFamily: 'var(--af-font-mono)', fontSize: 9, padding: '6px 12px',
+                  background: '#FFF', color: '#111', border: '0.5px solid #EBEBEB', cursor: 'pointer',
+                }}
+              >
+                Отмена
+              </button>
+            </div>
+          </div>
         )}
       </div>
 
