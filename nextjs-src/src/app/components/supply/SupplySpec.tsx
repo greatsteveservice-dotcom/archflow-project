@@ -263,8 +263,8 @@ export function SupplySpec({ items, stages, projectId, refetchItems, toast, canD
         </div>
         <div className="flex items-center gap-2 ml-auto">
           <button
-            className="btn btn-secondary text-[12px]"
-            style={{ color: '#111', borderColor: '#111' }}
+            className="btn text-[12px]"
+            style={{ background: '#B8862A', color: '#FFF', border: 'none', fontWeight: 700, letterSpacing: '0.06em' }}
             onClick={() => setShowAddForm(true)}
           >
             + Добавить позицию
@@ -359,7 +359,7 @@ export function SupplySpec({ items, stages, projectId, refetchItems, toast, canD
       <div className="hidden sm:block bg-srf border border-line rounded-xl overflow-x-auto">
         <table className="w-full text-left">
           <thead className="sticky top-[52px] z-[5] bg-srf">
-            <tr className="border-b border-line-light">
+            <tr style={{ borderBottom: '2px solid #B8862A' }}>
               {canDelete && (
                 <th className="w-10 px-4 py-3">
                   <input
