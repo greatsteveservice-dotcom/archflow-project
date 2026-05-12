@@ -107,7 +107,7 @@ function resolveRange(period: Period): PeriodRange {
 
 // ── Metrika API ───────────────────────────────────
 
-async function fetchStats(date1: string, date2: string) {
+async function fetchStats(date1: string, date2: string, filter?: string) {
   const metrics = [
     "ym:s:visits",
     "ym:s:users",
@@ -116,7 +116,8 @@ async function fetchStats(date1: string, date2: string) {
     "ym:s:bounceRate",
   ].join(",");
 
-  const url = `${METRIKA_API}?id=${COUNTER_ID}&metrics=${metrics}&date1=${date1}&date2=${date2}`;
+  let url = `${METRIKA_API}?id=${COUNTER_ID}&metrics=${metrics}&date1=${date1}&date2=${date2}`;
+  if (filter) url += `&filters=${encodeURIComponent(filter)}`;
   const res = await fetch(url, {
     headers: { Authorization: `OAuth ${METRIKA_TOKEN}` },
   });
@@ -136,6 +137,12 @@ async function fetchStats(date1: string, date2: string) {
     bounceRate: row[4] || 0,
   };
 }
+
+// Public-site session filter: входная страница — лендинг или другие
+// публичные разделы (доступные без авторизации).
+const PUBLIC_FILTER = "ym:s:startURL=~'/(welcome|pricing|privacy|billing/success)'";
+// App-session filter: всё, что НЕ публичка (зарегистрированные пользователи).
+const APP_FILTER = "ym:s:startURL!~'/(welcome|pricing|privacy|billing/success)'";
 
 async function fetchGoals(): Promise<{ id: number; name: string }[]> {
   const url = `${METRIKA_GOALS_API}/${COUNTER_ID}/goals`;
@@ -554,6 +561,8 @@ function buildReport(
   date2: Date,
   periodLabel: string,
   periodCounts: PeriodCounts,
+  publicStats: Awaited<ReturnType<typeof fetchStats>>,
+  appStats: Awaited<ReturnType<typeof fetchStats>>,
 ) {
   const d1 = fmtDate(date1);
   const d2 = fmtDate(date2);
@@ -568,6 +577,9 @@ function buildReport(
     `📄 Просмотры: ${stats.pageviews} (${arrow(stats.pageviews, prev.pageviews)} ${pct(stats.pageviews, prev.pageviews)})`,
     `⏱ Ср. время: ${fmtDuration(stats.avgDuration)} (${arrow(stats.avgDuration, prev.avgDuration)} ${pct(stats.avgDuration, prev.avgDuration)})`,
     `📉 Отказы: ${Math.round(stats.bounceRate)}% (${arrow(prev.bounceRate, stats.bounceRate)} ${pct(prev.bounceRate, stats.bounceRate)})`,
+    `─────────────────`,
+    `🌍 Публичка (лендинг и т.п.): ${publicStats.users} польз. · ${publicStats.visits} визитов · ${publicStats.pageviews} просм. · отказы ${Math.round(publicStats.bounceRate)}%`,
+    `🔐 Приложение (вход в кабинет): ${appStats.users} польз. · ${appStats.visits} визитов · ${appStats.pageviews} просм.`,
     `─────────────────`,
     `🆕 Новых дизайнеров: ${periodCounts.newDesigners}`,
     `🆕 Новых проектов: ${periodCounts.newProjects}`,
@@ -652,9 +664,19 @@ export async function GET(req: NextRequest) {
     const { date1, date2, prevDate1, prevDate2, label } = resolveRange(period);
 
     // Fetch all data in parallel
-    const [stats, prev, goals, periodCounts] = await Promise.all([
+    const [stats, prev, publicStats, appStats, goals, periodCounts] = await Promise.all([
       fetchStats(fmt(date1), fmt(date2)),
       fetchStats(fmt(prevDate1), fmt(prevDate2)),
+      // Лендинг + публичные страницы (незарегистрированные).
+      fetchStats(fmt(date1), fmt(date2), PUBLIC_FILTER).catch((e) => {
+        console.error("[analytics] public stats failed:", e);
+        return { visits: 0, users: 0, pageviews: 0, avgDuration: 0, bounceRate: 0 };
+      }),
+      // Приложение (вход на /projects, /login и т.п. — зарегистрированные).
+      fetchStats(fmt(date1), fmt(date2), APP_FILTER).catch((e) => {
+        console.error("[analytics] app stats failed:", e);
+        return { visits: 0, users: 0, pageviews: 0, avgDuration: 0, bounceRate: 0 };
+      }),
       fetchGoals(),
       fetchPeriodCounts(date1, date2).catch((e) => {
         console.error("[analytics] period counts failed:", e);
@@ -682,7 +704,7 @@ export async function GET(req: NextRequest) {
     });
 
     // Build and send report
-    const report = buildReport(stats, prev, goals, goalReaches, topPages, bouncePages, designers, date1, date2, label, periodCounts);
+    const report = buildReport(stats, prev, goals, goalReaches, topPages, bouncePages, designers, date1, date2, label, periodCounts, publicStats, appStats);
     await sendTelegram(report);
 
     return NextResponse.json({
