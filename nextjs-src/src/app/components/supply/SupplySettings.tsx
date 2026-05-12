@@ -247,13 +247,25 @@ export default function SupplySettings({ projectId, toast, stages, items, refetc
     letterSpacing: '0.12em', padding: '5px 12px', cursor: 'pointer',
   };
 
+  // Hybrid ochre accent: ribbon-left section headers + ochre master date highlight
+  const sectionHeaderStyle: React.CSSProperties = {
+    fontFamily: display, fontSize: 14, fontWeight: 700, color: 'rgb(var(--ink))',
+    marginBottom: 16, paddingLeft: 10, borderLeft: '3px solid #B8862A',
+  };
+  const masterDateStyle: React.CSSProperties = {
+    ...inputStyle,
+    background: '#FCF6E8',
+    borderLeft: '3px solid #B8862A',
+    fontWeight: 600,
+  };
+
   return (
     <div className="animate-fade-in" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, alignItems: 'start' }}>
       {/* ═══ LEFT COLUMN ═══ */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         {/* Project params */}
         <div style={cardStyle}>
-          <div style={{ fontFamily: display, fontSize: 14, fontWeight: 700, color: 'rgb(var(--ink))', marginBottom: 16 }}>
+          <div style={sectionHeaderStyle}>
             Основные параметры
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -266,7 +278,7 @@ export default function SupplySettings({ projectId, toast, stages, items, refetc
             </div>
             <div>
               <label style={labelStyle}>Дата начала стройки</label>
-              <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} style={inputStyle} />
+              <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} style={masterDateStyle} />
             </div>
             <div>
               <label style={labelStyle}>Скидка поставщика (%)</label>
@@ -290,7 +302,7 @@ export default function SupplySettings({ projectId, toast, stages, items, refetc
 
         {/* Kind→Stage mapping */}
         <div style={cardStyle}>
-          <div style={{ fontFamily: display, fontSize: 14, fontWeight: 700, color: 'rgb(var(--ink))', marginBottom: 4 }}>
+          <div style={{ ...sectionHeaderStyle, marginBottom: 4 }}>
             Словарь Вид → Этап
           </div>
           <div style={{ fontFamily: mono, fontSize: 'var(--af-fs-10)', color: 'rgb(var(--ink))', opacity: 0.5, marginBottom: 16 }}>
@@ -346,7 +358,7 @@ export default function SupplySettings({ projectId, toast, stages, items, refetc
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         {/* Rooms */}
         <div style={cardStyle}>
-          <div style={{ fontFamily: display, fontSize: 14, fontWeight: 700, color: 'rgb(var(--ink))', marginBottom: 16 }}>Помещения проекта</div>
+          <div style={sectionHeaderStyle}>Помещения проекта</div>
           {rooms && rooms.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 16 }}>
               {rooms.map((room) => {
@@ -415,7 +427,7 @@ export default function SupplySettings({ projectId, toast, stages, items, refetc
 
         {/* Stages */}
         <div style={cardStyle}>
-          <div style={{ fontFamily: display, fontSize: 14, fontWeight: 700, color: 'rgb(var(--ink))', marginBottom: 16 }}>Этапы стройки</div>
+          <div style={sectionHeaderStyle}>Этапы стройки</div>
           {stages && stages.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 16 }}>
               {stages.map((stage) => {
@@ -460,13 +472,19 @@ export default function SupplySettings({ projectId, toast, stages, items, refetc
                     ) : (
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
-                          <span style={{ fontFamily: mono, fontSize: 'var(--af-fs-11)', color: 'rgb(var(--ink))', opacity: 0.4, width: 20, textAlign: 'center' }}>{stage.sort_order}</span>
+                          <span style={{
+                            fontFamily: mono, fontSize: 11, fontWeight: 800,
+                            color: '#FFF', background: '#B8862A',
+                            width: 22, height: 22,
+                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                            flexShrink: 0,
+                          }}>{stage.sort_order}</span>
                           <span style={{ fontFamily: mono, fontSize: 'var(--af-fs-12)', color: 'rgb(var(--ink))', fontWeight: 500, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{stage.name}</span>
                           {stageItems.length > 0 && <span style={{ fontFamily: mono, fontSize: 'var(--af-fs-10)', color: 'rgb(var(--ink))', opacity: 0.4, flexShrink: 0 }}>{stageItems.length} поз.</span>}
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                            <span style={{ fontFamily: mono, fontSize: 9, color: 'rgb(var(--ink))', opacity: 0.45, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Начало</span>
+                            <span style={{ fontFamily: mono, fontSize: 9, color: '#B8862A', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Начало</span>
                             <input
                               type="date"
                               value={stage.start_date || ''}
@@ -482,7 +500,7 @@ export default function SupplySettings({ projectId, toast, stages, items, refetc
                             />
                           </div>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                            <span style={{ fontFamily: mono, fontSize: 9, color: 'rgb(var(--ink))', opacity: 0.45, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Окончание</span>
+                            <span style={{ fontFamily: mono, fontSize: 9, color: '#B8862A', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Окончание</span>
                             <input
                               type="date"
                               value={stage.end_date || ''}
