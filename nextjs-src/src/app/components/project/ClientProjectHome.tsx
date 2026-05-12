@@ -39,6 +39,36 @@ function stageFromProgress(p: number): number {
   return 5;
 }
 
+/**
+ * Auto-derive current stage from uploaded design files.
+ * If designer uploaded files into a folder mapped to a stage,
+ * the project moves to (at least) that stage.
+ *
+ *   drawings      → "Планировочное решение"        (idx 1)
+ *   design_project→ "Концепция"                    (idx 2)
+ *   visuals       → "Визуализация"                 (idx 3)
+ *   furniture     → "Рабочие чертежи"              (idx 4)
+ *   engineering   → "Рабочие чертежи"              (idx 4)
+ *   documents     → "Ведомость и спецификации"     (idx 5)
+ */
+const FOLDER_TO_STAGE_IDX: Record<string, number> = {
+  drawings: 1,
+  design_project: 2,
+  visuals: 3,
+  furniture: 4,
+  engineering: 4,
+  documents: 5,
+};
+
+function stageFromDesignCounts(counts: Record<string, number> | null | undefined): number {
+  if (!counts) return -1;
+  let max = -1;
+  for (const [folder, idx] of Object.entries(FOLDER_TO_STAGE_IDX)) {
+    if ((counts[folder] || 0) > 0 && idx > max) max = idx;
+  }
+  return max;
+}
+
 function formatStageDate(iso: string | null): string {
   if (!iso) return "—";
   const d = new Date(iso);
@@ -148,14 +178,25 @@ export default function ClientProjectHome({ project, projectId, members, toast }
   }, [dbStages]);
 
   const currentStage = useMemo(() => {
+    // Base stage from explicit DB sources (designer-managed stages or
+    // project.progress fallback).
+    let base: number;
     const inProgress = stagesByOrder.findIndex(s => s.status === "in_progress");
-    if (inProgress !== -1) return Math.min(inProgress, FIXED_STAGES.length - 1);
-    const lastDone = stagesByOrder
-      .map(s => s.status)
-      .lastIndexOf("done");
-    if (lastDone !== -1) return Math.min(lastDone + 1, FIXED_STAGES.length - 1);
-    return stageFromProgress(project.progress || 0);
-  }, [stagesByOrder, project.progress]);
+    if (inProgress !== -1) {
+      base = Math.min(inProgress, FIXED_STAGES.length - 1);
+    } else {
+      const lastDone = stagesByOrder.map(s => s.status).lastIndexOf("done");
+      if (lastDone !== -1) {
+        base = Math.min(lastDone + 1, FIXED_STAGES.length - 1);
+      } else {
+        base = stageFromProgress(project.progress || 0);
+      }
+    }
+    // Auto-advance from uploaded design files: a project never goes backward
+    // because the designer dropped files for a later stage.
+    const fromFiles = stageFromDesignCounts(designCounts);
+    return Math.max(base, fromFiles);
+  }, [stagesByOrder, project.progress, designCounts]);
 
   // end_date for stage i = start of stage (i+1).  We trust the DB row at the
   // same sort_order index when it has end_date filled in; otherwise we leave

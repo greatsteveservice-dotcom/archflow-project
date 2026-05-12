@@ -21,8 +21,8 @@ const SUPPLY_FIELDS = [
 
 type FieldKey = typeof SUPPLY_FIELDS[number]['key'];
 
-// Virtual fields that concat into notes
-const MULTI_MAP_FIELDS: FieldKey[] = ['unit', 'link', 'specs'];
+// Virtual fields that concat into notes (link is now a real column → not virtual)
+const MULTI_MAP_FIELDS: FieldKey[] = ['unit', 'specs'];
 
 // Auto-detect column mapping by header names
 const AUTO_MAP: Record<string, FieldKey> = {
@@ -443,7 +443,7 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
           case 'budget': item.budget = parseFloat(val.replace(/[^\d.,]/g, '').replace(',', '.')) || 0; break;
           case 'supplier': item.supplier = val; break;
           case 'unit': notesParts.push('Ед. изм.: ' + val); break;
-          case 'link': notesParts.push('Ссылка: ' + val); break;
+          case 'link': item.url = val; break;
           case 'specs': notesParts.push(val); break;
           case 'stage': {
             const stageId = findStage(val);
@@ -575,10 +575,10 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
   }, [computed.unmatched, computed.autoFilled]);
 
   const mappedFieldsBase = SUPPLY_FIELDS.filter(f =>
-    Object.values(mapping).includes(f.key) && !['unit', 'link', 'specs'].includes(f.key)
+    Object.values(mapping).includes(f.key) && !['unit', 'specs'].includes(f.key)
   );
   // Add consolidated notes column if any virtual note field is mapped
-  const hasVirtualNotes = ['unit', 'link', 'specs'].some(k => Object.values(mapping).includes(k as FieldKey));
+  const hasVirtualNotes = ['unit', 'specs'].some(k => Object.values(mapping).includes(k as FieldKey));
   const mappedFieldsWithNotes = hasVirtualNotes
     ? [...mappedFieldsBase, { key: 'notes' as FieldKey, label: 'Заметки', required: false }]
     : mappedFieldsBase;
@@ -598,6 +598,7 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
   // Helper: get cell value for preview, resolving stage names
   const cellValue = (item: CreateSupplyItemInput, fieldKey: string): string => {
     if (fieldKey === 'stage') return stageName(item.target_stage_id);
+    if (fieldKey === 'link') return String(item.url || '—');
     return String((item as unknown as Record<string, unknown>)[fieldKey] || '—');
   };
 

@@ -152,6 +152,7 @@ export interface SupplyItem {
   budget: number;
   notes: string | null;
   room: string | null;
+  url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -290,6 +291,7 @@ export interface CreateSupplyItemInput {
   budget?: number;
   notes?: string;
   room?: string;
+  url?: string;
 }
 
 // ======================== PROJECT ROOMS ========================

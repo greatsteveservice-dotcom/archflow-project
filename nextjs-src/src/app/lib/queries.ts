@@ -1004,6 +1004,7 @@ export async function createSupplyItem(input: CreateSupplyItemInput): Promise<Su
       budget: input.budget || 0,
       notes: input.notes ? sanitize(input.notes) : null,
       room: input.room ? sanitize(input.room) : null,
+      url: input.url ? sanitize(input.url) : null,
       status: 'pending',
     })
     .select()
@@ -1026,6 +1027,7 @@ export async function createSupplyItems(items: CreateSupplyItemInput[]): Promise
     budget: input.budget || 0,
     notes: input.notes ? sanitize(input.notes) : null,
     room: input.room ? sanitize(input.room) : null,
+    url: input.url ? sanitize(input.url) : null,
     status: 'pending' as const,
   }));
 

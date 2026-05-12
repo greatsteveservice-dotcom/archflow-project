@@ -39,12 +39,14 @@ export function SupplySpec({ items, stages, projectId, refetchItems, toast, canD
   const [newCategory, setNewCategory] = useState('');
   const [newQuantity, setNewQuantity] = useState('1');
   const [newBudget, setNewBudget] = useState('');
+  const [newUrl, setNewUrl] = useState('');
   const [newStageId, setNewStageId] = useState(stages[0]?.id || '');
   const [creating, setCreating] = useState(false);
 
   const resetAddForm = () => {
     setNewName(''); setNewRoom(''); setNewCategory('');
-    setNewQuantity('1'); setNewBudget(''); setNewStageId(stages[0]?.id || '');
+    setNewQuantity('1'); setNewBudget(''); setNewUrl('');
+    setNewStageId(stages[0]?.id || '');
   };
 
   const handleCreate = async () => {
@@ -58,6 +60,7 @@ export function SupplySpec({ items, stages, projectId, refetchItems, toast, canD
         category: newCategory.trim() || undefined,
         quantity: parseInt(newQuantity) || 1,
         budget: parseFloat(newBudget.replace(/[^\d.,]/g, '').replace(',', '.')) || 0,
+        url: newUrl.trim() || undefined,
         target_stage_id: newStageId || undefined,
       });
       refetchItems();
@@ -494,6 +497,22 @@ export function SupplySpec({ items, stages, projectId, refetchItems, toast, canD
                   </span>
                 </div>
 
+                {/* URL */}
+                {selectedItem.url && (
+                  <div className="pt-2 border-t border-line-light">
+                    <span className="text-[12px] text-ink-faint block mb-1">Ссылка</span>
+                    <a
+                      href={selectedItem.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[13px] underline break-all"
+                      style={{ color: '#111' }}
+                    >
+                      {selectedItem.url}
+                    </a>
+                  </div>
+                )}
+
                 {/* Notes */}
                 {selectedItem.notes && (
                   <div className="pt-2 border-t border-line-light">
@@ -687,6 +706,14 @@ export function SupplySpec({ items, stages, projectId, refetchItems, toast, canD
                   style={{ fontFamily: 'var(--af-font-mono)', borderRadius: 0 }}
                 />
               </div>
+              <input
+                type="url"
+                value={newUrl}
+                onChange={(e) => setNewUrl(e.target.value)}
+                placeholder="Ссылка (URL)"
+                className="w-full px-3 py-2 border border-line text-sm outline-none focus:border-ink bg-srf"
+                style={{ fontFamily: 'var(--af-font-mono)', borderRadius: 0 }}
+              />
               <select
                 value={newStageId}
                 onChange={(e) => setNewStageId(e.target.value)}
