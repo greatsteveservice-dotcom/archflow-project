@@ -329,10 +329,11 @@ async function fetchPeriodCounts(date1: Date, date2: Date): Promise<PeriodCounts
   return { newDesigners, newProjects, newClientsInvited, newTeamInvited };
 }
 
-// Accounts excluded from the report (owner + demo)
+// Accounts excluded from the report (owner + demo + product team)
 const EXCLUDED_EMAILS = new Set<string>([
   "kolunov87@bk.ru",
   "demo@archflow.ru",
+  "kolunov@stador.ru", // Евгений (продукт-овнер) — не считаем как клиента.
 ]);
 
 async function sbFetch(path: string, extraHeaders: Record<string, string> = {}) {
@@ -549,13 +550,16 @@ async function sendTelegram(text: string) {
 
 // ── Report Builder ────────────────────────────────
 
+function daysSince(iso: string | null): number {
+  if (!iso) return 9999;
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return 9999;
+  return Math.floor((Date.now() - d.getTime()) / 86400000);
+}
+
 function buildReport(
   stats: Awaited<ReturnType<typeof fetchStats>>,
   prev: Awaited<ReturnType<typeof fetchStats>>,
-  goals: { id: number; name: string }[],
-  goalReaches: Record<number, number>,
-  topPages: { url: string; views: number }[],
-  bouncePages: { url: string; bounceRate: number; visits: number }[],
   designers: DesignerStats[],
   date1: Date,
   date2: Date,
@@ -576,9 +580,8 @@ function buildReport(
     `👁 Визиты: ${stats.visits} (${arrow(stats.visits, prev.visits)} ${pct(stats.visits, prev.visits)})`,
     `📄 Просмотры: ${stats.pageviews} (${arrow(stats.pageviews, prev.pageviews)} ${pct(stats.pageviews, prev.pageviews)})`,
     `⏱ Ср. время: ${fmtDuration(stats.avgDuration)} (${arrow(stats.avgDuration, prev.avgDuration)} ${pct(stats.avgDuration, prev.avgDuration)})`,
-    `📉 Отказы: ${Math.round(stats.bounceRate)}% (${arrow(prev.bounceRate, stats.bounceRate)} ${pct(prev.bounceRate, stats.bounceRate)})`,
     `─────────────────`,
-    `🌍 Публичка (лендинг и т.п.): ${publicStats.users} польз. · ${publicStats.visits} визитов · ${publicStats.pageviews} просм. · отказы ${Math.round(publicStats.bounceRate)}%`,
+    `🌍 Публичка (лендинг и т.п.): ${publicStats.users} польз. · ${publicStats.visits} визитов · ${publicStats.pageviews} просм.`,
     `🔐 Приложение (вход в кабинет): ${appStats.users} польз. · ${appStats.visits} визитов · ${appStats.pageviews} просм.`,
     `─────────────────`,
     `🆕 Новых дизайнеров: ${periodCounts.newDesigners}`,
@@ -587,37 +590,25 @@ function buildReport(
     `🆕 Участников команды приглашено: ${periodCounts.newTeamInvited}`,
   ];
 
-  // Goals section
-  if (goals.length > 0) {
-    lines.push(`─────────────────`);
-    lines.push(`🎯 Цели:`);
-    for (const g of goals) {
-      const reaches = goalReaches[g.id] || 0;
-      if (reaches > 0 || goals.length <= 10) {
-        lines.push(`• ${g.name}: ${reaches}`);
-      }
+  // ─── Designers — приоритет недавно активным ──────────────
+  // Сортируем по дате последнего визита (новые сверху), потом по времени
+  // за период, потом по общему времени.
+  const sorted = [...designers].sort((a, b) => {
+    const da = a.last_sign_in_at ? new Date(a.last_sign_in_at).getTime() : 0;
+    const db = b.last_sign_in_at ? new Date(b.last_sign_in_at).getTime() : 0;
+    if (db !== da) return db - da;
+    if (b.period_duration_seconds !== a.period_duration_seconds) {
+      return b.period_duration_seconds - a.period_duration_seconds;
     }
-  }
+    return b.total_duration_seconds - a.total_duration_seconds;
+  });
 
-  // Top pages
-  if (topPages.length > 0) {
-    lines.push(`─────────────────`);
-    lines.push(`📍 Топ страницы:`);
-    topPages.forEach((p, i) => {
-      lines.push(`${i + 1}. ${humanPageName(p.url)} — ${p.views}`);
-    });
-  }
+  // Активные ≤ 10 дней — выводим с полными деталями.
+  // > 10 дней — одной строкой «Давно не было».
+  const ACTIVE_DAYS = 10;
+  const active = sorted.filter(d => daysSince(d.last_sign_in_at) <= ACTIVE_DAYS);
+  const inactive = sorted.filter(d => daysSince(d.last_sign_in_at) > ACTIVE_DAYS);
 
-  // Bounce rate by page
-  if (bouncePages.length > 0) {
-    lines.push(`─────────────────`);
-    lines.push(`📉 Отказы по страницам:`);
-    bouncePages.slice(0, 5).forEach((p) => {
-      lines.push(`• ${humanPageName(p.url)} — ${p.bounceRate}% (${p.visits} визитов)`);
-    });
-  }
-
-  // Designers section
   if (designers.length > 0) {
     const totalProjects = designers.reduce((s, d) => s + d.projects, 0);
     const totalClients = designers.reduce((s, d) => s + d.clients, 0);
@@ -625,7 +616,7 @@ function buildReport(
     lines.push(`─────────────────`);
     lines.push(`👤 Дизайнеры: ${designers.length} (проектов: ${totalProjects}, заказчиков: ${totalClients})`);
 
-    designers.forEach((d, i) => {
+    active.forEach((d, i) => {
       const name = d.full_name.length > 22 ? d.full_name.slice(0, 20) + "…" : d.full_name;
       const lastSeen = fmtShortDate(d.last_sign_in_at);
       const periodTime = fmtHoursMinutes(d.period_duration_seconds);
@@ -633,10 +624,23 @@ function buildReport(
       lines.push(``);
       lines.push(`${i + 1}. ${name}`);
       lines.push(`   ✉ ${d.email}`);
-      lines.push(`   📁 Проектов: ${d.projects} · 👥 Заказчиков: ${d.clients} · 🤝 Команда: ${d.team}`);
-      lines.push(`   📅 Регистрация: ${d.days_active} дн назад · Был: ${lastSeen}`);
+      lines.push(`   📅 Был: ${lastSeen}`);
       lines.push(`   ⏱ За период: ${periodTime} · Всего: ${totalTime}`);
+      lines.push(`   📁 Проектов: ${d.projects} · 👥 Заказчиков: ${d.clients} · 🤝 Команда: ${d.team}`);
     });
+
+    if (inactive.length > 0) {
+      lines.push(``);
+      lines.push(`💤 Давно не было (>${ACTIVE_DAYS} дней): ${inactive.length}`);
+      // Имя · email · «N дн назад» — компактно одной строкой каждый.
+      inactive.forEach(d => {
+        const name = d.full_name.length > 22 ? d.full_name.slice(0, 20) + "…" : d.full_name;
+        const since = d.last_sign_in_at
+          ? `${daysSince(d.last_sign_in_at)} дн назад`
+          : "никогда не был";
+        lines.push(`   • ${name} · ${d.email} · ${since}`);
+      });
+    }
   }
 
   return lines.join("\n");
@@ -663,48 +667,42 @@ export async function GET(req: NextRequest) {
       : autoPeriod();
     const { date1, date2, prevDate1, prevDate2, label } = resolveRange(period);
 
-    // Fetch all data in parallel
-    const [stats, prev, publicStats, appStats, goals, periodCounts] = await Promise.all([
-      fetchStats(fmt(date1), fmt(date2)),
-      fetchStats(fmt(prevDate1), fmt(prevDate2)),
-      // Лендинг + публичные страницы (незарегистрированные).
-      fetchStats(fmt(date1), fmt(date2), PUBLIC_FILTER).catch((e) => {
-        console.error("[analytics] public stats failed:", e);
-        return { visits: 0, users: 0, pageviews: 0, avgDuration: 0, bounceRate: 0 };
-      }),
-      // Приложение (вход на /projects, /login и т.п. — зарегистрированные).
-      fetchStats(fmt(date1), fmt(date2), APP_FILTER).catch((e) => {
-        console.error("[analytics] app stats failed:", e);
-        return { visits: 0, users: 0, pageviews: 0, avgDuration: 0, bounceRate: 0 };
-      }),
-      fetchGoals(),
-      fetchPeriodCounts(date1, date2).catch((e) => {
-        console.error("[analytics] period counts failed:", e);
-        return { newDesigners: 0, newProjects: 0, newClientsInvited: 0, newTeamInvited: 0 };
-      }),
-    ]);
-
-    // Fetch goal reaches (needs goal IDs from above) + per-user durations
-    const goalIds = goals.map((g) => g.id);
     // Period for per-user duration: start of date1 → end of date2 (inclusive)
     const periodFrom = new Date(date1); periodFrom.setHours(0, 0, 0, 0);
     const periodTo = new Date(date2); periodTo.setDate(periodTo.getDate() + 1); periodTo.setHours(0, 0, 0, 0);
     // "Total ever" — from Archflow launch (2026-01-01) to end of date2
     const totalFrom = new Date('2026-01-01T00:00:00Z');
-    const [goalReaches, topPages, bouncePages, periodDuration, totalDuration] = await Promise.all([
-      fetchGoalReaches(fmt(date1), fmt(date2), goalIds),
-      fetchTopPages(fmt(date1), fmt(date2)),
-      fetchBounceByPage(fmt(date1), fmt(date2)),
+
+    // Fetch all data in parallel.
+    // Цели / топ-страницы / отказы по страницам — убраны из отчёта по запросу,
+    // соответствующие fetchGoals / fetchTopPages / fetchBounceByPage пока
+    // оставлены в коде (не вызываются), чтобы быстро вернуть при необходимости.
+    const [stats, prev, publicStats, appStats, periodCounts, periodDuration, totalDuration] = await Promise.all([
+      fetchStats(fmt(date1), fmt(date2)),
+      fetchStats(fmt(prevDate1), fmt(prevDate2)),
+      fetchStats(fmt(date1), fmt(date2), PUBLIC_FILTER).catch((e) => {
+        console.error("[analytics] public stats failed:", e);
+        return { visits: 0, users: 0, pageviews: 0, avgDuration: 0, bounceRate: 0 };
+      }),
+      fetchStats(fmt(date1), fmt(date2), APP_FILTER).catch((e) => {
+        console.error("[analytics] app stats failed:", e);
+        return { visits: 0, users: 0, pageviews: 0, avgDuration: 0, bounceRate: 0 };
+      }),
+      fetchPeriodCounts(date1, date2).catch((e) => {
+        console.error("[analytics] period counts failed:", e);
+        return { newDesigners: 0, newProjects: 0, newClientsInvited: 0, newTeamInvited: 0 };
+      }),
       fetchPerUserDuration(periodFrom.toISOString(), periodTo.toISOString()),
       fetchPerUserDuration(totalFrom.toISOString(), periodTo.toISOString()),
     ]);
+
     const designers = await fetchDesignersStats(periodDuration, totalDuration).catch((e) => {
       console.error("[analytics] designers fetch failed:", e);
       return [] as DesignerStats[];
     });
 
     // Build and send report
-    const report = buildReport(stats, prev, goals, goalReaches, topPages, bouncePages, designers, date1, date2, label, periodCounts, publicStats, appStats);
+    const report = buildReport(stats, prev, designers, date1, date2, label, periodCounts, publicStats, appStats);
     await sendTelegram(report);
 
     return NextResponse.json({
@@ -712,7 +710,6 @@ export async function GET(req: NextRequest) {
       period,
       window: `${fmt(date1)} — ${fmt(date2)}`,
       stats,
-      goalCount: goals.length,
       periodCounts,
     });
   } catch (err: unknown) {
