@@ -251,7 +251,10 @@ export async function fetchProject(projectId: string): Promise<ProjectWithStats 
     .single();
 
   throwIfAuthBroken(error);
-  if (error || !project) return null;
+  if (error || !project) {
+    if (error) console.error('[fetchProject] failed', projectId, error.code, error.message);
+    return null;
+  }
 
   // Get owner
   const { data: owner } = await supabase
