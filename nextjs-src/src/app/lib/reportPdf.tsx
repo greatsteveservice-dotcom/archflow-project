@@ -19,10 +19,15 @@ function ensureFonts() {
   Font.register({
     family: 'VollkornSC',
     fonts: [
-      { src: path.join(fontDir, 'VollkornSC-Regular.ttf') },
-      { src: path.join(fontDir, 'VollkornSC-Bold.ttf'), fontWeight: 700 },
+      { src: path.join(fontDir, 'VollkornSC-Regular.ttf'), fontWeight: 400, fontStyle: 'normal' },
+      { src: path.join(fontDir, 'VollkornSC-Regular.ttf'), fontWeight: 400, fontStyle: 'italic' },
+      { src: path.join(fontDir, 'VollkornSC-Bold.ttf'), fontWeight: 700, fontStyle: 'normal' },
+      { src: path.join(fontDir, 'VollkornSC-Bold.ttf'), fontWeight: 700, fontStyle: 'italic' },
     ],
   });
+  // react-pdf strict-resolves italic per char width — disable hyphenation to
+  // avoid additional font lookups on русские слова.
+  Font.registerHyphenationCallback((word) => [word]);
   _fontsRegistered = true;
 }
 
