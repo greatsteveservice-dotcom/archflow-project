@@ -78,6 +78,7 @@ export default function ReportDetailView({ reportId, projectId, toast, onBack, m
 
   // Send / acknowledge state
   const [sending, setSending] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [acknowledging, setAcknowledging] = useState(false);
 
   // Edit state
@@ -462,6 +463,58 @@ export default function ReportDetailView({ reportId, projectId, toast, onBack, m
               }}
             >
               Опубликовать →
+            </button>
+          )}
+
+          {/* Download as PDF — available once the report is filled or published */}
+          {(report.status === 'filled' || report.status === 'published') && (
+            <button
+              onClick={async () => {
+                if (downloadingPdf) return;
+                setDownloadingPdf(true);
+                try {
+                  const { data: { session } } = await supabase.auth.getSession();
+                  if (!session?.access_token) {
+                    toast('Сессия истекла — войдите заново');
+                    return;
+                  }
+                  const res = await fetch(`/api/reports/${reportId}/pdf`, {
+                    headers: { Authorization: `Bearer ${session.access_token}` },
+                  });
+                  if (!res.ok) {
+                    const text = await res.text().catch(() => '');
+                    toast(`Не удалось сгенерировать PDF${text ? ': ' + text : ''}`);
+                    return;
+                  }
+                  const blob = await res.blob();
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `report-${report.visit_date || reportId}.pdf`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  // Revoke after a tick so the browser actually starts the download.
+                  setTimeout(() => URL.revokeObjectURL(url), 1000);
+                } catch (e) {
+                  toast(e instanceof Error ? e.message : 'Ошибка генерации PDF');
+                } finally {
+                  setDownloadingPdf(false);
+                }
+              }}
+              disabled={downloadingPdf}
+              style={{
+                fontFamily: 'var(--af-font-mono)',
+                fontSize: 'var(--af-fs-9)',
+                padding: '2px 8px',
+                background: 'transparent',
+                color: '#111',
+                border: '1px solid #111',
+                cursor: downloadingPdf ? 'wait' : 'pointer',
+                opacity: downloadingPdf ? 0.5 : 1,
+              }}
+            >
+              {downloadingPdf ? 'Готовим...' : 'Скачать PDF →'}
             </button>
           )}
 
