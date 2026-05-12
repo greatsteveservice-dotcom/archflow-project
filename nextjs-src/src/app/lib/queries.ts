@@ -1981,6 +1981,31 @@ export async function updateVisitReport(
   return data as VisitReport;
 }
 
+/**
+ * Upload a supervision report cover image (used as page 1 of the generated PDF).
+ * Stored in the same `documents` bucket but at a per-project path so it
+ * persists across reports of the same project.
+ */
+export async function uploadSupervisionCover(file: File, projectId: string): Promise<string> {
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+  const fileName = `cover-${crypto.randomUUID()}.${ext}`;
+  const filePath = `${projectId}/supervision/${fileName}`;
+
+  const { error } = await supabase.storage
+    .from('documents')
+    .upload(filePath, file, {
+      cacheControl: '31536000',
+      contentType: file.type || 'image/jpeg',
+      upsert: true,
+    });
+  if (error) throw error;
+
+  const { data: urlData } = supabase.storage
+    .from('documents')
+    .getPublicUrl(filePath);
+  return urlData.publicUrl;
+}
+
 /** Upload a report attachment file to Supabase Storage */
 export async function uploadReportFile(file: File, projectId: string, reportId: string): Promise<string> {
   const ext = file.name.split('.').pop() || 'pdf';

@@ -1,7 +1,7 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { SupervisionConfig } from '../../lib/types';
-import { loadSupervisionConfig, loadSupervisionConfigCached, saveSupervisionConfig } from '../../lib/queries';
+import { loadSupervisionConfig, loadSupervisionConfigCached, saveSupervisionConfig, uploadSupervisionCover } from '../../lib/queries';
 
 interface SupervisionSettingsProps {
   projectId: string;
@@ -40,6 +40,9 @@ export default function SupervisionSettings({ projectId, toast }: SupervisionSet
   const [customBillingDay, setCustomBillingDay] = useState<number>(5);
   const [reminderDays, setReminderDays] = useState<number>(3);
   const [extraCost, setExtraCost] = useState<string>('');
+  const [coverUrl, setCoverUrl] = useState<string | null>(null);
+  const [coverUploading, setCoverUploading] = useState(false);
+  const coverInputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
 
   const applyConfig = (cfg: SupervisionConfig) => {
@@ -55,6 +58,7 @@ export default function SupervisionSettings({ projectId, toast }: SupervisionSet
     }
     setReminderDays(cfg.reminderDays);
     setExtraCost(cfg.extraVisitCost !== null ? String(cfg.extraVisitCost) : '');
+    setCoverUrl(cfg.reportCoverUrl ?? null);
   };
 
   useEffect(() => {
@@ -86,6 +90,7 @@ export default function SupervisionSettings({ projectId, toast }: SupervisionSet
       billingDay: customBilling ? customBillingDay : billingDay,
       reminderDays,
       extraVisitCost: extraCost.trim() ? Number(extraCost) : null,
+      reportCoverUrl: coverUrl,
     };
     try {
       await saveSupervisionConfig(projectId, config);
@@ -99,8 +104,111 @@ export default function SupervisionSettings({ projectId, toast }: SupervisionSet
 
   const isCustomDate = freq === 'custom';
 
+  const handleCoverFile = async (f: File | null | undefined) => {
+    if (!f) return;
+    if (!/^image\//.test(f.type)) {
+      toast('Нужен файл-изображение (jpg/png)');
+      return;
+    }
+    if (f.size > 8 * 1024 * 1024) {
+      toast('Изображение больше 8 МБ');
+      return;
+    }
+    setCoverUploading(true);
+    try {
+      const url = await uploadSupervisionCover(f, projectId);
+      setCoverUrl(url);
+      // Persist immediately so this isn't lost if user forgets to press «Сохранить».
+      const config: SupervisionConfig = {
+        visitSchedule: {
+          type: freq,
+          weekday: freq !== 'custom' ? weekday : null,
+          customDay: freq === 'custom' ? customDay : null,
+        },
+        billingDay: customBilling ? customBillingDay : billingDay,
+        reminderDays,
+        extraVisitCost: extraCost.trim() ? Number(extraCost) : null,
+        reportCoverUrl: url,
+      };
+      await saveSupervisionConfig(projectId, config);
+      toast('Обложка сохранена');
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Не удалось загрузить обложку');
+    } finally {
+      setCoverUploading(false);
+      if (coverInputRef.current) coverInputRef.current.value = '';
+    }
+  };
+
+  const handleCoverRemove = async () => {
+    setCoverUrl(null);
+    try {
+      const config: SupervisionConfig = {
+        visitSchedule: {
+          type: freq,
+          weekday: freq !== 'custom' ? weekday : null,
+          customDay: freq === 'custom' ? customDay : null,
+        },
+        billingDay: customBilling ? customBillingDay : billingDay,
+        reminderDays,
+        extraVisitCost: extraCost.trim() ? Number(extraCost) : null,
+        reportCoverUrl: null,
+      };
+      await saveSupervisionConfig(projectId, config);
+      toast('Обложка удалена');
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Не удалось обновить настройки');
+    }
+  };
+
   return (
     <div className="animate-fade-in">
+
+      {/* ── Field 0: Обложка отчёта (PDF) ── */}
+      <div style={sectionStyle}>
+        <label style={labelStyle}>Обложка PDF-отчёта:</label>
+        {coverUrl ? (
+          <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+            <div
+              style={{
+                width: 140,
+                height: 90,
+                background: `#F6F6F4 url(${coverUrl}) center/cover no-repeat`,
+                border: '0.5px solid #EBEBEB',
+              }}
+            />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <button type="button" onClick={() => coverInputRef.current?.click()} disabled={coverUploading} style={chipStyle(false)}>
+                {coverUploading ? 'Загружаем…' : 'Заменить'}
+              </button>
+              <button type="button" onClick={handleCoverRemove} disabled={coverUploading} style={chipStyle(false)}>
+                Удалить
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => coverInputRef.current?.click()}
+            disabled={coverUploading}
+            style={{
+              ...chipStyle(false),
+              padding: '10px 14px',
+              cursor: coverUploading ? 'wait' : 'pointer',
+            }}
+          >
+            {coverUploading ? 'Загружаем…' : '+ Загрузить изображение'}
+          </button>
+        )}
+        <input
+          ref={coverInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          style={{ display: 'none' }}
+          onChange={(e) => handleCoverFile(e.target.files?.[0])}
+        />
+        <div style={helperStyle}>JPG / PNG до 8 МБ. Используется на 1-й странице PDF-отчёта.</div>
+      </div>
 
       {/* ── Field 1: Периодичность визитов ── */}
       <div style={sectionStyle}>

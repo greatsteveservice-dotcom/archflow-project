@@ -184,6 +184,51 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     paddingVertical: 16,
   },
+  // ─── Cover page (n.i+a-style split layout) ───────────────
+  coverPage: {
+    flexDirection: 'row',
+    fontFamily: 'VollkornSC',
+    backgroundColor: '#F4F2EC',
+  },
+  coverLeft: {
+    width: '50%',
+    backgroundColor: '#000',
+  },
+  coverImage: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+  },
+  coverRight: {
+    width: '50%',
+    paddingHorizontal: 56,
+    paddingVertical: 64,
+    justifyContent: 'center',
+  },
+  coverKicker: {
+    fontSize: 11,
+    letterSpacing: 1.4,
+    color: '#111111',
+    marginBottom: 56,
+  },
+  coverTitle: {
+    fontSize: 48,
+    fontWeight: 700,
+    letterSpacing: 2,
+    marginBottom: 56,
+  },
+  coverLabel: {
+    fontSize: 14,
+    fontWeight: 700,
+    letterSpacing: 1,
+    color: '#111',
+    marginBottom: 6,
+  },
+  coverValue: {
+    fontSize: 13,
+    color: '#444',
+    lineHeight: 1.4,
+  },
 });
 
 const STATUS_LABEL: Record<string, string> = {
@@ -216,9 +261,11 @@ interface ReportPdfProps {
   project: Project;
   /** Pre-fetched image attachments (only image/* mime). */
   images: ImageBlob[];
+  /** Optional cover image (data: URI) — rendered as page 1 (n.i+a-style split layout). */
+  coverDataUri?: string | null;
 }
 
-function ReportPdfDocument({ report, remarks, project, images }: ReportPdfProps) {
+function ReportPdfDocument({ report, remarks, project, images, coverDataUri }: ReportPdfProps) {
   ensureFonts();
   const ordered = [...remarks].sort((a, b) => a.number - b.number);
 
@@ -227,6 +274,23 @@ function ReportPdfDocument({ report, remarks, project, images }: ReportPdfProps)
       title={`Отчёт АН — ${project.title} — ${formatRuDate(report.visit_date)}`}
       author="Archflow"
     >
+      {/* ─────── Cover page (if cover uploaded in supervision settings) ─────── */}
+      {coverDataUri ? (
+        <Page size="A4" orientation="landscape" style={styles.coverPage}>
+          <View style={styles.coverLeft}>
+            <Image src={coverDataUri} style={styles.coverImage} />
+          </View>
+          <View style={styles.coverRight}>
+            <Text style={styles.coverKicker}>АВТОРСКИЙ НАДЗОР</Text>
+            <Text style={styles.coverTitle}>ОТЧЁТ</Text>
+            <Text style={styles.coverLabel}>ОБЪЕКТ ПО АДРЕСУ:</Text>
+            <Text style={styles.coverValue}>{project.address?.trim() || project.title}</Text>
+            <Text style={[styles.coverLabel, { marginTop: 24 }]}>ДАТА ПОСЕЩЕНИЯ:</Text>
+            <Text style={styles.coverValue}>{formatRuDate(report.visit_date)}</Text>
+          </View>
+        </Page>
+      ) : null}
+
       {/* ─────── Page 1: metadata + remarks list ─────── */}
       <Page size="A4" style={styles.page}>
         <View style={styles.topbar}>

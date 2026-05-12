@@ -127,9 +127,14 @@ export async function GET(
       })),
     );
 
+    // 5b. Cover image from supervision_config (optional)
+    const cfg = (project as { supervision_config?: { reportCoverUrl?: string | null } | null }).supervision_config || null;
+    const coverUrl = cfg?.reportCoverUrl || null;
+    const coverDataUri = coverUrl ? await fetchAsDataUri(coverUrl, coverUrl) : null;
+
     // 6. Render PDF
     const stream = await renderToStream(
-      ReportPdfDocument({ report, remarks, project, images }),
+      ReportPdfDocument({ report, remarks, project, images, coverDataUri }),
     );
     const buffer = await streamToBuffer(stream as unknown as NodeJS.ReadableStream);
 

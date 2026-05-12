@@ -399,6 +399,8 @@ export interface SupervisionConfig {
   billingDay: number;             // 1-28
   reminderDays: number;           // working days before billing
   extraVisitCost: number | null;  // optional, in rubles
+  /** Cover image for visit report PDFs. Left half of page 1 (n.i+a-style). */
+  reportCoverUrl?: string | null;
 }
 
 // ======================== PERMISSIONS ========================
