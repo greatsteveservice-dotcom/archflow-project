@@ -486,24 +486,57 @@ function fmtHoursMinutes(seconds: number): string {
 
 // ── Telegram ──────────────────────────────────────
 
+// Telegram hard limit is 4096 chars per message — длинный отчёт с десятками
+// дизайнеров не влезает целиком и API возвращает 400. Бьём на куски по
+// строкам так, чтобы каждый кусок был ≤ TELEGRAM_LIMIT.
+const TELEGRAM_LIMIT = 4000;
+
+function splitForTelegram(text: string, limit: number = TELEGRAM_LIMIT): string[] {
+  if (text.length <= limit) return [text];
+  const lines = text.split("\n");
+  const chunks: string[] = [];
+  let cur = "";
+  for (const line of lines) {
+    const candidate = cur ? cur + "\n" + line : line;
+    if (candidate.length > limit) {
+      if (cur) chunks.push(cur);
+      // Single line longer than limit — hard-split as last resort.
+      if (line.length > limit) {
+        for (let i = 0; i < line.length; i += limit) chunks.push(line.slice(i, i + limit));
+        cur = "";
+      } else {
+        cur = line;
+      }
+    } else {
+      cur = candidate;
+    }
+  }
+  if (cur) chunks.push(cur);
+  return chunks;
+}
+
 async function sendTelegram(text: string) {
   if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
     console.log("[analytics] Telegram not configured, logging:", text);
     return;
   }
 
-  const res = await fetch(
-    `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text }),
+  const chunks = splitForTelegram(text);
+  for (let i = 0; i < chunks.length; i++) {
+    const prefix = chunks.length > 1 ? `(${i + 1}/${chunks.length})\n` : "";
+    const res = await fetch(
+      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: prefix + chunks[i] }),
+      }
+    );
+    if (!res.ok) {
+      const err = await res.text();
+      console.error("[analytics] Telegram error:", err);
+      return; // на первой неудаче выходим, чтобы не сыпать чат полу-сообщениями
     }
-  );
-
-  if (!res.ok) {
-    const err = await res.text();
-    console.error("[analytics] Telegram error:", err);
   }
 }
 
