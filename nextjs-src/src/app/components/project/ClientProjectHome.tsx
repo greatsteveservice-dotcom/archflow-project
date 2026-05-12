@@ -325,7 +325,15 @@ export default function ClientProjectHome({ project, projectId, members, toast }
           ) : (
             <>
               {(activity || []).map(item => (
-                <div key={item.id} className="af-cab-act-row">
+                <div
+                  key={item.id}
+                  className="af-cab-act-row af-cab-act-row-link"
+                  onClick={() => item.href && router.push(item.href)}
+                  role={item.href ? 'button' : undefined}
+                  tabIndex={item.href ? 0 : undefined}
+                  onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && item.href) { e.preventDefault(); router.push(item.href); } }}
+                  style={{ cursor: item.href ? 'pointer' : 'default' }}
+                >
                   <div className={`af-cab-avatar-sm ${item.who ? "" : "sys"}`}>
                     {item.who ? <span>{item.whoInitials}</span> : <span>·</span>}
                   </div>
@@ -336,6 +344,22 @@ export default function ClientProjectHome({ project, projectId, members, toast }
                       {item.text}
                     </span>
                   </div>
+                  {item.href && (
+                    <span
+                      className="af-cab-act-go"
+                      style={{
+                        fontFamily: 'var(--af-font-mono)',
+                        fontSize: 9,
+                        letterSpacing: '0.12em',
+                        textTransform: 'uppercase',
+                        color: '#888',
+                        whiteSpace: 'nowrap',
+                        marginLeft: 8,
+                      }}
+                    >
+                      Перейти →
+                    </span>
+                  )}
                 </div>
               ))}
             </>

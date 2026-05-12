@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useDesignFileCounts } from '../../lib/hooks';
 import { DESIGN_FOLDERS } from '../../lib/types';
 import type { DesignFolder } from '../../lib/types';
@@ -31,10 +31,23 @@ function pluralFilesLabel(n: number): string {
 
 export default function DesignSection({ projectId, toast, canUpload = true, canDelete = true, canComment = true }: DesignSectionProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: counts, refetch: refetchCounts } = useDesignFileCounts(projectId);
   const [activeFolder, setActiveFolder] = useState<DesignFolder | null>(null);
   const [activeFileId, setActiveFileId] = useState<string | null>(null);
   const [showMoodboards, setShowMoodboards] = useState(false);
+
+  // Deep-link via ?folder=drawings — открывает указанную папку при заходе из ленты активности.
+  // Срабатывает только один раз на смену query (чтобы юзер мог выйти кнопкой «Назад»
+  // и не быть зашвырнутым обратно).
+  useEffect(() => {
+    const f = searchParams?.get('folder');
+    if (!f) return;
+    if (DESIGN_FOLDERS.some(df => df.id === f)) {
+      setActiveFolder(f as DesignFolder);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams?.get('folder')]);
 
   // Moodboard (canvas workspace inside Design → 07)
   if (showMoodboards) {

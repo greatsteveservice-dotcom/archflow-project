@@ -3725,6 +3725,8 @@ export async function fetchProjectActivity(projectId: string, limit: number = 8)
   whoInitials: string | null;
   time: string;
   relativeTime: string;
+  /** Где открыть это событие в UI (для клик-навигации из ленты активности). */
+  href: string;
 }>> {
   const items: Array<any> = [];
   const per = Math.max(3, Math.ceil(limit / 2));
@@ -3788,6 +3790,10 @@ export async function fetchProjectActivity(projectId: string, limit: number = 8)
     documents: 'Документы',
   };
 
+  const designHref = (folder: string) => `/projects/${projectId}/design?folder=${encodeURIComponent(folder)}`;
+  const supervisionHref = `/projects/${projectId}/supervision`;
+  const supplyHref = `/projects/${projectId}/supply`;
+
   (designsRes.data || []).forEach(f => {
     const who = f.uploaded_by ? profileMap[f.uploaded_by] || null : null;
     const folder = folderLabel[f.folder] || f.folder || 'Дизайн';
@@ -3796,6 +3802,7 @@ export async function fetchProjectActivity(projectId: string, limit: number = 8)
       text: `загрузил${who?.match(/а\s*$/) ? 'а' : ''} файл «${f.name}» в раздел «${folder}»`,
       who, whoInitials: initials(who),
       time: f.created_at,
+      href: designHref(f.folder || 'documents'),
     });
   });
 
@@ -3807,7 +3814,7 @@ export async function fetchProjectActivity(projectId: string, limit: number = 8)
     else if (p.status === 'approved') text = `Принято фото · ${stub}`;
     else if (p.status === 'in_progress') text = `В работе · ${stub}`;
     else text = `Новое фото · ${stub}`;
-    items.push({ id: `ph-${p.id}`, kind: 'photo', text, who: null, whoInitials: null, time: p.created_at });
+    items.push({ id: `ph-${p.id}`, kind: 'photo', text, who: null, whoInitials: null, time: p.created_at, href: supervisionHref });
   });
 
   (visitsRes.data || []).forEach(v => {
@@ -3815,7 +3822,7 @@ export async function fetchProjectActivity(projectId: string, limit: number = 8)
     if (v.status === 'planned') text = `Запланирован визит · ${v.title}`;
     else if (v.status === 'approved') text = `Визит завершён · ${v.title}`;
     else text = `Визит с замечаниями · ${v.title}`;
-    items.push({ id: `vi-${v.id}`, kind: 'visit', text, who: null, whoInitials: null, time: v.created_at });
+    items.push({ id: `vi-${v.id}`, kind: 'visit', text, who: null, whoInitials: null, time: v.created_at, href: supervisionHref });
   });
 
   (invoicesRes.data || []).forEach(inv => {
@@ -3823,7 +3830,7 @@ export async function fetchProjectActivity(projectId: string, limit: number = 8)
     const text = inv.status === 'paid'
       ? `Оплачен счёт · ${inv.title} (${amt})`
       : `Выставлен счёт · ${inv.title} (${amt})`;
-    items.push({ id: `inv-${inv.id}`, kind: 'invoice', text, who: null, whoInitials: null, time: inv.created_at });
+    items.push({ id: `inv-${inv.id}`, kind: 'invoice', text, who: null, whoInitials: null, time: inv.created_at, href: supervisionHref });
   });
 
   (suppliesRes.data || []).forEach(si => {
@@ -3834,7 +3841,7 @@ export async function fetchProjectActivity(projectId: string, limit: number = 8)
     items.push({
       id: `si-${si.id}`, kind: 'supply',
       text: `Позиция ${action[si.status] || 'добавлена'} · ${si.name}`,
-      who: null, whoInitials: null, time: si.created_at,
+      who: null, whoInitials: null, time: si.created_at, href: supplyHref,
     });
   });
 
