@@ -53,6 +53,7 @@ function OnboardingPanelInner({ projectId, toast, forceVisible, onSwitchToSupply
   const { data: items, refetch } = useOnboardingPending(projectId);
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState<{ uploaded: number; total: number } | null>(null);
+  const [confirmingAll, setConfirmingAll] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const visibleItems: OnboardingUpload[] = items || [];
@@ -162,7 +163,40 @@ function OnboardingPanelInner({ projectId, toast, forceVisible, onSwitchToSupply
 
       {/* Auto-placed list */}
       {placed.length > 0 && (
-        <Section title="Разнесли автоматически" muted>
+        <Section
+          title="Разнесли автоматически"
+          muted
+          action={
+            <button
+              onClick={async () => {
+                if (confirmingAll) return;
+                setConfirmingAll(true);
+                let ok = 0;
+                try {
+                  for (const it of placed) {
+                    const cat = (it.final_category && DESIGN_FOLDERS.some(f => f.id === it.final_category))
+                      ? (it.final_category as DesignFolder)
+                      : ('documents' as DesignFolder);
+                    try {
+                      await confirmOnboardingItem(it.id, cat);
+                      ok += 1;
+                    } catch {
+                      // continue with remaining items
+                    }
+                  }
+                  await refetch();
+                  if (ok > 0) toast(`Подтвердили ${ok} ${pluralFiles(ok)}`);
+                } finally {
+                  setConfirmingAll(false);
+                }
+              }}
+              disabled={confirmingAll}
+              style={btnStyle(true)}
+            >
+              {confirmingAll ? '…' : `Подтвердить все · ${placed.length}`}
+            </button>
+          }
+        >
           {placed.map((it) => (
             <PlacedRow
               key={it.id}
@@ -319,8 +353,8 @@ function DropZone({
 }
 
 // ── Section wrapper ──
-// Two-column header to match the row grid: "ДОКУМЕНТ" — "РАЗДЕЛ".
-function Section({ title, emphasis, muted, children }: { title: string; emphasis?: boolean; muted?: boolean; children: React.ReactNode }) {
+// Two-column header to match the row grid: "ДОКУМЕНТ" — "РАЗДЕЛ" (or a custom action).
+function Section({ title, emphasis, muted, action, children }: { title: string; emphasis?: boolean; muted?: boolean; action?: React.ReactNode; children: React.ReactNode }) {
   const labelColor = emphasis ? 'var(--af-ochre)' : muted ? '#999' : '#111';
   return (
     <div style={{ borderTop: '1px solid #EBEBEB' }}>
@@ -330,16 +364,20 @@ function Section({ title, emphasis, muted, children }: { title: string; emphasis
           display: 'grid',
           gridTemplateColumns: '1fr minmax(180px, auto)',
           gap: 12,
-          alignItems: 'baseline',
+          alignItems: 'center',
           background: '#FAFAF8',
         }}
       >
         <div style={{ fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: labelColor, fontWeight: 700 }}>
           {title}
         </div>
-        <div style={{ fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#999', fontWeight: 600 }}>
-          Раздел
-        </div>
+        {action ? (
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>{action}</div>
+        ) : (
+          <div style={{ fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#999', fontWeight: 600 }}>
+            Раздел
+          </div>
+        )}
       </div>
       <div>{children}</div>
     </div>
