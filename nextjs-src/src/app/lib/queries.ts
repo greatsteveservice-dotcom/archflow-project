@@ -14,7 +14,7 @@ import type {
   SupplyItemWithCalc, Notification, ActivityItem,
   CreateProjectInput, CreateVisitInput,
   CreatePhotoRecordInput, CreateProjectMemberInput, CreateInvoiceInput,
-  CreateSupplyItemInput, CreateDocumentInput, UpdateProfileInput,
+  CreateSupplyItemInput, UpdateSupplyItemInput, CreateDocumentInput, UpdateProfileInput,
   DocumentCategory, Task, TaskStatus, CreateTaskInput, PhotoRecordWithVisit,
   MemberRole, RbacMember, RbacMemberWithProfile, ProjectAccessSettings,
   VisitReport, VisitReportWithStats, VisitRemark, VisitRemarkWithDetails,
@@ -935,30 +935,59 @@ export async function batchUpsertKindStageMappings(inputs: CreateKindStageMappin
 
 // ======================== SUPPLY ========================
 
-/** Calculate derived supply fields (deadline, risk) */
+/** Calculate derived supply fields (deadline, risk). Uses order_deadline_override if set. */
 export function calcSupplyItem(item: SupplyItem, stages: Stage[]): SupplyItemWithCalc {
   const stage = stages.find(s => s.id === item.target_stage_id);
+  const today = new Date();
+
+  // If no stage at all — we may still honour a manual override
   if (!stage || !stage.start_date) {
+    if (item.order_deadline_override) {
+      const od = new Date(item.order_deadline_override);
+      const daysUntil = Math.round((od.getTime() - today.getTime()) / 86_400_000);
+      let riskCalc: RiskLevel = 'low';
+      if (daysUntil < 0) riskCalc = 'critical';
+      else if (daysUntil <= 7) riskCalc = 'high';
+      else if (daysUntil <= 30) riskCalc = 'medium';
+      return {
+        ...item,
+        orderDeadline: item.order_deadline_override,
+        deliveryForecast: null,
+        daysUntilDeadline: daysUntil,
+        riskCalc,
+        stageName: stage ? stage.name : '—',
+        stageStart: null,
+        orderDeadlineOverridden: true,
+      };
+    }
     return {
       ...item,
       orderDeadline: null,
       deliveryForecast: null,
       daysUntilDeadline: null,
       riskCalc: 'low' as RiskLevel,
-      stageName: '—',
-      stageStart: null,
+      stageName: stage ? stage.name : '—',
+      stageStart: stage ? stage.start_date : null,
+      orderDeadlineOverridden: false,
     };
   }
 
-  const today = new Date();
   const stageStart = new Date(stage.start_date);
-  const orderDeadline = new Date(stageStart);
-  orderDeadline.setDate(orderDeadline.getDate() - item.lead_time_days);
+  let orderDeadline: Date;
+  let overridden = false;
+  if (item.order_deadline_override) {
+    orderDeadline = new Date(item.order_deadline_override);
+    overridden = true;
+  } else {
+    orderDeadline = new Date(stageStart);
+    orderDeadline.setDate(orderDeadline.getDate() - item.lead_time_days);
+  }
+
   const deliveryForecast = new Date(today);
   deliveryForecast.setDate(deliveryForecast.getDate() + item.lead_time_days);
 
   const daysUntil = Math.round(
-    (orderDeadline.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+    (orderDeadline.getTime() - today.getTime()) / 86_400_000
   );
 
   let riskCalc: RiskLevel = 'low';
@@ -974,6 +1003,7 @@ export function calcSupplyItem(item: SupplyItem, stages: Stage[]): SupplyItemWit
     riskCalc,
     stageName: stage.name,
     stageStart: stage.start_date,
+    orderDeadlineOverridden: overridden,
   };
 }
 
@@ -997,6 +1027,8 @@ export async function createSupplyItem(input: CreateSupplyItemInput): Promise<Su
       project_id: input.project_id,
       name: sanitize(input.name),
       category: input.category ? sanitize(input.category) : null,
+      group_name: input.group_name ? sanitize(input.group_name) : null,
+      subcategory: input.subcategory ? sanitize(input.subcategory) : null,
       target_stage_id: input.target_stage_id || null,
       lead_time_days: input.lead_time_days || 0,
       quantity: input.quantity || 1,
@@ -1005,6 +1037,7 @@ export async function createSupplyItem(input: CreateSupplyItemInput): Promise<Su
       notes: input.notes ? sanitize(input.notes) : null,
       room: input.room ? sanitize(input.room) : null,
       url: input.url ? sanitize(input.url) : null,
+      order_deadline_override: input.order_deadline_override || null,
       status: 'pending',
     })
     .select()
@@ -1020,6 +1053,8 @@ export async function createSupplyItems(items: CreateSupplyItemInput[]): Promise
     project_id: input.project_id,
     name: sanitize(input.name),
     category: input.category ? sanitize(input.category) : null,
+    group_name: input.group_name ? sanitize(input.group_name) : null,
+    subcategory: input.subcategory ? sanitize(input.subcategory) : null,
     target_stage_id: input.target_stage_id || null,
     lead_time_days: input.lead_time_days || 0,
     quantity: input.quantity || 1,
@@ -1028,6 +1063,7 @@ export async function createSupplyItems(items: CreateSupplyItemInput[]): Promise
     notes: input.notes ? sanitize(input.notes) : null,
     room: input.room ? sanitize(input.room) : null,
     url: input.url ? sanitize(input.url) : null,
+    order_deadline_override: input.order_deadline_override || null,
     status: 'pending' as const,
   }));
 
@@ -1045,6 +1081,35 @@ export async function updateSupplyItemStatus(id: string, status: SupplyStatus): 
   const { data, error } = await supabase
     .from('supply_items')
     .update({ status })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as SupplyItem;
+}
+
+/** Generic update for a supply item — used by SupplyItemDrawer */
+export async function updateSupplyItem(id: string, updates: UpdateSupplyItemInput): Promise<SupplyItem> {
+  const payload: Record<string, unknown> = {};
+  if (updates.name !== undefined) payload.name = sanitize(updates.name);
+  if (updates.category !== undefined) payload.category = updates.category ? sanitize(updates.category) : null;
+  if (updates.group_name !== undefined) payload.group_name = updates.group_name ? sanitize(updates.group_name) : null;
+  if (updates.subcategory !== undefined) payload.subcategory = updates.subcategory ? sanitize(updates.subcategory) : null;
+  if (updates.target_stage_id !== undefined) payload.target_stage_id = updates.target_stage_id;
+  if (updates.status !== undefined) payload.status = updates.status;
+  if (updates.lead_time_days !== undefined) payload.lead_time_days = updates.lead_time_days;
+  if (updates.quantity !== undefined) payload.quantity = updates.quantity;
+  if (updates.supplier !== undefined) payload.supplier = updates.supplier ? sanitize(updates.supplier) : null;
+  if (updates.budget !== undefined) payload.budget = updates.budget;
+  if (updates.notes !== undefined) payload.notes = updates.notes ? sanitize(updates.notes) : null;
+  if (updates.room !== undefined) payload.room = updates.room ? sanitize(updates.room) : null;
+  if (updates.url !== undefined) payload.url = updates.url ? sanitize(updates.url) : null;
+  if (updates.order_deadline_override !== undefined) payload.order_deadline_override = updates.order_deadline_override;
+
+  const { data, error } = await supabase
+    .from('supply_items')
+    .update(payload)
     .eq('id', id)
     .select()
     .single();

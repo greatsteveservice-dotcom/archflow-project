@@ -16,6 +16,7 @@ import SupplyPlan from "./SupplyPlan";
 import KindStageReconciliation from "./KindStageReconciliation";
 import SupplyOnboarding from "./SupplyOnboarding";
 import SupplySearch from "./SupplySearch";
+import SupplyItemDrawer from "./SupplyItemDrawer";
 
 interface SupplyModuleProps {
   projectId: string;
@@ -47,6 +48,7 @@ export default function SupplyModule({ projectId, toast }: SupplyModuleProps) {
   const [activeItemTab, setActiveItemTab] = useState<ItemTabId>("spec");
   const [showImport, setShowImport] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
+  const [drawerItemId, setDrawerItemId] = useState<string | null>(null);
   // Onboarding overlay dismiss: when the user finishes the wizard via the
   // skip-Excel branch, no rooms/items get created, so the
   // `!hasItems && !hasRooms` gate below would re-mount the wizard forever.
@@ -258,7 +260,11 @@ export default function SupplyModule({ projectId, toast }: SupplyModuleProps) {
                   )
                 )}
                 {activeItemTab === "timeline" && hasStages && (
-                  <SupplyTimeline items={calcItems} stages={stages!} />
+                  <SupplyTimeline
+                    items={calcItems}
+                    stages={stages!}
+                    onItemClick={(id) => setDrawerItemId(id)}
+                  />
                 )}
                 {activeItemTab === "docs" && (
                   <SupplyDocuments projectId={projectId} toast={doToast} />
@@ -297,6 +303,17 @@ export default function SupplyModule({ projectId, toast }: SupplyModuleProps) {
         <SupplySearch
           projectId={projectId}
           onClose={() => setShowSearch(false)}
+        />
+      )}
+
+      {drawerItemId && (
+        <SupplyItemDrawer
+          item={items?.find((i) => i.id === drawerItemId) ?? null}
+          stages={stages || []}
+          rooms={rooms || []}
+          onClose={() => setDrawerItemId(null)}
+          onSaved={() => { refetchItems(); }}
+          toast={doToast}
         />
       )}
     </div>

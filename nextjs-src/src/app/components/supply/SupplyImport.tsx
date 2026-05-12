@@ -9,6 +9,8 @@ import type { Stage, CreateSupplyItemInput, KindStageMapping } from '../../lib/t
 const SUPPLY_FIELDS = [
   { key: 'name', label: 'Наименование', required: true },
   { key: 'room', label: 'Помещение', required: false },
+  { key: 'group_name', label: 'Группа', required: false },
+  { key: 'subcategory', label: 'Подгруппа', required: false },
   { key: 'category', label: 'Вид', required: false },
   { key: 'quantity', label: 'Количество', required: false },
   { key: 'unit', label: 'Единица измерения', required: false },
@@ -27,7 +29,12 @@ const MULTI_MAP_FIELDS: FieldKey[] = ['unit', 'specs'];
 // Auto-detect column mapping by header names
 const AUTO_MAP: Record<string, FieldKey> = {
   'название': 'name', 'наименование': 'name', 'name': 'name', 'позиция': 'name', 'товар': 'name', 'item': 'name',
-  'вид': 'category', 'категория': 'category', 'category': 'category', 'группа': 'category', 'тип': 'category',
+  // Top-level group (Двери, Мебель, Электрика). "Вид" in spec sheets = group.
+  'группа': 'group_name', 'вид': 'group_name', 'group': 'group_name',
+  // Subgroup (Двери распашные, Ручки дверей). "Спецификация" in spec sheets = subgroup.
+  'подгруппа': 'subcategory', 'спецификация': 'subcategory', 'subgroup': 'subcategory', 'subcategory': 'subcategory',
+  // Legacy "Категория/Тип" → keep mapping to category for kind→stage matching.
+  'категория': 'category', 'category': 'category', 'тип': 'category',
   'помещение': 'room', 'комната': 'room', 'room': 'room',
   'количество': 'quantity', 'кол-во': 'quantity', 'qty': 'quantity', 'quantity': 'quantity',
   'ед. изм': 'unit', 'ед.из': 'unit', 'ед. из.': 'unit', 'ед.': 'unit', 'единица измерения': 'unit', 'единица': 'unit', 'unit': 'unit',
@@ -36,7 +43,6 @@ const AUTO_MAP: Record<string, FieldKey> = {
   'ссылка': 'link', 'link': 'link', 'url': 'link',
   'характеристики': 'specs', 'описание': 'specs', 'specs': 'specs', 'comments': 'specs', 'примечание': 'specs', 'примечания': 'specs', 'комментарий': 'specs', 'комментарии': 'specs',
   'поставщик': 'supplier', 'supplier': 'supplier', 'бренд': 'supplier', 'производитель': 'supplier', 'brand': 'supplier',
-  // NB: 'спецификация' is a subcategory name, not description — do NOT map to specs
   'этап': 'stage', 'stage': 'stage',
 };
 
@@ -438,6 +444,8 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
         switch (field) {
           case 'name': item.name = val; break;
           case 'category': item.category = val; break;
+          case 'group_name': item.group_name = val; break;
+          case 'subcategory': item.subcategory = val; break;
           case 'room': item.room = val; break;
           case 'quantity': item.quantity = parseInt(val) || 1; break;
           case 'budget': item.budget = parseFloat(val.replace(/[^\d.,]/g, '').replace(',', '.')) || 0; break;
@@ -462,6 +470,13 @@ export default function SupplyImport({ projectId, stages, toast, onImportComplet
       // Join multi-column notes
       if (notesParts.length > 0) {
         item.notes = notesParts.join('\n');
+      }
+
+      // Hierarchy back-fill: if "category" is mapped but "group_name" isn't,
+      // mirror the category value into group_name so the Gantt grouping works
+      // for legacy spreadsheets that only have one "Вид" column.
+      if (!item.group_name && item.category) {
+        item.group_name = item.category;
       }
 
       // Auto-fill stage from kind→stage mapping if not already set

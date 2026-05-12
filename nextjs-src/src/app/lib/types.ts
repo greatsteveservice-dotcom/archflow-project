@@ -145,6 +145,10 @@ export interface SupplyItem {
   target_stage_id: string | null;
   name: string;
   category: string | null;
+  /** Top-level group (Двери, Мебель, Электрика). Mirrors "Группа/Вид" in spec sheets. */
+  group_name: string | null;
+  /** Subgroup (Двери распашные, Ручки дверей). Mirrors "Подгруппа/Спецификация". */
+  subcategory: string | null;
   status: SupplyStatus;
   lead_time_days: number;
   quantity: number;
@@ -153,6 +157,8 @@ export interface SupplyItem {
   notes: string | null;
   room: string | null;
   url: string | null;
+  /** Manual override for order deadline (otherwise computed: stage.start_date - lead_time_days). */
+  order_deadline_override: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -278,12 +284,16 @@ export interface SupplyItemWithCalc extends SupplyItem {
   riskCalc: RiskLevel;
   stageName: string;
   stageStart: string | null;
+  /** True if orderDeadline came from order_deadline_override instead of being computed. */
+  orderDeadlineOverridden: boolean;
 }
 
 export interface CreateSupplyItemInput {
   project_id: string;
   name: string;
   category?: string;
+  group_name?: string;
+  subcategory?: string;
   target_stage_id?: string;
   lead_time_days?: number;
   quantity?: number;
@@ -292,6 +302,24 @@ export interface CreateSupplyItemInput {
   notes?: string;
   room?: string;
   url?: string;
+  order_deadline_override?: string | null;
+}
+
+export interface UpdateSupplyItemInput {
+  name?: string;
+  category?: string | null;
+  group_name?: string | null;
+  subcategory?: string | null;
+  target_stage_id?: string | null;
+  status?: SupplyStatus;
+  lead_time_days?: number;
+  quantity?: number;
+  supplier?: string | null;
+  budget?: number;
+  notes?: string | null;
+  room?: string | null;
+  url?: string | null;
+  order_deadline_override?: string | null;
 }
 
 // ======================== PROJECT ROOMS ========================
@@ -448,9 +476,11 @@ export const SUPPLY_STATUS_CONFIG: Record<SupplyStatus, { label: string; bg: str
   delivered:     { label: 'Доставлено',      bg: '#F6F6F4', text: '#111111' },
 };
 
-// Risk uses grayscale gradient: darker gray = higher risk, no black backgrounds
+// Risk palette. "Критично" uses the ochre accent (#B8862A) per design-system —
+// it doubles as the deadline cue both in Gantt bars and spec/status pills.
+// Lower-risk levels stay monochrome grey so the eye locks onto the ochre rows first.
 export const RISK_CONFIG: Record<RiskLevel, { label: string; bg: string; text: string }> = {
-  critical: { label: 'Критично',  bg: '#D0D0D0', text: '#111111' },
+  critical: { label: 'Критично',  bg: '#B8862A', text: '#FFFFFF' },
   high:     { label: 'Высокий',   bg: '#DCDCDC', text: '#111111' },
   medium:   { label: 'Средний',   bg: '#EBEBEB', text: '#111111' },
   low:      { label: 'Низкий',    bg: '#F6F6F4', text: '#111111' },

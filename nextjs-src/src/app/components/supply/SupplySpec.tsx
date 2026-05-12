@@ -331,7 +331,12 @@ export function SupplySpec({ items, stages, projectId, refetchItems, toast, canD
                   </span>
                   <span
                     className="text-[11px] font-medium px-2 py-0.5 rounded-full"
-                    style={{ background: status.bg, color: status.text }}
+                    style={{
+                      background: status.bg,
+                      color: status.text,
+                      boxShadow: item.status === "ordered" ? "inset 3px 0 0 #B8862A" : undefined,
+                      paddingLeft: item.status === "ordered" ? 14 : undefined,
+                    }}
                   >
                     {status.label}
                   </span>
@@ -421,7 +426,12 @@ export function SupplySpec({ items, stages, projectId, refetchItems, toast, canD
                     <td className="px-4 py-3">
                       <span
                         className="text-[11px] font-medium px-2 py-0.5 rounded-full"
-                        style={{ background: status.bg, color: status.text }}
+                        style={{
+                          background: status.bg,
+                          color: status.text,
+                          boxShadow: item.status === "ordered" ? "inset 3px 0 0 #B8862A" : undefined,
+                          paddingLeft: item.status === "ordered" ? 14 : undefined,
+                        }}
                       >
                         {status.label}
                       </span>

@@ -61,6 +61,8 @@ export default function SupplySettings({ projectId, toast, stages, items, refetc
   const [creatingDefaults, setCreatingDefaults] = useState(false);
   const [editingStageId, setEditingStageId] = useState<string | null>(null);
   const [editStageName, setEditStageName] = useState('');
+  const [editStageStart, setEditStageStart] = useState('');
+  const [editStageEnd, setEditStageEnd] = useState('');
   const [savingStageId, setSavingStageId] = useState<string | null>(null);
   const [confirmDeleteStageId, setConfirmDeleteStageId] = useState<string | null>(null);
   const [deletingStageId, setDeletingStageId] = useState<string | null>(null);
@@ -177,13 +179,38 @@ export default function SupplySettings({ projectId, toast, stages, items, refetc
     finally { setCreatingDefaults(false); }
   }, [projectId, creatingDefaults, toast, refetchStages]);
 
+  // Inline-update single date field on a stage (autosave on change, no edit mode required)
+  const handleStageDateChange = useCallback(async (stageId: string, field: 'start_date' | 'end_date', value: string) => {
+    if (savingStageId === stageId) return;
+    setSavingStageId(stageId);
+    try {
+      await updateStage(stageId, { [field]: value || null });
+      refetchStages();
+    } catch (err: any) {
+      toast('Ошибка: ' + (err.message || 'не удалось обновить дату'));
+    } finally {
+      setSavingStageId(null);
+    }
+  }, [savingStageId, toast, refetchStages]);
+
   const handleSaveStageEdit = useCallback(async (stageId: string) => {
     if (!editStageName.trim() || savingStageId) return;
     setSavingStageId(stageId);
-    try { await updateStage(stageId, { name: editStageName.trim() }); toast('Этап обновлён'); setEditingStageId(null); setEditStageName(''); refetchStages(); }
-    catch (err: any) { toast('Ошибка: ' + (err.message || 'не удалось обновить')); }
+    try {
+      await updateStage(stageId, {
+        name: editStageName.trim(),
+        start_date: editStageStart || null,
+        end_date: editStageEnd || null,
+      });
+      toast('Этап обновлён');
+      setEditingStageId(null);
+      setEditStageName('');
+      setEditStageStart('');
+      setEditStageEnd('');
+      refetchStages();
+    } catch (err: any) { toast('Ошибка: ' + (err.message || 'не удалось обновить')); }
     finally { setSavingStageId(null); }
-  }, [editStageName, savingStageId, toast, refetchStages]);
+  }, [editStageName, editStageStart, editStageEnd, savingStageId, toast, refetchStages]);
 
   const handleDeleteStage = useCallback(async (stageId: string) => {
     if (deletingStageId) return;
@@ -400,14 +427,28 @@ export default function SupplySettings({ projectId, toast, stages, items, refetc
                 return (
                   <div key={stage.id} className="group" style={rowItemStyle}>
                     {isEditing ? (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <input type="text" value={editStageName} onChange={(e) => setEditStageName(e.target.value)}
-                          onKeyDown={(e) => { if (e.key === 'Enter') handleSaveStageEdit(stage.id); if (e.key === 'Escape') { setEditingStageId(null); setEditStageName(''); } }}
-                          autoFocus style={{ ...inputStyle, flex: 1, width: 'auto' }} />
-                        <button onClick={() => handleSaveStageEdit(stage.id)} disabled={!editStageName.trim() || !!isSaving}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, display: 'flex', color: 'rgb(var(--ink))', opacity: !editStageName.trim() || isSaving ? 0.3 : 1 }} title="Сохранить"><Icons.Check className="w-4 h-4" /></button>
-                        <button onClick={() => { setEditingStageId(null); setEditStageName(''); }}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, display: 'flex', color: 'rgb(var(--ink))', opacity: 0.5 }} title="Отменить"><Icons.X className="w-4 h-4" /></button>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <input type="text" value={editStageName} onChange={(e) => setEditStageName(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') handleSaveStageEdit(stage.id); if (e.key === 'Escape') { setEditingStageId(null); setEditStageName(''); setEditStageStart(''); setEditStageEnd(''); } }}
+                            autoFocus style={{ ...inputStyle, flex: 1, width: 'auto' }} placeholder="Название этапа" />
+                          <button onClick={() => handleSaveStageEdit(stage.id)} disabled={!editStageName.trim() || !!isSaving}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, display: 'flex', color: 'rgb(var(--ink))', opacity: !editStageName.trim() || isSaving ? 0.3 : 1 }} title="Сохранить"><Icons.Check className="w-4 h-4" /></button>
+                          <button onClick={() => { setEditingStageId(null); setEditStageName(''); setEditStageStart(''); setEditStageEnd(''); }}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, display: 'flex', color: 'rgb(var(--ink))', opacity: 0.5 }} title="Отменить"><Icons.X className="w-4 h-4" /></button>
+                        </div>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <div style={{ flex: 1 }}>
+                            <label style={{ ...labelStyle, marginBottom: 2 }}>Начало</label>
+                            <input type="date" value={editStageStart} onChange={(e) => setEditStageStart(e.target.value)}
+                              style={{ ...inputStyle, fontSize: 'var(--af-fs-11)' }} />
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <label style={{ ...labelStyle, marginBottom: 2 }}>Окончание</label>
+                            <input type="date" value={editStageEnd} onChange={(e) => setEditStageEnd(e.target.value)}
+                              style={{ ...inputStyle, fontSize: 'var(--af-fs-11)' }} />
+                          </div>
+                        </div>
                       </div>
                     ) : isConfirmingDelete ? (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -417,17 +458,51 @@ export default function SupplySettings({ projectId, toast, stages, items, refetc
                         <button onClick={() => setConfirmDeleteStageId(null)} style={ghostBtnStyle}>Отмена</button>
                       </div>
                     ) : (
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
                           <span style={{ fontFamily: mono, fontSize: 'var(--af-fs-11)', color: 'rgb(var(--ink))', opacity: 0.4, width: 20, textAlign: 'center' }}>{stage.sort_order}</span>
-                          <span style={{ fontFamily: mono, fontSize: 'var(--af-fs-12)', color: 'rgb(var(--ink))', fontWeight: 500 }}>{stage.name}</span>
-                          {stageItems.length > 0 && <span style={{ fontFamily: mono, fontSize: 'var(--af-fs-10)', color: 'rgb(var(--ink))', opacity: 0.4 }}>{stageItems.length} поз.</span>}
+                          <span style={{ fontFamily: mono, fontSize: 'var(--af-fs-12)', color: 'rgb(var(--ink))', fontWeight: 500, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{stage.name}</span>
+                          {stageItems.length > 0 && <span style={{ fontFamily: mono, fontSize: 'var(--af-fs-10)', color: 'rgb(var(--ink))', opacity: 0.4, flexShrink: 0 }}>{stageItems.length} поз.</span>}
                         </div>
-                        <div className="stage-actions" style={{ display: 'flex', alignItems: 'center', gap: 4, opacity: 0, transition: 'opacity 0.15s' }}>
-                          <button onClick={() => { setEditingStageId(stage.id); setEditStageName(stage.name); setConfirmDeleteStageId(null); }}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex', color: 'rgb(var(--ink))', opacity: 0.5 }} title="Редактировать"><Icons.Edit className="w-3.5 h-3.5" /></button>
-                          <button onClick={() => setConfirmDeleteStageId(stage.id)}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex', color: 'rgb(var(--ink))', opacity: 0.5 }} title="Удалить"><Icons.Trash className="w-3.5 h-3.5" /></button>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                            <span style={{ fontFamily: mono, fontSize: 9, color: 'rgb(var(--ink))', opacity: 0.45, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Начало</span>
+                            <input
+                              type="date"
+                              value={stage.start_date || ''}
+                              onChange={(e) => handleStageDateChange(stage.id, 'start_date', e.target.value)}
+                              disabled={isSaving}
+                              style={{
+                                fontFamily: mono, fontSize: 'var(--af-fs-11)', color: stage.start_date ? 'rgb(var(--ink))' : '#B8862A',
+                                background: stage.start_date ? 'rgb(var(--srf))' : 'rgba(184,134,42,0.08)',
+                                border: '0.5px solid rgb(var(--line))', padding: '4px 6px', borderRadius: 0,
+                                width: 130, outline: 'none', cursor: 'pointer',
+                              }}
+                              title="Дата начала этапа"
+                            />
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                            <span style={{ fontFamily: mono, fontSize: 9, color: 'rgb(var(--ink))', opacity: 0.45, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Окончание</span>
+                            <input
+                              type="date"
+                              value={stage.end_date || ''}
+                              onChange={(e) => handleStageDateChange(stage.id, 'end_date', e.target.value)}
+                              disabled={isSaving}
+                              style={{
+                                fontFamily: mono, fontSize: 'var(--af-fs-11)', color: stage.end_date ? 'rgb(var(--ink))' : '#B8862A',
+                                background: stage.end_date ? 'rgb(var(--srf))' : 'rgba(184,134,42,0.08)',
+                                border: '0.5px solid rgb(var(--line))', padding: '4px 6px', borderRadius: 0,
+                                width: 130, outline: 'none', cursor: 'pointer',
+                              }}
+                              title="Дата окончания этапа"
+                            />
+                          </div>
+                          <div className="stage-actions" style={{ display: 'flex', alignItems: 'center', gap: 2, opacity: 0, transition: 'opacity 0.15s' }}>
+                            <button onClick={() => { setEditingStageId(stage.id); setEditStageName(stage.name); setEditStageStart(stage.start_date || ''); setEditStageEnd(stage.end_date || ''); setConfirmDeleteStageId(null); }}
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex', color: 'rgb(var(--ink))', opacity: 0.5 }} title="Переименовать"><Icons.Edit className="w-3.5 h-3.5" /></button>
+                            <button onClick={() => setConfirmDeleteStageId(stage.id)}
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex', color: 'rgb(var(--ink))', opacity: 0.5 }} title="Удалить"><Icons.Trash className="w-3.5 h-3.5" /></button>
+                          </div>
                         </div>
                       </div>
                     )}
