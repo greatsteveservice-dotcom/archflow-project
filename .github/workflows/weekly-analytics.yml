@@ -1,10 +1,13 @@
-name: Weekly Analytics Report
+name: Analytics Report
 
 on:
   schedule:
-    # Mon & Thu at 06:00 UTC (09:00 MSK)
-    - cron: '0 6 * * 1'
-    - cron: '0 6 * * 4'
+    # Every day at 06:00 UTC (09:00 MSK).
+    # /api/cron/analytics auto-picks period via autoPeriod():
+    #   • 1st of month → monthly
+    #   • Mondays      → weekly
+    #   • other days   → daily (yesterday)
+    - cron: '0 6 * * *'
   workflow_dispatch: {} # manual trigger
 
 jobs:
