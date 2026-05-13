@@ -51,7 +51,13 @@ jobs:
           mkdir -p "$STAGE"
           cp -r .next/standalone/. "$STAGE/"
           cp -r .next/static "$STAGE/.next/static"
-          cp -r public "$STAGE/public"
+          # Next.js 14 standalone иногда уже создаёт $STAGE/public (когда
+          # серверный код ссылается на public/ через process.cwd()). Если
+          # делать `cp -r public "$STAGE/public"` при существующем target,
+          # bash положит исходник ВНУТРЬ → $STAGE/public/public/. Используем
+          # `cp -r public/. "$STAGE/public/"` — копирует содержимое поверх.
+          mkdir -p "$STAGE/public"
+          cp -r public/. "$STAGE/public/"
           ls "$STAGE/server.js"
           ls "$STAGE/.next/BUILD_ID"
           echo "STAGE=$STAGE" >> $GITHUB_ENV
