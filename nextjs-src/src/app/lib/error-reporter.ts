@@ -120,6 +120,14 @@ export function installErrorReporter() {
     const reason = event.reason;
     const message = reason instanceof Error ? reason.message : String(reason || 'Unhandled rejection');
     const stack = reason instanceof Error ? reason.stack : undefined;
+    // ── Шумовые ошибки — игнорируем ────────────────────────
+    // Supabase JS использует navigator.locks.request с опцией { steal: true }
+    // для синхронизации refresh-token между вкладками. Когда пользователь
+    // открывает archflow.ru в новой вкладке/окне, новый SDK крадёт лок у
+    // старого, и старый Promise отклоняется AbortError'ом. Это нормальное
+    // поведение, Supabase сам перезапрашивает токен; в Telegram засорять
+    // не нужно.
+    if (/Lock broken by another request|AbortError/.test(message)) return;
     send({ message, stack, extra: { type: 'unhandledrejection' } });
   });
 }
