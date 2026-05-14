@@ -343,10 +343,11 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
       console.error('Upload failed:', err);
       toast(err instanceof Error ? `Ошибка: ${err.message}` : 'Ошибка загрузки файла');
       updateOne({ error: err instanceof Error ? err.message : 'Ошибка загрузки', progress: 0 });
-      // Keep failed pending on screen for 5s, then remove
+      // Keep failed pending on screen for 20s so the user can read the reason
+      // (CORS, 403, 413 etc) before the tile disappears.
       setTimeout(() => {
         setPending(prev => prev.filter(p => p.id !== pendingId));
-      }, 5000);
+      }, 20000);
     }
   }, [projectId, folder, activeSubfolder, refetch]);
 
@@ -1060,7 +1061,20 @@ function FileTile({
 // PendingTile — upload in progress (optimistic)
 // ============================================================================
 
+function humanizeUploadError(raw: string): string {
+  const s = (raw || '').toLowerCase();
+  if (s.includes('forbidden') || s.includes('403')) return 'нет прав на загрузку';
+  if (s.includes('401') || s.includes('invalid token') || s.includes('unauthorized')) return 'войдите заново';
+  if (s.includes('413') || s.includes('too large') || s.includes('больше')) return 'файл больше 2 ГБ';
+  if (s.includes('storage put')) return 'сбой хранилища (CORS / сеть)';
+  if (s.includes('upload-url')) return 'сервер недоступен';
+  if (s.includes('finalize')) return 'не сохранилось';
+  if (s.includes('failed to fetch') || s.includes('networkerror')) return 'нет сети';
+  return raw.slice(0, 60);
+}
+
 function PendingTile({ pending }: { pending: PendingUpload }) {
+  const detail = pending.error ? humanizeUploadError(pending.error) : '';
   return (
     <div className="af-file-tile" style={{ cursor: 'default', opacity: pending.error ? 0.6 : 0.85 }}>
       {pending.blobUrl ? (
@@ -1096,21 +1110,36 @@ function PendingTile({ pending }: { pending: PendingUpload }) {
       )}
 
       {/* Label */}
-      <div style={{
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        top: 0,
-        padding: '6px 8px',
-        background: 'rgba(0,0,0,0.55)',
-        color: '#fff',
-        fontFamily: 'var(--af-font-mono)',
-        fontSize: 9,
-        textTransform: 'uppercase',
-        letterSpacing: '0.1em',
-        textAlign: 'center',
-      }}>
-        {pending.error ? 'Ошибка' : `Загрузка ${Math.round(pending.progress)}%`}
+      <div
+        title={pending.error || undefined}
+        style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          top: 0,
+          padding: '6px 8px',
+          background: 'rgba(0,0,0,0.55)',
+          color: '#fff',
+          fontFamily: 'var(--af-font-mono)',
+          fontSize: 9,
+          textTransform: 'uppercase',
+          letterSpacing: '0.1em',
+          textAlign: 'center',
+          lineHeight: 1.4,
+        }}
+      >
+        {pending.error ? (
+          <>
+            <div>Ошибка</div>
+            {detail && (
+              <div style={{ fontSize: 8, opacity: 0.85, textTransform: 'none', letterSpacing: 0, marginTop: 2 }}>
+                {detail}
+              </div>
+            )}
+          </>
+        ) : (
+          `Загрузка ${Math.round(pending.progress)}%`
+        )}
       </div>
     </div>
   );
