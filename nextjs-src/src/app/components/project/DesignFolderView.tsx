@@ -1102,18 +1102,49 @@ function PendingTile({ pending }: { pending: PendingUpload }) {
         right: 0,
         top: 0,
         padding: '6px 8px',
-        background: 'rgba(0,0,0,0.55)',
+        background: 'rgba(0,0,0,0.65)',
         color: '#fff',
         fontFamily: 'var(--af-font-mono)',
         fontSize: 9,
-        textTransform: 'uppercase',
-        letterSpacing: '0.1em',
+        letterSpacing: '0.05em',
         textAlign: 'center',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 2,
       }}>
-        {pending.error ? 'Ошибка' : `Загрузка ${Math.round(pending.progress)}%`}
+        {pending.error ? (
+          <>
+            <span style={{ textTransform: 'uppercase', letterSpacing: '0.1em' }}>Ошибка</span>
+            <span style={{
+              fontSize: 8,
+              opacity: 0.85,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }} title={pending.error}>
+              {humanizeUploadError(pending.error)}
+            </span>
+          </>
+        ) : (
+          <span style={{ textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+            Загрузка {Math.round(pending.progress)}%
+          </span>
+        )}
       </div>
     </div>
   );
+}
+
+function humanizeUploadError(raw: string): string {
+  const s = raw || '';
+  if (/Forbidden|403/i.test(s)) return 'нет прав на загрузку';
+  if (/Unauthorized|401|Invalid token/i.test(s)) return 'войдите заново';
+  if (/413|too large|больше/i.test(s)) return 'файл больше 2 ГБ';
+  if (/storage PUT/i.test(s)) return 'сбой хранилища';
+  if (/upload-url failed/i.test(s)) return 'сервер недоступен';
+  if (/finalize failed/i.test(s)) return 'не сохранилось';
+  if (/Failed to fetch|NetworkError/i.test(s)) return 'нет сети';
+  return s.length > 32 ? s.slice(0, 30) + '…' : s;
 }
 
 // ============================================================================

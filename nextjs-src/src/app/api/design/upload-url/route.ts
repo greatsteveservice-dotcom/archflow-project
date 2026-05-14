@@ -57,7 +57,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Файл больше ${MAX_SIZE / 1024 / 1024 / 1024} GB` }, { status: 413 });
     }
 
-    // Permission: owner OR designer/assistant member of the project
+    // Permission: owner OR designer/assistant member OR any member with
+    // access_level='full' (matches resolvePermissions() in lib/permissions.ts —
+    // UI shows the upload button for full-access clients/contractors so the
+    // API must agree, otherwise the user sees ОШИБКА on every upload).
     const { data: project } = await sb
       .from("projects")
       .select("owner_id")
@@ -68,11 +71,15 @@ export async function POST(req: NextRequest) {
     if (!allowed) {
       const { data: m } = await sb
         .from("project_members")
-        .select("role")
+        .select("role, access_level")
         .eq("project_id", projectId)
         .eq("user_id", userId)
         .maybeSingle();
-      allowed = !!m && ["designer", "assistant"].includes((m as { role: string }).role);
+      const mem = m as { role?: string; access_level?: string } | null;
+      allowed = !!mem && (
+        ["designer", "assistant"].includes(mem.role || "") ||
+        mem.access_level === "full"
+      );
     }
     if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 

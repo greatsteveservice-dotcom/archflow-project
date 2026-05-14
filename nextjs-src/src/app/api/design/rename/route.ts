@@ -69,12 +69,17 @@ export async function POST(request: NextRequest) {
     if (!isOwner) {
       const { data: member } = await adminClient
         .from('project_members')
-        .select('role')
+        .select('role, access_level')
         .eq('project_id', file.project_id)
         .eq('user_id', user.id)
         .single();
 
-      if (!member || !['designer', 'assistant'].includes(member.role)) {
+      const mem = member as { role?: string; access_level?: string } | null;
+      const ok = !!mem && (
+        ['designer', 'assistant'].includes(mem.role || '') ||
+        mem.access_level === 'full'
+      );
+      if (!ok) {
         return NextResponse.json({ error: 'Permission denied' }, { status: 403 });
       }
     }
