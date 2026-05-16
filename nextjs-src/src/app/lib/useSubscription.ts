@@ -26,8 +26,11 @@ const PLAN_DAYS: Record<Plan, number> = {
 
 /**
  * Reads subscription for the current user.
- * canEdit = true always for non-designers (clients/contractors/assistants/suppliers
- * are invited and never pay).
+ *
+ * Starting 2026-05-16 Archflow is free for all designers — paywall disabled.
+ * `canEdit` is forced to `true` for everyone. We still keep reading the
+ * subscriptions row so the UI может показывать «бесплатно навсегда» при
+ * желании, но никаких блокировок не остаётся.
  */
 export function useSubscription() {
   const { user, profile } = useAuth();
@@ -68,7 +71,8 @@ export function useSubscription() {
       expires_at: data.expires_at as string,
       daysLeft,
       totalDays: PLAN_DAYS[plan] || 30,
-      canEdit: !isExpired,
+      // Paywall removed 2026-05-16 — Archflow free for all designers
+      canEdit: true,
       isDesigner: true,
     });
     setLoading(false);

@@ -3035,3 +3035,71 @@ html, body { overflow-x: hidden; }
     to { transform: translateY(0); opacity: 1; }
   }
 }
+
+/* ── Landing: founder note + free access (added 2026-05-16) ── */
+.afl-founder-body {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 80px 64px;
+}
+.afl-founder-card {
+  background: #FFF;
+  border: 0.5px solid #EBEBEB;
+  padding: 48px 56px;
+  display: grid;
+  grid-template-columns: minmax(0, 220px) minmax(0, 1fr);
+  gap: 48px;
+  align-items: center;
+  max-width: 920px;
+}
+.afl-founder-photo {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  background: #EBEBEB;
+  overflow: hidden;
+}
+.afl-free-body {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 80px 64px;
+}
+.afl-free-card {
+  background: var(--af-ochre, #B8862A);
+  color: #FFF;
+  padding: 48px 48px 40px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 48px;
+  align-items: center;
+  max-width: 920px;
+}
+.afl-free-card-head { }
+.afl-free-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-family: var(--af-font);
+  font-size: 14px;
+  line-height: 1.7;
+  color: #FFF;
+  font-weight: 400;
+}
+.afl-free-cta { grid-column: 1 / -1; margin-top: 8px; }
+
+@media (max-width: 900px) {
+  .afl-founder-body { padding: 56px 20px; }
+  .afl-founder-card {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    padding: 28px 22px 30px;
+  }
+  .afl-founder-photo { max-width: 200px; }
+  .afl-free-body { padding: 56px 20px; }
+  .afl-free-card {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    padding: 28px 24px 26px;
+  }
+  .afl-free-cta { margin-top: 4px; }
+}

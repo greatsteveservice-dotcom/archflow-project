@@ -20,7 +20,8 @@ export default function Landing() {
         <Modules />
         <BeforeAfter />
         <Trust />
-        <Pricing />
+        <FounderNote />
+        <FreeAccess />
         <FAQ />
         <FinalCTA />
         <Footer />
@@ -500,52 +501,179 @@ function Trust() {
   );
 }
 
-// ── 11 · Тарифы ───────────────────────────────────────────
-const PRICING = [
-  { id: "month",    label: "Месяц",   price: 1500,  monthly: 1500, save: 0,    featured: false, btn: "Выбрать месяц" },
-  { id: "halfyear", label: "Полгода", price: 6000,  monthly: 1000, save: 3000, featured: true,  btn: "Выбрать полгода" },
-  { id: "year",     label: "Год",     price: 10000, monthly: 833,  save: 8000, featured: false, btn: "Выбрать год" },
-];
+// ── 11 · Письмо основателя ────────────────────────────────
+const FOUNDER_TEXT = `Привет! Меня зовут Женя. Уже 11 лет я женат на дизайнере-интерьеров. Всё это время её уровень и стоимость проектов росли, но... жена постоянно просила у меня денег. Пришлось разобраться почему. Так появился Archflow.`;
 
-function Pricing() {
+function FounderNote() {
   return (
-    <section id="pricing" className="afl-sect afl-pri">
-      <div className="afl-body">
-        <div className="head">
-          <h2>Одна подписка<br />без скрытых платежей</h2>
-          <p className="lede">
-            Все модули включены. Электронная подпись — тоже. Количество проектов, заказчиков и размер студии — без ограничений.
-          </p>
-        </div>
-        <div className="trial">
-          <span className="afl-micro" style={{ color: "rgba(255,255,255,0.55)" }}>Триал</span>
-          <span className="b">14 дней полного доступа · без платёжных данных</span>
-        </div>
-        <div className="afl-pri-grid">
-          {PRICING.map((p) => (
-            <div key={p.id} className={`afl-pri-card${p.featured ? " featured" : ""}`}>
-              {p.featured && <span className="ribbon">Популярный</span>}
-              <span className="name afl-micro">Тариф · {p.label}</span>
-              <div className="price">
-                <span className="num">{p.price.toLocaleString("ru-RU")}</span>
-                <span className="cur">₽</span>
-              </div>
-              <div className="month">{p.monthly.toLocaleString("ru-RU")} ₽ / месяц</div>
-              {p.save > 0 && <div className="save afl-micro">экономия {p.save.toLocaleString("ru-RU")} ₽</div>}
-              <ul>
-                <li>Все модули</li>
-                <li>Неограниченные проекты</li>
-                <li>Электронная подпись включена</li>
-                <li>{p.featured || p.id === "year" ? "Приоритетная поддержка" : "Поддержка в чате"}</li>
-              </ul>
-              <div className="cta">
-                <a href="/login?mode=register" className="afl-btn">{p.btn} →</a>
-              </div>
+    <section id="founder" className="afl-sect" style={{ background: "#F6F6F4" }}>
+      <div className="afl-founder-body">
+        <span
+          className="afl-micro"
+          style={{ color: "rgb(120,120,120)", display: "block", marginBottom: 24 }}
+        >
+          Письмо основателя
+        </span>
+
+        <div className="afl-founder-card">
+          <div className="afl-founder-photo">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/landing/founder.jpg"
+              alt="Женя Колунов"
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                objectPosition: "center 22%",
+                display: "block",
+                filter: "grayscale(1) contrast(1.02)",
+              }}
+            />
+          </div>
+
+          <div>
+            <div
+              style={{
+                fontFamily: "var(--af-font-display)",
+                fontSize: "clamp(18px, 1.9vw, 24px)",
+                lineHeight: 1.55,
+                fontWeight: 400,
+                color: "#111",
+              }}
+            >
+              «{FOUNDER_TEXT}»
             </div>
-          ))}
+
+            <div
+              style={{
+                marginTop: 22,
+                display: "flex",
+                gap: 12,
+                alignItems: "center",
+                fontFamily: "var(--af-font)",
+                fontSize: 11,
+                letterSpacing: "0.14em",
+                textTransform: "uppercase",
+                fontWeight: 400,
+              }}
+            >
+              <span style={{ color: "#111" }}>Женя Колунов</span>
+              <span style={{ color: "var(--af-ochre, #B8862A)" }}>· Founder</span>
+            </div>
+          </div>
         </div>
-        <p className="afl-micro muted" style={{ marginTop: 24 }}>
-          После триала, если не оплатили, данные сохраняются в режиме чтения. Удалить — только по вашему запросу.
+      </div>
+    </section>
+  );
+}
+
+// ── 12 · Доступ — бесплатно для всех дизайнеров ───────────
+function FreeAccess() {
+  return (
+    <section id="pricing" className="afl-sect" style={{ background: "#FFF" }}>
+      <div className="afl-free-body">
+        <span
+          className="afl-micro"
+          style={{ color: "rgb(120,120,120)", display: "block", marginBottom: 24 }}
+        >
+          Доступ
+        </span>
+
+        <h2
+          style={{
+            fontFamily: "var(--af-font-display)",
+            fontSize: "clamp(28px, 3.4vw, 44px)",
+            lineHeight: 1.1,
+            fontWeight: 400,
+            letterSpacing: "-0.005em",
+            margin: "0 0 12px 0",
+            color: "#111",
+            maxWidth: 720,
+          }}
+        >
+          Archflow — бесплатно<br />для всех дизайнеров
+        </h2>
+
+        <p
+          style={{
+            fontFamily: "var(--af-font)",
+            fontSize: 16,
+            lineHeight: 1.65,
+            color: "rgb(60,60,60)",
+            maxWidth: 640,
+            margin: "0 0 40px 0",
+            fontWeight: 400,
+          }}
+        >
+          Все модули включены. Электронная подпись по 63-ФЗ — тоже.
+          Количество проектов, заказчиков и размер студии — без ограничений.
+        </p>
+
+        <div className="afl-free-card">
+          <div className="afl-free-card-head">
+            <span
+              className="afl-micro"
+              style={{ color: "rgba(255,255,255,0.7)", display: "block", marginBottom: 14 }}
+            >
+              Тариф · единственный
+            </span>
+            <div
+              style={{
+                fontFamily: "var(--af-font-display)",
+                fontSize: "clamp(48px, 6vw, 80px)",
+                fontWeight: 400,
+                lineHeight: 1,
+                letterSpacing: "-0.02em",
+              }}
+            >
+              0 ₽
+            </div>
+            <div
+              style={{
+                marginTop: 8,
+                fontFamily: "var(--af-font)",
+                fontSize: 14,
+                color: "rgba(255,255,255,0.85)",
+                fontWeight: 400,
+              }}
+            >
+              Навсегда. Без карты. Без триала.
+            </div>
+          </div>
+
+          <ul className="afl-free-list">
+            <li>Все модули</li>
+            <li>Неограниченные проекты</li>
+            <li>Электронная подпись включена</li>
+            <li>Приоритетная поддержка</li>
+          </ul>
+
+          <div className="afl-free-cta">
+            <a
+              href="/login?mode=register"
+              className="afl-btn"
+              style={{ background: "#FFF", borderColor: "#FFF", color: "#111" }}
+            >
+              Завести проект →
+            </a>
+          </div>
+        </div>
+
+        <p
+          style={{
+            marginTop: 28,
+            fontFamily: "var(--af-font)",
+            fontSize: 12,
+            lineHeight: 1.7,
+            color: "rgb(120,120,120)",
+            maxWidth: 640,
+            fontWeight: 400,
+          }}
+        >
+          Платная подписка отпугивала тех, кому сервис нужен больше всего.
+          Поэтому она отменена — для всех дизайнеров полный доступ
+          бесплатно.
         </p>
       </div>
     </section>
@@ -557,8 +685,8 @@ const FAQ_ITEMS = [
   { q: "Где хранятся данные? Это безопасно?", a: "На серверах Yandex Cloud в дата-центре во Владимире. Ежедневный бэкап в 03:00 МСК с хранением 7 дней. Передача — TLS 1.3, доступ — Row Level Security. Зарегистрированы как оператор персональных данных в реестре РКН." },
   { q: "Можно ли перенести проекты из Excel?", a: "Да. Импорт комплектации поддерживает .xlsx и .csv с автоматическим маппингом колонок. Старые таблицы переписывать не придётся — система сама подскажет, где какое поле." },
   { q: "Есть мобильное приложение?", a: "Веб-приложение работает в браузере телефона как отдельная иконка (PWA). Авторский надзор оптимизирован для мобильного — фото, геометка, голосовые задачи прорабу. Натив-приложения для iOS и Android в работе." },
-  { q: "Что будет с данными, если я перестану пользоваться?", a: "После триала, если не оплатили — данные сохраняются в режиме чтения. После окончания платной подписки — 30 дней, чтобы выгрузить архивом. Удалить можем только по вашему запросу — не списываем без предупреждения." },
-  { q: "А если я работаю со студией из десяти человек?", a: "Подписка не зависит от числа людей. Подключайте дизайнеров, ассистентов, прорабов, поставщиков — каждый видит свою часть проекта. Заказчик подключается отдельно, своим логином, в свой кабинет." },
+  { q: "Что будет с данными, если я перестану пользоваться?", a: "Доступ полностью бесплатный, поэтому данные не «замораживаются». Если решите уйти — выгрузите архив проектов в любой момент. Удалить можем только по вашему запросу." },
+  { q: "А если я работаю со студией из десяти человек?", a: "Размер студии не имеет значения — доступ бесплатный для всех дизайнеров. Подключайте дизайнеров, ассистентов, прорабов, поставщиков — каждый видит свою часть проекта. Заказчик подключается отдельно, своим логином, в свой кабинет." },
   { q: "Я уже пробовала Notion / Trello / Bitrix — почему здесь будет иначе?", a: "Notion и Trello — пустые конструкторы: их сначала нужно настроить под себя, а потом ещё научить заказчика пользоваться. Bitrix — система для отделов продаж в офисе, а не для дизайнера на стройке. Archflow создан под конкретный workflow интерьера и работает «из коробки»: открыли — и завели первый проект." },
 ];
 
