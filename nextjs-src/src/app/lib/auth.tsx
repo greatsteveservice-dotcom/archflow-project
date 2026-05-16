@@ -6,6 +6,7 @@ import type { Session, User } from "@supabase/supabase-js";
 import type { Profile } from "./types";
 import { metrikaSetUser } from "./metrika";
 import { installErrorReporter, setErrorReporterUser } from "./error-reporter";
+import { friendlyError } from "./retry";
 
 // ======================== TYPES ========================
 
@@ -222,16 +223,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, [fetchProfile]);
 
-  // Sign in with email/password
+  // Sign in with email/password.
+  // One automatic retry on transient network errors (TypeError "Load failed" /
+  // "Failed to fetch") — RU mobile carriers periodically throttle the auth
+  // endpoint and a single retry typically succeeds. Anything beyond one retry
+  // would make the user wait too long; further reattempts are manual.
   const signIn = async (email: string, password: string) => {
+    const attempt = async () => supabase.auth.signInWithPassword({ email, password });
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      let { error } = await attempt();
+      // Retry once on transient network error surfaced by supabase-js
+      if (error && /load failed|failed to fetch|networkerror|fetch is aborted/i.test(error.message)) {
+        await new Promise((r) => setTimeout(r, 800));
+        ({ error } = await attempt());
+      }
       if (error) {
         return { error: translateAuthError(error.message) };
       }
       return { error: null };
-    } catch {
-      return { error: "Ошибка сети. Проверьте подключение и попробуйте снова." };
+    } catch (err) {
+      // Retry once on raw thrown TypeError (rare; supabase-js usually wraps it)
+      try {
+        await new Promise((r) => setTimeout(r, 800));
+        const { error } = await attempt();
+        if (error) return { error: translateAuthError(error.message) };
+        return { error: null };
+      } catch (err2) {
+        return { error: friendlyError(err2 || err) };
+      }
     }
   };
 
@@ -255,8 +274,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Network error on auto-login — account was still created, show confirm screen
       }
       return { error: null };
-    } catch {
-      return { error: "Ошибка сети. Проверьте подключение." };
+    } catch (err) {
+      return { error: friendlyError(err) };
     }
   };
 
@@ -321,8 +340,13 @@ function translateAuthError(message: string): string {
   if (lower.includes("rate limit") || lower.includes("too many requests")) {
     return "Слишком много попыток. Подождите минуту и попробуйте снова.";
   }
-  if (lower.includes("network") || lower.includes("fetch")) {
-    return "Ошибка сети. Проверьте подключение и попробуйте снова.";
+  if (
+    lower.includes("network") ||
+    lower.includes("fetch") ||
+    lower.includes("load failed") ||
+    lower.includes("typeerror")
+  ) {
+    return "Соединение нестабильно. Попробуйте обновить страницу.";
   }
   return message;
 }
