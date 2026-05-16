@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 
-const STORAGE_KEY = "changelog_seen_esign";
+const STORAGE_KEY = "changelog_seen_free_2026_05";
 
 interface Props {
   onNavigate?: (page: string, ctx?: any) => void;
@@ -70,7 +70,7 @@ export default function ChangelogBanner({}: Props) {
           marginBottom: 14,
         }}
       >
-        Обновление
+        Обновление · Доступ
       </div>
 
       {/* Title */}
@@ -86,8 +86,8 @@ export default function ChangelogBanner({}: Props) {
           letterSpacing: "-0.01em",
         }}
       >
-        Электронная подпись договоров —<br />
-        теперь в Archflow
+        Archflow — бесплатно<br />
+        для всех дизайнеров
       </h2>
 
       {/* Summary */}
@@ -102,10 +102,10 @@ export default function ChangelogBanner({}: Props) {
           maxWidth: 720,
         }}
       >
-        Больше не нужно распечатывать, подписывать, сканировать и отправлять
-        договор туда-обратно. Загрузите PDF в проект, отправьте заказчику —
-        он получит СМС со ссылкой, прочитает, введёт код. Юридическая
-        чистота за две минуты.
+        Все модули включены. Электронная подпись по 63-ФЗ — тоже. Без
+        ограничений по проектам, заказчикам и размеру студии. Платная
+        подписка отпугивала тех, кому сервис нужен больше всего.
+        Поэтому она отменена.
       </p>
 
       {/* Expanded content */}
@@ -127,50 +127,31 @@ export default function ChangelogBanner({}: Props) {
               marginBottom: 10,
             }}
           >
-            Как это работает
+            Что входит
           </div>
-          <p
-            style={{
-              fontFamily: "var(--af-font)",
-              fontSize: "var(--af-fs-12)",
-              lineHeight: 1.6,
-              color: "#111111",
-              margin: 0,
-              marginBottom: 12,
-            }}
-          >
-            Вы закончили обсуждение условий с клиентом. Загружаете финальный
-            PDF договора в раздел документов проекта. Нажимаете «Отправить
-            на подпись». Вводите телефон заказчика.
-          </p>
-          <p
-            style={{
-              fontFamily: "var(--af-font)",
-              fontSize: "var(--af-fs-12)",
-              lineHeight: 1.6,
-              color: "#111111",
-              margin: 0,
-              marginBottom: 12,
-            }}
-          >
-            Клиент получает СМС, открывает документ с телефона — без
-            регистрации, без приложений. Читает и подписывает кодом. В вашем
-            проекте статус договора меняется на «Подписан».
-          </p>
-          <p
-            style={{
-              fontFamily: "var(--af-font)",
-              fontSize: "var(--af-fs-12)",
-              lineHeight: 1.6,
-              color: "#111111",
-              margin: 0,
-              marginBottom: 18,
-            }}
-          >
-            Подписанный документ хранится в проекте. Если возникнет спор —
-            у вас есть доказательство с датой и фактом подписания, которое
-            суд принимает как письменное доказательство.
-          </p>
+          <ul style={{ margin: 0, padding: 0, listStyle: "none", marginBottom: 18 }}>
+            {[
+              "Неограниченные проекты",
+              "Все модули: Дизайн, Авторский надзор, Комплектация, Чат, Ассистент",
+              "Электронная подпись договоров (63-ФЗ) включена",
+              "Приоритетная поддержка",
+              "Навсегда. Без карты. Без триала.",
+            ].map((t) => (
+              <li
+                key={t}
+                style={{
+                  fontFamily: "var(--af-font)",
+                  fontSize: "var(--af-fs-12)",
+                  lineHeight: 1.7,
+                  borderBottom: "1px solid #EBEBEB",
+                  padding: "6px 0",
+                  color: "#111111",
+                }}
+              >
+                — {t}
+              </li>
+            ))}
+          </ul>
           <div
             style={{
               fontFamily: "var(--af-font-mono)",
@@ -180,7 +161,7 @@ export default function ChangelogBanner({}: Props) {
               marginBottom: 4,
             }}
           >
-            Где искать
+            Что делать существующим подписчикам
           </div>
           <p
             style={{
@@ -191,7 +172,8 @@ export default function ChangelogBanner({}: Props) {
               lineHeight: 1.55,
             }}
           >
-            Дизайн → Документы → Акты / Договора
+            Ничего. Списания остановлены, оставшийся оплаченный период
+            учтён — после него доступ сохраняется без оплаты.
           </p>
         </div>
       )}

@@ -96,7 +96,7 @@ function Hero() {
           Archflow — рабочее пространство для управления проектами и коммуникации с заказчиком.
         </p>
         <div className="ctas">
-          <a href="/login?mode=register" className="afl-btn accent">Начать бесплатно →</a>
+          <a href="/login?mode=register" className="afl-btn accent">Завести проект →</a>
         </div>
         <div className="afl-micro muted reassure">Не требует обучения</div>
       </div>
@@ -730,7 +730,7 @@ function FinalCTA() {
           <p className="body">
             Заведите один живой проект. Пригласите заказчика. Зафиксируйте визит на объекте. Если через две недели не увидите разницы — просто закройте вкладку. Доступ бесплатный, ничего возвращать не нужно.
           </p>
-          <a href="/login?mode=register" className="afl-btn">Начать бесплатно →</a>
+          <a href="/login?mode=register" className="afl-btn">Завести проект →</a>
           <div className="afl-micro reassure">Без карты · полный доступ ко всем модулям</div>
         </div>
       </div>
