@@ -82,9 +82,46 @@ jobs:
             archflow@212.67.10.6 "bash /home/archflow/deploy.sh $RELEASE_TS"
 
       - name: Smoke test
+        env:
+          ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
         run: |
           sleep 3
+          set -e
+
+          # 1. /login страница рендерится
           HTTP=$(curl -sL -o /dev/null -w "%{http_code}" https://archflow.ru/login)
-          echo "HTTP $HTTP"
-          [ "$HTTP" = "200" ] || exit 1
+          echo "HTTP /login: $HTTP"
+          [ "$HTTP" = "200" ] || { echo "FAIL: /login != 200"; exit 1; }
+
+          # 2. SW версия видна в bundle
           curl -sL https://archflow.ru/sw.js | grep SW_VERSION | head -1
+
+          # 3. Supabase pathway через /sb/ (same-origin proxy)
+          #    Если это упало — юзеры не смогут залогиниться. Fail-fast.
+          SB_HEALTH=$(curl -s --max-time 10 -o /tmp/sb_health.body -w "%{http_code}" \
+            "https://archflow.ru/sb/auth/v1/health" -H "apikey: $ANON_KEY")
+          echo "HTTP /sb/auth/v1/health: $SB_HEALTH"
+          [ "$SB_HEALTH" = "200" ] || { cat /tmp/sb_health.body; echo "FAIL: /sb/auth/v1/health"; exit 1; }
+          grep -q "GoTrue" /tmp/sb_health.body || { echo "FAIL: /sb/auth health body wrong (proxy bypassed?)"; cat /tmp/sb_health.body; exit 1; }
+
+          # 4. Token endpoint должен принимать POST и валидировать.
+          #    Если /sb/ хитит nextjs catch-all (мой собственный баг при первой
+          #    попытке) — здесь придёт 200 с HTML вместо 400 invalid_credentials.
+          SB_TOKEN=$(curl -s --max-time 10 -o /tmp/sb_token.body -w "%{http_code}" \
+            -X POST "https://archflow.ru/sb/auth/v1/token?grant_type=password" \
+            -H "Content-Type: application/json" -H "apikey: $ANON_KEY" \
+            -d '{"email":"ci-smoke@archflow.ru","password":"x"}')
+          echo "HTTP /sb/auth/v1/token (bad creds): $SB_TOKEN"
+          [ "$SB_TOKEN" = "400" ] || { cat /tmp/sb_token.body; echo "FAIL: /sb token != 400"; exit 1; }
+          grep -q "invalid_credentials" /tmp/sb_token.body || { echo "FAIL: /sb token body wrong"; cat /tmp/sb_token.body; exit 1; }
+
+          # 5. Бандл содержит правильный SUPABASE_URL
+          curl -sL https://archflow.ru/login > /tmp/login.html
+          MAIN_CHUNK=$(grep -oE '/_next/static/chunks/[0-9]+-[a-f0-9]+\.js' /tmp/login.html | head -5 | tr '\n' ' ')
+          FOUND=0
+          for c in $MAIN_CHUNK; do
+            if curl -sL "https://archflow.ru$c" | grep -q "archflow.ru/sb"; then FOUND=1; break; fi
+          done
+          [ "$FOUND" = "1" ] || { echo "FAIL: archflow.ru/sb not baked into bundle"; exit 1; }
+
+          echo "All smoke checks passed."

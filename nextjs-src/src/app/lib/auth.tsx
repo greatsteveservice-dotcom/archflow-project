@@ -228,14 +228,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // "Failed to fetch") — RU mobile carriers periodically throttle the auth
   // endpoint and a single retry typically succeeds. Anything beyond one retry
   // would make the user wait too long; further reattempts are manual.
+  //
+  // Если после retry ошибка всё ещё сетевая — отправляем beacon на
+  // /api/auth/login-failure чтобы команда увидела всплеск раньше юзеров.
   const signIn = async (email: string, password: string) => {
     const attempt = async () => supabase.auth.signInWithPassword({ email, password });
+    const beacon = (errLike: unknown, stage: 'primary' | 'retry') => {
+      try {
+        const e = errLike as { name?: string; message?: string } | null;
+        const payload = {
+          email,
+          errorName: e?.name || (errLike instanceof Error ? errLike.name : ''),
+          errorMessage: e?.message || (errLike instanceof Error ? errLike.message : String(errLike || '')),
+          stage,
+          userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
+          url: typeof window !== 'undefined' ? window.location.href : '',
+        };
+        // Fire-and-forget, keepalive чтобы успело отправиться даже при перерисовке
+        fetch('/api/auth/login-failure', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          keepalive: true,
+        }).catch(() => {});
+      } catch { /* never let beacon break login flow */ }
+    };
+
     try {
       let { error } = await attempt();
       // Retry once on transient network error surfaced by supabase-js
       if (error && /load failed|failed to fetch|networkerror|fetch is aborted/i.test(error.message)) {
         await new Promise((r) => setTimeout(r, 800));
         ({ error } = await attempt());
+        if (error && /load failed|failed to fetch|networkerror|fetch is aborted/i.test(error.message)) {
+          beacon(error, 'retry');
+        }
       }
       if (error) {
         return { error: translateAuthError(error.message) };
@@ -249,6 +276,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (error) return { error: translateAuthError(error.message) };
         return { error: null };
       } catch (err2) {
+        beacon(err2 || err, 'retry');
         return { error: friendlyError(err2 || err) };
       }
     }
