@@ -200,9 +200,12 @@ export default function AppShell() {
   useEffect(() => {
     if (!session) return;
     const params = new URLSearchParams(window.location.search);
-    const inviteToken = params.get('invite');
+    // Token may come from URL (?invite=…) OR be restored from sessionStorage
+    // after we redirected an unauthenticated visitor to /welcome.
+    const inviteToken = params.get('invite') || sessionStorage.getItem('archflow:pending-invite');
     if (!inviteToken) return;
 
+    sessionStorage.removeItem('archflow:pending-invite');
     window.history.replaceState({}, '', window.location.pathname);
 
     acceptProjectInvitation(inviteToken)
@@ -301,6 +304,13 @@ export default function AppShell() {
     }
     // Default for unauthenticated visitors: show the public landing page.
     if (typeof window !== 'undefined') {
+      // Preserve invite token across the /welcome → login → catch-all round trip,
+      // otherwise new users invited via ?invite=… land in /projects without
+      // ever being added to the project.
+      const inviteToken = new URLSearchParams(window.location.search).get('invite');
+      if (inviteToken) {
+        try { sessionStorage.setItem('archflow:pending-invite', inviteToken); } catch {}
+      }
       window.location.replace('/welcome');
     }
     return null;

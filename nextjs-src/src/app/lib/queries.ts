@@ -1851,7 +1851,7 @@ export async function createProjectInvitation(
 export async function acceptProjectInvitation(token: string): Promise<{ project_id: string; role: string } | null> {
   return runWithRetry(async () => {
     const { data, error } = await supabase.rpc('accept_project_invitation', { invite_token: token });
-    if (error) throw error;
+    if (error) throw new Error(humanError(error));
     if (data?.error) throw new Error(data.error);
     return data;
   });

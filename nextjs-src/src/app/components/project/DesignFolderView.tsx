@@ -343,10 +343,10 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
       console.error('Upload failed:', err);
       toast(err instanceof Error ? `Ошибка: ${err.message}` : 'Ошибка загрузки файла');
       updateOne({ error: err instanceof Error ? err.message : 'Ошибка загрузки', progress: 0 });
-      // Keep failed pending on screen for 5s, then remove
+      // Keep failed pending on screen long enough to actually read the reason.
       setTimeout(() => {
         setPending(prev => prev.filter(p => p.id !== pendingId));
-      }, 5000);
+      }, 20000);
     }
   }, [projectId, folder, activeSubfolder, refetch]);
 
@@ -1060,9 +1060,27 @@ function FileTile({
 // PendingTile — upload in progress (optimistic)
 // ============================================================================
 
+function humanUploadError(raw: string | undefined): string {
+  if (!raw) return '';
+  const s = raw.toLowerCase();
+  if (/forbidden|403|permission denied/.test(s)) return 'нет прав на загрузку';
+  if (/401|invalid token|unauthorized/.test(s)) return 'войдите заново';
+  if (/413|too large|больше .*?гб|больше .*?gb/.test(s)) return 'файл больше 2 ГБ';
+  if (/storage put .*?(4|5)\d{2}|cors|signature/.test(s)) return 'сбой хранилища (CORS / сеть)';
+  if (/upload-url failed|presign|getsignedurl/.test(s)) return 'сервер недоступен';
+  if (/finalize failed|insert.*?design_files|rls/.test(s)) return 'не сохранилось';
+  if (/failed to fetch|network|load failed|aborted/.test(s)) return 'нет сети';
+  return '';
+}
+
 function PendingTile({ pending }: { pending: PendingUpload }) {
+  const detail = pending.error ? humanUploadError(pending.error) : '';
   return (
-    <div className="af-file-tile" style={{ cursor: 'default', opacity: pending.error ? 0.6 : 0.85 }}>
+    <div
+      className="af-file-tile"
+      style={{ cursor: 'default', opacity: pending.error ? 0.6 : 0.85 }}
+      title={pending.error || undefined}
+    >
       {pending.blobUrl ? (
         <img src={pending.blobUrl} alt={pending.name} draggable={false} />
       ) : (
@@ -1111,6 +1129,17 @@ function PendingTile({ pending }: { pending: PendingUpload }) {
         textAlign: 'center',
       }}>
         {pending.error ? 'Ошибка' : `Загрузка ${Math.round(pending.progress)}%`}
+        {pending.error && detail && (
+          <div style={{
+            marginTop: 3,
+            fontSize: 8,
+            opacity: 0.85,
+            letterSpacing: '0.05em',
+            textTransform: 'none',
+          }}>
+            {detail}
+          </div>
+        )}
       </div>
     </div>
   );

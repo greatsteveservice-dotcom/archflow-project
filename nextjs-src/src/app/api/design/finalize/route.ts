@@ -70,11 +70,15 @@ export async function POST(req: NextRequest) {
     if (!allowed) {
       const { data: m } = await sb
         .from("project_members")
-        .select("role")
+        .select("role, access_level")
         .eq("project_id", projectId)
         .eq("user_id", userId)
         .maybeSingle();
-      allowed = !!m && ["designer", "assistant"].includes((m as { role: string }).role);
+      const row = m as { role: string; access_level?: string } | null;
+      allowed = !!row && (
+        ["designer", "assistant"].includes(row.role) ||
+        row.access_level === "full"
+      );
     }
     if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
