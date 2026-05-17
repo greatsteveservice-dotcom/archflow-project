@@ -84,21 +84,17 @@ function Hero() {
   return (
     <section className="afl-sect afl-h-hero">
       <div className="afl-body">
-        <blockquote className="quote">«... Да каждый день!»</blockquote>
-        <p className="credit">
-          Так отвечают 9 из 10 дизайнеров на вопрос «когда в последний раз что-то пошло не так».
-        </p>
         <h1>
-          <span className="row">Защищаем юридически</span>
-          <span className="row">Убираем рутину</span>
+          <span className="row">Дизайнер тратит на дизайн <span style={{ color: "var(--af-ochre)" }}>17%</span> времени.</span>
+          <span className="row">Archflow — про остальные <span style={{ color: "var(--af-ochre)" }}>83%</span>.</span>
         </h1>
         <p className="lede">
-          Archflow — рабочее пространство для управления проектами и коммуникации с заказчиком.
+          Визиты, поставки, оплаты, согласования с клиентом — в одном пространстве.
         </p>
         <div className="ctas">
           <a href="/login?mode=register" className="afl-btn accent">Завести проект →</a>
         </div>
-        <div className="afl-micro muted reassure">Не требует обучения</div>
+        <div className="afl-micro muted reassure">Бесплатно навсегда</div>
       </div>
     </section>
   );
