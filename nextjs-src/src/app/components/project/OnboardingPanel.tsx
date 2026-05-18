@@ -36,6 +36,13 @@ interface Props {
   /** Показывать дропзону даже если очередь пуста (например, в пустых папках). */
   forceVisible?: boolean;
   onSwitchToSupply?: () => void;
+  /**
+   * Callback срабатывает после любых изменений в design_files
+   * (classify создал auto_placed, confirm/reject применён).
+   * Нужен чтобы родитель перезагрузил counts папок и `forceVisible`
+   * мог переключиться в false — иначе drop-zone остаётся висеть.
+   */
+  onDesignFilesChanged?: () => void;
 }
 
 export default function OnboardingPanel(props: Props) {
@@ -49,7 +56,7 @@ export default function OnboardingPanel(props: Props) {
   return <OnboardingPanelInner {...props} />;
 }
 
-function OnboardingPanelInner({ projectId, toast, forceVisible, onSwitchToSupply }: Props) {
+function OnboardingPanelInner({ projectId, toast, forceVisible, onSwitchToSupply, onDesignFilesChanged }: Props) {
   const { data: items, refetch } = useOnboardingPending(projectId);
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState<{ uploaded: number; total: number } | null>(null);
@@ -127,6 +134,9 @@ function OnboardingPanelInner({ projectId, toast, forceVisible, onSwitchToSupply
 
         await classifyOnboardingBatch(projectId, uploaded);
         await refetch();
+        // classify сразу создаёт design_files для auto_placed — оповещаем родителя,
+        // чтобы счётчики папок обновились и forceVisible переключился в false.
+        onDesignFilesChanged?.();
         const okMsg = `Распознали ${uploaded.length} ${pluralFiles(uploaded.length)}`;
         toast(failed > 0 ? `${okMsg}, ${failed} не загрузилось` : okMsg);
       } catch (err) {
@@ -185,6 +195,7 @@ function OnboardingPanelInner({ projectId, toast, forceVisible, onSwitchToSupply
                     }
                   }
                   await refetch();
+                  onDesignFilesChanged?.();
                   if (ok > 0) toast(`Подтвердили ${ok} ${pluralFiles(ok)}`);
                 } finally {
                   setConfirmingAll(false);
@@ -205,6 +216,7 @@ function OnboardingPanelInner({ projectId, toast, forceVisible, onSwitchToSupply
                 try {
                   await confirmOnboardingItem(it.id, cat);
                   refetch();
+                  onDesignFilesChanged?.();
                   toast('Файл перенесён');
                 } catch (e) {
                   toast(e instanceof Error ? e.message : 'Ошибка');
@@ -214,6 +226,7 @@ function OnboardingPanelInner({ projectId, toast, forceVisible, onSwitchToSupply
                 try {
                   await rejectOnboardingItem(it.id);
                   refetch();
+                  onDesignFilesChanged?.();
                   toast('Файл удалён');
                 } catch (e) {
                   toast(e instanceof Error ? e.message : 'Ошибка');
@@ -253,6 +266,7 @@ function OnboardingPanelInner({ projectId, toast, forceVisible, onSwitchToSupply
             try {
               await confirmOnboardingItem(id, cat);
               refetch();
+              onDesignFilesChanged?.();
             } catch (e) {
               toast(e instanceof Error ? e.message : 'Ошибка');
               throw e;
@@ -262,6 +276,7 @@ function OnboardingPanelInner({ projectId, toast, forceVisible, onSwitchToSupply
             try {
               await rejectOnboardingItem(id);
               refetch();
+              onDesignFilesChanged?.();
             } catch (e) {
               toast(e instanceof Error ? e.message : 'Ошибка');
               throw e;

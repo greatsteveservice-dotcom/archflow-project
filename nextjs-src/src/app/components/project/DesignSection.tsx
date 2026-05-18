@@ -125,6 +125,7 @@ export default function DesignSection({ projectId, toast, canUpload = true, canD
             projectId={projectId}
             toast={toast}
             forceVisible={allEmpty}
+            onDesignFilesChanged={refetchCounts}
           />
         </div>
       )}

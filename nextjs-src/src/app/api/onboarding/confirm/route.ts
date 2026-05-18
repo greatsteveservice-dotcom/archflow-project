@@ -68,9 +68,22 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Если уже подтверждено — возвращаем существующий design_file
+    // Если файл уже разложен (auto_placed/confirmed) — design_files row уже создан
+    // на этапе classify. Здесь нужно только пометить запись confirmed, чтобы
+    // listOnboardingPending перестал её возвращать и панель схлопнулась сразу
+    // после нажатия «Подтвердить все», без перезагрузки страницы.
     if (upload.status === 'confirmed' || upload.status === 'auto_placed') {
       if (upload.created_design_file_id) {
+        if (upload.status !== 'confirmed') {
+          await adminClient
+            .from('onboarding_uploads')
+            .update({
+              status: 'confirmed',
+              final_category: finalCategory,
+              decided_at: new Date().toISOString(),
+            })
+            .eq('id', uploadId);
+        }
         const { data: existing } = await adminClient
           .from('design_files')
           .select('*')
