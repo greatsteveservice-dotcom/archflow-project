@@ -33,7 +33,7 @@ export default function Topbar({ title, breadcrumbs, actions, depth = 1, context
 
   void roleLabel;
   const ctx = contextLabel || '';
-  const [showCabinet, setShowCabinet] = useState<false | 'main' | 'billing' | 'settings' | 'profile'>(false);
+  const [showCabinet, setShowCabinet] = useState<false | 'main' | 'settings' | 'profile'>(false);
 
   const firstName = (profile?.full_name || '').split(' ')[0] || '';
   const lastName = (profile?.full_name || '').split(' ')[1] || '';

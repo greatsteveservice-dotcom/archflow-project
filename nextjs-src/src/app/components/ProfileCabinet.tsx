@@ -2,10 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "../lib/auth";
-import { useSubscription, type Plan } from "../lib/useSubscription";
 import { supabase } from "../lib/supabase";
 
-type Screen = "main" | "billing" | "settings" | "profile";
+type Screen = "main" | "settings" | "profile";
 
 interface Props {
   initialScreen?: Screen;
@@ -20,22 +19,8 @@ const ROLE_LABEL: Record<string, string> = {
   assistant: "Ассистент",
 };
 
-const PLAN_LABEL: Record<Plan, string> = {
-  trial: "Триал",
-  month: "1 месяц",
-  halfyear: "6 месяцев",
-  year: "1 год",
-};
-
-const PLANS: { id: Exclude<Plan, "trial">; name: string; price: number; subtitle: string }[] = [
-  { id: "month", name: "1 месяц", price: 1500, subtitle: "1 500 ₽" },
-  { id: "halfyear", name: "6 месяцев", price: 6000, subtitle: "1 000 ₽/мес" },
-  { id: "year", name: "12 месяцев", price: 10000, subtitle: "833 ₽/мес" },
-];
-
 export default function ProfileCabinet({ initialScreen = "main", onClose }: Props) {
   const { profile, user, signOut } = useAuth();
-  const { subscription, loading } = useSubscription();
   const [screen, setScreen] = useState<Screen>(initialScreen);
 
   // Close on Escape
@@ -132,13 +117,10 @@ export default function ProfileCabinet({ initialScreen = "main", onClose }: Prop
               initials={initials}
               profile={profile}
               user={user}
-              subscription={subscription}
-              loading={loading}
               onOpen={setScreen}
               signOut={signOut}
             />
           )}
-          {screen === "billing" && <BillingScreen />}
           {screen === "settings" && <SettingsScreen userId={user.id} />}
           {screen === "profile" && <ProfileScreen profile={profile} user={user} />}
         </div>
@@ -150,17 +132,16 @@ export default function ProfileCabinet({ initialScreen = "main", onClose }: Prop
 // ── Main ─────────────────────────────────────────────
 
 function MainScreen({
-  initials, profile, user, subscription, loading, onOpen, signOut,
+  initials, profile, user, onOpen, signOut,
 }: {
   initials: string;
   profile: any;
   user: any;
-  subscription: ReturnType<typeof useSubscription>["subscription"];
-  loading: boolean;
   onOpen: (s: Screen) => void;
   signOut: () => Promise<void>;
 }) {
   const roleLabel = ROLE_LABEL[profile.role] || profile.role;
+  const isDesigner = profile.role === "designer";
 
   return (
     <div>
@@ -197,20 +178,34 @@ function MainScreen({
         </div>
       </div>
 
-      {/* Subscription banner */}
-      {subscription?.isDesigner && !loading && (
-        <SubscriptionBanner subscription={subscription} onOpen={() => onOpen("billing")} />
+      {/* Free-access banner — заменяет старую плашку с подпиской/триалом, чтобы
+          пользователи не считали что у них «истекающая подписка». */}
+      {isDesigner && (
+        <div style={{
+          background: "#111", color: "#fff",
+          padding: "16px 18px",
+          display: "flex", flexDirection: "column", gap: 6,
+        }}>
+          <div style={{
+            fontFamily: "var(--af-font-mono)", fontSize: 9,
+            letterSpacing: "0.14em", textTransform: "uppercase", color: "#bbb",
+          }}>
+            Доступ
+          </div>
+          <div style={{
+            fontFamily: "var(--af-font-display)", fontSize: 17,
+            fontWeight: 700, lineHeight: 1.15,
+          }}>
+            Archflow — бесплатно для всех
+          </div>
+          <div style={{ fontSize: 12, color: "#bbb", marginTop: 2 }}>
+            Все модули включены, без триала и оплаты.
+          </div>
+        </div>
       )}
 
       {/* Menu */}
       <div style={{ display: "flex", flexDirection: "column", gap: 2, marginTop: 18 }}>
-        {subscription?.isDesigner && (
-          <MenuRow
-            label="Тарифы"
-            sub={subscription ? PLAN_LABEL[subscription.plan] : ""}
-            onClick={() => onOpen("billing")}
-          />
-        )}
         <MenuRow label="Настройки" onClick={() => onOpen("settings")} />
         <MenuRow label="Профиль" onClick={() => onOpen("profile")} />
         <MenuRow label="Политика конфиденциальности" onClick={() => window.open("/privacy", "_blank")} />
@@ -254,179 +249,6 @@ function MenuRow({ label, sub, onClick }: { label: string; sub?: string; onClick
         <span style={{ fontSize: 16 }}>→</span>
       </span>
     </button>
-  );
-}
-
-function SubscriptionBanner({
-  subscription, onOpen,
-}: {
-  subscription: NonNullable<ReturnType<typeof useSubscription>["subscription"]>;
-  onOpen: () => void;
-}) {
-  const usedDays = Math.max(0, subscription.totalDays - subscription.daysLeft);
-  const progressPct = Math.min(100, Math.round((usedDays / subscription.totalDays) * 100));
-  const statusLabel =
-    subscription.status === "expired" ? "Подписка истекла"
-      : subscription.status === "trial" ? "Пробный период"
-      : `Подписка · ${PLAN_LABEL[subscription.plan]}`;
-  const daysLabel =
-    subscription.status === "expired" ? "Продлите подписку"
-      : `Осталось ${subscription.daysLeft} дн.`;
-
-  return (
-    <div
-      onClick={onOpen}
-      style={{
-        background: "#111", color: "#fff",
-        padding: "16px 18px", cursor: "pointer",
-        display: "flex", flexDirection: "column", gap: 6,
-      }}
-    >
-      <div style={{
-        fontFamily: "var(--af-font-mono)", fontSize: 9,
-        letterSpacing: "0.14em", textTransform: "uppercase", color: "#bbb",
-      }}>
-        {statusLabel}
-      </div>
-      <div style={{
-        fontFamily: "var(--af-font-display)", fontSize: 17,
-        fontWeight: 700, lineHeight: 1.15,
-      }}>
-        {daysLabel}
-      </div>
-      <div style={{ height: 2, background: "#333", marginTop: 8 }}>
-        <div style={{
-          height: "100%", background: "#F6F6F4",
-          width: `${progressPct}%`, transition: "width 0.3s",
-        }} />
-      </div>
-    </div>
-  );
-}
-
-// ── Billing screen ───────────────────────────────────
-
-function BillingScreen() {
-  const { subscription } = useSubscription();
-  const [selected, setSelected] = useState<Exclude<Plan, "trial">>("halfyear");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleCheckout = async () => {
-    setError(null);
-    setLoading(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        setError("Сессия истекла, войдите заново");
-        setLoading(false);
-        return;
-      }
-      const res = await fetch("/api/billing/create-payment", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({ plan: selected, email: session.user.email }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.confirmationUrl) {
-        setError(data.error || "Ошибка создания платежа");
-        setLoading(false);
-        return;
-      }
-      window.location.href = data.confirmationUrl;
-    } catch (e: any) {
-      setError(e?.message || "Сеть недоступна");
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div>
-      <h2 style={{
-        fontFamily: "var(--af-font-display)", fontSize: 22,
-        fontWeight: 900, marginTop: 0, marginBottom: 8,
-      }}>
-        Тарифы
-      </h2>
-      {subscription?.isDesigner && (
-        <div style={{ marginBottom: 18, fontSize: 12, color: "#646464" }}>
-          Текущий план: <b>{PLAN_LABEL[subscription.plan]}</b> · истекает{" "}
-          {new Date(subscription.expires_at).toLocaleDateString("ru-RU", {
-            day: "2-digit", month: "2-digit", year: "numeric",
-          })}
-        </div>
-      )}
-
-      <div style={{ display: "flex", flexDirection: "column", gap: 2, marginBottom: 18 }}>
-        {PLANS.map((p) => {
-          const isSel = selected === p.id;
-          return (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => setSelected(p.id)}
-              style={{
-                display: "flex", alignItems: "center", justifyContent: "space-between",
-                padding: "14px 16px",
-                background: isSel ? "#111" : "#F6F6F4",
-                color: isSel ? "#fff" : "#111",
-                border: "none", cursor: "pointer", textAlign: "left",
-                fontFamily: "var(--af-font)",
-              }}
-            >
-              <div>
-                <div style={{
-                  fontFamily: "var(--af-font-display)", fontSize: 15,
-                  fontWeight: 700, lineHeight: 1.1, marginBottom: 2,
-                }}>
-                  {p.name}
-                </div>
-                <div style={{
-                  fontFamily: "var(--af-font-mono)", fontSize: 10,
-                  letterSpacing: "0.08em", textTransform: "uppercase",
-                  color: isSel ? "#bbb" : "#646464",
-                }}>
-                  {p.subtitle}
-                </div>
-              </div>
-              <div style={{
-                fontFamily: "var(--af-font-display)", fontSize: 20,
-                fontWeight: 900,
-              }}>
-                {p.price.toLocaleString("ru-RU")} ₽
-              </div>
-            </button>
-          );
-        })}
-      </div>
-
-      <button
-        type="button"
-        onClick={handleCheckout}
-        disabled={loading}
-        style={{
-          width: "100%",
-          fontFamily: "var(--af-font-mono)", fontSize: 11,
-          fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase",
-          padding: "14px 16px",
-          background: "#111", color: "#fff", border: "1px solid #111",
-          cursor: loading ? "wait" : "pointer",
-        }}
-      >
-        {loading ? "Переход к оплате…" : "Оформить подписку →"}
-      </button>
-      {error && (
-        <div style={{
-          marginTop: 10, padding: "8px 10px", background: "#F6F6F4",
-          fontFamily: "var(--af-font-mono)", fontSize: 11, color: "#111",
-        }}>
-          {error}
-        </div>
-      )}
-    </div>
   );
 }
 
