@@ -147,11 +147,11 @@ export default function PhotoGallery({ projectId, toast, canChangePhotoStatus = 
     const previews: string[] = [];
     for (const file of Array.from(files)) {
       if (!file.type.startsWith('image/')) continue;
-      if (file.size > 20 * 1024 * 1024) continue;
+      if (file.size > 100 * 1024 * 1024) continue;
       validFiles.push(file);
       previews.push(URL.createObjectURL(file));
     }
-    if (validFiles.length === 0) { setUploadError('Нет подходящих изображений (макс. 20 МБ)'); return; }
+    if (validFiles.length === 0) { setUploadError('Нет подходящих изображений (макс. 100 МБ)'); return; }
     setPhotoFiles(prev => [...prev, ...validFiles]);
     setPhotoPreviews(prev => [...prev, ...previews]);
     setUploadError('');

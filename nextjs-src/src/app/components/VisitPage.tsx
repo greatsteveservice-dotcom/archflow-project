@@ -65,7 +65,7 @@ export default function VisitPage({ projectId, visitId, onNavigate, toast, onMen
 
   const handleFileSelect = (file: File) => {
     if (!file.type.startsWith("image/")) { setPhotoError("Выберите изображение"); return; }
-    if (file.size > 20 * 1024 * 1024) { setPhotoError("Файл слишком большой (макс. 20 МБ)"); return; }
+    if (file.size > 100 * 1024 * 1024) { setPhotoError("Файл слишком большой (макс. 100 МБ)"); return; }
     setPhotoFile(file);
     setPhotoPreview(URL.createObjectURL(file));
     setPhotoError("");
