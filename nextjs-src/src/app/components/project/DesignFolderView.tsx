@@ -263,55 +263,99 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
       //    bucket fronted by Yandex CDN). Replaces the legacy proxy upload
       //    through supabase-storage on the VM.
       const { data: { session } } = await supabase.auth.getSession();
-      const urlRes = await fetch('/api/design/upload-url', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session?.access_token || ''}`,
-        },
-        body: JSON.stringify({
-          projectId,
-          folder,
-          subfolder: activeSubfolder,
-          name: file.name,
-          mime: file.type,
-          size: file.size,
-        }),
-      });
-      if (!urlRes.ok) throw new Error((await urlRes.json()).error || 'upload-url failed');
+      let urlRes: Response;
+      try {
+        urlRes = await fetch('/api/design/upload-url', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session?.access_token || ''}`,
+          },
+          body: JSON.stringify({
+            projectId,
+            folder,
+            subfolder: activeSubfolder,
+            name: file.name,
+            mime: file.type,
+            size: file.size,
+          }),
+        });
+      } catch (e) {
+        throw new Error(`Шаг 1/3 (запрос URL): нет связи с archflow.ru — ${labelFetchErr(e)}`);
+      }
+      if (!urlRes.ok) throw new Error(`Шаг 1/3 (запрос URL) ${urlRes.status}: ${await extractErr(urlRes)}`);
       const { uploadUrl, key, publicUrl } = await urlRes.json();
       updateOne({ progress: 15 });
 
       // 2. Direct PUT to the bucket. The browser uploads to ru-central1
       //    storage edge; our app server never sees the bytes.
-      const putRes = await fetch(uploadUrl, {
-        method: 'PUT',
-        headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' },
-        body: file,
-      });
-      if (!putRes.ok) throw new Error(`storage PUT ${putRes.status}`);
-      updateOne({ progress: 70 });
+      // If this fails (some Russian ISPs throttle/RST storage.yandexcloud.net,
+      // or CORS / network issue) — fall back to /api/design/upload-proxy which
+      // streams the file through our own server.
+      let createdId: string;
+      let directOk = false;
+      try {
+        const putRes = await fetch(uploadUrl, {
+          method: 'PUT',
+          headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' },
+          body: file,
+        });
+        if (!putRes.ok) throw new Error(`Storage PUT ${putRes.status}: ${await extractErr(putRes)}`);
+        directOk = true;
+      } catch (e) {
+        // Network or HTTP error on direct path — retry via server-side proxy.
+        console.warn('[design upload] direct PUT failed, falling back to proxy:', e);
+      }
+      updateOne({ progress: directOk ? 70 : 40 });
 
-      // 3. Finalize — registers the design_files row and triggers async
-      //    thumbnail generation.
-      const finRes = await fetch('/api/design/finalize', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session?.access_token || ''}`,
-        },
-        body: JSON.stringify({
-          projectId,
-          folder,
-          subfolder: activeSubfolder,
-          name: file.name,
-          key,
-          size: file.size,
-          mime: file.type,
-        }),
-      });
-      if (!finRes.ok) throw new Error((await finRes.json()).error || 'finalize failed');
-      const { id: createdId } = await finRes.json();
+      if (directOk) {
+        // 3a. Finalize — registers the design_files row and triggers async
+        //     thumbnail generation.
+        let finRes: Response;
+        try {
+          finRes = await fetch('/api/design/finalize', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${session?.access_token || ''}`,
+            },
+            body: JSON.stringify({
+              projectId,
+              folder,
+              subfolder: activeSubfolder,
+              name: file.name,
+              key,
+              size: file.size,
+              mime: file.type,
+            }),
+          });
+        } catch (e) {
+          throw new Error(`Шаг 3/3 (регистрация в БД): нет связи с archflow.ru — ${labelFetchErr(e)}`);
+        }
+        if (!finRes.ok) throw new Error(`Шаг 3/3 (finalize) ${finRes.status}: ${await extractErr(finRes)}`);
+        createdId = (await finRes.json()).id;
+      } else {
+        // 3b. Proxy fallback: server streams to YC and inserts row in one call.
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('projectId', projectId);
+        fd.append('folder', folder);
+        if (activeSubfolder) fd.append('subfolder', activeSubfolder);
+        let proxyRes: Response;
+        try {
+          proxyRes = await fetch('/api/design/upload-proxy', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${session?.access_token || ''}` },
+            body: fd,
+          });
+        } catch (e) {
+          throw new Error(`Прокси-загрузка не дошла до сервера: ${labelFetchErr(e)}. Сеть нестабильна — повтори через 30 сек.`);
+        }
+        if (!proxyRes.ok) {
+          throw new Error(`Прокси-загрузка: ${proxyRes.status} ${await extractErr(proxyRes)}`);
+        }
+        createdId = (await proxyRes.json()).id;
+      }
 
       updateOne({ progress: 100 });
       await refetch();
@@ -340,15 +384,53 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
           .catch(() => {}); // silent fail — classification is non-critical
       }
     } catch (err: unknown) {
-      console.error('Upload failed:', err);
-      toast(err instanceof Error ? `Ошибка: ${err.message}` : 'Ошибка загрузки файла');
-      updateOne({ error: err instanceof Error ? err.message : 'Ошибка загрузки', progress: 0 });
-      // Keep failed pending on screen for 5s, then remove
+      let msg: string;
+      if (err instanceof Error) {
+        msg = err.message;
+      } else if (typeof err === 'string') {
+        msg = err;
+      } else {
+        try { msg = JSON.stringify(err); } catch { msg = String(err); }
+      }
+      // Never let "[object Object]" slip through.
+      if (msg === '[object Object]' || !msg) msg = 'Неизвестная ошибка (см. консоль)';
+      console.error('[design upload] failed:', { name: file.name, size: file.size, type: file.type, err });
+      toast(`Ошибка: ${msg}`);
+      updateOne({ error: msg, progress: 0 });
+      // Keep failed pending visible long enough to read the error (15s).
       setTimeout(() => {
         setPending(prev => prev.filter(p => p.id !== pendingId));
-      }, 5000);
+      }, 15000);
     }
   }, [projectId, folder, activeSubfolder, refetch]);
+
+  // Label a fetch-level (network) error with a short human-readable reason.
+  function labelFetchErr(e: unknown): string {
+    const m = e instanceof Error ? e.message : String(e);
+    if (/failed to fetch|networkerror|load failed/i.test(m)) return 'обрыв соединения (Failed to fetch)';
+    return m || 'unknown';
+  }
+
+  // Read an HTTP error response and return a plain string for surfacing in the UI.
+  // Handles JSON {error:"..."}, JSON {error:{...}}, plain text, nginx HTML pages.
+  async function extractErr(res: Response): Promise<string> {
+    try {
+      const text = await res.text();
+      if (!text) return res.statusText || 'no body';
+      try {
+        const j = JSON.parse(text);
+        const e = j?.error;
+        if (typeof e === 'string') return e;
+        if (e && typeof e === 'object') return JSON.stringify(e);
+        return JSON.stringify(j);
+      } catch {
+        // Not JSON — clip HTML/text to first 200 chars.
+        return text.replace(/<[^>]+>/g, ' ').trim().slice(0, 200);
+      }
+    } catch (e) {
+      return e instanceof Error ? e.message : 'cannot read response';
+    }
+  }
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const fileList = e.target.files;
@@ -833,6 +915,10 @@ function FileTile({
 }) {
   const [imgError, setImgError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  // Mobile Safari on LTE often aborts the first image load when many tiles
+  // hydrate at once. Auto-retry up to 2 times with a small backoff before
+  // surfacing the error state — preview usually succeeds on the second try.
+  const autoRetryRef = useRef(0);
   const isImg = isImageFile(file);
   const isPdfFile = file.file_type?.includes('pdf') || file.name.toLowerCase().endsWith('.pdf');
   const showImg = isImg && !imgError;
@@ -897,7 +983,17 @@ function FileTile({
           alt={file.name}
           loading="lazy"
           draggable={false}
-          onError={() => setImgError(true)}
+          onLoad={() => { autoRetryRef.current = 0; }}
+          onError={() => {
+            if (autoRetryRef.current < 2) {
+              autoRetryRef.current += 1;
+              // Backoff: 400ms, 1.2s — gives the bucket / CDN time to settle
+              const delay = autoRetryRef.current === 1 ? 400 : 1200;
+              setTimeout(() => setReloadKey(k => k + 1), delay);
+            } else {
+              setImgError(true);
+            }
+          }}
         />
       ) : isImg && imgError ? (
         // Image was expected but failed to load — show honest error + retry
@@ -1102,7 +1198,7 @@ function PendingTile({ pending }: { pending: PendingUpload }) {
         right: 0,
         top: 0,
         padding: '6px 8px',
-        background: 'rgba(0,0,0,0.55)',
+        background: pending.error ? 'rgba(184,40,40,0.9)' : 'rgba(0,0,0,0.55)',
         color: '#fff',
         fontFamily: 'var(--af-font-mono)',
         fontSize: 9,
@@ -1112,6 +1208,26 @@ function PendingTile({ pending }: { pending: PendingUpload }) {
       }}>
         {pending.error ? 'Ошибка' : `Загрузка ${Math.round(pending.progress)}%`}
       </div>
+
+      {/* Detailed error message at bottom — surfaces the actual reason so we can debug. */}
+      {pending.error && (
+        <div style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          padding: '6px 8px',
+          background: 'rgba(0,0,0,0.85)',
+          color: '#fff',
+          fontFamily: 'var(--af-font-mono)',
+          fontSize: 10,
+          lineHeight: 1.3,
+          textAlign: 'center',
+          wordBreak: 'break-word',
+        }}>
+          {pending.error}
+        </div>
+      )}
     </div>
   );
 }
