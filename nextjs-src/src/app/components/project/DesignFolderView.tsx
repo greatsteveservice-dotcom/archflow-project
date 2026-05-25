@@ -284,7 +284,7 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
         throw new Error(`Шаг 1/3 (запрос URL): нет связи с archflow.ru — ${labelFetchErr(e)}`);
       }
       if (!urlRes.ok) throw new Error(`Шаг 1/3 (запрос URL) ${urlRes.status}: ${await extractErr(urlRes)}`);
-      const { uploadUrl, key, publicUrl } = await urlRes.json();
+      const { uploadUrl, key, publicUrl } = await safeJson<{ uploadUrl: string; key: string; publicUrl: string }>(urlRes, 'Шаг 1/3 (запрос URL)');
       updateOne({ progress: 15 });
 
       // 2. Direct PUT to the bucket. The browser uploads to ru-central1
@@ -333,7 +333,7 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
           throw new Error(`Шаг 3/3 (регистрация в БД): нет связи с archflow.ru — ${labelFetchErr(e)}`);
         }
         if (!finRes.ok) throw new Error(`Шаг 3/3 (finalize) ${finRes.status}: ${await extractErr(finRes)}`);
-        createdId = (await finRes.json()).id;
+        createdId = (await safeJson<{ id: string }>(finRes, 'Шаг 3/3 (finalize)')).id;
       } else {
         // 3b. Proxy fallback: server streams to YC and inserts row in one call.
         const fd = new FormData();
@@ -354,7 +354,7 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
         if (!proxyRes.ok) {
           throw new Error(`Прокси-загрузка: ${proxyRes.status} ${await extractErr(proxyRes)}`);
         }
-        createdId = (await proxyRes.json()).id;
+        createdId = (await safeJson<{ id: string }>(proxyRes, 'Прокси-загрузка')).id;
       }
 
       updateOne({ progress: 100 });
@@ -409,6 +409,28 @@ export default function DesignFolderView({ projectId, folder, toast, canUpload =
     const m = e instanceof Error ? e.message : String(e);
     if (/failed to fetch|networkerror|load failed/i.test(m)) return 'обрыв соединения (Failed to fetch)';
     return m || 'unknown';
+  }
+
+  // Parse a JSON response safely. If the body is HTML (e.g. an nginx 502 page,
+  // a Roskomnadzor block page, or a stale SW-cached HTML), throw a clear
+  // error including the actual HTTP status and a short snippet — far more
+  // actionable than the default "Unexpected token '<', '<!DOCTYPE'...".
+  async function safeJson<T = unknown>(res: Response, label: string): Promise<T> {
+    const text = await res.text();
+    const trimmed = text.trim();
+    if (!trimmed) {
+      throw new Error(`${label}: пустой ответ (HTTP ${res.status})`);
+    }
+    if (trimmed.startsWith('<')) {
+      const snippet = trimmed.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120);
+      throw new Error(`${label} вернул HTML вместо JSON (HTTP ${res.status}): ${snippet || '—'}`);
+    }
+    try {
+      return JSON.parse(trimmed) as T;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      throw new Error(`${label}: невалидный JSON (HTTP ${res.status}): ${msg}`);
+    }
   }
 
   // Read an HTTP error response and return a plain string for surfacing in the UI.
