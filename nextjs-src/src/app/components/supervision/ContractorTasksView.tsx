@@ -2,9 +2,9 @@
 import { useState, useMemo } from 'react';
 import Image from 'next/image';
 import { Icons } from '../Icons';
-import type { ContractorTaskWithDetails, TaskStatus, ProjectMemberWithProfile } from '../../lib/types';
+import type { ContractorTaskWithDetails, TaskStatus, ProjectMemberWithProfile, MemberRole } from '../../lib/types';
 import { useContractorTasks } from '../../lib/hooks';
-import { createContractorTask, updateContractorTask, deleteContractorTask } from '../../lib/queries';
+import { createContractorTask, updateContractorTask, deleteContractorTask, createRbacInvite } from '../../lib/queries';
 import { thumb } from '../../lib/imgUrl';
 
 // ─── Status config ───────────────────────────────────────
@@ -48,6 +48,31 @@ export default function ContractorTasksView({
   const [cAssignee, setCAssignee] = useState('');
   const [cDeadline, setCDeadline] = useState('');
   const [creating, setCreating] = useState(false);
+
+  // Inline-invite-contractor state — fixes the case where the designer wants
+  // to add a contractor straight from this form (no need to bounce through
+  // Project Settings → Members).
+  const [showInvite, setShowInvite] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviting, setInviting] = useState(false);
+  const [inviteLink, setInviteLink] = useState<string | null>(null);
+
+  const handleInvite = async () => {
+    const email = inviteEmail.trim();
+    if (!email) return;
+    setInviting(true);
+    try {
+      const member = await createRbacInvite(projectId, 'contractor' as MemberRole, email);
+      const link = `${window.location.origin}/invite/${member.invite_token}`;
+      setInviteLink(link);
+      setInviteEmail('');
+      toast('Подрядчик приглашён — отправьте ему ссылку');
+    } catch (err: any) {
+      toast(err?.message || 'Ошибка приглашения');
+    } finally {
+      setInviting(false);
+    }
+  };
 
   const contractors = useMemo(
     () => members.filter(m => m.role === 'contractor'),
@@ -155,6 +180,75 @@ export default function ContractorTasksView({
                 </option>
               ))}
             </select>
+            {/* Inline invite — generates an invite link the designer can send */}
+            <div style={{ marginTop: 6 }}>
+              {!showInvite && !inviteLink && (
+                <button
+                  type="button"
+                  onClick={() => setShowInvite(true)}
+                  style={{
+                    background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                    color: '#B8862A', fontFamily: 'var(--af-font-mono)', fontSize: 12,
+                    fontWeight: 600, letterSpacing: '0.02em',
+                  }}
+                >
+                  + Пригласить нового подрядчика
+                </button>
+              )}
+              {showInvite && !inviteLink && (
+                <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+                  <input
+                    type="email"
+                    value={inviteEmail}
+                    onChange={e => setInviteEmail(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') handleInvite(); }}
+                    placeholder="email подрядчика"
+                    autoFocus
+                    style={{ ...inputStyle, flex: 1 }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleInvite}
+                    disabled={inviting || !inviteEmail.trim()}
+                    style={{ ...chipBtnStyle, background: '#B8862A', color: '#FFF', opacity: (inviting || !inviteEmail.trim()) ? 0.4 : 1 }}
+                  >
+                    {inviting ? '...' : 'Пригласить'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setShowInvite(false); setInviteEmail(''); }}
+                    style={{ ...chipBtnStyle, background: '#F6F6F4', color: '#111' }}
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+              {inviteLink && (
+                <div style={{ marginTop: 4, padding: 10, border: '1px solid #B8862A', background: '#FCF6E8', fontFamily: 'var(--af-font-mono)', fontSize: 11 }}>
+                  <div style={{ marginBottom: 6, color: '#111' }}>Ссылка для подрядчика — отправьте её любым способом:</div>
+                  <div style={{ wordBreak: 'break-all', marginBottom: 8, color: '#111', fontSize: 10 }}>{inviteLink}</div>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button
+                      type="button"
+                      onClick={() => { navigator.clipboard.writeText(inviteLink); toast('Скопировано'); }}
+                      style={{ ...chipBtnStyle, background: '#B8862A', color: '#FFF' }}
+                    >
+                      Скопировать ссылку
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setInviteLink(null); setShowInvite(false); }}
+                      style={{ ...chipBtnStyle, background: '#F6F6F4', color: '#111' }}
+                    >
+                      Готово
+                    </button>
+                  </div>
+                  <div style={{ marginTop: 6, color: '#666', fontSize: 10 }}>
+                    После того, как подрядчик откроет ссылку и зарегистрируется, он появится в списке исполнителей.
+                  </div>
+                </div>
+              )}
+            </div>
           </Field>
           <Field label="Срок">
             <input type="date" value={cDeadline} onChange={e => setCDeadline(e.target.value)} style={inputStyle} />

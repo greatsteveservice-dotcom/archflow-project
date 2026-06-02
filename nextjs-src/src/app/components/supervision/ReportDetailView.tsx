@@ -178,19 +178,38 @@ export default function ReportDetailView({ reportId, projectId, toast, onBack, m
     if (!newRemarkText.trim()) return;
     setAddingRemark(true);
     try {
-      await createVisitRemark({
+      const remark = await createVisitRemark({
         report_id: reportId,
         project_id: projectId,
         text: newRemarkText.trim(),
         deadline: newRemarkDeadline || undefined,
         assigned_to: newRemarkAssignee || undefined,
       });
+      // Auto-spawn a contractor task so the remark surfaces in the «Задачи»
+      // view immediately — designer asks to verify the fix on the next visit.
+      // Falls back to the designer themselves when no assignee is set,
+      // because contractor_tasks.assigned_to is NOT NULL.
+      const taskAssignee = newRemarkAssignee || profile?.id;
+      if (taskAssignee) {
+        try {
+          await createContractorTask({
+            project_id: projectId,
+            remark_id: remark.id,
+            title: newRemarkText.trim().slice(0, 200),
+            assigned_to: taskAssignee,
+            deadline: newRemarkDeadline || undefined,
+          });
+        } catch (taskErr) {
+          // Don't block the remark on a task-creation failure.
+          console.warn('[remark] auto-task creation failed:', taskErr);
+        }
+      }
       setNewRemarkText('');
       setNewRemarkDeadline('');
       setNewRemarkAssignee('');
       setShowNewRemark(false);
       refetchRemarks();
-      toast('Замечание добавлено');
+      toast('Замечание добавлено · задача создана');
     } catch (err: unknown) {
       toast(err instanceof Error ? err.message : 'Ошибка');
     } finally {
