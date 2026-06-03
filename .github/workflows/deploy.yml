@@ -67,19 +67,19 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H 212.67.10.6 >> ~/.ssh/known_hosts 2>/dev/null
+          ssh-keyscan -H 111.88.244.78 >> ~/.ssh/known_hosts 2>/dev/null
 
       - name: Rsync to VPS
         run: |
           rsync -az --delete \
             -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
             "$STAGE/" \
-            archflow@212.67.10.6:/home/archflow/releases/$RELEASE_TS/
+            archflow@111.88.244.78:/home/archflow/releases/$RELEASE_TS/
 
       - name: Switch symlink and restart
         run: |
           ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
-            archflow@212.67.10.6 "bash /home/archflow/deploy.sh $RELEASE_TS"
+            archflow@111.88.244.78 "bash /home/archflow/deploy.sh $RELEASE_TS"
 
       - name: Smoke test
         env:

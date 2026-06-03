@@ -6,7 +6,7 @@ set -e
 # Usage: ./scripts/deploy.sh
 # ──────────────────────────────────────────────────────────────
 
-VPS_HOST="archflow@212.67.10.6"
+VPS_HOST="archflow@111.88.244.78"
 SSH_KEY="$HOME/.ssh/archflow_ed25519"
 SSH="ssh -i $SSH_KEY $VPS_HOST"
 RSYNC="rsync -az -e 'ssh -i $SSH_KEY'"
