@@ -30,17 +30,26 @@ No test framework is configured.
 
 Production is **VPS**, not Netlify. Two paths:
 
-1. **CI (primary):** `git push origin main` — GitHub Actions `.github/workflows/deploy.yml` builds, rsyncs to `archflow@212.67.10.6:/home/archflow/releases/<TS>/`, runs `bash /home/archflow/deploy.sh <TS>` (swap symlink → `sudo -n systemctl restart archflow`), smoke-tests `https://archflow.ru/login`.
+1. **CI (primary):** `git push origin main` — GitHub Actions `.github/workflows/deploy.yml` builds, rsyncs to `archflow@111.88.244.78:/home/archflow/releases/<TS>/`, runs `bash /home/archflow/deploy.sh <TS>` (swap symlink → `sudo -n systemctl restart archflow`), smoke-tests `https://archflow.ru/login`.
 2. **Manual:** `cd nextjs-src && bash scripts/deploy.sh` (same pipeline from local).
 
-### VPS facts
-- App VPS: `212.67.10.6` (SSH: `archflow@212.67.10.6 -i ~/.ssh/archflow_ed25519`).
+### VPS facts (после миграции 03.06.2026 — один хост для app + БД)
+- VPS: `archflow@111.88.244.78 -i ~/.ssh/archflow_ed25519`. На этой же VM крутится Supabase-стек (15 docker контейнеров) и outreach-бот. Beget VPS `212.67.10.6` deprecated, отключён.
 - Releases: `/home/archflow/releases/`, active via symlink `/home/archflow/app`.
-- Persistent env: `/home/archflow/.env.production` — NOT copied by rsync, edited once on server.
-- systemd: `sudo -n systemctl restart archflow` (passwordless), `Restart=always`. Never `nohup node`.
-- nginx: static (`/_next/static/`, `sw.js`, `manifest.json`, icons, favicon) served directly, bypassing Node. Proxy to `:3000` for everything else.
-- Monitoring: `/home/archflow/scripts/healthcheck.sh` every 3 min (Telegram alerts + auto-restart). DB backup: `/home/archflow/scripts/backup-rest.sh` daily at 03:00.
-- Domain CDN: archflow.ru via Cloudflare (RU-friendly).
+- Persistent env: `/home/archflow/.env.production` — NOT copied by rsync, edited once on server. **Любые новые env vars кладутся сюда**, иначе release-копия (`/home/archflow/app/.env.production`) затрётся следующим деплоем.
+- `archflow@111.88.244.78` имеет `NOPASSWD: ALL` — `sudo -n systemctl reload nginx`, `sudo -n certbot ...` работают без пароля.
+- systemd: `sudo -n systemctl restart archflow` (passwordless), `Restart=always`, MemoryMax 800M. Never `nohup node`. Юзает ~30 МБ RAM в покое.
+- nginx (host `/usr/sbin/nginx`): три vhost — `archflow.ru`+`www.archflow.ru`, `app.archflow.ru` (резервный для тестов), `db.archflow.ru` (Supabase Kong на :8000). Статика (`/_next/static/`, `sw.js`, иконки) — alias на ФС, не через Next.js. Let's Encrypt автообновляется через certbot, exp проверять `sudo -n certbot certificates`.
+- **nginx `/sb/` location** (Supabase same-origin proxy): `proxy_buffering off`, `proxy_request_buffering off` (для стрим-аплоадов 7-20 МБ), `client_body_timeout 600s`, `proxy_read_timeout 86400s`. Эти настройки критичны для батч-загрузки фото в supervision — без них фоткаются «зависают».
+- `client_max_body_size 300M` на server level (через `/sb/` тоже работает).
+- Monitoring: `/home/archflow/scripts/healthcheck.sh` every 3 min (Telegram alerts + auto-restart). DB backup: `/home/archflow/scripts/backup-rest.sh` daily at 03:00 (15 таблиц в JSON через Supabase REST, 7-day retention).
+- Domain CDN: archflow.ru via Cloudflare (RU-friendly). A-record `archflow.ru` сейчас **DNS only** (серое облачко) → `111.88.244.78`. `db.archflow.ru` — Proxied (оранжевое).
+
+### Outreach-бот (вне основного репозитория)
+- Код: `~/outreach-bot/` на VPS `111.88.244.78` + локальная копия `/Users/evgeny/Desktop/archflow-outreach-bot/` (**не под git**).
+- Деплой: `cd ~/Desktop/archflow-outreach-bot && bash scripts/deploy.sh` — `rsync --delete` из локальной папки на VM. **Правки прямо на сервере (vim/nano) затрутся следующим деплоем** — сначала обновлять локальную копию, потом деплоить.
+- Конфиг: `.env-bot.production` на VPS, отдельный от основного `.env.production`.
+- Шаблоны сообщений хранятся в БД (`outreach_bot.templates`) — при смене тарифной модели проверять упоминания цен и в коде бота, и в записях этой таблицы.
 
 ### CI gotchas
 - Build step only gets `NEXT_PUBLIC_*` secrets. **Never instantiate clients at module top-level** (`new Resend(...)`, `createClient(...)`, `new Anthropic(...)`) — if env missing, constructor throws during Next.js "Collecting page data" and build fails. Pattern:
@@ -80,7 +89,7 @@ Orphaned (do not edit, slated for deletion): `DesignTab.tsx`, `DocCategoryList.t
 3. **`types.ts`** — TS interfaces matching Supabase schema.
 4. **`auth.tsx`** — `AuthProvider` context. Содержит heartbeat — шлёт `/api/activity/ping` каждые 60с активной вкладки.
 5. **`permissions.ts`** — `resolvePermissions(role, accessLevel)` → 21 boolean flags.
-6. **`useSubscription.ts`** — статус подписки. Для `role !== 'designer'` возвращает `canEdit=true` всегда (клиенты/подрядчики не подписываются).
+6. **`useSubscription.ts`** — legacy. Сервис полностью бесплатен (01.06.2026). Возвращает `canEdit=true` для всех. Инфраструктура биллинга остаётся на сервере на будущее, но в UI выключена.
 7. **`theme.tsx`** — `ThemeProvider`. **Dark mode forcibly disabled** (forced light). Не включать без явного запроса.
 
 Real-time: Supabase `postgres_changes` subscriptions auto-refetch hooks.
@@ -195,14 +204,15 @@ Implemented via catch-all `[...path]/page.tsx` + `useRouter` from `next/navigati
 
 `components/ProfileCabinet.tsx` — bottom-sheet (`height: 88dvh`) открывается по клику на аватар в топбаре. 4 экрана: main / billing / settings / profile. Настройки (`user_module_settings`) — тумблеры видимости модулей. Биллинг (`subscriptions`) — выбор тарифа + оплата через ЮКассу.
 
-## Billing (YooKassa)
+## Billing (LEGACY — сервис бесплатен с 01.06.2026)
 
-- Тарифы: 1 месяц 1500 ₽ / 6 мес 6000 ₽ / 1 год 10000 ₽.
-- Триал 7 дней создаётся триггером `on_user_created_billing` для всех новых `auth.users`. Блокировка работает ТОЛЬКО для `role === 'designer'` — клиенты/подрядчики/ассистенты никогда не видят блокировки.
-- `/api/billing/create-payment` — требует auth, кладёт `userId` в metadata.
-- `/api/billing/webhook` — IP whitelist ЮКассы (`185.71.76.0/27`, `185.71.77.0/27`, `77.75.153.0/25`, `77.75.156.11`, `77.75.156.35`). Читает `cf-connecting-ip` первым (CF proxy), fallback на `x-forwarded-for`.
-- Env: `YOOKASSA_SHOP_ID`, `YOOKASSA_SECRET_KEY` (runtime-only, не `NEXT_PUBLIC_*`).
-- Webhook зарегистрирован в кабинете ЮКассы на `https://archflow.ru/api/billing/webhook`, событие `payment.succeeded`.
+С 1 июня 2026 ArchFlow полностью бесплатен для дизайнеров. UI биллинга в `ProfileCabinet` скрыт, `useSubscription` всегда возвращает `canEdit=true`. Страница `/pricing` оставлена как landing, но без CTA «купить».
+
+Инфраструктура (на случай возврата платной модели — например, B2B-тариф для студий или платные клиентские расширения):
+- `/api/billing/create-payment`, `/api/billing/webhook` — рабочие.
+- Таблица `subscriptions` сохраняется. Триал-триггер `on_user_created_billing` — статус нужно подтвердить SQL-запросом перед любыми правками биллинга (`SELECT * FROM pg_trigger WHERE tgname LIKE '%billing%'`), не полагаться на этот файл.
+- Env `YOOKASSA_SHOP_ID`, `YOOKASSA_SECRET_KEY` остаются в `/home/archflow/.env.production`.
+- Webhook ЮКассы в кабинете оставлен на случай возврата. Если решите окончательно отказаться — снять в кабинете YooKassa.
 
 ## Telegram Bots
 
@@ -268,6 +278,28 @@ designer: demo@archflow.ru
 3. Если есть примеси: `git restore --staged FILE && git stash push -- FILE`, заново применить нужные правки через Edit, затем `git add`, потом `git stash pop`.
 4. Никогда `git add -A` или `git add .` — только именованные файлы.
 
+**Особо опасно — критичные route'ы, которые легко остаются untracked**: `api/design/upload-proxy/route.ts` (fallback для блокированных PUT), новые `api/<feature>/route.ts` после добавления фичи на клиенте. При добавлении нового API route — сразу `git add` в тот же коммит что и клиентский код, не «потом докоммичу».
+
+## Mockup-роуты — cleanup policy
+
+Накопилось много `/<feature>-mockup` роутов (landing-mockup, deck-mockup, typography-mockup, calendar-fonts-mockup, suppliers-mockup, services-mockup, pricing-news-mockup, …). Они работают как WIP-площадка, но:
+- остаются в проде после деплоя и доступны по прямой ссылке;
+- часто содержат `<link rel="stylesheet">` для Google Fonts прямо в JSX → `removeChild NotFoundError` при unmount → ошибки летят в Telegram-бот feedback'а как «File too large» и шумят;
+- скапливают сторонние URLs (randomuser.me, picsum) которые отваливаются.
+
+**Правила:**
+- После принятия мокапа и переноса в основной флоу — удалить роут в том же спринте.
+- Если мокап остаётся на ревью — оборачивать рендер в `if (process.env.NODE_ENV !== 'production') return null` или прятать за фичефлагом.
+- Шрифты в мокапах — только через `useEffect + document.createElement('link')` или `next/head`, никогда `<link>` прямо в JSX.
+
+## File upload paths (design + supervision photos)
+
+Два пайплайна, оба идут через same-origin прокси `archflow.ru/sb/storage/...`:
+
+1. **Design files** (`/api/design/upload-url` → presigned PUT в YC Storage напрямую). При сбое direct PUT (мобильная сеть, корпоративный прокси режет PUT) клиент автоматически делает retry через `/api/design/upload-proxy/route.ts` — сервер принимает body и сам пишет в Storage. **Этот route критичен и часто оказывается untracked после создания** — перед каждым деплоем дизайна проверять `git status` и убеждаться что `nextjs-src/src/app/api/design/upload-proxy/route.ts` закоммичен.
+
+2. **Supervision photos** (`PhotoGallery.tsx` → `uploadPhoto` в `queries.ts`). 03.06.2026 добавлены: hard timeout 90с на попытку, 3 retry с backoff 1s/2s (только на 408/429/5xx/network), per-file try/catch чтобы одна сбойная фотка не убивала весь батч, partial-success toast. Клиентский лимит **20 МБ/фото** в `PhotoGallery.tsx:150` — файлы больше тихо игнорируются (если жалобы «загрузил, а часть не появилась» — это первое что проверять). На nginx `/sb/` стоят `proxy_request_buffering off` + `client_body_timeout 600s` — без этих настроек большие body буферизуются и таймаутят.
+
 ## Videos (design_file_videos)
 
 Миграция 053. Бэкенд: `/api/videos/upload-url` (presigned PUT, TTL 15 мин), `/api/videos/[id]` (GET/PATCH), `/api/videos/[id]/finalize` (Whisper-1 транскрипция), `/api/videos/[id]/url` (presigned GET), `/api/videos/delete/[id]`. Компоненты: `VideoRecorder.tsx` (MediaRecorder, getDisplayMedia/getUserMedia), `VideoPlayer.tsx`, `FileVideoSection.tsx`. Хранилище — YC Object Storage `archflow-media-prod`. CORS bucket policy через `nextjs-src/scripts/apply-yc-cors.mjs` — без CORS PUT возвращает 403.
@@ -281,7 +313,7 @@ Safari ограничен в `getDisplayMedia` — давать понятный
 ## Landing (`/welcome`)
 
 - Server component (`Landing.tsx` без `"use client"`). Auth-redirect — отдельный `<AuthRedirect />` client-island. `#af-fallback-screen` рендерится последним в body.
-- CSS-классы `.afl-*` (не `.af-*`). Шрифты — Playfair Display + Inter, **scoped в `.afl-root`** через `--af-landing-*` rebind. Никогда не трогать `--af-font*` глобально — продукт остаётся на Vollkorn SC.
+- CSS-классы `.afl-*` (не `.af-*`). Шрифты — Playfair Display + Inter + Onest (третий шрифт для UI-микротекстов), **scoped в `.afl-root`** через `--af-landing-*` rebind. Никогда не трогать `--af-font*` глобально — продукт остаётся на Vollkorn SC.
 - Mobile screenshot swap: `.afl-shot-desktop` / `.afl-shot-mobile` + `@media (max-width: 900px)` (не 768!). Файлы в `public/landing/`. 6 модулей: `01-projects`, `02-design`, `03-supervision`, `04-supply`, `06-chat`, `07-client-cabinet`.
 - Скриншоты снимать через puppeteer-скрипт `scripts/take-screenshots.js` (логин как `demo@archflow.ru`, обрезка таббара через `clip:`). Для client cabinet — проект ЖК iLove (наиболее насыщен данными).
 - WhyDrawer: bottom-sheet ≤900px, правая панель >900px. Открывается через CustomEvent `why:open`.
