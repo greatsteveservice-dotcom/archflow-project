@@ -509,7 +509,17 @@ export async function createVisit(input: CreateVisitInput): Promise<Visit> {
   return data as Visit;
 }
 
-/** Upload a photo file to Supabase Storage */
+/** Upload a photo file to Supabase Storage.
+ *
+ * Pipeline: client → archflow.ru/sb → db.archflow.ru → Kong → Storage.
+ * Несколько хопов + мобильная сеть → отдельные uploads иногда «висят». Без
+ * клиентского таймаута supabase-js fetch может зависнуть навсегда (нет hard
+ * abort, только internal SOFT_DEGRADE), и весь батч в `for` блокируется.
+ *
+ * Решение: жёсткий таймаут 90с на попытку + до 3 попыток с задержкой.
+ * На fatal-ошибках (>=400 кроме 408/429/5xx) не ретраим — это либо permissions,
+ * либо malformed file, ретрай не поможет.
+ */
 export async function uploadPhoto(
   file: File,
   projectId: string,
@@ -519,20 +529,49 @@ export async function uploadPhoto(
   const fileName = `${crypto.randomUUID()}.${ext}`;
   const filePath = `${projectId}/${visitId}/${fileName}`;
 
-  const { error } = await supabase.storage
-    .from('photos')
-    .upload(filePath, file, {
-      cacheControl: '31536000',
-      contentType: file.type,
-    });
+  const UPLOAD_TIMEOUT_MS = 90_000;
+  const MAX_ATTEMPTS = 3;
+  let lastError: Error | null = null;
 
-  if (error) throw error;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      const uploadPromise = supabase.storage
+        .from('photos')
+        .upload(filePath, file, {
+          cacheControl: '31536000',
+          contentType: file.type,
+          upsert: attempt > 1, // на ретрае разрешаем перезапись если первая попытка частично прошла
+        });
 
-  const { data: urlData } = supabase.storage
-    .from('photos')
-    .getPublicUrl(filePath);
+      const result = await Promise.race([
+        uploadPromise,
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('UPLOAD_TIMEOUT')), UPLOAD_TIMEOUT_MS)
+        ),
+      ]);
 
-  return urlData.publicUrl;
+      if (result.error) {
+        const msg = result.error.message || '';
+        const statusCode = (result.error as { statusCode?: string | number }).statusCode;
+        const status = typeof statusCode === 'number' ? statusCode : parseInt(String(statusCode || '0'), 10);
+        const isRetryable =
+          status === 408 || status === 429 || (status >= 500 && status < 600) ||
+          /timeout|network|fetch|load failed/i.test(msg);
+        if (!isRetryable || attempt === MAX_ATTEMPTS) throw result.error;
+        lastError = new Error(msg);
+      } else {
+        const { data: urlData } = supabase.storage.from('photos').getPublicUrl(filePath);
+        return urlData.publicUrl;
+      }
+    } catch (e) {
+      lastError = e instanceof Error ? e : new Error(String(e));
+      if (attempt === MAX_ATTEMPTS) throw lastError;
+    }
+    // backoff: 1s, 2s
+    await new Promise((r) => setTimeout(r, attempt * 1000));
+  }
+
+  throw lastError || new Error('Upload failed');
 }
 
 /** Create a photo record */

@@ -191,9 +191,10 @@ export default function PhotoGallery({ projectId, toast, canChangePhotoStatus = 
     if (!selectedVisitId) { setUploadError('Выберите визит'); return; }
     setSaving(true); setUploadError('');
     setUploadProgress({ current: 0, total: photoFiles.length });
-    try {
-      for (let i = 0; i < photoFiles.length; i++) {
-        setUploadProgress({ current: i + 1, total: photoFiles.length });
+    let ok = 0; let fail = 0; let firstErr = '';
+    for (let i = 0; i < photoFiles.length; i++) {
+      setUploadProgress({ current: i + 1, total: photoFiles.length });
+      try {
         const photoUrl = await uploadPhoto(photoFiles[i], projectId, selectedVisitId);
         await createPhotoRecord({
           visit_id: selectedVisitId,
@@ -202,15 +203,21 @@ export default function PhotoGallery({ projectId, toast, canChangePhotoStatus = 
           zone: photoZone,
           photo_url: photoUrl,
         });
+        ok++;
+      } catch (err: unknown) {
+        fail++;
+        if (!firstErr) firstErr = err instanceof Error ? err.message : 'Ошибка загрузки';
       }
-      refetch();
-      refetchVisits?.();
+    }
+    setSaving(false); setUploadProgress({ current: 0, total: 0 });
+    if (ok > 0) { refetch(); refetchVisits?.(); }
+    if (fail === 0) {
       closeUploadModal();
       toast(photoFiles.length === 1 ? 'Фото добавлено' : `Загружено ${photoFiles.length} фото`);
-    } catch (err: unknown) {
-      setUploadError(err instanceof Error ? err.message : 'Ошибка загрузки');
-    } finally {
-      setSaving(false); setUploadProgress({ current: 0, total: 0 });
+    } else if (ok === 0) {
+      setUploadError(firstErr || 'Не удалось загрузить фото');
+    } else {
+      setUploadError(`Загружено ${ok} из ${photoFiles.length}. Повторите для остальных. ${firstErr}`);
     }
   };
 
