@@ -30,23 +30,23 @@ No test framework is configured.
 
 Production is **VPS**, not Netlify. Two paths:
 
-1. **CI (primary):** `git push origin main` — GitHub Actions `.github/workflows/deploy.yml` builds, rsyncs to `archflow@111.88.244.78:/home/archflow/releases/<TS>/`, runs `bash /home/archflow/deploy.sh <TS>` (swap symlink → `sudo -n systemctl restart archflow`), smoke-tests `https://archflow.ru/login`.
+1. **CI (primary):** `git push origin main` — GitHub Actions `.github/workflows/deploy.yml` builds, rsyncs to `archflow@93.77.180.27:/home/archflow/releases/<TS>/`, runs `bash /home/archflow/deploy.sh <TS>` (swap symlink → `sudo -n systemctl restart archflow`), smoke-tests `https://archflow.ru/login`.
 2. **Manual:** `cd nextjs-src && bash scripts/deploy.sh` (same pipeline from local).
 
 ### VPS facts (после миграции 03.06.2026 — один хост для app + БД)
-- VPS: `archflow@111.88.244.78 -i ~/.ssh/archflow_ed25519`. На этой же VM крутится Supabase-стек (15 docker контейнеров) и outreach-бот. Beget VPS `212.67.10.6` deprecated, отключён.
+- VPS: `archflow@93.77.180.27 -i ~/.ssh/archflow_ed25519`. На этой же VM крутится Supabase-стек (15 docker контейнеров) и outreach-бот. Beget VPS `212.67.10.6` deprecated, отключён.
 - Releases: `/home/archflow/releases/`, active via symlink `/home/archflow/app`.
 - Persistent env: `/home/archflow/.env.production` — NOT copied by rsync, edited once on server. **Любые новые env vars кладутся сюда**, иначе release-копия (`/home/archflow/app/.env.production`) затрётся следующим деплоем.
-- `archflow@111.88.244.78` имеет `NOPASSWD: ALL` — `sudo -n systemctl reload nginx`, `sudo -n certbot ...` работают без пароля.
+- `archflow@93.77.180.27` имеет `NOPASSWD: ALL` — `sudo -n systemctl reload nginx`, `sudo -n certbot ...` работают без пароля.
 - systemd: `sudo -n systemctl restart archflow` (passwordless), `Restart=always`, MemoryMax 800M. Never `nohup node`. Юзает ~30 МБ RAM в покое.
 - nginx (host `/usr/sbin/nginx`): три vhost — `archflow.ru`+`www.archflow.ru`, `app.archflow.ru` (резервный для тестов), `db.archflow.ru` (Supabase Kong на :8000). Статика (`/_next/static/`, `sw.js`, иконки) — alias на ФС, не через Next.js. Let's Encrypt автообновляется через certbot, exp проверять `sudo -n certbot certificates`.
 - **nginx `/sb/` location** (Supabase same-origin proxy): `proxy_buffering off`, `proxy_request_buffering off` (для стрим-аплоадов 7-20 МБ), `client_body_timeout 600s`, `proxy_read_timeout 86400s`. Эти настройки критичны для батч-загрузки фото в supervision — без них фоткаются «зависают».
 - `client_max_body_size 300M` на server level (через `/sb/` тоже работает).
 - Monitoring: `/home/archflow/scripts/healthcheck.sh` every 3 min (Telegram alerts + auto-restart). DB backup: `/home/archflow/scripts/backup-rest.sh` daily at 03:00 (15 таблиц в JSON через Supabase REST, 7-day retention).
-- Domain CDN: archflow.ru via Cloudflare (RU-friendly). A-record `archflow.ru` сейчас **DNS only** (серое облачко) → `111.88.244.78`. `db.archflow.ru` — Proxied (оранжевое).
+- Domain CDN: archflow.ru via Cloudflare (RU-friendly). A-record `archflow.ru` сейчас **DNS only** (серое облачко) → `93.77.180.27`. `db.archflow.ru` — Proxied (оранжевое).
 
 ### Outreach-бот (вне основного репозитория)
-- Код: `~/outreach-bot/` на VPS `111.88.244.78` + локальная копия `/Users/evgeny/Desktop/archflow-outreach-bot/` (**не под git**).
+- Код: `~/outreach-bot/` на VPS `93.77.180.27` + локальная копия `/Users/evgeny/Desktop/archflow-outreach-bot/` (**не под git**).
 - Деплой: `cd ~/Desktop/archflow-outreach-bot && bash scripts/deploy.sh` — `rsync --delete` из локальной папки на VM. **Правки прямо на сервере (vim/nano) затрутся следующим деплоем** — сначала обновлять локальную копию, потом деплоить.
 - Конфиг: `.env-bot.production` на VPS, отдельный от основного `.env.production`.
 - Шаблоны сообщений хранятся в БД (`outreach_bot.templates`) — при смене тарифной модели проверять упоминания цен и в коде бота, и в записях этой таблицы.
@@ -98,7 +98,7 @@ Real-time: Supabase `postgres_changes` subscriptions auto-refetch hooks.
 
 **Supabase на Yandex Cloud VM** (мигрирован с Beget 18.04.2026, Beget полностью deprecated):
 - URL: `https://db.archflow.ru` (nginx → Kong → Docker-контейнеры Supabase)
-- VM: `archflow@111.88.244.78` (SSH key: `~/.ssh/archflow_ed25519`)
+- VM: `archflow@93.77.180.27` (SSH key: `~/.ssh/archflow_ed25519`)
 - Контейнеры: `docker compose` из `~/supabase/` на VM
 
 Migrations в `nextjs-src/supabase/migrations/`. Untracked WIP миграции в working tree — нормально, проверять через `git status` перед деплоем.
@@ -109,7 +109,7 @@ Core tables (non-exhaustive): `profiles`, `projects`, `project_members`, `stages
 
 **Единственный рабочий путь** — psql через Docker на Yandex VM:
 ```bash
-ssh -i ~/.ssh/archflow_ed25519 archflow@111.88.244.78 \
+ssh -i ~/.ssh/archflow_ed25519 archflow@93.77.180.27 \
   "docker exec -i supabase-db psql -U supabase_admin -d postgres" \
   < nextjs-src/supabase/migrations/NNN_name.sql
 ```
